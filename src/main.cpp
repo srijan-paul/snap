@@ -8,21 +8,23 @@ using TT = snap::TokenType;
 
 void print_ttype(TT type) {
 	std::string type_strs[] = {
-		"Number",  "String", "Id",	   "Error", "Eof",	 "Plus", "PlusEq", "Minus",
-		"MinusEq", "Mult",	 "MultEq", "Div",	"DivEq", "Mod",	 "ModEq",  "Exp",
-	};
+		"Integer", "Float",	  "String",		"Id",		  "Error",	  "Eof",	 "Plus",  "PlusEq",
+		"Minus",   "MinusEq", "Mult",		"MultEq",	  "Div",	  "DivEq",	 "Mod",	  "ModEq",
+		"Exp",	   "Eq",	  "Bang",		"BangEq",	  "Semi",	  "Dot",	 "Colon", "Comma",
+		"LParen",  "RParen",  "LCurlBrace", "RCurlBrace", "LSqBrace", "RSqBrace"};
 
-	printf("%s", type_strs[(size_t)type].c_str());
+	const std::string& str = type_strs[(size_t)type];
+	printf("%-10s", str.c_str());
 }
 
 void print_token(const Token& token, const std::string& src) {
-	printf("'%s' ", src.substr(token.pos.source_pos.start, token.pos.source_pos.end).c_str());
 	print_ttype(token.type);
+	printf("'%s'", src.substr(token.pos.source_pos.start, token.pos.source_pos.end).c_str());
 	printf("\n");
 }
 
 int main() {
-	std::string s = "+-";
+	std::string s = "123 + 456 * 35.6";
 	Scanner sc{&s};
 	while (true) {
 		const Token token = sc.next_token();

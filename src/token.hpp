@@ -5,7 +5,8 @@
 namespace snap {
 
 enum class TokenType { //
-	Number = 0,
+	Integer = 0,
+	Float,
 	String,
 	Id,
 	Error,
@@ -21,6 +22,19 @@ enum class TokenType { //
 	Mod,
 	ModEq,
 	Exp,
+	Eq,
+	Bang,
+	BangEq,
+	Semi,
+	Dot,
+	Colon,
+	Comma,
+	LParen,
+	RParen,
+	LCurlBrace,
+	RCurlBrace,
+	LSqBrace,
+	RSqBrace
 };
 
 struct SourcePosition {

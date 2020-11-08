@@ -26,7 +26,13 @@ class Scanner {
 	char peek_next() const;
 	bool check(char expected) const;
 	bool match(char expected);
+
+	// returns true if the lexeme formed
+	// by the string between 'start' and 'current'
+	// is a keyword, false otherwise
+	bool isKeyword() const;
 	Token make_token(TokenType type) const;
+	Token number();
 	Token token_if_match(char c, TokenType then, TokenType other);
 };
 } // namespace snap
