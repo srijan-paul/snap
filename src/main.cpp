@@ -19,7 +19,7 @@ void print_ttype(TT type) {
 
 void print_token(const Token& token, const std::string& src) {
 	print_ttype(token.type);
-	printf("'%s'", src.substr(token.pos.source_pos.start, token.pos.source_pos.end).c_str());
+	printf("'%s'", token.raw(src).c_str());
 	printf("\n");
 }
 

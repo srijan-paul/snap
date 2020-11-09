@@ -7,11 +7,11 @@ namespace snap {
 
 class Scanner {
   public:
-	Scanner(std::string* source);
+	Scanner(const std::string* source);
 	Token next_token();
 
   private:
-	std::string* source;
+	const std::string* source;
 	struct {
 		uint32_t line;
 		uint32_t column;

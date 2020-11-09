@@ -20,7 +20,7 @@ Token Scanner::token_if_match(char c, TT then, TT other) {
 	return make_token(other);
 }
 
-Scanner::Scanner(std::string* src) {
+Scanner::Scanner(const std::string* src) {
 	source = src;
 }
 
