@@ -4,10 +4,11 @@
 #include <iostream>
 #include <stdlib.h>
 #include <string>
+#include <vector>
 
 namespace snap {
 
-enum class NodeType { Expr, BinExpr, Literal };
+enum class NodeType { Expr, BinExpr, UnaryExpr, Literal, VarDeclarator, VarDeclaration };
 
 using ASTVisitor = class ASTVisitor;
 
@@ -34,8 +35,29 @@ struct BinExpr : public Expr {
 	}
 };
 
-struct Literal : public Expr {
+struct UnaryExpr : Expr {
+	Expr* operand;
+	UnaryExpr(Token op, Expr* exp) : Expr(NodeType::UnaryExpr, op), operand(exp){};
+};
+
+struct Literal : Expr {
 	Literal(const Token token) : Expr(NodeType::Literal, token){};
+};
+
+struct Stmt : public ASTNode {
+	Location location;
+	Stmt(NodeType type) : ASTNode(type){};
+};
+
+struct Declarator : Stmt {
+	Token var;
+	Expr* init{nullptr};
+	Declarator(Token tk) : Stmt(NodeType::VarDeclaration), var{tk} {};
+};
+
+struct VarDecl : Stmt {
+	std::vector<Declarator> declarations = {};
+	VarDecl() : Stmt(NodeType::VarDeclarator){};
 };
 
 } // namespace snap

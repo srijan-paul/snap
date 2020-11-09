@@ -29,11 +29,18 @@ Expr* Parser::sum() {
 }
 
 Expr* Parser::mult() {
-	Expr* expr = literal();
+	Expr* expr = unary();
 	while (match(TT::Mult) || match(TT::Div) || match(TT::Mod)) {
-		expr = new BinExpr(expr, token, literal());
+		expr = new BinExpr(expr, token, unary());
 	}
 	return expr;
+}
+
+Expr* Parser::unary() {
+	if (match(TT::Minus) || match(TT::Bang)) {
+		return new UnaryExpr(token, literal());
+	}
+	return literal();
 }
 
 Literal* Parser::literal() {

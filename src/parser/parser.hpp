@@ -24,6 +24,7 @@ class Parser {
 	Expr* expression();
 	Expr* sum();
 	Expr* mult();
+	Expr* unary();
 	Literal* literal();
 };
 
