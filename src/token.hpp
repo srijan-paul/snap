@@ -55,6 +55,7 @@ struct Token {
   public:
 	TokenType type = TokenType::Error;
 	Token(TokenType type, Location loc) : type{type}, location{loc} {};
+	Token() : location{} {};
 	std::string raw(const std::string& source) const;
 	SourcePosition source_pos() const;
 };

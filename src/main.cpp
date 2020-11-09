@@ -1,5 +1,10 @@
+#include "parser/ast/ast.hpp"
+#include "parser/ast/ast_printer.hpp"
+
+#include "parser/parser.hpp"
 #include "scanner.hpp"
 #include "token.hpp"
+
 #include <cstdio>
 #include <stdio.h>
 
@@ -23,7 +28,16 @@ void print_token(const Token& token, const std::string& src) {
 	printf("\n");
 }
 
-int main() {
+void parser_test() {
+	std::string s = "123";
+	Parser parser{&s};
+	auto tree = parser.parse();
+
+	ASTPrinter printer{s};
+	printer.visit(tree);
+}
+
+void lexer_test() {
 	std::string s = "123 + 456 * 35.6";
 	Scanner sc{&s};
 	while (true) {
@@ -32,5 +46,12 @@ int main() {
 		if (token.type == TT::Eof)
 			break;
 	}
+
+	printf("\n ======== \n\n");
+}
+
+int main() {
+	lexer_test();
+	parser_test();
 	return 0;
 }

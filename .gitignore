@@ -1,1 +1,3 @@
 bin/*
+compile_commands.json
+.clangd/*
