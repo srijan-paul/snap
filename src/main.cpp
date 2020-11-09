@@ -29,7 +29,7 @@ void print_token(const Token& token, const std::string& src) {
 }
 
 void parser_test() {
-	std::string s = "123";
+	std::string s = "1 + 2 * 3";
 	Parser parser{&s};
 	auto tree = parser.parse();
 

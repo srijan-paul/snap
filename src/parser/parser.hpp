@@ -17,7 +17,13 @@ class Parser {
 	Token peek;
 	void advance();
 	bool eof() const;
+	bool check(TokenType type) const;
+	bool match(TokenType type);
+	bool isLiteral(TokenType type) const;
 
+	Expr* expression();
+	Expr* sum();
+	Expr* mult();
 	Literal* literal();
 };
 
