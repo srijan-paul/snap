@@ -1,6 +1,6 @@
 #pragma once
-#include "../scanner.hpp"
 #include "ast/ast.hpp"
+#include "scanner.hpp"
 
 namespace snap {
 

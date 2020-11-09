@@ -1,8 +1,8 @@
-#include "parser/ast/ast.hpp"
-#include "parser/ast/ast_printer.hpp"
+#include "syntax/ast/ast.hpp"
+#include "syntax/ast/ast_printer.hpp"
+#include "syntax/parser.hpp"
+#include "syntax/scanner.hpp"
 
-#include "parser/parser.hpp"
-#include "scanner.hpp"
 #include "token.hpp"
 
 #include <cstdio>

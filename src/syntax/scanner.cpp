@@ -1,5 +1,4 @@
 #include "scanner.hpp"
-#include "token.hpp"
 #include <cctype>
 #include <ctype.h>
 #include <stdint.h>
