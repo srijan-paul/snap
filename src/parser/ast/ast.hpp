@@ -27,6 +27,11 @@ struct BinExpr : public Expr {
 	Expr* right;
 	BinExpr(Expr* left, const Token op, Expr* right)
 		: left{left}, right{right}, Expr(NodeType::BinExpr, op){};
+
+	~BinExpr() {
+		delete left;
+		delete right;
+	}
 };
 
 struct Literal : public Expr {
