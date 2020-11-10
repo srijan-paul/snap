@@ -22,6 +22,19 @@ class Parser {
 	bool isLiteral(TokenType type) const;
 
 	Expr* expression();
+	Expr* assign();
+
+	Expr* logic_or();
+	Expr* logic_and();
+
+	Expr* bit_or(); // TODO: Bit XOR
+	Expr* bit_and();
+
+	Expr* equality();
+	Expr* comparison();
+
+	Expr* bit_shift();
+
 	Expr* sum();
 	Expr* mult();
 	Expr* unary();

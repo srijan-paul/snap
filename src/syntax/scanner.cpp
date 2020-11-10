@@ -24,8 +24,7 @@ Scanner::Scanner(const std::string* src) {
 }
 
 Token Scanner::next_token() {
-	if (eof())
-		return make_token(TT::Eof);
+	if (eof()) return make_token(TT::Eof);
 	skip_whitespace();
 
 	start = current;
@@ -37,6 +36,21 @@ Token Scanner::next_token() {
 	case '*': return token_if_match('=', TT::MultEq, TT::Mult);
 	case '%': return token_if_match('=', TT::ModEq, TT::Mod);
 	case '/': return token_if_match('=', TT::DivEq, TT::Div);
+
+	case '=': return token_if_match('=', TT::EqEq, TT::Eq);
+	case '!': return token_if_match('=', TT::BangEq, TT::Bang);
+
+	case '>':
+		if (match('=')) return make_token(TT::GtEq);
+		if (match('>')) return make_token(TT::BitRShift);
+		return make_token(TT::Gt);
+	case '<':
+		if (match('=')) return make_token(TT::LtEq);
+		if (match('<')) return make_token(TT::BitLShift);
+		return make_token(TT::Lt);
+
+	case '&': return token_if_match('&', TT::And, TT::BitAnd);
+	case '|': return token_if_match('|', TT::Or, TT::BitOr);
 
 	case ';': return make_token(TT::Semi);
 	case ':': return make_token(TT::Colon);
@@ -70,14 +84,12 @@ Token Scanner::number() {
 }
 
 char Scanner::peek() const {
-	if (eof())
-		return '\0';
+	if (eof()) return '\0';
 	return source->at(current);
 }
 
 char Scanner::peek_next() const {
-	if (current + 1 >= current)
-		return '\0';
+	if (current + 1 >= current) return '\0';
 	return source->at(current + 1);
 }
 

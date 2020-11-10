@@ -14,5 +14,6 @@ AllowShortFunctionsOnASingleLine: None
 AllowShortLoopsOnASingleLine: true
 BreakBeforeBraces: Attach
 AllowShortCaseLabelsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: true
 AlwaysBreakTemplateDeclarations: Yes
 ColumnLimit: 100

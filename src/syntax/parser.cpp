@@ -2,14 +2,22 @@
 #include "../common.hpp"
 #include <iostream>
 
+#define DEFINE_PARSELET(name, condition, next)                                                     \
+	Expr* name() {                                                                                 \
+		Expr* expr = next();                                                                       \
+		while (condition) {                                                                        \
+			expr = new BinExpr(expr, token, next());                                               \
+		}                                                                                          \
+		return expr;                                                                               \
+	}
+
 namespace snap {
 
 using TT = TokenType;
 
 Parser::Parser(const std::string* source) : source{source}, scanner{Scanner(source)} {
 	advance();
-	if (eof())
-		return;
+	if (eof()) return;
 }
 
 ASTNode* Parser::parse() {
@@ -17,24 +25,28 @@ ASTNode* Parser::parse() {
 }
 
 Expr* Parser::expression() {
-	return sum();
+	return assign();
 }
 
-Expr* Parser::sum() {
-	auto expr = mult();
-	while (match(TT::Plus) || match(TT::Minus)) {
-		expr = new BinExpr(expr, token, mult());
+Expr* Parser::assign() {
+	Expr* left = logic_or();
+	if (match(TT::Eq) || match(TT::PlusEq) || match(TT::MinusEq) || match(TT::MultEq) ||
+		match(TT::ModEq) || match(TT::DivEq)) {
+		left = new BinExpr(left, token, assign());
 	}
-	return expr;
+	return left;
 }
 
-Expr* Parser::mult() {
-	Expr* expr = unary();
-	while (match(TT::Mult) || match(TT::Div) || match(TT::Mod)) {
-		expr = new BinExpr(expr, token, unary());
-	}
-	return expr;
-}
+DEFINE_PARSELET(Parser::logic_or, match(TT::Or), logic_and)
+DEFINE_PARSELET(Parser::logic_and, match(TT::And), bit_or)
+DEFINE_PARSELET(Parser::bit_or, match(TT::BitOr), bit_and)
+DEFINE_PARSELET(Parser::bit_and, match(TT::BitAnd), equality)
+DEFINE_PARSELET(Parser::equality, match(TT::EqEq) || match(TT::BangEq), comparison)
+DEFINE_PARSELET(Parser::comparison,
+				match(TT::Gt) || match(TT::Lt) || match(TT::GtEq) || match(TT::LtEq), bit_shift)
+DEFINE_PARSELET(Parser::bit_shift, match(TT::EqEq) || match(TT::BangEq), sum)
+DEFINE_PARSELET(Parser::sum, match(TT::Plus) || match(TT::Minus), mult)
+DEFINE_PARSELET(Parser::mult, match(TT::Mult) || match(TT::Mod) || match(TT::Div), unary)
 
 Expr* Parser::unary() {
 	if (match(TT::Minus) || match(TT::Bang)) {
@@ -49,6 +61,8 @@ Literal* Parser::literal() {
 		return nullptr;
 	return new Literal(token);
 }
+
+#undef DEFINE_PARSELET
 
 // helper functions:
 

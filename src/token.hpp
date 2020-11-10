@@ -11,6 +11,8 @@ enum class TokenType { //
 	Id,
 	Error,
 	Eof,
+
+	// Operators
 	Plus,
 	PlusEq,
 	Minus,
@@ -24,9 +26,34 @@ enum class TokenType { //
 	Exp,
 	Eq,
 	Bang,
-	BangEq,
-	Semi,
 	Dot,
+
+	// compare
+
+	Gt,	  // >
+	Lt,	  // <
+	GtEq, // >=
+	LtEq, // <=
+
+	// logic
+
+	And, // &&
+	Or,	 // ||
+
+	// Equality
+
+	EqEq,
+	BangEq,
+
+	// bitwise
+
+	BitAnd,
+	BitOr,
+	BitLShift,
+	BitRShift,
+
+	// Punctuation
+	Semi,
 	Colon,
 	Comma,
 	LParen,
