@@ -1,14 +1,14 @@
 #pragma once
 #include "../../common.hpp"
 #include "../../token.hpp"
+#include "../../typecheck/type.hpp"
 #include <iostream>
-#include <stdlib.h>
 #include <string>
 #include <vector>
 
 namespace snap {
 
-enum class NodeType { Expr, BinExpr, UnaryExpr, Literal, VarDeclarator, VarDeclaration };
+enum class NodeType { Expr, BinExpr, UnaryExpr, Literal, VarDeclarator, VarDeclaration, ExprStmt };
 
 using ASTVisitor = class ASTVisitor;
 
@@ -20,6 +20,7 @@ class ASTNode {
 
 struct Expr : public ASTNode {
 	const Token token;
+	Type* data_type{nullptr};
 	Expr(NodeType type, const Token op) : ASTNode(type), token{op} {};
 };
 
@@ -49,15 +50,24 @@ struct Stmt : public ASTNode {
 	Stmt(NodeType type) : ASTNode(type){};
 };
 
+struct ExprStmt : Stmt {
+	Expr* exp;
+	ExprStmt() : Stmt(NodeType::ExprStmt){};
+};
+
+struct Declaration : Stmt {
+	Declaration(NodeType type) : Stmt(type){};
+};
+
 struct Declarator : Stmt {
 	Token var;
 	Expr* init{nullptr};
 	Declarator(Token tk) : Stmt(NodeType::VarDeclaration), var{tk} {};
 };
 
-struct VarDecl : Stmt {
+struct VarDecl : Declaration {
 	std::vector<Declarator> declarations = {};
-	VarDecl() : Stmt(NodeType::VarDeclarator){};
+	VarDecl() : Declaration(NodeType::VarDeclarator){};
 };
 
 } // namespace snap

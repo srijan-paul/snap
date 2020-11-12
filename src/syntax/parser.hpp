@@ -21,6 +21,8 @@ class Parser {
 	bool match(TokenType type);
 	bool isLiteral(TokenType type) const;
 
+	Stmt* stmt();
+
 	Expr* expression();
 	Expr* assign();
 

@@ -2,8 +2,8 @@
 #include "syntax/ast/ast_printer.hpp"
 #include "syntax/parser.hpp"
 #include "syntax/scanner.hpp"
-
 #include "token.hpp"
+#include "typecheck/typechecker.hpp"
 
 #include <cstdio>
 #include <stdio.h>
@@ -37,6 +37,14 @@ void print_token(const Token& token, const std::string& src) {
 	print_ttype(token.type);
 	printf("'%s'", token.raw(src).c_str());
 	printf("\n");
+}
+
+void ast_test() {
+	std::string code = "1 + 2";
+	Parser parser{&code};
+	auto ast = parser.parse();
+	Typechecker checker{ast};
+	checker.typecheck();
 }
 
 void parser_test() {
