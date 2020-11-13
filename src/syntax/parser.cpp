@@ -21,7 +21,19 @@ Parser::Parser(const std::string* source) : source{source}, scanner{Scanner(sour
 }
 
 ASTNode* Parser::parse() {
-	return expression();
+	return program();
+}
+
+Program* Parser::program() {
+	auto program = new Program();
+	while (!eof()) {
+		program->stmts.push_back(stmt());
+	}
+	return program;
+}
+
+Stmt* Parser::stmt() {
+	return new ExprStmt(expression());
 }
 
 Expr* Parser::expression() {

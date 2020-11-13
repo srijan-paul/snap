@@ -48,11 +48,12 @@ void ast_test() {
 }
 
 void parser_test() {
-	std::string s = "1 > 2 || 2 > 3 | 3";
+	std::string s = "1 > 2 "
+					"2 < 3";
 	Parser parser{&s};
 	auto tree = parser.parse();
 
-	ASTPrinter printer{s};
+	ASTPrinter printer{&s};
 	printer.visit(tree);
 }
 

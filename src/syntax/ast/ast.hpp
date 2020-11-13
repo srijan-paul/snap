@@ -8,7 +8,16 @@
 
 namespace snap {
 
-enum class NodeType { Expr, BinExpr, UnaryExpr, Literal, VarDeclarator, VarDeclaration, ExprStmt };
+enum class NodeType {
+	Expr,
+	BinExpr,
+	UnaryExpr,
+	Literal,
+	VarDeclarator,
+	VarDeclaration,
+	ExprStmt,
+	Program
+};
 
 using ASTVisitor = class ASTVisitor;
 
@@ -52,7 +61,7 @@ struct Stmt : public ASTNode {
 
 struct ExprStmt : Stmt {
 	Expr* exp;
-	ExprStmt() : Stmt(NodeType::ExprStmt){};
+	ExprStmt(Expr* expr) : Stmt(NodeType::ExprStmt), exp{expr} {};
 };
 
 struct Declaration : Stmt {
@@ -68,6 +77,11 @@ struct Declarator : Stmt {
 struct VarDecl : Declaration {
 	std::vector<Declarator> declarations = {};
 	VarDecl() : Declaration(NodeType::VarDeclarator){};
+};
+
+struct Program : public ASTNode {
+	std::vector<Stmt*> stmts;
+	Program() : ASTNode(NodeType::Program){};
 };
 
 } // namespace snap
