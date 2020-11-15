@@ -6,7 +6,8 @@
 	Expr* name() {                                                                                 \
 		Expr* expr = next();                                                                       \
 		while (condition) {                                                                        \
-			expr = new BinExpr(expr, token, next());                                               \
+			const Token op_token = token;                                                          \
+			expr = new BinExpr(expr, op_token, next());                                            \
 		}                                                                                          \
 		return expr;                                                                               \
 	}

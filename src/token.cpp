@@ -6,7 +6,7 @@ namespace snap {
 
 std::string Token::raw(const std::string& source) const {
 	auto pos = source_pos();
-	return source.substr(pos.start, pos.end);
+	return source.substr(pos.start, pos.length);
 }
 
 SourcePosition Token::source_pos() const {

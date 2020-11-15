@@ -4,7 +4,7 @@
 
 namespace snap {
 
-enum class TokenType { //
+enum class TokenType {
 	Integer = 0,
 	Float,
 	String,
@@ -66,7 +66,7 @@ enum class TokenType { //
 
 struct SourcePosition {
 	u32 start = 0;
-	u32 end = 0;
+	u32 length = 0;
 };
 
 struct Location {

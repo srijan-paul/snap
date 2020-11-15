@@ -39,7 +39,7 @@ void print_token(const Token& token, const std::string& src) {
 	printf("\n");
 }
 
-void ast_test() {
+void checker_test() {
 	std::string code = "1 + 2";
 	Parser parser{&code};
 	auto ast = parser.parse();
@@ -48,8 +48,7 @@ void ast_test() {
 }
 
 void parser_test() {
-	std::string s = "1 > 2 "
-					"2 < 3";
+	std::string s = "1 + 2 * 3";
 	Parser parser{&s};
 	auto tree = parser.parse();
 
