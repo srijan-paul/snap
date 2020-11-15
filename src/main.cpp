@@ -48,7 +48,7 @@ void checker_test() {
 }
 
 void parser_test() {
-	std::string s = "1 + 2 * 3";
+	std::string s = "112 + 25.4; 2 + 3; 4 * -5 - 1 * 3";
 	Parser parser{&s};
 	auto tree = parser.parse();
 

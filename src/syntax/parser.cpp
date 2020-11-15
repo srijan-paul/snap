@@ -34,7 +34,9 @@ Program* Parser::program() {
 }
 
 Stmt* Parser::stmt() {
-	return new ExprStmt(expression());
+	Stmt* stmt = new ExprStmt(expression());
+	match(TT::Semi); // eat optional semi-colon after each statement
+	return stmt;
 }
 
 Expr* Parser::expression() {
@@ -81,7 +83,7 @@ Literal* Parser::literal() {
 
 // helper functions:
 
-bool Parser::isLiteral(TT type) const {
+inline bool Parser::isLiteral(TT type) const {
 	return (type == TT::Integer || type == TT::String || type == TT::Float);
 }
 
@@ -91,11 +93,11 @@ void Parser::advance() {
 	peek = scanner.next_token();
 }
 
-bool Parser::eof() const {
+inline bool Parser::eof() const {
 	return peek.type == TT::Eof;
 }
 
-bool Parser::check(TT expected) const {
+inline bool Parser::check(TT expected) const {
 	return !eof() && peek.type == expected;
 }
 

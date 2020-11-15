@@ -17,7 +17,9 @@ void ASTPrinter::visit(const ASTNode* node) const {
 }
 
 void ASTPrinter::visit_program(const Program* prog) const {
-	for (auto stmt : prog->stmts) visit(stmt);
+	for (Stmt* stmt : prog->stmts) {
+		visit(stmt);
+	}
 }
 
 void ASTPrinter::visit_expstmt(const ExprStmt* stmt) const {

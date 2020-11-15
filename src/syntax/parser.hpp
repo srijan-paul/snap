@@ -16,10 +16,10 @@ class Parser {
 	Token prev;
 	Token peek;
 	void advance();
-	bool eof() const;
-	bool check(TokenType type) const;
+	inline bool eof() const;
+	inline bool check(TokenType type) const;
 	bool match(TokenType type);
-	bool isLiteral(TokenType type) const;
+	inline bool isLiteral(TokenType type) const;
 
 	Program* program();
 	Stmt* stmt();
