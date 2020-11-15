@@ -45,7 +45,8 @@ Expr* Parser::assign() {
 	Expr* left = logic_or();
 	if (match(TT::Eq) || match(TT::PlusEq) || match(TT::MinusEq) || match(TT::MultEq) ||
 		match(TT::ModEq) || match(TT::DivEq)) {
-		left = new BinExpr(left, token, assign());
+		const Token op_token = token;
+		left = new BinExpr(left, op_token, assign());
 	}
 	return left;
 }
@@ -63,7 +64,8 @@ DEFINE_PARSELET(Parser::mult, match(TT::Mult) || match(TT::Mod) || match(TT::Div
 
 Expr* Parser::unary() {
 	if (match(TT::Minus) || match(TT::Bang)) {
-		return new UnaryExpr(token, literal());
+		const Token op_token = token;
+		return new UnaryExpr(op_token, literal());
 	}
 	return literal();
 }
