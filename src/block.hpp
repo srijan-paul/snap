@@ -1,15 +1,16 @@
 #pragma once
 #include "common.hpp"
+#include "opcode.hpp"
 #include "value.hpp"
 #include <vector>
 
 namespace snap {
 
 struct Block {
-	std::vector<Instruction> code = {};
+	std::vector<Opcode> code = {};
 	std::vector<Value> constant_pool = {};
 
-	size_t add_instruction(Instruction i) {
+	size_t add_instruction(Opcode i) {
 		code.push_back(i);
 		return code.size() - 1;
 	}

@@ -7,7 +7,7 @@ namespace snap {
 class Parser {
   public:
 	Parser(const std::string* source);
-	ASTNode* parse();
+	Program* parse();
 
   private:
 	const std::string* source;

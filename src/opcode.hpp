@@ -4,6 +4,6 @@
 
 namespace snap {
 
-enum Opcode { push, pop };
+enum Opcode { push, pop, add, sub, mult, mod, error };
 
 } // namespace snap

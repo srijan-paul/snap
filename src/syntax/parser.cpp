@@ -21,7 +21,7 @@ Parser::Parser(const std::string* source) : source{source}, scanner{Scanner(sour
 	if (eof()) return;
 }
 
-ASTNode* Parser::parse() {
+Program* Parser::parse() {
 	return program();
 }
 

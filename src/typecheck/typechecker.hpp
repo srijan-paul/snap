@@ -7,11 +7,12 @@ namespace snap {
 
 class Typechecker {
   public:
-	Typechecker(ASTNode* ast) : m_ast{ast} {};
-	ASTNode* typecheck();
+	Typechecker(Program* ast) : m_ast{ast} {};
+	Program* typecheck();
 
   private:
-	ASTNode* m_ast;
+	Program* m_ast;
+	void check_prog();
 	const Type* check_stmt(Stmt* stmt);
 	const Type* check_exp(Expr* exp);
 	const Type* check_binexp(BinExpr* exp);

@@ -13,14 +13,21 @@ using TT = TokenType;
 #define T_ERROR	 BuiltinType::t_error
 #define T_STRING BuiltinType::t_string
 
-ASTNode* Typechecker::typecheck() {
+Program* Typechecker::typecheck() {
+	check_prog();
 	return m_ast;
+}
+
+void Typechecker::check_prog() {
+	for (Stmt* stmt : m_ast->stmts) {
+		check_stmt(stmt);
+	}
 }
 
 const Type* Typechecker::check_stmt(Stmt* stmt) {
 	switch (stmt->type) {
 	case NodeType::ExprStmt: return check_exp(((ExprStmt*)stmt)->exp);
-	default: return &T_ERROR;
+	default: std::cout << "Typecheck: Unknown statement type." << std::endl; return &T_ERROR;
 	}
 }
 
@@ -40,7 +47,7 @@ const Type* Typechecker::check_literal(Literal* literal) {
 	case TT::Integer: return &T_INT;
 	case TT::Float: return &T_FLOAT;
 	case TT::String: return &T_STRING;
-	default: return &T_ERROR;
+	default: std::cout << "Typeerror: unknown literal type" << std::endl; return &T_ERROR;
 	}
 }
 
@@ -61,7 +68,7 @@ const Type* Typechecker::check_binexp(BinExpr* exp) {
 	case TT::BitLShift:
 		if (ltype != &T_INT && rtype != &T_INT) return &T_ERROR;
 		return &T_INT;
-	default: return &T_ERROR;
+	default: std::cout << "Typeerror: unknown binary operator." << std::endl; return &T_ERROR;
 	}
 }
 

@@ -17,6 +17,6 @@ class VM {
 	const Block* m_block;
 	size_t ip; // instruction ptr
 	size_t sp; // stack ptr
-	std::array<Value, 256> values;
+	std::array<Value, 256> stack;
 };
 } // namespace snap

@@ -19,8 +19,6 @@ enum class NodeType {
 	Program
 };
 
-using ASTVisitor = class ASTVisitor;
-
 class ASTNode {
   public:
 	NodeType type;
