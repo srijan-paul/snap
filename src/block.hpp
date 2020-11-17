@@ -15,6 +15,11 @@ struct Block {
 		return code.size() - 1;
 	}
 
+	size_t add_num(u8 i) {
+		code.push_back((Opcode)(i));
+		return code.size() - 1;
+	}
+
 	size_t add_value(Value value) {
 		constant_pool.push_back(value);
 		return constant_pool.size() - 1;

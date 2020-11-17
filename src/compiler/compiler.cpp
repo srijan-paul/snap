@@ -60,7 +60,7 @@ Op Compiler::toktype_to_op(TT toktype) {
 	case TT::Minus: return Op::sub;
 	case TT::Mult: return Op::mult;
 	case TT::Mod: return Op::mod;
-	default: return Op::error;
+	default: return Op::op_count;
 	}
 }
 

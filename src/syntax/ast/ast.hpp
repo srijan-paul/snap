@@ -27,7 +27,7 @@ class ASTNode {
 
 struct Expr : public ASTNode {
 	const Token token;
-	Type* data_type{nullptr};
+	const Type* data_type{nullptr};
 	Expr(NodeType type, const Token op) : ASTNode(type), token{op} {};
 };
 

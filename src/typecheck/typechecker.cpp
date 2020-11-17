@@ -8,10 +8,10 @@ namespace snap {
 using BType = BuiltinType;
 using TT = TokenType;
 
-#define T_INT	 BuiltinType::t_int
-#define T_FLOAT	 BuiltinType::t_float
-#define T_ERROR	 BuiltinType::t_error
-#define T_STRING BuiltinType::t_string
+#define T_INT	 &BuiltinType::t_int
+#define T_FLOAT	 &BuiltinType::t_float
+#define T_ERROR	 &BuiltinType::t_error
+#define T_STRING &BuiltinType::t_string
 
 Program* Typechecker::typecheck() {
 	check_prog();
@@ -27,7 +27,7 @@ void Typechecker::check_prog() {
 const Type* Typechecker::check_stmt(Stmt* stmt) {
 	switch (stmt->type) {
 	case NodeType::ExprStmt: return check_exp(((ExprStmt*)stmt)->exp);
-	default: std::cout << "Typecheck: Unknown statement type." << std::endl; return &T_ERROR;
+	default: std::cout << "Typecheck: Unknown statement type." << std::endl; return T_ERROR;
 	}
 }
 
@@ -39,16 +39,21 @@ const Type* Typechecker::check_exp(Expr* expr) {
 	default: std::cout << "Type checker: Unexpected expression type." << std::endl;
 	}
 
-	return &T_ERROR;
+	return T_ERROR;
 }
 
 const Type* Typechecker::check_literal(Literal* literal) {
+	const Type* type = nullptr;
+
 	switch (literal->token.type) {
-	case TT::Integer: return &T_INT;
-	case TT::Float: return &T_FLOAT;
-	case TT::String: return &T_STRING;
-	default: std::cout << "Typeerror: unknown literal type" << std::endl; return &T_ERROR;
+	case TT::Integer: type = T_INT; break;
+	case TT::Float: type = T_FLOAT; break;
+	case TT::String: type = T_STRING; break;
+	default: std::cout << "Typeerror: unknown literal type" << std::endl; type = T_ERROR;
 	}
+
+	literal->data_type = type;
+	return type;
 }
 
 const Type* Typechecker::check_binexp(BinExpr* exp) {
@@ -56,20 +61,33 @@ const Type* Typechecker::check_binexp(BinExpr* exp) {
 
 	const Type* ltype = check_exp(exp->left);
 	const Type* rtype = check_exp(exp->right);
+	const Type* ret_type = T_ERROR;
 
 	switch (op_type) {
 	case TT::Minus:
 	case TT::Mult:
 	case TT::Plus:
-		if (!(Type::is_numeric(ltype) && Type::is_numeric(rtype))) return &T_ERROR;
-		if (ltype == &T_FLOAT || rtype == &T_FLOAT) return &T_FLOAT;
-		return &T_INT;
+		if (!(Type::is_numeric(ltype) && Type::is_numeric(rtype))) {
+			ret_type = T_ERROR;
+		} else if (ltype == T_FLOAT || rtype == T_FLOAT) {
+			ret_type = T_FLOAT;
+		} else {
+			ret_type = T_INT;
+		}
+		break;
 	case TT::Mod:
 	case TT::BitLShift:
-		if (ltype != &T_INT && rtype != &T_INT) return &T_ERROR;
-		return &T_INT;
-	default: std::cout << "Typeerror: unknown binary operator." << std::endl; return &T_ERROR;
+		if (ltype != T_INT && rtype != T_INT) {
+			ret_type = T_ERROR;
+		} else {
+			ret_type = T_INT;
+		}
+		break;
+	default: std::cout << "Typeerror: unknown binary operator." << std::endl;
 	}
+
+	exp->data_type = ret_type;
+	return exp->data_type;
 }
 
 } // namespace snap

@@ -1,3 +1,4 @@
+#include "compiler/compiler.hpp"
 #include "syntax/ast/ast.hpp"
 #include "syntax/ast/ast_printer.hpp"
 #include "syntax/parser.hpp"
@@ -5,11 +6,17 @@
 #include "token.hpp"
 #include "typecheck/typechecker.hpp"
 
+
+#include "debug.hpp"
 #include <cstdio>
 #include <stdio.h>
 
+
 using namespace snap;
 using TT = snap::TokenType;
+using Op = Opcode;
+
+#define println(s) std::cout << s << std::endl
 
 void print_ttype(TT type) {
 	std::string type_strs[] = {
@@ -68,8 +75,29 @@ void lexer_test() {
 	printf("\n ======== \n\n");
 }
 
+void compiler_test() {
+	std::string code = "1 + 2;";
+}
+
+void block_test() {
+
+	println("--- block test ---");
+
+	Block b;
+
+	const u8 index = b.add_value(1.5);
+	b.add_instruction(Op::push);
+	b.add_num(index);
+	b.add_instruction(Op::pop);
+
+	disassemble_block(b);
+
+	println("--- /block test ---");
+}
+
 int main() {
 	lexer_test();
 	parser_test();
+	block_test();
 	return 0;
 }
