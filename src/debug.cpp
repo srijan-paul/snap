@@ -8,12 +8,12 @@ using Op = Opcode;
 
 #define op2s(op) op_strs[(size_t)op]
 
-static constexpr std::array<const char*, (size_t)Op::op_count> op_strs = {"push", "pop",  "add",
-																		  "sub",  "mult", "mod"};
+static constexpr std::array op_strs = {"push", "pop", "add", "sub", "mult", "mod"};
 
 static size_t constant_instr(const Block& block, Op op, size_t index) {
-	const Value v = block.constant_pool[(size_t)(block.code[index + 1])];
-	std::printf("%-4zu  %s  %f\n", index, op2s(op), v);
+	const auto const_index = (u8)(block.code[index + 1]);
+	const Value v = block.constant_pool[const_index];
+	std::printf("%-4zu  %s  (%d) %f\n", index, op2s(op), const_index, v);
 	return 2;
 }
 

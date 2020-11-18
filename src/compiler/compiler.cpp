@@ -9,11 +9,25 @@ using Op = Opcode;
 using TT = TokenType;
 
 void Compiler::compile() {
+	for (auto s : m_ast->stmts) {
+		compile_stmt(s);
+	}
+}
+
+void Compiler::compile_stmt(const Stmt* s) {
+	switch (s->type) {
+	case NodeType::ExprStmt:
+		compile_exp(((ExprStmt*)s)->exp);
+		emit(Op::pop);
+		break;
+	default:;
+	}
 }
 
 void Compiler::compile_exp(const Expr* exp) {
 	switch (exp->type) {
-	case NodeType::BinExpr: compile_binexp((BinExpr*)exp);
+	case NodeType::BinExpr: compile_binexp((BinExpr*)exp); break;
+	case NodeType::Literal: compile_literal((Literal*)exp); break;
 	default:;
 	}
 }
@@ -34,15 +48,21 @@ void Compiler::compile_binexp(const BinExpr* exp) {
 
 void Compiler::compile_literal(const Literal* literal) {
 	const Token* t = &literal->token;
+	size_t index;
 	switch (literal->token.type) {
-	case TT::Integer: emit_value(TOK2INT(t));
-	case TT::Float: emit_value(TOK2FLT(t));
+	case TT::Integer: index = emit_value(TOK2INT(t)); break;
+	case TT::Float: index = emit_value(TOK2FLT(t)); break;
 	default:;
 	}
+	if (index > UINT8_MAX) {
+		// TODO: ERROR
+	}
+
+	emit(Op::push, (Op)index);
 }
 
-inline void Compiler::emit_value(Value v) {
-	m_block->add_value(v);
+inline size_t Compiler::emit_value(Value v) {
+	return m_block->add_value(v);
 }
 
 inline void Compiler::emit(Op op) {

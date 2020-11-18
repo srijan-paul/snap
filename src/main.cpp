@@ -6,11 +6,9 @@
 #include "token.hpp"
 #include "typecheck/typechecker.hpp"
 
-
 #include "debug.hpp"
 #include <cstdio>
 #include <stdio.h>
-
 
 using namespace snap;
 using TT = snap::TokenType;
@@ -55,11 +53,11 @@ void checker_test() {
 }
 
 void parser_test() {
-	std::string s = "112 + 25.4; 2 + 3; 4 * -5 - 1 * 3";
+	std::string s = "1 + 2 - 3 * 4";
 	Parser parser{&s};
 	auto tree = parser.parse();
 
-	ASTPrinter printer{&s};
+	ASTPrinter printer(&s);
 	printer.visit(tree);
 }
 
@@ -76,7 +74,21 @@ void lexer_test() {
 }
 
 void compiler_test() {
-	std::string code = "1 + 2;";
+
+	println("--- Compiler test ---");
+
+	std::string code = "1 + 2 - 3 * 4;";
+	Parser parser(&code);
+	auto ast = parser.parse();
+	ASTPrinter printer(&code);
+	printer.visit(ast);
+
+	Block b;
+	Compiler compiler(&b, ast, &code);
+	compiler.compile();
+	disassemble_block(b);
+
+	println("--- / Compiler test ---");
 }
 
 void block_test() {
@@ -92,12 +104,13 @@ void block_test() {
 
 	disassemble_block(b);
 
-	println("--- /block test ---");
+	println("--- /block test ---\n\n");
 }
 
 int main() {
 	lexer_test();
 	parser_test();
 	block_test();
+	compiler_test();
 	return 0;
 }
