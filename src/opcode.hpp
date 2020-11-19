@@ -17,6 +17,7 @@ enum class Opcode {
 	sub,
 	mult,
 	mod,
+	div,
 
 	op_count
 };

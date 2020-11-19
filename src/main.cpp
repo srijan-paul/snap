@@ -53,15 +53,22 @@ void checker_test() {
 }
 
 void parser_test() {
+	println("--- parser test ---");
 	std::string s = "1 + 2 - 3 * 4";
 	Parser parser{&s};
 	auto tree = parser.parse();
 
+	println("code-> " << s << std::endl);
+	println("parse tree-> \n");
+
 	ASTPrinter printer(&s);
 	printer.visit(tree);
+
+	println("--- /parser test ---\n");
 }
 
 void lexer_test() {
+	println("--- Lexer test ---");
 	std::string s = "123 4.55 + - -= += >= >> << > < <=";
 	Scanner sc{&s};
 	while (true) {
@@ -70,7 +77,7 @@ void lexer_test() {
 		if (token.type == TT::Eof) break;
 	}
 
-	printf("\n ======== \n\n");
+	println(" --- / Lexer test--- \n\n");
 }
 
 void compiler_test() {
