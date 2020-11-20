@@ -21,7 +21,6 @@ class VM {
   public:
 	VM(const std::string* src);
 	ExitCode interpret();
-	~VM();
 	/// the function that snap uses to print stuff onto the console.
 	/// It is called whenever the `print` function is called in snap source code.
 	PrintFn print = &defaultPrintFn;
@@ -31,12 +30,15 @@ class VM {
 	/// on the heap.
 	AllocateFn allocator;
 
-	inline Value peek(u8 depth);
+	inline Value peek(u8 depth) {
+		return m_stack[sp - 1 - depth];
+	}
 	static constexpr size_t StackMaxSize = 256;
 
-	/// execute only the next instruction in the code stream.
-	inline void step() {
-		run(true);
+	/// executes the next `count` instructions in the bytecode stream.
+	/// by default, count is 1.
+	inline void step(size_t count = 1) {
+		while (count--) run(false);
 	}
 
 	inline void push(Value value) {
@@ -47,13 +49,14 @@ class VM {
 		return m_stack[sp--];
 	}
 
+	bool init();
+
   private:
 	const std::string* source;
-	const ASTNode* m_ast;
-	const Block* m_block;
+	Block m_block;
 	size_t ip = 0; // instruction ptr
 	size_t sp = 0; // stack-top ptr
-	ExitCode run(bool run_once = false);
+	ExitCode run(bool run_till_end = true);
 	Value m_stack[StackMaxSize];
 };
 

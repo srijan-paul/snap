@@ -1,12 +1,14 @@
 #include "compiler/compiler.hpp"
+#include "debug.hpp"
 #include "syntax/ast/ast.hpp"
 #include "syntax/ast/ast_printer.hpp"
 #include "syntax/parser.hpp"
 #include "syntax/scanner.hpp"
 #include "token.hpp"
 #include "typecheck/typechecker.hpp"
+#include "vm/vm.hpp"
 
-#include "debug.hpp"
+#include <cassert>
 #include <cstdio>
 #include <stdio.h>
 
@@ -15,6 +17,21 @@ using TT = snap::TokenType;
 using Op = Opcode;
 
 #define println(s) std::cout << s << std::endl
+
+#define ASSERT(condition, message)                                                                 \
+	{                                                                                              \
+		if (!(condition)) {                                                                        \
+			std::cout << message << std::endl;                                                     \
+		}                                                                                          \
+		assert(condition);                                                                         \
+	}
+
+void assert_equal(Value a, Value b) {
+	if (a != b) {
+		printf("Expected %f but got %f.\n", a, b);
+	}
+	assert(a == b);
+}
 
 void print_ttype(TT type) {
 	std::string type_strs[] = {
@@ -99,11 +116,9 @@ void compiler_test() {
 }
 
 void block_test() {
-
 	println("--- block test ---");
 
 	Block b;
-
 	const u8 index = b.add_value(1.5);
 	b.add_instruction(Op::push);
 	b.add_num(index);
@@ -114,10 +129,23 @@ void block_test() {
 	println("--- /block test ---\n\n");
 }
 
+void vm_test() {
+	println("--- VM Tests ---");
+
+	const std::string code = "1 + 2";
+	VM vm{&code};
+	vm.init();
+	vm.step(3);
+	assert_equal(vm.peek(0), 3);
+
+	println("--- /VM tests ---");
+}
+
 int main() {
 	lexer_test();
 	parser_test();
 	block_test();
 	compiler_test();
+	vm_test();
 	return 0;
 }
