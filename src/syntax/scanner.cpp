@@ -1,5 +1,6 @@
 #include "scanner.hpp"
 #include <cctype>
+#include <cstring>
 #include <ctype.h>
 #include <stdint.h>
 #include <string>
@@ -17,10 +18,6 @@ Token Scanner::token_if_match(char c, TT then, TT other) {
 		return make_token(then);
 	}
 	return make_token(other);
-}
-
-Scanner::Scanner(const std::string* src) {
-	source = src;
 }
 
 Token Scanner::next_token() {
@@ -67,9 +64,31 @@ Token Scanner::next_token() {
 		if (isdigit(c)) {
 			return number();
 		}
+
+		if (isalpha(c) || c == '_') {
+			while (isalnum(peek()) || check('_')) next();
+			return make_token(kw_or_id_type());
+		}
 	}
 
 	return make_token(TT::Error);
+}
+
+TT Scanner::check_kw_chars(const char* rest, u32 kwlen, u32 cmplen, TT ttype) const {
+	u32 offset = kwlen - cmplen;
+	if (kwlen != (current - start)) return TT::Id;
+	const char* compare_from = source->c_str() + start + offset;
+	if (memcmp(compare_from, rest, cmplen) == 0) return ttype;
+	return TT::Id;
+}
+
+TT Scanner::kw_or_id_type() const {
+	switch (lexeme_start()) {
+	case 'l': return check_kw_chars("et", 3, 2, TT::Let);
+	case 't': return check_kw_chars("rue", 4, 3, TT::True);
+	case 'f': return check_kw_chars("alse", 5, 4, TT::False);
+	default: return TT::Id;
+	}
 }
 
 // TODO binary, hex, scientific notation

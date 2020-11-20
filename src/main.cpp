@@ -8,6 +8,7 @@
 #include "typecheck/typechecker.hpp"
 #include "vm/vm.hpp"
 
+#include <array>
 #include <cassert>
 #include <cstdio>
 #include <stdio.h>
@@ -28,31 +29,49 @@ using Op = Opcode;
 
 void assert_equal(Value a, Value b) {
 	if (a != b) {
-		printf("Expected %f but got %f.\n", a, b);
+		printf("Expected ");
+		print_value(a);
+		printf(" but got ");
+		print_value(b);
+		printf("\n");
 	}
 	assert(a == b);
 }
 
 void print_ttype(TT type) {
 	std::string type_strs[] = {
-		"Integer",	"Float",   "String",	"Id",		 "Error",  "Eof",
+		"Integer",	"Float",	"String",	 "true",	  "false",	"Id",		  "Error",
+		"Eof",
 
-		"Plus",		"PlusEq",  "Minus",		"MinusEq",	 "Mult",   "MultEq",	 "Div",
-		"DivEq",	"Mod",	   "ModEq",		"Exp",		 "Eq",	   "Bang",		 "Dot",
+		"Plus",		"PlusEq",	"Minus",	 "MinusEq",	  "Mult",	"MultEq",	  "Div",
+		"DivEq",	"Mod",		"ModEq",	 "Exp",		  "Eq",		"Bang",		  "Dot",
 
-		"Gt",		"Lt",	   "GtEq",		"LtEq",
+		"Gt",		"Lt",		"GtEq",		 "LtEq",
 
 		"And",		"Or",
 
 		"EqEq",		"BangEq",
 
-		"BitAnd",	"BitOr",   "BitLShift", "BitRShift",
+		"BitAnd",	"BitOr",	"BitLShift", "BitRShift",
 
-		"Semi",		"Colon",   "Comma",		"LParen",	 "RParen", "LCurlBrace", "RCurlBrace",
-		"LSqBrace", "RSqBrace"};
+		"Semi",		"Colon",	"Comma",	 "LParen",	  "RParen", "LCurlBrace", "RCurlBrace",
+		"LSqBrace", "RSqBrace", "let",
+	};
 
 	const std::string& str = type_strs[(size_t)type];
 	printf("%-10s", str.c_str());
+}
+
+void assert_token(TT a, TT b) {
+	if (a != b) {
+		printf("Expected token: ");
+		print_ttype(a);
+		printf(" Got: ");
+		print_ttype(b);
+		printf("\n");
+	}
+
+	assert(a == b);
 }
 
 void print_token(const Token& token, const std::string& src) {
@@ -84,21 +103,24 @@ void parser_test() {
 	println("--- /parser test ---\n");
 }
 
-void lexer_test() {
-	println("--- Lexer test ---");
-	std::string s = "123 4.55 + - -= += >= >> << > < <=";
-	Scanner sc{&s};
-	while (true) {
-		const Token token = sc.next_token();
-		print_token(token, s);
-		if (token.type == TT::Eof) break;
+void compare_ttypes(const std::string* code, std::vector<TT> expected) {
+	Scanner sc{code};
+	for (auto tt : expected) {
+		assert_token(tt, sc.next_token().type);
 	}
+}
 
-	println(" --- / Lexer test--- \n\n");
+void lexer_test() {
+	std::string code = "123 4.55 + - -= += >= >> << > < <=";
+	compare_ttypes(&code, {TT::Integer, TT::Float, TT::Plus, TT::Minus, TT::MinusEq, TT::PlusEq,
+						   TT::GtEq, TT::BitRShift, TT::BitLShift, TT::Gt, TT::Lt, TT::LtEq});
+
+	// test keyword and identifier scanning
+	code = "let true false xyz";
+	compare_ttypes(&code, {TT::Let, TT::True, TT::False, TT::Id, TT::Eof});
 }
 
 void compiler_test() {
-
 	println("--- Compiler test ---");
 
 	std::string code = "1 + 2 - 3 * 4;";

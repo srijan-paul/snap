@@ -15,7 +15,9 @@ const char* const op2s(Op op) {
 static size_t constant_instr(const Block& block, Op op, size_t index) {
 	const auto const_index = (u8)(block.code[index + 1]);
 	const Value v = block.constant_pool[const_index];
-	std::printf("%-4zu  %s  (%d) %f\n", index, op2s(op), const_index, v);
+	std::printf("%-4zu  %s  (%d) ", index, op2s(op), const_index);
+	print_value(v);
+	printf("\n");
 	return 2;
 }
 

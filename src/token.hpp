@@ -5,9 +5,13 @@
 namespace snap {
 
 enum class TokenType {
+	// Literals
 	Integer = 0,
 	Float,
 	String,
+	True,
+	False,
+
 	Id,
 	Error,
 	Eof,
@@ -61,7 +65,10 @@ enum class TokenType {
 	LCurlBrace,
 	RCurlBrace,
 	LSqBrace,
-	RSqBrace
+	RSqBrace,
+
+	// Keywords
+	Let
 };
 
 struct SourcePosition {

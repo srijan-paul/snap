@@ -1,2 +1,3 @@
 # snap
-A small scripting language
+
+A small scripting language.
