@@ -6,9 +6,11 @@
 namespace snap {
 using Op = Opcode;
 
-#define op2s(op) op_strs[(size_t)op]
-
 static constexpr std::array op_strs = {"push", "pop", "add", "sub", "mult", "mod"};
+
+const char* const op2s(Op op) {
+	return op_strs[(size_t)op];
+}
 
 static size_t constant_instr(const Block& block, Op op, size_t index) {
 	const auto const_index = (u8)(block.code[index + 1]);
