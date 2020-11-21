@@ -15,13 +15,32 @@ class Parser {
 	Token token;
 	Token prev;
 	Token peek;
+
 	void advance();
-	inline bool eof() const;
-	inline bool check(TokenType type) const;
+
+	inline bool eof() const {
+		return peek.type == TokenType::Eof;
+	}
+
+	inline bool check(TokenType expected) const {
+		return !eof() && peek.type == expected;
+	}
+
+	inline bool isLiteral(TokenType type) const {
+		return (type == TokenType::Integer || type == TokenType::String ||
+				type == TokenType::Float);
+	}
+
 	bool match(TokenType type);
-	inline bool isLiteral(TokenType type) const;
+	void expect(TokenType type, const char* err_msg);
+
+	void error(const char* message);
 
 	Program* program();
+	Stmt* declaration();
+	VarDecl* var_decl();
+	Declarator* var_declarator();
+
 	Stmt* stmt();
 
 	Expr* expression();

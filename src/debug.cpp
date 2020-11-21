@@ -6,7 +6,7 @@
 namespace snap {
 using Op = Opcode;
 
-static constexpr std::array op_strs = {"push", "pop", "add", "sub", "mult", "mod"};
+static constexpr std::array op_strs = {"load_const", "pop", "add", "sub", "mult", "mod"};
 
 const char* const op2s(Op op) {
 	return op_strs[(size_t)op];

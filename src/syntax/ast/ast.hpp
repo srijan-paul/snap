@@ -57,24 +57,24 @@ struct Stmt : public ASTNode {
 	Stmt(NodeType type) : ASTNode(type){};
 };
 
+struct Declaration : Stmt {
+	Declaration(NodeType type) : Stmt(type){};
+};
+
 struct ExprStmt : Stmt {
 	Expr* exp;
 	ExprStmt(Expr* expr) : Stmt(NodeType::ExprStmt), exp{expr} {};
 };
 
-struct Declaration : Stmt {
-	Declaration(NodeType type) : Stmt(type){};
-};
-
 struct Declarator : Stmt {
 	Token var;
 	Expr* init{nullptr};
-	Declarator(Token tk) : Stmt(NodeType::VarDeclaration), var{tk} {};
+	Declarator(Token tk) : Stmt(NodeType::VarDeclarator), var{tk} {};
 };
 
 struct VarDecl : Declaration {
-	std::vector<Declarator> declarations = {};
-	VarDecl() : Declaration(NodeType::VarDeclarator){};
+	std::vector<Declarator*> declarators = {};
+	VarDecl() : Declaration(NodeType::VarDeclaration){};
 };
 
 struct Program : public ASTNode {

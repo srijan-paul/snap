@@ -28,9 +28,34 @@ Program* Parser::parse() {
 Program* Parser::program() {
 	auto program = new Program();
 	while (!eof()) {
-		program->stmts.push_back(stmt());
+		program->stmts.push_back(declaration());
 	}
 	return program;
+}
+
+Stmt* Parser::declaration() {
+	if (match(TT::Let)) {
+		return var_decl();
+	}
+
+	return stmt();
+}
+
+VarDecl* Parser::var_decl() {
+	VarDecl* vdecl = new VarDecl();
+	do {
+		vdecl->declarators.push_back(var_declarator());
+	} while (match(TT::Comma));
+	return vdecl;
+}
+
+Declarator* Parser::var_declarator() {
+	expect(TT::Id, "Expected variable name.");
+	Declarator* decl = new Declarator(token);
+	if (match(TT::Eq)) {
+		decl->init = expression();
+	}
+	return decl;
 }
 
 Stmt* Parser::stmt() {
@@ -45,6 +70,7 @@ Expr* Parser::expression() {
 
 Expr* Parser::assign() {
 	Expr* left = logic_or();
+	// TODO check if LHS is valid assignment target.
 	if (match(TT::Eq) || match(TT::PlusEq) || match(TT::MinusEq) || match(TT::MultEq) ||
 		match(TT::ModEq) || match(TT::DivEq)) {
 		const Token op_token = token;
@@ -81,24 +107,12 @@ Literal* Parser::literal() {
 
 #undef DEFINE_PARSELET
 
-// helper functions:
-
-inline bool Parser::isLiteral(TT type) const {
-	return (type == TT::Integer || type == TT::String || type == TT::Float);
-}
+// helper methods:
 
 void Parser::advance() {
 	prev = token;
 	token = peek;
 	peek = scanner.next_token();
-}
-
-inline bool Parser::eof() const {
-	return peek.type == TT::Eof;
-}
-
-inline bool Parser::check(TT expected) const {
-	return !eof() && peek.type == expected;
 }
 
 bool Parser::match(TT expected) {
@@ -107,6 +121,19 @@ bool Parser::match(TT expected) {
 		return true;
 	}
 	return false;
+}
+
+void Parser::expect(TT expected, const char* err_msg) {
+	if (check(expected)) {
+		advance();
+		return;
+	}
+
+	error(err_msg);
+}
+
+void Parser::error(const char* message) {
+	std::cout << message << std::endl;
 }
 
 }; // namespace snap

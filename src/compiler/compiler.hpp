@@ -17,6 +17,9 @@ class Compiler {
 	const std::string* source;
 
 	void compile_stmt(const Stmt* stmt);
+
+	void compile_vardecl(const VarDecl* decl);
+
 	void compile_exp(const Expr* exp);
 	void compile_node(const Stmt* stmt);
 	void compile_binexp(const BinExpr* exp);

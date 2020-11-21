@@ -88,18 +88,25 @@ void checker_test() {
 	checker.typecheck();
 }
 
-void parser_test() {
-	println("--- parser test ---");
-	std::string s = "1 + 2 - 3 * 4";
-	Parser parser{&s};
+void print_parsetree(const std::string&& code) {
+	Parser parser{&code};
 	auto tree = parser.parse();
 
-	println("code-> " << s << std::endl);
-	println("parse tree-> \n");
-
-	ASTPrinter printer(&s);
+	ASTPrinter printer{&code};
+	std::cout << "code: " << code << std::endl;
 	printer.visit(tree);
+	println("");
+}
 
+void parser_test() {
+	println("--- parser test ---");
+	// expressions and precedence
+	print_parsetree("1 + 2; 3 + 4;");
+	print_parsetree("1 | 2 | 3 || 4");
+
+	// variable declaration
+	print_parsetree("let a = 1");
+	print_parsetree("let a = 1, b = 2 * 3, c = 3 || 4");
 	println("--- /parser test ---\n");
 }
 
@@ -142,7 +149,7 @@ void block_test() {
 
 	Block b;
 	const u8 index = b.add_value(1.5);
-	b.add_instruction(Op::push);
+	b.add_instruction(Op::load_const);
 	b.add_num(index);
 	b.add_instruction(Op::pop);
 

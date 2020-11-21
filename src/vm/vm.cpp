@@ -39,7 +39,7 @@ ExitCode VM::run(bool run_till_end) {
 	do {
 		const Op op = NEXT_OP();
 		switch (op) {
-		case Op::push: push(GET_VALUE()); break;
+		case Op::load_const: push(GET_VALUE()); break;
 		case Op::pop: pop(); break;
 		case Op::add: BINOP(+); break;
 		case Op::sub: BINOP(-); break;

@@ -20,7 +20,18 @@ void Compiler::compile_stmt(const Stmt* s) {
 		compile_exp(((ExprStmt*)s)->exp);
 		emit(Op::pop);
 		break;
+	case NodeType::VarDeclaration: compile_vardecl((VarDecl*)s); break;
 	default:;
+	}
+}
+
+void Compiler::compile_vardecl(const VarDecl* decl) {
+	for (auto var : decl->declarators) {
+		if (var->init != nullptr) {
+			compile_exp(var->init);
+		} else {
+			emit(Op::nil);
+		}
 	}
 }
 
@@ -58,7 +69,7 @@ void Compiler::compile_literal(const Literal* literal) {
 		// TODO: ERROR
 	}
 
-	emit(Op::push, (Op)index);
+	emit(Op::load_const, (Op)index);
 }
 
 inline size_t Compiler::emit_value(Value v) {

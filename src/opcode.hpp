@@ -9,7 +9,7 @@ namespace snap {
 ///  array in the file debug.cpp.
 enum class Opcode {
 	// opcodes with 1 operand
-	push, /* push, idx */
+	load_const, /* load_const, idx */
 
 	// opcodes with no operands
 	pop,
@@ -18,6 +18,7 @@ enum class Opcode {
 	mult,
 	mod,
 	div,
+	nil,
 
 	op_count
 };
@@ -28,8 +29,8 @@ const auto Op_0_operands_start = Opcode::pop;
 const auto Op_0_operands_end = Opcode::mod;
 
 /// numerically lowest opcode that takes one operand
-const auto Op_1_operands_start = Opcode::push;
+const auto Op_1_operands_start = Opcode::load_const;
 /// numerically highest opcode that takes one operand
-const auto Op_1_operands_end = Opcode::push;
+const auto Op_1_operands_end = Opcode::load_const;
 
 } // namespace snap
