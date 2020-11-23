@@ -107,6 +107,9 @@ void parser_test() {
 	// variable declaration
 	print_parsetree("let a = 1");
 	print_parsetree("let a = 1, b = 2 * 3, c = 3 || 4");
+
+	// variable access
+	print_parsetree("let a = 1; a = a + 1");
 	println("--- /parser test ---\n");
 }
 

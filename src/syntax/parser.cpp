@@ -37,7 +37,7 @@ Stmt* Parser::declaration() {
 	if (match(TT::Let)) {
 		return var_decl();
 	}
-
+	match(TT::Semi);
 	return stmt();
 }
 
@@ -93,16 +93,17 @@ DEFINE_PARSELET(Parser::mult, match(TT::Mult) || match(TT::Mod) || match(TT::Div
 Expr* Parser::unary() {
 	if (match(TT::Minus) || match(TT::Bang)) {
 		const Token op_token = token;
-		return new UnaryExpr(op_token, literal());
+		return new UnaryExpr(op_token, primary());
 	}
-	return literal();
+	return primary();
 }
 
-Literal* Parser::literal() {
+Expr* Parser::primary() {
 	advance();
-	if (!isLiteral(token.type)) // TODO error
-		return nullptr;
-	return new Literal(token);
+	if (isLiteral(token.type)) return new Literal(token);
+	if (token.type == TT::Id) return new VarId(token);
+	// TODO error
+	return nullptr;
 }
 
 #undef DEFINE_PARSELET

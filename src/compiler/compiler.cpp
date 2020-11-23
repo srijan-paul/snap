@@ -1,4 +1,5 @@
 #include "compiler.hpp"
+#include <cstring>
 #include <string>
 
 #define TOK2INT(t) std::stoi(t->raw(*source))
@@ -93,6 +94,36 @@ Op Compiler::toktype_to_op(TT toktype) {
 	case TT::Mod: return Op::mod;
 	default: return Op::op_count;
 	}
+}
+
+/* --- Symbol Table --- */
+
+int SymbolTable::add(const char* name, u32 length) {
+	if (find_in_current_scope(name, length) != -1) return -1;
+	symbols[num_symbols] = Symbol(name, length, scope_depth);
+	return num_symbols++;
+}
+
+static bool names_equal(const char* a, int len_a, const char* b, int len_b) {
+	if (len_a != len_b) return false;
+	return std::memcmp(a, b, len_a) == 0;
+}
+
+int SymbolTable::find(const char* name, int length) const {
+	for (size_t i = num_symbols; i >= 0; i--) {
+		const Symbol* symbol = &symbols[i];
+		if (names_equal(name, length, symbol->name, symbol->length)) return i;
+	}
+	return -1;
+}
+
+int SymbolTable::find_in_current_scope(const char* name, int length) const {
+	for (size_t i = num_symbols; i >= 0; i--) {
+		const Symbol* symbol = &symbols[i];
+		if (symbol->depth < scope_depth) return -1;
+		if (names_equal(name, length, symbol->name, symbol->length)) return i;
+	}
+	return -1;
 }
 
 } // namespace snap

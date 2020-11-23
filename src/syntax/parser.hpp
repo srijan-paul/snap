@@ -1,16 +1,19 @@
 #pragma once
+#include "../common.hpp"
+#include "array"
 #include "ast/ast.hpp"
 #include "scanner.hpp"
+#include <stdint.h>
 
 namespace snap {
 
 class Parser {
   public:
+	const std::string* const source;
 	Parser(const std::string* source);
 	Program* parse();
 
   private:
-	const std::string* source;
 	Scanner scanner;
 	Token token;
 	Token prev;
@@ -60,7 +63,7 @@ class Parser {
 	Expr* sum();
 	Expr* mult();
 	Expr* unary();
-	Literal* literal();
+	Expr* primary();
 };
 
 } // namespace snap

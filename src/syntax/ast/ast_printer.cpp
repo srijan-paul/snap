@@ -5,16 +5,23 @@
 
 namespace snap {
 
+static void print_var(const VarId* var, const std::string* source) {
+	std::cout << var->token.raw(*source);
+}
+
 void ASTPrinter::visit(const ASTNode* node) {
+	// clang-format off
 	switch (node->type) {
-	case NodeType::Literal: visit_literal((Literal*)node); break;
-	case NodeType::BinExpr: visit_binexpr((BinExpr*)node); break;
-	case NodeType::UnaryExpr: visit_unexpr((UnaryExpr*)node); break;
-	case NodeType::Program: visit_program((Program*)node); break;
-	case NodeType::ExprStmt: visit_expstmt((ExprStmt*)node); break;
-	case NodeType::VarDeclaration: visit_vardecl((VarDecl*)node); break;
-	default: std::cout << "unknown" << std::endl;
+	case NodeType::Literal:        visit_literal((Literal*)node);   break;
+	case NodeType::VarId:          print_var((VarId*)node, source); break;
+	case NodeType::BinExpr:        visit_binexpr((BinExpr*)node);   break;
+	case NodeType::UnaryExpr:      visit_unexpr((UnaryExpr*)node);  break;
+	case NodeType::Program:        visit_program((Program*)node);   break;
+	case NodeType::ExprStmt:  	   visit_expstmt((ExprStmt*)node);  break;
+	case NodeType::VarDeclaration: visit_vardecl((VarDecl*)node);   break;
+	default: std::cout << "<< unknown AST Node type >>" << std::endl;
 	}
+	// clang-format on
 }
 
 void ASTPrinter::visit_program(const Program* prog) {
@@ -24,7 +31,7 @@ void ASTPrinter::visit_program(const Program* prog) {
 }
 
 void ASTPrinter::visit_vardecl(const VarDecl* vdecl) {
-	std::cout << TAB << "let :\n";
+	std::cout << TAB << "let \n";
 	indent();
 	for (auto d : vdecl->declarators) {
 		visit_declarator(d);
@@ -38,7 +45,7 @@ void ASTPrinter::visit_declarator(const Declarator* decl) {
 		std::cout << " = ";
 		visit(decl->init);
 	}
-	std::cout << std::endl;
+	std::cout << "," << std::endl;
 }
 
 void ASTPrinter::visit_expstmt(const ExprStmt* stmt) {
@@ -47,7 +54,7 @@ void ASTPrinter::visit_expstmt(const ExprStmt* stmt) {
 	std::cout << std::endl;
 }
 
-void ASTPrinter::visit_literal(const Literal* literal) {
+void ASTPrinter::visit_literal(const Literal* literal) const {
 	std::cout << literal->token.raw(*source);
 }
 
@@ -64,6 +71,10 @@ void ASTPrinter::visit_unexpr(const UnaryExpr* expr) {
 	std::cout << expr->token.raw(*source);
 	visit(expr->operand);
 	std::cout << ")";
+}
+
+void ASTPrinter::visit_var(const VarId* var) const {
+	std::cout << var->token.raw(*source);
 }
 
 void ASTPrinter::indent() {

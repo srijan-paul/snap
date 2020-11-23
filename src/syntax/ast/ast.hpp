@@ -13,6 +13,7 @@ enum class NodeType {
 	BinExpr,
 	UnaryExpr,
 	Literal,
+	VarId,
 	VarDeclarator,
 	VarDeclaration,
 	ExprStmt,
@@ -50,6 +51,10 @@ struct UnaryExpr : Expr {
 
 struct Literal : Expr {
 	Literal(const Token token) : Expr(NodeType::Literal, token){};
+};
+
+struct VarId : Expr {
+	VarId(const Token name) : Expr(NodeType::VarId, name){};
 };
 
 struct Stmt : public ASTNode {

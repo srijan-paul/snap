@@ -136,8 +136,8 @@ void Scanner::skip_whitespace() {
 	while (true) {
 		switch (peek()) {
 		case ' ':
-		case '\t': next(); break;
 		case '\r':
+		case '\t': next(); break;
 		case '\n':
 			line_pos.line++;
 			line_pos.column = 1;

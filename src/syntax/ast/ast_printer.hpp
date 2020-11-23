@@ -18,7 +18,8 @@ class ASTPrinter {
 	void visit_vardecl(const VarDecl* vdecl);
 	void visit_declarator(const Declarator* decl);
 
-	void visit_literal(const Literal* literal);
+	void visit_literal(const Literal* literal) const;
+	void visit_var(const VarId* var) const;
 	void visit_node(const ASTNode* node);
 	void visit_binexpr(const BinExpr* expr);
 	void visit_unexpr(const UnaryExpr* expr);
