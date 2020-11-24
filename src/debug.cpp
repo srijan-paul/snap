@@ -6,10 +6,16 @@
 namespace snap {
 using Op = Opcode;
 
-static constexpr std::array op_strs = {"load_const", "pop", "add", "sub", "mult", "mod"};
+// clang-format off
+static constexpr std::array op_strs = {
+	"load_const",
+	"set_var", "get_var",
+	"pop", "add", "sub", "mult", "mod", "div", "nil", "return_val"
+};
+// clang-format on
 
 const char* const op2s(Op op) {
-	return op_strs[(size_t)op];
+	return op_strs[(u32)op];
 }
 
 static size_t constant_instr(const Block& block, Op op, size_t index) {
@@ -26,11 +32,20 @@ static size_t simple_instr(Op op, size_t index) {
 	return 1;
 }
 
+static size_t instr_single_operand(const Block& block, size_t index) {
+	Op op = block.code[index];
+	Op operand = block.code[index + 1];
+	std::printf("%-4zu  %s  %d\n", index, op2s(op), (int)(operand));
+	return 2;
+}
+
 static size_t disassemble_instr(const Block& block, Op op, size_t offset) {
 	if (op >= Op_0_operands_start && op <= Op_0_operands_end) {
 		return simple_instr(op, offset);
-	} else if (op >= Op_1_operands_start && op <= Op_1_operands_end) {
+	} else if (op >= Op_const_start && op <= Op_const_end) {
 		return constant_instr(block, op, offset);
+	} else if (op >= Op_1_operands_start && op <= Op_1_operands_end) {
+		return instr_single_operand(block, offset);
 	}
 
 	return 1;

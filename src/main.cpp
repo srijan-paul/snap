@@ -5,7 +5,6 @@
 #include "syntax/parser.hpp"
 #include "syntax/scanner.hpp"
 #include "token.hpp"
-#include "typecheck/typechecker.hpp"
 #include "vm/vm.hpp"
 
 #include <array>
@@ -80,14 +79,6 @@ void print_token(const Token& token, const std::string& src) {
 	printf("\n");
 }
 
-void checker_test() {
-	std::string code = "1 + 2";
-	Parser parser{&code};
-	auto ast = parser.parse();
-	Typechecker checker{ast};
-	checker.typecheck();
-}
-
 void print_parsetree(const std::string&& code) {
 	Parser parser{&code};
 	auto tree = parser.parse();
@@ -130,19 +121,37 @@ void lexer_test() {
 	compare_ttypes(&code, {TT::Let, TT::True, TT::False, TT::Id, TT::Eof});
 }
 
+static void compile(const std::string* code, Block* block) {
+	Parser parser(code);
+	auto ast = parser.parse();
+	ASTPrinter printer(code);
+	printer.visit(ast);
+
+	Compiler compiler(block, ast, code);
+	compiler.compile();
+}
+
+static void print_disassembly(const char* code) {
+	const std::string code_s{code};
+	Block block;
+	compile(&code_s, &block);
+	disassemble_block(block);
+	printf("\n");
+}
+
 void compiler_test() {
 	println("--- Compiler test ---");
 
-	std::string code = "1 + 2 - 3 * 4;";
-	Parser parser(&code);
-	auto ast = parser.parse();
-	ASTPrinter printer(&code);
-	printer.visit(ast);
+	// expressions
+	print_disassembly("1 + 2 - 3 * 4");
 
-	Block b;
-	Compiler compiler(&b, ast, &code);
-	compiler.compile();
-	disassemble_block(b);
+	// variable declaration
+	print_disassembly("let a = 1");
+	print_disassembly("let a = 1, b = 2 * 2");
+
+	// variable access
+	print_disassembly("let a = 1;"
+					  "let b = a + 1;");
 
 	println("--- / Compiler test ---");
 }
@@ -164,11 +173,15 @@ void block_test() {
 void vm_test() {
 	println("--- VM Tests ---");
 
-	const std::string code = "1 + 2";
+	const std::string code = "2 * 2";
 	VM vm{&code};
 	vm.init();
 	vm.step(3);
-	assert_equal(vm.peek(0), 3);
+	assert_equal(vm.peek(0), 4);
+
+	const std::string var_test = "let a = 1; let b = a + 2";
+	VM vm2{&var_test};
+	vm2.interpret();
 
 	println("--- /VM tests ---");
 }

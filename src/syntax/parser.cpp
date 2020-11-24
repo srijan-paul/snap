@@ -34,10 +34,12 @@ Program* Parser::program() {
 }
 
 Stmt* Parser::declaration() {
+
 	if (match(TT::Let)) {
-		return var_decl();
+		auto decl = var_decl();
+		match(TT::Semi);
+		return decl;
 	}
-	match(TT::Semi);
 	return stmt();
 }
 

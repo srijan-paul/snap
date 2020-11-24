@@ -1,7 +1,6 @@
 #pragma once
 #include "../../common.hpp"
 #include "../../token.hpp"
-#include "../../typecheck/type.hpp"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -28,7 +27,6 @@ class ASTNode {
 
 struct Expr : public ASTNode {
 	const Token token;
-	const Type* data_type{nullptr};
 	Expr(NodeType type, const Token op) : ASTNode(type), token{op} {};
 };
 

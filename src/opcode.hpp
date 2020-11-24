@@ -8,8 +8,12 @@ namespace snap {
 ///  relevant changes are made in the 4 variables below, and in the `op_strs`
 ///  array in the file debug.cpp.
 enum class Opcode {
-	// opcodes with 1 operand
-	load_const, /* load_const, idx */
+	// opcodes with a constant operand
+	load_const,
+
+	// opcodes with one operand
+	set_var,
+	get_var,
 
 	// opcodes with no operands
 	pop,
@@ -19,6 +23,7 @@ enum class Opcode {
 	mod,
 	div,
 	nil,
+	return_val,
 
 	op_count
 };
@@ -26,11 +31,14 @@ enum class Opcode {
 /// numerically lowest opcode that takes no operands
 const auto Op_0_operands_start = Opcode::pop;
 /// numerically highest opcode that takes no operands
-const auto Op_0_operands_end = Opcode::mod;
+const auto Op_0_operands_end = Opcode::nil;
+
+const auto Op_const_start = Opcode::load_const;
+const auto Op_const_end = Opcode::load_const;
 
 /// numerically lowest opcode that takes one operand
-const auto Op_1_operands_start = Opcode::load_const;
+const auto Op_1_operands_start = Opcode::set_var;
 /// numerically highest opcode that takes one operand
-const auto Op_1_operands_end = Opcode::load_const;
+const auto Op_1_operands_end = Opcode::get_var;
 
 } // namespace snap

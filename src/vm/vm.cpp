@@ -9,8 +9,10 @@
 
 #define NEXT_OP()				(m_block.code[ip++])
 #define NEXT_BYTE()				((u8)(m_block.code[ip++]))
-#define GET_VALUE()				(m_block.constant_pool[NEXT_BYTE()])
+#define READ_VALUE()			(m_block.constant_pool[NEXT_BYTE()])
 #define SET_VALUE(depth, value) (m_stack[sp - depth - 1] = value)
+#define GET_VAR(index)			(m_stack[index])
+#define SET_VAR(index, value)	(m_stack[index] = value)
 
 namespace snap {
 using Op = Opcode;
@@ -39,12 +41,23 @@ ExitCode VM::run(bool run_till_end) {
 	do {
 		const Op op = NEXT_OP();
 		switch (op) {
-		case Op::load_const: push(GET_VALUE()); break;
+		case Op::load_const: push(READ_VALUE()); break;
 		case Op::pop: pop(); break;
 		case Op::add: BINOP(+); break;
 		case Op::sub: BINOP(-); break;
 		case Op::mult: BINOP(*); break;
 		case Op::div: BINOP(/); break;
+		case Op::get_var: {
+			u8 idx = NEXT_BYTE();
+			push(GET_VAR(idx));
+			break;
+		}
+		case Op::set_var: {
+			u8 idx = NEXT_BYTE();
+			SET_VALUE(idx, peek(0));
+			break;
+		}
+		case Op::return_val: return ExitCode::Success;
 		default: std::cout << "not implemented yet" << std::endl;
 		}
 #ifdef SNAP_DEBUG_RUNTIME

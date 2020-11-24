@@ -13,6 +13,7 @@ void Compiler::compile() {
 	for (auto s : m_ast->stmts) {
 		compile_stmt(s);
 	}
+	emit(Op::return_val);
 }
 
 void Compiler::compile_stmt(const Stmt* s) {
@@ -26,10 +27,12 @@ void Compiler::compile_stmt(const Stmt* s) {
 	}
 }
 
-void Compiler::compile_vardecl(const VarDecl* decl) {
-	for (auto var : decl->declarators) {
-		if (var->init != nullptr) {
-			compile_exp(var->init);
+void Compiler::compile_vardecl(const VarDecl* stmt) {
+	for (auto decl : stmt->declarators) {
+		new_variable(&decl->var);
+
+		if (decl->init != nullptr) {
+			compile_exp(decl->init);
 		} else {
 			emit(Op::nil);
 		}
@@ -40,6 +43,7 @@ void Compiler::compile_exp(const Expr* exp) {
 	switch (exp->type) {
 	case NodeType::BinExpr: compile_binexp((BinExpr*)exp); break;
 	case NodeType::Literal: compile_literal((Literal*)exp); break;
+	case NodeType::VarId: compile_var((VarId*)exp); break;
 	default:;
 	}
 }
@@ -67,10 +71,19 @@ void Compiler::compile_literal(const Literal* literal) {
 	default:;
 	}
 	if (index > UINT8_MAX) {
-		// TODO: ERROR
+		// TODO: Too many constants error.
 	}
 
 	emit(Op::load_const, (Op)index);
+}
+
+void Compiler::compile_var(const VarId* var) {
+	const char* name = var->token.raw_cstr(source);
+	int length = var->token.length();
+	const int idx = symbol_table.find(name, length);
+	if (idx == -1) { /* TODO: Reference error */
+	}
+	emit(Op::get_var, (Op)idx);
 }
 
 inline size_t Compiler::emit_value(Value v) {
@@ -96,12 +109,23 @@ Op Compiler::toktype_to_op(TT toktype) {
 	}
 }
 
+int Compiler::new_variable(const Token* varname) {
+	const char* name = varname->raw_cstr(source);
+	const u32 length = varname->length();
+
+	if (symbol_table.find_in_current_scope(name, length) != -1) {
+		// TODO throw error
+		return -1;
+	}
+
+	return symbol_table.add(name, length);
+}
+
 /* --- Symbol Table --- */
 
 int SymbolTable::add(const char* name, u32 length) {
-	if (find_in_current_scope(name, length) != -1) return -1;
-	symbols[num_symbols] = Symbol(name, length, scope_depth);
-	return num_symbols++;
+	symbols[num_symbols++] = Symbol(name, length, scope_depth);
+	return num_symbols - 1;
 }
 
 static bool names_equal(const char* a, int len_a, const char* b, int len_b) {
@@ -110,7 +134,7 @@ static bool names_equal(const char* a, int len_a, const char* b, int len_b) {
 }
 
 int SymbolTable::find(const char* name, int length) const {
-	for (size_t i = num_symbols; i >= 0; i--) {
+	for (int i = num_symbols - 1; i >= 0; i--) {
 		const Symbol* symbol = &symbols[i];
 		if (names_equal(name, length, symbol->name, symbol->length)) return i;
 	}
@@ -118,7 +142,7 @@ int SymbolTable::find(const char* name, int length) const {
 }
 
 int SymbolTable::find_in_current_scope(const char* name, int length) const {
-	for (size_t i = num_symbols; i >= 0; i--) {
+	for (int i = num_symbols - 1; i >= 0; i--) {
 		const Symbol* symbol = &symbols[i];
 		if (symbol->depth < scope_depth) return -1;
 		if (names_equal(name, length, symbol->name, symbol->length)) return i;
