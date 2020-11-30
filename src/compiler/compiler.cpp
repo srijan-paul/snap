@@ -2,8 +2,8 @@
 #include <cstring>
 #include <string>
 
-#define TOK2INT(t) std::stoi(t->raw(*source))
-#define TOK2FLT(t) std::stof(t->raw(*source))
+#define TOK2INT(t) SNAP_INT_VAL(std::stoi(t->raw(*source)))
+#define TOK2FLT(t) SNAP_FLOAT_VAL(std::stof(t->raw(*source)))
 
 namespace snap {
 using Op = Opcode;

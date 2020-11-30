@@ -16,12 +16,29 @@
 
 namespace snap {
 using Op = Opcode;
+using Vt = ValueType;
 
 VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 
 #define BINOP(op)                                                                                  \
 	do {                                                                                           \
-		m_stack[sp - 2] = m_stack[sp - 2] op m_stack[sp - 1];                                      \
+		auto a = m_stack[sp - 2];                                                                  \
+		auto b = m_stack[sp - 1];                                                                  \
+		if (SNAP_IS_FLOAT(a)) {                                                                    \
+                                                                                                   \
+			if (SNAP_IS_FLOAT(b)) {                                                                \
+				SNAP_AS_FLOAT(m_stack[sp - 2]) = SNAP_AS_FLOAT(a) op SNAP_AS_FLOAT(b);             \
+			} else if (SNAP_IS_INT(a)) {                                                           \
+				SNAP_AS_FLOAT(m_stack[sp - 2]) = SNAP_AS_INT(a) op SNAP_AS_FLOAT(b);               \
+			}                                                                                      \
+		} else if (SNAP_IS_INT(a)) {                                                               \
+			if (SNAP_IS_FLOAT(b)) {                                                                \
+				SNAP_AS_FLOAT(m_stack[sp - 2]) = SNAP_AS_FLOAT(a) op SNAP_AS_INT(b);               \
+			} else if (SNAP_IS_INT(b)) {                                                           \
+				SNAP_AS_INT(m_stack[sp - 2]) = SNAP_AS_INT(a) op SNAP_AS_INT(b);                   \
+			}                                                                                      \
+		}                                                                                          \
+                                                                                                   \
 		pop();                                                                                     \
 	} while (false)
 

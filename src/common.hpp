@@ -8,8 +8,6 @@ using u64 = uint64_t;
 using s64 = int64_t;
 using u8 = uint8_t;
 
-using Instruction = u32;
-
 } // namespace snap
 
 #define SNAP_DEBUG_RUNTIME	   1

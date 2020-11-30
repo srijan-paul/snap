@@ -26,15 +26,15 @@ using Op = Opcode;
 		assert(condition);                                                                         \
 	}
 
-void assert_equal(Value a, Value b) {
-	if (a != b) {
+void assert_equal(Value received, Value expected) {
+	if (!Value::are_equal(received, expected)) {
 		printf("Expected ");
-		print_value(a);
+		print_value(expected);
 		printf(" but got ");
-		print_value(b);
+		print_value(received);
 		printf("\n");
 	}
-	assert(a == b);
+	assert(Value::are_equal(received, expected));
 }
 
 void print_ttype(TT type) {
@@ -160,7 +160,7 @@ void block_test() {
 	println("--- block test ---");
 
 	Block b;
-	const u8 index = b.add_value(1.5);
+	const u8 index = b.add_value(SNAP_FLOAT_VAL(1.5));
 	b.add_instruction(Op::load_const);
 	b.add_num(index);
 	b.add_instruction(Op::pop);
@@ -173,11 +173,11 @@ void block_test() {
 void vm_test() {
 	println("--- VM Tests ---");
 
-	const std::string code = "2 * 2";
+	const std::string code = "3 * 5";
 	VM vm{&code};
 	vm.init();
 	vm.step(3);
-	assert_equal(vm.peek(0), 4);
+	assert_equal(vm.peek(0), SNAP_INT_VAL(15));
 
 	const std::string var_test = "let a = 1; let b = a + 2";
 	VM vm2{&var_test};
