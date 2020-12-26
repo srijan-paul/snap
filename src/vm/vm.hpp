@@ -23,7 +23,7 @@ class VM {
 	ExitCode interpret();
 	/// the function that snap uses to print stuff onto the console.
 	/// It is called whenever the `print` function is called in snap source code.
-	PrintFn print = &defaultPrintFn;
+	PrintFn print = defaultPrintFn;
 
 	/// The memory allocator used by snap's garbage collector.
 	/// This function is called whenever any memory is moved, freed or requested

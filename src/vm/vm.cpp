@@ -2,6 +2,7 @@
 #include "../common.hpp"
 #include "../compiler/compiler.hpp"
 #include "../syntax/parser.hpp"
+#include <cmath>
 
 #if defined(SNAP_DEBUG_RUNTIME) || defined(SNAP_DEBUG_DISASSEMBLY)
 #include "../debug.hpp"
@@ -16,31 +17,64 @@
 
 namespace snap {
 using Op = Opcode;
-using Vt = ValueType;
+using VT = ValueType;
+
+static bool try_float_cast(Value& v, double* d) {
+	if (v.is_float()) {
+		*d = v.as_float();
+		return true;
+	}
+
+	if (v.is_int()) {
+		*d = v.as_int();
+		v.tag = VT::Float;
+		return true;
+	}
+
+	return false;
+}
+
+static bool try_int_cast(Value& v, int* iptr) {
+	if (v.is_int()) {
+		*iptr = v.as_int();
+		return true;
+	}
+
+	if (v.is_float()) {
+		*iptr = v.as_float();
+		v.tag = VT::Int;
+		return true;
+	}
+
+	return false;
+}
 
 VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 
+// TODO: errors
 #define BINOP(op)                                                                                  \
 	do {                                                                                           \
-		auto a = m_stack[sp - 2];                                                                  \
-		auto b = m_stack[sp - 1];                                                                  \
-		if (SNAP_IS_FLOAT(a)) {                                                                    \
+		Value& a = m_stack[sp - 1];                                                                \
+		Value& b = m_stack[sp - 2];                                                                \
                                                                                                    \
-			if (SNAP_IS_FLOAT(b)) {                                                                \
-				SNAP_AS_FLOAT(m_stack[sp - 2]) = SNAP_AS_FLOAT(a) op SNAP_AS_FLOAT(b);             \
-			} else if (SNAP_IS_INT(a)) {                                                           \
-				SNAP_AS_FLOAT(m_stack[sp - 2]) = SNAP_AS_INT(a) op SNAP_AS_FLOAT(b);               \
+		if (a.is_float()) {                                                                        \
+			if (b.is_float()) {                                                                    \
+				b.as.float_ = a.as_float() op b.as_float();                                        \
+			} else if (b.is_int()) {                                                               \
+				b.set_float(a.as_float() op b.as_int());                                           \
 			}                                                                                      \
-		} else if (SNAP_IS_INT(a)) {                                                               \
-			if (SNAP_IS_FLOAT(b)) {                                                                \
-				SNAP_AS_FLOAT(m_stack[sp - 2]) = SNAP_AS_FLOAT(a) op SNAP_AS_INT(b);               \
-			} else if (SNAP_IS_INT(b)) {                                                           \
-				SNAP_AS_INT(m_stack[sp - 2]) = SNAP_AS_INT(a) op SNAP_AS_INT(b);                   \
+		} else if (a.is_int()) {                                                                   \
+			if (b.is_int()) {                                                                      \
+				b.as.int_ = a.as_int() op b.as_int();                                              \
+			} else if (b.is_float()) {                                                             \
+				b.as.float_ = a.as_float() op b.as_float();                                        \
 			}                                                                                      \
 		}                                                                                          \
                                                                                                    \
 		pop();                                                                                     \
-	} while (false)
+	} while (false);
+
+#define IS_FLOAT(v, d_ptr) ((v).is_float() ? (*d_ptr = (v).as_float(), true) : (*d_ptr))
 
 #ifdef SNAP_DEBUG_RUNTIME
 void print_stack(Value stack[VM::StackMaxSize], size_t sp) {
@@ -63,7 +97,40 @@ ExitCode VM::run(bool run_till_end) {
 		case Op::add: BINOP(+); break;
 		case Op::sub: BINOP(-); break;
 		case Op::mult: BINOP(*); break;
-		case Op::div: BINOP(/); break;
+		case Op::div: {
+			Value& a = m_stack[sp - 1];
+			Value& b = m_stack[sp - 2];
+
+			double a_flt, b_flt;
+
+			if (try_float_cast(a, &a_flt) && try_float_cast(a, &b_flt)) {
+				if (b_flt == 0) {
+					// TODO error
+				} else {
+					b.as.float_ = a_flt / b_flt;
+				}
+			} else {
+				// TODO error
+			}
+
+			pop();
+			break;
+		}
+		case Op::mod: {
+			Value& a = m_stack[sp - 1];
+			Value& b = m_stack[sp - 2];
+
+			double a_flt, b_flt;
+
+			if (a.is_int() && b.is_int()) {
+				b.as.int_ = a.as_int() % b.as_int();
+			} else if (try_float_cast(a, &a_flt) && try_float_cast(a, &b_flt)) {
+				b.as.float_ = fmod(a_flt, b_flt);
+			}
+
+			pop();
+			break;
+		}
 		case Op::get_var: {
 			u8 idx = NEXT_BYTE();
 			push(GET_VAR(idx));
