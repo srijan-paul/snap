@@ -1,6 +1,7 @@
 #include "value.hpp"
 #include <cassert>
 #include <cstdio>
+#include <cstring>
 
 namespace snap {
 
@@ -12,14 +13,29 @@ Value::Value(char* s, int len) : tag{VT::Object} {
 	as.object = new String(s, len);
 }
 
+String* String::concatenate(const String* a, const String* b) {
+	size_t length = a->length + b->length;
+	char* buf = new char[length + 1];
+	buf[length] = '\0';
+	std::memcpy(buf, a->chars, a->length);
+	std::memcpy(buf + a->length, b->chars, b->length);
+	return new String(buf, length);
+}
+
+String::~String() {
+	free(chars);
+}
+
 void print_value(Value v) {
 	switch (v.tag) {
 	case VT::Int: printf("%zu", SNAP_AS_INT(v)); break;
 	case VT::Float: printf("%f", SNAP_AS_FLOAT(v)); break;
 	case VT::Bool: printf("%s", (SNAP_AS_BOOL(v) ? "true" : "false")); break;
 	case VT::Object:
-		if (v.is_string()) printf("%s", SNAP_AS_CSTRING(v));
-		else printf("<snap object>");
+		if (v.is_string())
+			printf("%s", SNAP_AS_CSTRING(v));
+		else
+			printf("<snap object>");
 		break;
 	default: printf("Internal error: Unknown value type tag!.\n");
 	}

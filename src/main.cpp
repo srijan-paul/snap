@@ -197,14 +197,20 @@ void vm_test() {
 	auto a = vm2.peek(1);
 	ASSERT(a.is_int() && a.as_int() == 10, "Expected variable 'a' to have value '10'.");
 
-	const std::string string_test = "let s = \"Hello\";";
+	const std::string string_test = "let s1 = \"abcd\"; let s2 = 'ef'; let s3 = s1 .. s2;";
 	VM vm3{&string_test};
 	vm3.init();
 	vm3.step();
 	Value s = vm3.peek();
-	ASSERT(s.is_string() && std::memcmp(SNAP_AS_CSTRING(s), "Hello", 5) == 0,
+	ASSERT(s.is_string() && std::memcmp(SNAP_AS_CSTRING(s), "abcd", 5) == 0,
 		   "Mismatched string value. Expected: "
-			   << "'Hello' "
+			   << "'abcd' "
+			   << "Got: '" << SNAP_AS_CSTRING(s) << "'");
+	vm3.step(4);
+	s = vm3.peek();
+	ASSERT(s.is_string() && std::memcmp(SNAP_AS_CSTRING(s), "abcdef", 5) == 0,
+		   "Mismatched string value. Expected: "
+			   << "'abcdef' "
 			   << "Got: '" << SNAP_AS_CSTRING(s) << "'");
 
 	println("--- /VM tests ---");

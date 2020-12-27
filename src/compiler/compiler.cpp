@@ -64,6 +64,7 @@ void Compiler::compile_binexp(const BinExpr* exp) {
 	case TT::Minus:
 	case TT::Mult:
 	case TT::Mod:
+	case TT::Concat:
 		compile_exp(exp->left);
 		compile_exp(exp->right);
 		emit(toktype_to_op(exp->token.type));
@@ -130,6 +131,7 @@ Op Compiler::toktype_to_op(TT toktype) {
 	case TT::Mult: return Op::mult;
 	case TT::Mod: return Op::mod;
 	case TT::EqEq: return Op::eq;
+	case TT::Concat: return Op::concat;
 	default: return Op::op_count;
 	}
 }

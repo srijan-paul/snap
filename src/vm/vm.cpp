@@ -54,20 +54,20 @@ VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 // TODO: errors
 #define BINOP(op)                                                                                  \
 	do {                                                                                           \
-		Value& a = m_stack[sp - 1];                                                                \
-		Value& b = m_stack[sp - 2];                                                                \
+		Value& b = m_stack[sp - 1];                                                                \
+		Value& a = m_stack[sp - 2];                                                                \
                                                                                                    \
 		if (a.is_float()) {                                                                        \
 			if (b.is_float()) {                                                                    \
-				b.as.float_ = a.as_float() op b.as_float();                                        \
+				a.as.float_ = a.as_float() op b.as_float();                                        \
 			} else if (b.is_int()) {                                                               \
-				b.set_float(a.as_float() op b.as_int());                                           \
+				a.set_float(a.as_float() op b.as_int());                                           \
 			}                                                                                      \
 		} else if (a.is_int()) {                                                                   \
 			if (b.is_int()) {                                                                      \
-				b.as.int_ = a.as_int() op b.as_int();                                              \
+				a.as.int_ = a.as_int() op b.as_int();                                              \
 			} else if (b.is_float()) {                                                             \
-				b.as.float_ = a.as_float() op b.as_float();                                        \
+				a.as.float_ = a.as_float() op b.as_float();                                        \
 			}                                                                                      \
 		}                                                                                          \
                                                                                                    \
@@ -91,12 +91,12 @@ ExitCode VM::run(bool run_till_end) {
 		const Op op = NEXT_OP();
 		switch (op) {
 		case Op::load_const: push(READ_VALUE()); break;
-		
+
 		case Op::pop: pop(); break;
 		case Op::add: BINOP(+); break;
 		case Op::sub: BINOP(-); break;
 		case Op::mult: BINOP(*); break;
-		
+
 		case Op::div: {
 			Value& a = m_stack[sp - 1];
 			Value& b = m_stack[sp - 2];
@@ -116,7 +116,7 @@ ExitCode VM::run(bool run_till_end) {
 			pop();
 			break;
 		}
-		
+
 		case Op::mod: {
 			Value& a = m_stack[sp - 1];
 			Value& b = m_stack[sp - 2];
@@ -132,7 +132,7 @@ ExitCode VM::run(bool run_till_end) {
 			pop();
 			break;
 		}
-		
+
 		case Op::eq: {
 			Value& a = m_stack[sp - 1];
 			Value& b = m_stack[sp - 2];
@@ -151,6 +151,20 @@ ExitCode VM::run(bool run_till_end) {
 		case Op::set_var: {
 			u8 idx = NEXT_BYTE();
 			SET_VAR(idx, peek(0));
+			break;
+		}
+
+		case Op::concat: {
+			Value& a = m_stack[sp - 1];
+			Value& b = m_stack[sp - 2];
+
+			if (!(a.is_string() && b.is_string())) {
+				// TODO: error
+			} else {
+				String* s = String::concatenate(b.as_string(), a.as_string());
+				b.as.object = s;
+			}
+			pop();
 			break;
 		}
 		case Op::return_val: return ExitCode::Success;

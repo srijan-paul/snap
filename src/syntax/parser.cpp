@@ -89,7 +89,7 @@ DEFINE_PARSELET(Parser::equality, match(TT::EqEq) || match(TT::BangEq), comparis
 DEFINE_PARSELET(Parser::comparison,
 				match(TT::Gt) || match(TT::Lt) || match(TT::GtEq) || match(TT::LtEq), bit_shift)
 DEFINE_PARSELET(Parser::bit_shift, match(TT::EqEq) || match(TT::BangEq), sum)
-DEFINE_PARSELET(Parser::sum, match(TT::Plus) || match(TT::Minus), mult)
+DEFINE_PARSELET(Parser::sum, match(TT::Plus) || match(TT::Minus) || match(TT::Concat), mult)
 DEFINE_PARSELET(Parser::mult, match(TT::Mult) || match(TT::Mod) || match(TT::Div), unary)
 
 Expr* Parser::unary() {

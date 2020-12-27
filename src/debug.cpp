@@ -12,7 +12,7 @@ using Op = Opcode;
 static constexpr std::array op_strs = {
 	"load_const",
 	"set_var", "get_var",
-	"pop", "add", "sub", "mult", "mod", "div", "nil", "return_val"
+	"pop", "add", "concat", "sub", "mult", "mod", "div", "eq", "nil", "return_val",
 };
 // clang-format on
 
@@ -49,7 +49,6 @@ static size_t disassemble_instr(const Block& block, Op op, size_t offset) {
 	} else if (op >= Op_1_operands_start && op <= Op_1_operands_end) {
 		return instr_single_operand(block, offset);
 	}
-
 	return 1;
 }
 

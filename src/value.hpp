@@ -29,6 +29,9 @@ struct String : Obj {
 	/// @param chrs pointer to the character buffer. must be null terminated.
 	/// @param len length of the string.
 	String(char* chrs, size_t len) : Obj(ObjType::string), chars{chrs}, length{len} {};
+
+	static String* concatenate(const String* a, const String* b);
+	~String();
 };
 
 enum class ValueType {
@@ -53,6 +56,7 @@ struct Value {
 	Value(bool v) : tag{ValueType::Bool}, as{.bool_ = v} {};
 	Value() : tag{ValueType::Nil}, as{.float_ = 0} {};
 	// string object value constructor
+	Value(Obj* s) : tag{ValueType::Object} {};
 	Value(char* s, int len);
 
 	inline double as_float() const {

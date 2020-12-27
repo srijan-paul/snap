@@ -18,6 +18,7 @@ enum class Opcode {
 	// opcodes with no operands
 	pop,
 	add,
+	concat,
 	sub,
 	mult,
 	mod,
@@ -32,7 +33,7 @@ enum class Opcode {
 /// numerically lowest opcode that takes no operands
 const auto Op_0_operands_start = Opcode::pop;
 /// numerically highest opcode that takes no operands
-const auto Op_0_operands_end = Opcode::nil;
+const auto Op_0_operands_end = Opcode::return_val;
 
 const auto Op_const_start = Opcode::load_const;
 const auto Op_const_end = Opcode::load_const;
