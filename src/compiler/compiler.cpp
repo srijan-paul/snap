@@ -50,6 +50,16 @@ void Compiler::compile_exp(const Expr* exp) {
 
 void Compiler::compile_binexp(const BinExpr* exp) {
 	switch (exp->token.type) {
+	case TT::Eq:
+		switch (exp->left->type) {
+		case NodeType::VarId: {
+			compile_exp(exp->right);
+			emit(Op::set_var, (Op)find_var(&exp->left->token));
+			break;
+		}
+		default: return;
+		}
+		break;
 	case TT::Plus:
 	case TT::Minus:
 	case TT::Mult:
@@ -77,13 +87,17 @@ void Compiler::compile_literal(const Literal* literal) {
 	emit(Op::load_const, (Op)index);
 }
 
-void Compiler::compile_var(const VarId* var) {
-	const char* name = var->token.raw_cstr(source);
-	int length = var->token.length();
+int Compiler::find_var(const Token* name_token) {
+	const char* name = name_token->raw_cstr(source);
+	int length = name_token->length();
 	const int idx = symbol_table.find(name, length);
 	if (idx == -1) { /* TODO: Reference error */
 	}
-	emit(Op::get_var, (Op)idx);
+	return idx;
+}
+
+void Compiler::compile_var(const VarId* var) {
+	emit(Op::get_var, (Op)find_var(&var->token));
 }
 
 inline size_t Compiler::emit_value(Value v) {
@@ -105,6 +119,7 @@ Op Compiler::toktype_to_op(TT toktype) {
 	case TT::Minus: return Op::sub;
 	case TT::Mult: return Op::mult;
 	case TT::Mod: return Op::mod;
+	case TT::EqEq: return Op::eq;
 	default: return Op::op_count;
 	}
 }

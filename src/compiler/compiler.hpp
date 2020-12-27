@@ -70,6 +70,7 @@ class Compiler {
 	void compile_var(const VarId* var);
 
 	int new_variable(const Token* name);
+	int find_var(const Token* name);
 
 	inline void emit(Opcode op);
 	inline void emit(Opcode a, Opcode b);

@@ -30,7 +30,7 @@ class VM {
 	/// on the heap.
 	AllocateFn allocator;
 
-	inline Value peek(u8 depth) {
+	inline Value peek(u8 depth = 0) {
 		return m_stack[sp - 1 - depth];
 	}
 	static constexpr size_t StackMaxSize = 256;

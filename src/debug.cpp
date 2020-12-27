@@ -6,6 +6,8 @@
 namespace snap {
 using Op = Opcode;
 
+#define PRINT_VAL(v) (printf("%s", ((v).name_str().c_str())))
+
 // clang-format off
 static constexpr std::array op_strs = {
 	"load_const",
@@ -22,7 +24,7 @@ static size_t constant_instr(const Block& block, Op op, size_t index) {
 	const auto const_index = (u8)(block.code[index + 1]);
 	const Value v = block.constant_pool[const_index];
 	std::printf("%-4zu  %s  (%d) ", index, op2s(op), const_index);
-	print_value(v);
+	PRINT_VAL(v);
 	printf("\n");
 	return 2;
 }

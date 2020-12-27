@@ -10,5 +10,5 @@ using u8 = uint8_t;
 
 } // namespace snap
 
-#define SNAP_DEBUG_RUNTIME	   1
-#define SNAP_DEBUG_DISASSEMBLY 1
+// #define SNAP_DEBUG_RUNTIME	   1
+// #define SNAP_DEBUG_DISASSEMBLY 1

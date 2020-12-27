@@ -74,13 +74,11 @@ VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 		pop();                                                                                     \
 	} while (false);
 
-#define IS_FLOAT(v, d_ptr) ((v).is_float() ? (*d_ptr = (v).as_float(), true) : (*d_ptr))
-
 #ifdef SNAP_DEBUG_RUNTIME
 void print_stack(Value stack[VM::StackMaxSize], size_t sp) {
 	printf("(%zu) [", sp);
 	for (Value* v = stack; v < stack + sp; v++) {
-		print_value(*v);
+		printf("%s", v->name_str().c_str());
 		printf(" ");
 	}
 	printf("]\n");
@@ -93,10 +91,12 @@ ExitCode VM::run(bool run_till_end) {
 		const Op op = NEXT_OP();
 		switch (op) {
 		case Op::load_const: push(READ_VALUE()); break;
+		
 		case Op::pop: pop(); break;
 		case Op::add: BINOP(+); break;
 		case Op::sub: BINOP(-); break;
 		case Op::mult: BINOP(*); break;
+		
 		case Op::div: {
 			Value& a = m_stack[sp - 1];
 			Value& b = m_stack[sp - 2];
@@ -116,6 +116,7 @@ ExitCode VM::run(bool run_till_end) {
 			pop();
 			break;
 		}
+		
 		case Op::mod: {
 			Value& a = m_stack[sp - 1];
 			Value& b = m_stack[sp - 2];
@@ -131,14 +132,25 @@ ExitCode VM::run(bool run_till_end) {
 			pop();
 			break;
 		}
+		
+		case Op::eq: {
+			Value& a = m_stack[sp - 1];
+			Value& b = m_stack[sp - 2];
+
+			push(Value(Value::are_equal(a, b)));
+			pop();
+			break;
+		}
+
 		case Op::get_var: {
 			u8 idx = NEXT_BYTE();
 			push(GET_VAR(idx));
 			break;
 		}
+
 		case Op::set_var: {
 			u8 idx = NEXT_BYTE();
-			SET_VALUE(idx, peek(0));
+			SET_VAR(idx, peek(0));
 			break;
 		}
 		case Op::return_val: return ExitCode::Success;

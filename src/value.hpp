@@ -1,8 +1,26 @@
+#pragma once
 #include "common.hpp"
-#include <stdint.h>
+#include <cstdint>
+#include <string>
+#include <vcruntime.h>
 
 namespace snap {
-// using Value = double;
+
+enum class ObjType { String };
+
+struct Object {
+	ObjType tag;
+	Object(ObjType type) : tag{type} {};
+};
+
+struct ObString : Object {
+	char* chars = nullptr;
+	size_t length = 0;
+	size_t hash = -1;
+	ObString(char* chrs, size_t len) : Object(ObjType::String), chars{chrs}, length{len} {
+		chars[length] = '\0';
+	};
+};
 
 enum class ValueType {
 	Float,
@@ -19,6 +37,7 @@ struct Value {
 		double float_;
 		s64 int_;
 		bool bool_;
+		Object* object;
 	} as;
 
 	Value(s64 v) : tag{ValueType::Int}, as{.int_ = v} {};
@@ -26,31 +45,31 @@ struct Value {
 	Value(bool v) : tag{ValueType::Bool}, as{.bool_ = v} {};
 	Value() : tag{ValueType::Nil}, as{.float_ = 0} {};
 
-	inline double as_float() {
+	inline double as_float() const {
 		return as.float_;
 	}
 
-	inline int as_int() {
+	inline int as_int() const {
 		return as.int_;
 	}
 
-	inline bool as_bool() {
+	inline bool as_bool() const {
 		return as.bool_;
 	}
 
-	inline bool is_bool() {
+	inline bool is_bool() const {
 		return tag == ValueType::Bool;
 	}
 
-	inline bool is_int() {
+	inline bool is_int() const {
 		return tag == ValueType::Int;
 	}
 
-	inline bool is_float() {
+	inline bool is_float() const {
 		return tag == ValueType::Float;
 	}
 
-	inline bool is_numeric() {
+	inline bool is_numeric() const {
 		return (tag == ValueType::Float || tag == ValueType::Int);
 	}
 
@@ -63,6 +82,9 @@ struct Value {
 		tag = ValueType::Int;
 		as.int_ = i;
 	}
+
+	std::string name_str() const;
+	const char* name_cstr() const;
 
 	static bool are_equal(Value a, Value b);
 	static ValueType numeric_upcast(Value& a, Value& b);
@@ -83,5 +105,4 @@ struct Value {
 #define SNAP_AS_NIL(v)	 ((v).as.bool_)
 
 void print_value(Value v);
-bool values_equal(Value a, Value b);
 }; // namespace snap

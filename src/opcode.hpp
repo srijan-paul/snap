@@ -22,6 +22,7 @@ enum class Opcode {
 	mult,
 	mod,
 	div,
+	eq,
 	nil,
 	return_val,
 

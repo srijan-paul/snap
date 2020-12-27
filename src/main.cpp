@@ -179,9 +179,14 @@ void vm_test() {
 	vm.step(3);
 	assert_equal(vm.peek(0), SNAP_INT_VAL(15));
 
-	const std::string var_test = "let a = 1; let b = a + 2";
+	const std::string var_test = "let a = 1; let b = a + 2; a = 10;";
 	VM vm2{&var_test};
-	vm2.interpret();
+	vm2.init();
+	vm2.step(4);
+	ASSERT(vm2.peek().is_int() && vm2.peek().as_int() == 3, "Expected variable 'b' to have value '3'.");
+	vm2.step(3);
+	auto a = vm2.peek(1);
+	ASSERT(a.is_int() && a.as_int() == 10, "Expected variable 'a' to have value '10'.");
 
 	println("--- /VM tests ---");
 }

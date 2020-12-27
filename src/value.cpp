@@ -1,5 +1,5 @@
 #include "value.hpp"
-#include <iostream>
+#include <cstdio>
 
 namespace snap {
 
@@ -10,6 +10,15 @@ void print_value(Value v) {
 	case VT::Float: printf("%f", SNAP_AS_FLOAT(v)); break;
 	case VT::Bool: printf("%s", (SNAP_AS_BOOL(v) ? "true" : "false"));
 	default: printf("Internal error: Unknown value type tag!.\n");
+	}
+}
+
+std::string Value::name_str() const {
+	switch (tag) {
+	case VT::Int: return std::to_string(as_int());
+	case VT::Float: return std::to_string(as_float());
+	case VT::Bool: return as_bool() ? std::string("true") : std::string("false");
+	default: return "Unknown type tag!";
 	}
 }
 
