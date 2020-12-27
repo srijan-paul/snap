@@ -75,6 +75,7 @@ class Compiler {
 	inline void emit(Opcode op);
 	inline void emit(Opcode a, Opcode b);
 	inline size_t emit_value(Value value);
+	size_t emit_string(const Token& token);
 	Opcode toktype_to_op(TokenType type);
 };
 

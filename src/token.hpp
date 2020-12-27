@@ -17,20 +17,22 @@ enum class TokenType {
 	Eof,
 
 	// Operators
-	Plus,
-	PlusEq,
-	Minus,
-	MinusEq,
-	Mult,
-	MultEq,
-	Div,
-	DivEq,
-	Mod,
-	ModEq,
-	Exp,
-	Eq,
-	Bang,
-	Dot,
+	Plus,	 // +
+	PlusEq,	 // +=
+	Concat,	 // ..
+	Minus,	 // -
+	MinusEq, // -=
+	Mult,	 // *
+	MultEq,	 // *=
+	Div,	 // /
+	DivEq,	 // /=
+	Mod,	 // %
+	ModEq,	 // %=
+	Exp,	 // **
+	Eq,		 // =
+	Bang,	 // !
+	Dot,	 // .
+	Len,	 // #
 
 	// compare
 
@@ -46,26 +48,26 @@ enum class TokenType {
 
 	// Equality
 
-	EqEq,
-	BangEq,
+	EqEq,	// ==
+	BangEq, // !=
 
 	// bitwise
 
-	BitAnd,
-	BitOr,
-	BitLShift,
-	BitRShift,
+	BitAnd,	   // &
+	BitOr,	   // |
+	BitLShift, // >>
+	BitRShift, // <<
 
 	// Punctuation
-	Semi,
-	Colon,
-	Comma,
-	LParen,
-	RParen,
-	LCurlBrace,
-	RCurlBrace,
-	LSqBrace,
-	RSqBrace,
+	Semi,		// ;
+	Colon,		// :
+	Comma,		// ,
+	LParen,		// (
+	RParen,		// )
+	LCurlBrace, // {
+	RCurlBrace, // }
+	LSqBrace,	// [
+	RSqBrace,	// ]
 
 	// Keywords
 	Let

@@ -1,30 +1,38 @@
 #pragma once
 #include "common.hpp"
+#include "token.hpp"
 #include <cstdint>
 #include <string>
-#include <vcruntime.h>
 
 namespace snap {
 
-enum class ObjType { String };
+enum ObjType { string };
 
-struct Object {
+// Objects always live on the heap. A value which is an object contains a a pointer
+// to this data on the heap. The `tag` specifies what kind of object this is.
+struct Obj {
 	ObjType tag;
-	Object(ObjType type) : tag{type} {};
+
+	// pointer to the next object in the VM's GC linked list.
+	Obj* next;
+	Obj(ObjType tt) : tag{tt} {};
 };
 
-struct ObString : Object {
+/// Strings in snap are heap allocated, and contain 3 important fields:
+/// `chars`  -> Pointer to the first character of the string on the heap (null terminated).
+/// `length` -> Length of the string.
+/// `hash`   -> Hash value of the string.
+struct String : Obj {
 	char* chars = nullptr;
 	size_t length = 0;
 	size_t hash = -1;
-	ObString(char* chrs, size_t len) : Object(ObjType::String), chars{chrs}, length{len} {
-		chars[length] = '\0';
-	};
+	/// @param chrs pointer to the character buffer. must be null terminated.
+	/// @param len length of the string.
+	String(char* chrs, size_t len) : Obj(ObjType::string), chars{chrs}, length{len} {};
 };
 
 enum class ValueType {
 	Float,
-	String,
 	Int,
 	Bool,
 	Object,
@@ -37,13 +45,15 @@ struct Value {
 		double float_;
 		s64 int_;
 		bool bool_;
-		Object* object;
+		Obj* object;
 	} as;
 
 	Value(s64 v) : tag{ValueType::Int}, as{.int_ = v} {};
 	Value(double v) : tag{ValueType::Float}, as{.float_ = v} {};
 	Value(bool v) : tag{ValueType::Bool}, as{.bool_ = v} {};
 	Value() : tag{ValueType::Nil}, as{.float_ = 0} {};
+	// string object value constructor
+	Value(char* s, int len);
 
 	inline double as_float() const {
 		return as.float_;
@@ -55,6 +65,14 @@ struct Value {
 
 	inline bool as_bool() const {
 		return as.bool_;
+	}
+
+	inline Obj* as_object() const {
+		return as.object;
+	}
+
+	inline String* as_string() const {
+		return static_cast<String*>(as.object);
 	}
 
 	inline bool is_bool() const {
@@ -71,6 +89,14 @@ struct Value {
 
 	inline bool is_numeric() const {
 		return (tag == ValueType::Float || tag == ValueType::Int);
+	}
+
+	inline bool is_object() const {
+		return (tag == ValueType::Object);
+	}
+
+	inline bool is_string() const {
+		return (tag == ValueType::Object && as_object()->tag == ObjType::string);
 	}
 
 	inline void set_float(float v) {
@@ -99,10 +125,13 @@ struct Value {
 #define SNAP_IS_FLOAT(v) ((v).tag == ValueType::Float)
 #define SNAP_IS_BOOL(v)	 ((v).tag == ValueType::Bool)
 
-#define SNAP_AS_INT(v)	 ((v).as.int_)
-#define SNAP_AS_FLOAT(v) ((v).as.float_)
-#define SNAP_AS_BOOL(v)	 ((v).as.bool_)
-#define SNAP_AS_NIL(v)	 ((v).as.bool_)
+#define SNAP_AS_INT(v)	   ((v).as.int_)
+#define SNAP_AS_FLOAT(v)   ((v).as.float_)
+#define SNAP_AS_BOOL(v)	   ((v).as.bool_)
+#define SNAP_AS_NIL(v)	   ((v).as.bool_)
+#define SNAP_AS_OBJECT(v)  ((v).as.object)
+#define SNAP_AS_STRING(v)  (static_cast<String*>((v).as.object))
+#define SNAP_AS_CSTRING(v) ((SNAP_AS_STRING(v))->chars)
 
 void print_value(Value v);
 }; // namespace snap

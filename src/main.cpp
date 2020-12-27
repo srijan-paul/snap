@@ -39,22 +39,27 @@ void assert_equal(Value received, Value expected) {
 
 void print_ttype(TT type) {
 	std::string type_strs[] = {
-		"Integer",	"Float",	"String",	 "true",	  "false",	"Id",		  "Error",
-		"Eof",
 
-		"Plus",		"PlusEq",	"Minus",	 "MinusEq",	  "Mult",	"MultEq",	  "Div",
-		"DivEq",	"Mod",		"ModEq",	 "Exp",		  "Eq",		"Bang",		  "Dot",
+		"Integer",	  "Float",	  "String",	   "True",		"False",
 
-		"Gt",		"Lt",		"GtEq",		 "LtEq",
+		"Id",		  "Error",	  "Eof",
 
-		"And",		"Or",
+		"Plus",		  "PlusEq",	  "Concat",	   "Minus",		"MinusEq", "Mult",
+		"MultEq",	  "Div",	  "DivEq",	   "Mod",		"ModEq",   "Exp",
+		"Eq",		  "Bang",	  "Dot",	   "Len",
 
-		"EqEq",		"BangEq",
+		"Gt",		  "Lt",		  "GtEq",	   "LtEq",
 
-		"BitAnd",	"BitOr",	"BitLShift", "BitRShift",
+		"And",		  "Or",
 
-		"Semi",		"Colon",	"Comma",	 "LParen",	  "RParen", "LCurlBrace", "RCurlBrace",
-		"LSqBrace", "RSqBrace", "let",
+		"EqEq",		  "BangEq",
+
+		"BitAnd",	  "BitOr",	  "BitLShift", "BitRShift",
+
+		"Semi",		  "Colon",	  "Comma",	   "LParen",	"RParen",  "LCurlBrace",
+		"RCurlBrace", "LSqBrace", "RSqBrace",
+
+		"Let",
 	};
 
 	const std::string& str = type_strs[(size_t)type];
@@ -119,6 +124,9 @@ void lexer_test() {
 	// test keyword and identifier scanning
 	code = "let true false xyz";
 	compare_ttypes(&code, {TT::Let, TT::True, TT::False, TT::Id, TT::Eof});
+
+	code = "'this is a string' .. 'this is also string'";
+	compare_ttypes(&code, {TT::String, TT::Concat, TT::String, TT::Eof});
 }
 
 static void compile(const std::string* code, Block* block) {
@@ -183,10 +191,21 @@ void vm_test() {
 	VM vm2{&var_test};
 	vm2.init();
 	vm2.step(4);
-	ASSERT(vm2.peek().is_int() && vm2.peek().as_int() == 3, "Expected variable 'b' to have value '3'.");
+	ASSERT(vm2.peek().is_int() && vm2.peek().as_int() == 3,
+		   "Expected variable 'b' to have value '3'.");
 	vm2.step(3);
 	auto a = vm2.peek(1);
 	ASSERT(a.is_int() && a.as_int() == 10, "Expected variable 'a' to have value '10'.");
+
+	const std::string string_test = "let s = \"Hello\";";
+	VM vm3{&string_test};
+	vm3.init();
+	vm3.step();
+	Value s = vm3.peek();
+	ASSERT(s.is_string() && std::memcmp(SNAP_AS_CSTRING(s), "Hello", 5) == 0,
+		   "Mismatched string value. Expected: "
+			   << "'Hello' "
+			   << "Got: '" << SNAP_AS_CSTRING(s) << "'");
 
 	println("--- /VM tests ---");
 }

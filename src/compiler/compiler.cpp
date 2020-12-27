@@ -2,8 +2,8 @@
 #include <cstring>
 #include <string>
 
-#define TOK2INT(t) SNAP_INT_VAL(std::stoi(t->raw(*source)))
-#define TOK2FLT(t) SNAP_FLOAT_VAL(std::stof(t->raw(*source)))
+#define TOK2INT(t) SNAP_INT_VAL(std::stoi(t.raw(*source)))
+#define TOK2FLT(t) SNAP_FLOAT_VAL(std::stof(t.raw(*source)))
 
 namespace snap {
 using Op = Opcode;
@@ -72,15 +72,25 @@ void Compiler::compile_binexp(const BinExpr* exp) {
 	}
 }
 
+size_t Compiler::emit_string(const Token& token) {
+	size_t length = token.length() - 2; // minus the quotes
+	char* buf = new char[length + 1];
+	std::memcpy(buf, token.raw_cstr(source) + 1, length); // +1 to skip the openening quote.
+	buf[length] = '\0';
+	return emit_value(Value(buf, length));
+}
+
 void Compiler::compile_literal(const Literal* literal) {
-	const Token* t = &literal->token;
+	const Token& t = literal->token;
 	size_t index;
 	switch (literal->token.type) {
 	case TT::Integer: index = emit_value(TOK2INT(t)); break;
 	case TT::Float: index = emit_value(TOK2FLT(t)); break;
+	case TT::String: index = emit_string(t); break;
 	default:;
 	}
-	if (index > UINT8_MAX) {
+
+	if (index >= UINT8_MAX) {
 		// TODO: Too many constants error.
 	}
 

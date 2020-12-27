@@ -33,30 +33,38 @@ class VM {
 	inline Value peek(u8 depth = 0) {
 		return m_stack[sp - 1 - depth];
 	}
+
 	static constexpr size_t StackMaxSize = 256;
 
 	/// executes the next `count` instructions in the bytecode stream.
 	/// by default, count is 1.
+	/// @param count number of instructions to excecute.
 	inline void step(size_t count = 1) {
 		while (count--) run(false);
 	}
 
+	/// pushes a value onto the VM's stack.
+	/// @param value The Value to push onto the stack.
 	inline void push(Value value) {
 		m_stack[sp++] = value;
 	}
 
+	/// pops a value from the VM stack and returns it.
 	inline Value pop() {
 		return m_stack[sp--];
 	}
 
 	bool init();
+	ExitCode run(bool run_till_end = true);
 
   private:
 	const std::string* source;
+	/// the VM maintains it's personal linked list of objects
+	/// for garbage collection.
+	Obj* gc_objects;
 	Block m_block;
 	size_t ip = 0; // instruction ptr
 	size_t sp = 0; // stack-top ptr
-	ExitCode run(bool run_till_end = true);
 	Value m_stack[StackMaxSize];
 };
 

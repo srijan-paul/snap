@@ -48,10 +48,10 @@ Token Scanner::next_token() {
 
 	case '&': return token_if_match('&', TT::And, TT::BitAnd);
 	case '|': return token_if_match('|', TT::Or, TT::BitOr);
+	case '.': return token_if_match('.', TT::Concat, TT::Dot);
 
 	case ';': return make_token(TT::Semi);
 	case ':': return make_token(TT::Colon);
-	case '.': return make_token(TT::Dot);
 	case ',': return make_token(TT::Comma);
 	case '(': return make_token(TT::LParen);
 	case ')': return make_token(TT::RParen);
@@ -59,7 +59,8 @@ Token Scanner::next_token() {
 	case '}': return make_token(TT::RCurlBrace);
 	case '[': return make_token(TT::LSqBrace);
 	case ']': return make_token(TT::RSqBrace);
-
+	case '\'':
+	case '"': return make_string(c);
 	default:
 		if (isdigit(c)) {
 			return number();
@@ -100,6 +101,18 @@ Token Scanner::number() {
 		while (isdigit(peek())) next();
 	}
 	return make_token(type);
+}
+
+// TODO: escape characters.
+Token Scanner::make_string(char quote) {
+	TT type = TT::String;
+	while (!(eof() || check(quote))) next();
+	if (eof()) {
+		// TODO: error
+	} else {
+		next(); // eat the closing quote.
+	}
+	return make_token(TT::String);
 }
 
 char Scanner::peek() const {

@@ -38,6 +38,7 @@ class Scanner {
 	TokenType check_kw_chars(const char* rest, u32 offset, u32 length, TokenType ttype) const;
 	Token make_token(TokenType type) const;
 	Token number();
+	Token make_string(char quote);
 	Token token_if_match(char c, TokenType then, TokenType other);
 };
 } // namespace snap
