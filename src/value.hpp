@@ -128,6 +128,7 @@ struct Value {
 #define SNAP_IS_INT(v)	 ((v).tag == ValueType::Int)
 #define SNAP_IS_FLOAT(v) ((v).tag == ValueType::Float)
 #define SNAP_IS_BOOL(v)	 ((v).tag == ValueType::Bool)
+#define SNAP_IS_NIL(v)	 ((v).tag == ValueType::Nil)
 
 #define SNAP_AS_INT(v)	   ((v).as.int_)
 #define SNAP_AS_FLOAT(v)   ((v).as.float_)

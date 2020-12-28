@@ -134,11 +134,10 @@ ExitCode VM::run(bool run_till_end) {
 		}
 
 		case Op::eq: {
-			Value& a = m_stack[sp - 1];
-			Value& b = m_stack[sp - 2];
+			Value a = pop();
+			Value b = pop();
 
 			push(Value(Value::are_equal(a, b)));
-			pop();
 			break;
 		}
 
