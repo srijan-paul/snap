@@ -7,6 +7,7 @@
 #include "token.hpp"
 #include "vm/vm.hpp"
 
+#include <cstring>
 #include <array>
 #include <cassert>
 #include <cstdio>

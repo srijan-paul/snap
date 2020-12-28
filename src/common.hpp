@@ -1,4 +1,5 @@
-#include <stdint.h>
+#include <cstdint>
+#include <cstring>
 
 namespace snap {
 
