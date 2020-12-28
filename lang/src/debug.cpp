@@ -9,7 +9,7 @@ using Op = Opcode;
 #define PRINT_VAL(v) (printf("%s", ((v).name_str().c_str())))
 
 // clang-format off
-static constexpr std::array op_strs = {
+static constexpr std::array<const char*, static_cast<size_t>(Op::op_count)> op_strs = {
 	"load_const",
 	"set_var", "get_var",
 	"pop", "add", "concat", "sub", "mult", "mod", "div", "eq", "nil", "return_val",

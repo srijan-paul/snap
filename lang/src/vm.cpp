@@ -1,8 +1,8 @@
-#include <vm.hpp>
+#include <cmath>
 #include <common.hpp>
 #include <compiler.hpp>
 #include <parser.hpp>
-#include <cmath>
+#include <vm.hpp>
 
 #if defined(SNAP_DEBUG_RUNTIME) || defined(SNAP_DEBUG_DISASSEMBLY)
 #include <debug.hpp>
@@ -63,15 +63,16 @@ VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 			} else if (b.is_int()) {                                                               \
 				a.set_float(a.as_float() op b.as_int());                                           \
 			}                                                                                      \
+			pop();                                                                                 \
 		} else if (a.is_int()) {                                                                   \
 			if (b.is_int()) {                                                                      \
 				a.as.int_ = a.as_int() op b.as_int();                                              \
 			} else if (b.is_float()) {                                                             \
 				a.as.float_ = a.as_float() op b.as_float();                                        \
 			}                                                                                      \
+			pop();                                                                                 \
 		}                                                                                          \
                                                                                                    \
-		pop();                                                                                     \
 	} while (false);
 
 #ifdef SNAP_DEBUG_RUNTIME
@@ -177,6 +178,14 @@ ExitCode VM::run(bool run_till_end) {
 
 	return ExitCode::Success;
 }
+
+#undef NEXT_OP
+#undef NEXT_BYTE
+#undef READ_VALUE
+#undef SET_VALUE
+#undef GET_VAR
+#undef SET_VAR
+#undef BINOP
 
 ExitCode VM::interpret() {
 	init();

@@ -51,10 +51,18 @@ struct Value {
 		Obj* object;
 	} as;
 
-	Value(s64 v) : tag{ValueType::Int}, as{.int_ = v} {};
-	Value(double v) : tag{ValueType::Float}, as{.float_ = v} {};
-	Value(bool v) : tag{ValueType::Bool}, as{.bool_ = v} {};
-	Value() : tag{ValueType::Nil}, as{.float_ = 0} {};
+	Value(s64 v) : tag{ValueType::Int} {
+		as.int_ = v;
+	};
+	Value(double v) : tag{ValueType::Float} {
+		as.float_ = v;
+	};
+	Value(bool v) : tag{ValueType::Bool} {
+		as.bool_ = v;
+	};
+	Value() : tag{ValueType::Nil} {
+		as.float_ = 0.0f;
+	};
 	// string object value constructor
 	Value(Obj* s) : tag{ValueType::Object} {};
 	Value(char* s, int len);
