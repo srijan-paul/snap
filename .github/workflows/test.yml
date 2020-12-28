@@ -7,9 +7,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
-      - name: create build scripts
+        name: create build scripts
         run: mkdir bin && cd bin && cmake -G Ninja .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
       
-      - name: run build scripts
-      - run: ninja && ./snap
+      - run: ninja && ./snap      
+        name: run build scripts
 
