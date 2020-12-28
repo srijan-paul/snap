@@ -15,17 +15,16 @@ struct Obj {
 
 	// pointer to the next object in the VM's GC linked list.
 	Obj* next;
+	size_t hash = -1;
 	Obj(ObjType tt) : tag{tt} {};
 };
 
 /// Strings in snap are heap allocated, and contain 3 important fields:
 /// `chars`  -> Pointer to the first character of the string on the heap (null terminated).
 /// `length` -> Length of the string.
-/// `hash`   -> Hash value of the string.
 struct String : Obj {
 	char* chars = nullptr;
 	size_t length = 0;
-	size_t hash = -1;
 	/// @param chrs pointer to the character buffer. must be null terminated.
 	/// @param len length of the string.
 	String(char* chrs, size_t len) : Obj(ObjType::string), chars{chrs}, length{len} {};
