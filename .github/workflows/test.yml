@@ -9,8 +9,13 @@ jobs:
       - name: checkout
         uses: actions/checkout@v1
 
+      - uses: seanmiddleditch/gha-setup-ninja@master
+
       - name: create build scripts
-        run: mkdir bin && cd bin && cmake -G Ninja .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+        run:  |
+        mkdir bin
+        cd bin
+        cmake -G Ninja .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 
       - name: Build project
         run: ninja && ./snap
