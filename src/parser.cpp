@@ -1,5 +1,5 @@
-#include "parser.hpp"
-#include "../common.hpp"
+#include <parser.hpp>
+#include <common.hpp>
 #include <iostream>
 
 #define DEFINE_PARSELET(name, condition, next)                                                     \

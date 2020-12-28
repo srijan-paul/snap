@@ -1,11 +1,11 @@
-#include "vm.hpp"
-#include "../common.hpp"
-#include "../compiler/compiler.hpp"
-#include "../syntax/parser.hpp"
+#include <vm.hpp>
+#include <common.hpp>
+#include <compiler.hpp>
+#include <parser.hpp>
 #include <cmath>
 
 #if defined(SNAP_DEBUG_RUNTIME) || defined(SNAP_DEBUG_DISASSEMBLY)
-#include "../debug.hpp"
+#include <debug.hpp>
 #endif
 
 #define NEXT_OP()				(m_block.code[ip++])

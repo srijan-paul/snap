@@ -1,8 +1,8 @@
 #pragma once
-#include "../block.hpp"
-#include "../opcode.hpp"
-#include "../syntax/ast/ast.hpp"
-#include "../vm/vm.hpp"
+#include "block.hpp"
+#include "opcode.hpp"
+#include "ast.hpp"
+#include "vm.hpp"
 #include <array>
 #include <stdint.h>
 

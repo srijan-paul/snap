@@ -1,6 +1,6 @@
 #pragma once
-#include "../../common.hpp"
-#include "../../token.hpp"
+#include "common.hpp"
+#include "token.hpp"
 #include <iostream>
 #include <string>
 #include <vector>

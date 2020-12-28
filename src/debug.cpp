@@ -1,4 +1,4 @@
-#include "debug.hpp"
+#include <debug.hpp>
 #include <array>
 #include <cstdio>
 #include <iostream>

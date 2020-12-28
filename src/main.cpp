@@ -1,16 +1,16 @@
-#include "compiler/compiler.hpp"
-#include "debug.hpp"
-#include "syntax/ast/ast.hpp"
-#include "syntax/ast/ast_printer.hpp"
-#include "syntax/parser.hpp"
-#include "syntax/scanner.hpp"
-#include "token.hpp"
-#include "vm/vm.hpp"
+#include <ast.hpp>
+#include <ast_printer.hpp>
+#include <compiler.hpp>
+#include <debug.hpp>
+#include <parser.hpp>
+#include <scanner.hpp>
+#include <token.hpp>
+#include <vm.hpp>
 
-#include <cstring>
 #include <array>
 #include <cassert>
 #include <cstdio>
+#include <cstring>
 #include <stdio.h>
 
 using namespace snap;

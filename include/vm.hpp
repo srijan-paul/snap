@@ -1,7 +1,7 @@
 #pragma once
-#include "../block.hpp"
-#include "../opcode.hpp"
-#include "../syntax/ast/ast.hpp"
+#include "block.hpp"
+#include "opcode.hpp"
+#include "ast.hpp"
 #include <functional>
 #include <iostream>
 

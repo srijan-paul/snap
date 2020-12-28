@@ -1,7 +1,7 @@
 #pragma once
-#include "../common.hpp"
+#include "common.hpp"
 #include "array"
-#include "ast/ast.hpp"
+#include "ast.hpp"
 #include "scanner.hpp"
 #include <stdint.h>
 
