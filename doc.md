@@ -288,7 +288,7 @@ and the method names is listed below for reference:
 | !           | __not     | 1     |
 | ^           | __xor     | 2     |
 | &           | __band    | 2     |
-| |           | __bor     | 2     |
+| `|`         | __bor     | 2     |
 | <<          | __bsl     | 2     |
 | >>          | __bsr     | 2     |
 | ~           | __bnot    | 1     |
