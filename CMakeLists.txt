@@ -7,6 +7,12 @@ set(INCLUDE_DIR lang/include/snap)
 
 enable_testing()
 
+function(LINK_SNAP_DEPS EXEC)
+    target_link_libraries(${EXEC} ${PROJECT_NAME})
+    target_include_directories(${EXEC} PUBLIC ${INCLUDE_DIR})
+endfunction()
+
+
 # static library
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIR})
@@ -15,13 +21,24 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 # cli app
 set(CLI_NAME "snp")
 add_executable(${CLI_NAME} src/main.cpp)
-target_link_libraries(${CLI_NAME} ${PROJECT_NAME})
-target_include_directories(${CLI_NAME} PUBLIC ${INCLUDE_DIR})
+LINK_SNAP_DEPS(${CLI_NAME})
 target_compile_features(${CLI_NAME} PRIVATE cxx_std_17)
 
 # tests
+
 set(TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/test")
-add_executable(tests "${TEST_DIR}/test.cpp")
-target_link_libraries(tests ${PROJECT_NAME})
-target_include_directories(tests PUBLIC ${INCLUDE_DIR})
-target_compile_features(tests PRIVATE cxx_std_17)
+set(TEST_UTIL_SRC "${TEST_DIR}/test_utils.cpp")
+function(PREPARE_TEST EXE_NAME TEST_NAME FILE_NAME)
+    add_executable(${EXE_NAME} "${TEST_DIR}/${FILE_NAME}" ${TEST_UTIL_SRC})
+    target_compile_features(${EXE_NAME} PRIVATE cxx_std_17)
+    LINK_SNAP_DEPS(${EXE_NAME})
+    add_test(${TEST_NAME} ${EXE_NAME})
+endfunction()
+
+PREPARE_TEST(scanner_test ScannerTests "scanner_test.cpp")
+PREPARE_TEST(compiler_test CompilerTests "compiler_test.cpp")
+PREPARE_TEST(vm_test VMTest "vm_test.cpp")
+PREPARE_TEST(parser_test ParserTest "parser_test.cpp")
+
+
+
