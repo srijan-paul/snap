@@ -14,5 +14,5 @@ jobs:
       - name: create build scripts
         run:  mkdir bin && cd bin && cmake -G Ninja ..
 
-      - name: Build project
-        run: cd bin && ninja && ./tests
+      - name: Build project and run tests
+        run: cd bin && ninja && ctest
