@@ -1,7 +1,7 @@
-#include <value.hpp>
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <value.hpp>
 
 namespace snap {
 
@@ -28,16 +28,16 @@ String::~String() {
 
 void print_value(Value v) {
 	switch (v.tag) {
-	case VT::Int: printf("%zu", SNAP_AS_INT(v)); break;
-	case VT::Float: printf("%f", SNAP_AS_FLOAT(v)); break;
-	case VT::Bool: printf("%s", (SNAP_AS_BOOL(v) ? "true" : "false")); break;
+	case VT::Int: std::printf("%zu", SNAP_AS_INT(v)); break;
+	case VT::Float: std::printf("%f", SNAP_AS_FLOAT(v)); break;
+	case VT::Bool: std::printf("%s", (SNAP_AS_BOOL(v) ? "true" : "false")); break;
 	case VT::Object:
-		if (v.is_string())
-			printf("%s", SNAP_AS_CSTRING(v));
+		if (SNAP_IS_STRING(v))
+			std::printf("%s", SNAP_AS_CSTRING(v));
 		else
-			printf("<snap object>");
+			std::printf("<snap object>");
 		break;
-	default: printf("Internal error: Unknown value type tag!.\n");
+	default: std::printf("Internal error: Impossible value type tag!.\n");
 	}
 }
 
@@ -56,14 +56,14 @@ std::string Value::name_str() const {
 bool Value::are_equal(Value a, Value b) {
 	switch (a.tag) {
 	case VT::Float:
-		if (b.tag == VT::Float) return SNAP_AS_FLOAT(a) == SNAP_AS_FLOAT(b);
-		if (b.tag == VT::Int) return SNAP_AS_FLOAT(a) == SNAP_AS_INT(b);
+		if (b.tag == VT::Float) return a.as_float() == b.as_float();
+		if (b.tag == VT::Int) return a.as_float() == b.as_int();
 		return false;
 	case VT::Int:
-		if (b.tag == VT::Float) return SNAP_AS_INT(a) == SNAP_AS_FLOAT(b);
-		if (b.tag == VT::Int) return SNAP_AS_INT(a) == SNAP_AS_INT(b);
+		if (b.tag == VT::Float) return a.as_int() == b.as_float();
+		if (b.tag == VT::Int) return a.as_int() == a.as_int();
 		return false;
-	case VT::Bool: return SNAP_AS_BOOL(a) == SNAP_AS_BOOL(b);
+	case VT::Bool: return a.as_bool() == b.as_bool();
 	default: return false;
 	}
 }

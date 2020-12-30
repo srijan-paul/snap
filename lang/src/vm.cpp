@@ -198,7 +198,7 @@ bool VM::init() {
 
 	Compiler compiler{&m_block, ast, source};
 	compiler.compile();
-	delete ast; // TODO use std::unique_ptr
+	delete ast;
 
 #ifdef SNAP_DEBUG_DISASSEMBLY
 	disassemble_block(m_block);

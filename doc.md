@@ -3,15 +3,63 @@
 Snap is a relatively fast, dynamically typed scripting language intended for
 embedding in C++ applications, like game engines.
 
-## Overview
+## Operators
 
-The overall features of snap can be gauged from this simple example:
+Snap supports the following operators, from highest to lowest precedence:
+```
++----------+-------------------------------+---------------+
+| Operator | Name/Description              | Associativity |
++----------+-------------------------------+---------------+
+| ()       | Call                          | Left-to-right |
+| []       | Computed Member access        |               |
+| .        | Member access                 |               |
+| ++       | Post-increment                |               |
+| --       | Post-decrement                |               |
++----------+-------------------------------+---------------+
+| ++       | Pre-increment                 | Right-to-left |
+| --       | Pre-decrement                 |               |
+| +-       | Unary Plus/Minus              |               |
+| !~       | Not, Binary Not               |               |
+| typeof   | Type of                       |               |
+| #        | Length                        |               |
++----------+-------------------------------+---------------+
+| * / %    | Mult / Div / Mod              | Left-to-right |
++----------+-------------------------------+---------------+
+| + -      | Add / Sub                     | Left-to-right |
++----------+-------------------------------+---------------+
+| << >>    | BitShift left, Bitshift right | Left-to-right |
++----------+-------------------------------+---------------+
+| < <=     | Comparison                    | Left-to-right |
+| > >=     | Greater, Less                 |               |
+|          | Less Equal, Greater Equal     |               |
++----------+-------------------------------+---------------+
+| == !=    | Equals, NotEquals             | Left-to-right |
++----------+-------------------------------+---------------+
+| &        | Bit And                       | Left-to-right |
++----------+-------------------------------+---------------+
+| |        | Bit Or                        | Left-to-right |
++----------+-------------------------------+---------------+
+| &&       | Logic-and                     | Left-to-right |
++----------+-------------------------------+---------------+
+| ||       | Logic-or                      | Left-to-right |
++----------+-------------------------------+---------------+
+| ?:       | Ternary Operator (misfix)     | Right-to-left |
++----------+-------------------------------+---------------+
+| =        | Assignment and compound       | Right-to-left |
+| += *=    | assignment operators          |               |
+| -= %=    |                               |               |
+| **=      |                               |               |
++----------+-------------------------------+---------------+
+```
 
-```javascript
+## Variables
 
+Variables behave very similar to javascript. Can be declared with `let` and `const`,
+and can hold values of any type.
+
+```js
 let mynum = 123; // mutable variables declared with 'let'
 mynum = 456; // assignment with `=`.
-
 
 const fib_base = 1; // variables declared with `const` cannot be mutated
 ```
@@ -33,7 +81,7 @@ if condition1 {
 }
 ```
 
-For loops in snap come with an extra bit of power. The
+For loops in snap come with an tiny bit of extra power. The
 general for loops look like this:
 
 ```lua
@@ -50,6 +98,7 @@ for (int i = 0; i < 10; i++) {
   printf("i = %d\n", i);
 }
 ```
+
 If you want the loop to go up by some other amount every step, then you can
 specify a third parameter:
 
@@ -83,6 +132,7 @@ for item in my_array {
 ```
 
 ## Functions
+
 Functions are declared using the `fn` keyword and like most languages,
 called using the `()` operator.
 
@@ -127,7 +177,7 @@ Functions can be called with less or more number of arguments
 than mentioned in the definition.
 
 1. When called with fewer arguments, the missing arguments are assumed to be
-  `nil`.
+   `nil`.
 2. When called with more arguments, the extra parameters are simply ignored.
 
 For example:
@@ -159,6 +209,7 @@ log(1, 2, 3) // 1, 2, 3
 ```
 
 ## Objects.
+
 Objects are a data structure that basically behave as a hashtable.
 You can think of them as key value pairs just like objects in javascript or
 tables in Lua.
@@ -167,10 +218,10 @@ tables in Lua.
 const Tom = {
   name: "Tom",
   age: 19,
-  race: "cat"
-}
+  race: "cat",
+};
 
-print(Tom.name) // Tom
+print(Tom.name); // Tom
 ```
 
 Objects can be indexed with any value. Strings, numbers, booleans, functions
@@ -178,12 +229,12 @@ and even other tables are all possible key types for an object.
 The only exception to this rule is the `nil` value.
 
 ```js
-print(Tom['age']) // 19.
+print(Tom["age"]); // 19.
 
-let my_obj = { a: 1, b: 2 }
+let my_obj = { a: 1, b: 2 };
 Tom[my_obj] = 123;
 
-print(Tom[my_obj]) // 123
+print(Tom[my_obj]); // 123
 ```
 
 To remove a value from a table, use the `delete` keyword.
@@ -228,9 +279,9 @@ in an object itself, the parent is queried for the property.
 const t_parent = { a: 1, b: 2 };
 const t_child = { a: 3 };
 
-print(t_child.a, t_child.b) // 3, nil
-setparent(t_child, t_parent) // set t_parent as t_child's child
-print(t_child.a, t_child.b) // 3, 2
+print(t_child.a, t_child.b); // 3, nil
+setparent(t_child, t_parent); // set t_parent as t_child's child
+print(t_child.a, t_child.b); // 3, 2
 ```
 
 This design is inspired by Lua and can be used to simulate some OOP features,
@@ -254,7 +305,8 @@ const a = Point:init(10, 10)
 const b = Point:init(3, 4)
 
 let c = a + b // ERROR: Cannot use operator '+' on types 'object' and 'object'.
-````
+```
+
 The above code will throw an error since we can't add two tables.
 To remedy the error, we introduce a metamethod that overloads the `+` operator:
 
@@ -272,58 +324,29 @@ print(c.x, c.y) // 13, 14
 A table representing all the overloadable operators
 and the method names is listed below for reference:
 
-| Operator    | Method    | Arity |
-| :---------- | :---------|:------|
-| +           | __add     | 2     |
-| +  (unary)  | __unp     | 1     |
-| -           | __sub     | 2     |
-| -  (unary)  | __unm     | 1     |
-| /           | __div     | 2     |
-| %           | __mod     | 2     |
-| **          | __exp     | 2     |
-| >           | __gt      | 2     |
-| <           | __lt      | 2     |
-| >=          | __gte     | 2     |
-| <=          | __lte     | 2     |
-| !           | __not     | 1     |
-| ^           | __xor     | 2     |
-| &           | __band    | 2     |
-|             | __bor     | 2     |
-| <<          | __bsl     | 2     |
-| >>          | __bsr     | 2     |
-| ~           | __bnot    | 1     |
-| .           | __indx    | 2     |
-| ==          | __eq      | 2     |
-| !=          | __neq     | 2     |
-| ..          | __concat  | 2     |
-| ()          | __call    | 1+    |
-| (tostring)  | __tostr   | 1     |
-
-
-## Classes
-
-Snap provides language level support for OOP, however the same can really just
-be simulated using parent tables.
-
-```js
-class Point {
-  new(x, y) {
-    this.x = x
-    this.y = y
-  }
-
-  __add(a, b) {
-    return Point(a.x + b.x, a.y + b.y)
-  }
-
-  __tostr() {
-    return '(' .. this.x .. ',' .. this.y .. ')'
-  }
-}
-
-const a = Point(2, 3)
-const b = Point(5, 10)
-
-const c = a + b
-print(c) // (7, 13)
-```
+| Operator   | Method     | Arity |
+| :--------- | :--------- | :---- |
+| +          | \_\_add    | 2     |
+| + (unary)  | \_\_unp    | 1     |
+| -          | \_\_sub    | 2     |
+| - (unary)  | \_\_unm    | 1     |
+| /          | \_\_div    | 2     |
+| %          | \_\_mod    | 2     |
+| \*\*       | \_\_exp    | 2     |
+| >          | \_\_gt     | 2     |
+| <          | \_\_lt     | 2     |
+| >=         | \_\_gte    | 2     |
+| <=         | \_\_lte    | 2     |
+| !          | \_\_not    | 1     |
+| ^          | \_\_xor    | 2     |
+| &          | \_\_band   | 2     |
+| \|         | \_\_bor    | 2     |
+| <<         | \_\_bsl    | 2     |
+| >>         | \_\_bsr    | 2     |
+| ~          | \_\_bnot   | 1     |
+| .          | \_\_indx   | 2     |
+| ==         | \_\_eq     | 2     |
+| !=         | \_\_neq    | 2     |
+| ..         | \_\_concat | 2     |
+| ()         | \_\_call   | any   |
+| (tostring) | \_\_tostr  | 1     |

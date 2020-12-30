@@ -127,22 +127,25 @@ struct Value {
 	static ValueType numeric_upcast(Value& a, Value& b);
 };
 
-#define SNAP_INT_VAL(n)	  (snap::Value((s64)n))
-#define SNAP_FLOAT_VAL(n) (snap::Value((double)n))
-#define SNAP_BOOL_VAL(b)  (snap::Value((bool)n))
-#define SNAP_NIL_VAL	  (snap::Value())
+#define SNAP_INT_VAL(n)	   (snap::Value((s64)n))
+#define SNAP_FLOAT_VAL(n)  (snap::Value((double)n))
+#define SNAP_BOOL_VAL(b)   (snap::Value((bool)n))
+#define SNAP_NIL_VAL	   (snap::Value())
+#define SNAP_OBJECT_VAL(o) (snap::Value(static_cast<Obj*>(o)))
 
-#define SNAP_IS_INT(v)	 ((v).tag == ValueType::Int)
-#define SNAP_IS_FLOAT(v) ((v).tag == ValueType::Float)
-#define SNAP_IS_BOOL(v)	 ((v).tag == ValueType::Bool)
-#define SNAP_IS_NIL(v)	 ((v).tag == ValueType::Nil)
+#define SNAP_IS_INT(v)	  ((v).tag == snap::ValueType::Int)
+#define SNAP_IS_FLOAT(v)  ((v).tag == snap::ValueType::Float)
+#define SNAP_IS_BOOL(v)	  ((v).tag == snap::ValueType::Bool)
+#define SNAP_IS_NIL(v)	  ((v).tag == snap::ValueType::Nil)
+#define SNAP_IS_OBJECT(v) ((v).tag == snap::ValueType::Object)
+#define SNAP_IS_STRING(v) (SNAP_IS_OBJECT(v) && SNAP_AS_OBJECT(v)->tag == snap::ObjType::string)
 
 #define SNAP_AS_INT(v)	   ((v).as.int_)
 #define SNAP_AS_FLOAT(v)   ((v).as.float_)
 #define SNAP_AS_BOOL(v)	   ((v).as.bool_)
 #define SNAP_AS_NIL(v)	   ((v).as.bool_)
 #define SNAP_AS_OBJECT(v)  ((v).as.object)
-#define SNAP_AS_STRING(v)  (static_cast<String*>((v).as.object))
+#define SNAP_AS_STRING(v)  (static_cast<String*>(SNAP_AS_OBJECT(v)))
 #define SNAP_AS_CSTRING(v) ((SNAP_AS_STRING(v))->chars)
 
 void print_value(Value v);
