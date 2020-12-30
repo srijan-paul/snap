@@ -1,6 +1,6 @@
-#include <parser.hpp>
 #include <common.hpp>
 #include <iostream>
+#include <parser.hpp>
 
 #define DEFINE_PARSELET(name, condition, next)                                                     \
 	Expr* name() {                                                                                 \
@@ -34,7 +34,6 @@ Program* Parser::program() {
 }
 
 Stmt* Parser::declaration() {
-
 	if (match(TT::Let)) {
 		auto decl = var_decl();
 		match(TT::Semi);

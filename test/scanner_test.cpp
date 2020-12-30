@@ -12,9 +12,9 @@ static bool compare_ttypes(const std::string* code, std::vector<TT> expected) {
 		TT type = sc.next_token().type;
 		if (type != tt) {
 			std::printf("Expected token: ");
-			print_ttype(type);
-			std::printf(" Got: ");
 			print_ttype(tt);
+			std::printf(" Got: ");
+			print_ttype(type);
 			std::printf("\n");
 			return false;
 		}
@@ -35,6 +35,7 @@ static bool run_tests() {
 
 	code = "'this is a string' .. 'this is also string'";
 	passed = passed && compare_ttypes(&code, {TT::String, TT::Concat, TT::String, TT::Eof});
+
 	return passed;
 }
 

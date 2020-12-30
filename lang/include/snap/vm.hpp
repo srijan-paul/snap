@@ -1,4 +1,5 @@
 #pragma once
+#include "common.hpp"
 #include "ast.hpp"
 #include "block.hpp"
 #include "opcode.hpp"
@@ -76,7 +77,8 @@ class VM {
 	size_t sp = 0; // stack-top ptr
 	Value m_stack[StackMaxSize];
 
-	void runtime_error(const char* fstring, ...) const;
+	ExitCode binop_error(const char* opstr, Value& a, Value& b);
+	ExitCode runtime_error(const char* fstring, ...) const;
 };
 
 } // namespace snap

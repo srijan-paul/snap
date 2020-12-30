@@ -28,8 +28,7 @@ String::~String() {
 
 void print_value(Value v) {
 	switch (v.tag) {
-	case VT::Int: std::printf("%zu", SNAP_AS_INT(v)); break;
-	case VT::Float: std::printf("%f", SNAP_AS_FLOAT(v)); break;
+	case VT::Number: std::printf("%f", SNAP_AS_NUM(v)); break;
 	case VT::Bool: std::printf("%s", (SNAP_AS_BOOL(v) ? "true" : "false")); break;
 	case VT::Object:
 		if (SNAP_IS_STRING(v))
@@ -43,8 +42,7 @@ void print_value(Value v) {
 
 std::string Value::name_str() const {
 	switch (tag) {
-	case VT::Int: return std::to_string(as_int());
-	case VT::Float: return std::to_string(as_float());
+	case VT::Number: return std::to_string(as_num());
 	case VT::Bool: return as_bool() ? std::string("true") : std::string("false");
 	case VT::Object:
 		if (is_string()) return std::string(SNAP_AS_CSTRING(*this));
@@ -55,8 +53,7 @@ std::string Value::name_str() const {
 
 const char* Value::type_name() const {
 	switch (tag) {
-	case VT::Int: return "int";
-	case VT::Float: return "float";
+	case VT::Number: return "number";
 	case VT::Bool: return "bool";
 	case VT::Object: {
 		if (is_string()) return "string";
@@ -67,16 +64,11 @@ const char* Value::type_name() const {
 }
 
 bool Value::are_equal(Value a, Value b) {
+	if (a.tag != b.tag) return false;
 	switch (a.tag) {
-	case VT::Float:
-		if (b.tag == VT::Float) return a.as_float() == b.as_float();
-		if (b.tag == VT::Int) return a.as_float() == b.as_int();
-		return false;
-	case VT::Int:
-		if (b.tag == VT::Float) return a.as_int() == b.as_float();
-		if (b.tag == VT::Int) return a.as_int() == a.as_int();
-		return false;
+	case VT::Number: return b.as_num() == a.as_num();
 	case VT::Bool: return a.as_bool() == b.as_bool();
+	case VT::Object: return a.as_object() == b.as_object();
 	default: return false;
 	}
 }

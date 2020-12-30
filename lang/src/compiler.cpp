@@ -2,8 +2,7 @@
 #include <cstring>
 #include <string>
 
-#define TOK2INT(t) SNAP_INT_VAL(std::stoi(t.raw(*source)))
-#define TOK2FLT(t) SNAP_FLOAT_VAL(std::stof(t.raw(*source)))
+#define TOK2NUM(t) SNAP_NUM_VAL(std::stof(t.raw(*source)))
 
 namespace snap {
 using Op = Opcode;
@@ -86,8 +85,8 @@ void Compiler::compile_literal(const Literal* literal) {
 	const Token& t = literal->token;
 	size_t index;
 	switch (literal->token.type) {
-	case TT::Integer: index = emit_value(TOK2INT(t)); break;
-	case TT::Float: index = emit_value(TOK2FLT(t)); break;
+	case TT::Integer:
+	case TT::Float: index = emit_value(TOK2NUM(t)); break;
 	case TT::String: index = emit_string(t); break;
 	default:;
 	}

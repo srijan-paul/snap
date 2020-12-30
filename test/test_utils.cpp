@@ -37,7 +37,6 @@ void print_ttype(snap::TokenType type) {
 void print_token(const snap::Token& token, const std::string& src) {
 	print_ttype(token.type);
 	std::printf("'%s'", token.raw(src).c_str());
-	std::printf("\n");
 }
 
 void print_parsetree(const std::string&& code) {

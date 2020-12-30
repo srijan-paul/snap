@@ -21,8 +21,8 @@ Token Scanner::token_if_match(char c, TT then, TT other) {
 }
 
 Token Scanner::next_token() {
-	if (eof()) return make_token(TT::Eof);
 	skip_whitespace();
+	if (eof()) return make_token(TT::Eof);
 
 	start = current;
 	const char c = next();

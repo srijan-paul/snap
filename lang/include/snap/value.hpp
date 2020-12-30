@@ -34,8 +34,7 @@ struct String : Obj {
 };
 
 enum class ValueType {
-	Float,
-	Int,
+	Number,
 	Bool,
 	Object,
 	Nil,
@@ -44,38 +43,30 @@ enum class ValueType {
 struct Value {
 	ValueType tag;
 	union {
-		double float_;
-		s64 int_;
-		bool bool_;
+		double num;
+		bool boolean;
 		Obj* object;
 	} as;
 
-	Value(s64 v) : tag{ValueType::Int} {
-		as.int_ = v;
-	};
-	Value(double v) : tag{ValueType::Float} {
-		as.float_ = v;
+	Value(double v) : tag{ValueType::Number} {
+		as.num = v;
 	};
 	Value(bool v) : tag{ValueType::Bool} {
-		as.bool_ = v;
+		as.boolean = v;
 	};
 	Value() : tag{ValueType::Nil} {
-		as.float_ = 0.0f;
+		as.num = 0.0f;
 	};
 	// string object value constructor
 	Value(Obj* s) : tag{ValueType::Object} {};
 	Value(char* s, int len);
 
-	inline double as_float() const {
-		return as.float_;
-	}
-
-	inline int as_int() const {
-		return as.int_;
+	inline number as_num() const {
+		return as.num;
 	}
 
 	inline bool as_bool() const {
-		return as.bool_;
+		return as.boolean;
 	}
 
 	inline Obj* as_object() const {
@@ -90,16 +81,8 @@ struct Value {
 		return tag == ValueType::Bool;
 	}
 
-	inline bool is_int() const {
-		return tag == ValueType::Int;
-	}
-
-	inline bool is_float() const {
-		return tag == ValueType::Float;
-	}
-
-	inline bool is_numeric() const {
-		return (tag == ValueType::Float || tag == ValueType::Int);
+	inline bool is_num() const {
+		return tag == ValueType::Number;
 	}
 
 	inline bool is_object() const {
@@ -110,44 +93,36 @@ struct Value {
 		return (tag == ValueType::Object && as_object()->tag == ObjType::string);
 	}
 
-	inline void set_float(float v) {
-		tag = ValueType::Float;
-		as.float_ = v;
-	}
-
-	inline void set_int(int i) {
-		tag = ValueType::Int;
-		as.int_ = i;
-	}
-
 	std::string name_str() const;
 	const char* name_cstr() const;
 	const char* type_name() const;
 
-
 	static bool are_equal(Value a, Value b);
 };
 
-#define SNAP_INT_VAL(n)	   (snap::Value((s64)n))
-#define SNAP_FLOAT_VAL(n)  (snap::Value((double)n))
-#define SNAP_BOOL_VAL(b)   (snap::Value((bool)n))
+#define SNAP_SET_NUM(v, i)	  ((v).as.num = i)
+#define SPAN_SET_BOOL(v, b)	  ((v).as.boolean = b)
+#define SNAP_SET_OBJECT(v, o) ((v).as.object = o)
+
+#define SNAP_NUM_VAL(n)	   (snap::Value(static_cast<number>(n)))
+#define SNAP_BOOL_VAL(b)   (snap::Value(static_cast<bool>(n)))
 #define SNAP_NIL_VAL	   (snap::Value())
 #define SNAP_OBJECT_VAL(o) (snap::Value(static_cast<Obj*>(o)))
 
-#define SNAP_IS_INT(v)	  ((v).tag == snap::ValueType::Int)
-#define SNAP_IS_FLOAT(v)  ((v).tag == snap::ValueType::Float)
+#define SNAP_IS_NUM(v)	  ((v).tag == snap::ValueType::Number)
 #define SNAP_IS_BOOL(v)	  ((v).tag == snap::ValueType::Bool)
 #define SNAP_IS_NIL(v)	  ((v).tag == snap::ValueType::Nil)
 #define SNAP_IS_OBJECT(v) ((v).tag == snap::ValueType::Object)
 #define SNAP_IS_STRING(v) (SNAP_IS_OBJECT(v) && SNAP_AS_OBJECT(v)->tag == snap::ObjType::string)
 
-#define SNAP_AS_INT(v)	   ((v).as.int_)
-#define SNAP_AS_FLOAT(v)   ((v).as.float_)
-#define SNAP_AS_BOOL(v)	   ((v).as.bool_)
-#define SNAP_AS_NIL(v)	   ((v).as.bool_)
+#define SNAP_AS_NUM(v)	   ((v).as.num)
+#define SNAP_AS_BOOL(v)	   ((v).as.boolean)
+#define SNAP_AS_NIL(v)	   ((v).as.double)
 #define SNAP_AS_OBJECT(v)  ((v).as.object)
 #define SNAP_AS_STRING(v)  (static_cast<String*>(SNAP_AS_OBJECT(v)))
 #define SNAP_AS_CSTRING(v) ((SNAP_AS_STRING(v))->chars)
+
+#define SNAP_TYPE_CSTR(v) ((v).type_name())
 
 void print_value(Value v);
 }; // namespace snap

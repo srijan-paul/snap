@@ -25,7 +25,7 @@ inline void xassert(bool condition, std::string&& message) {
 	}
 }
 
-#define VAL_INT_EQ(v, i) SNAP_IS_INT(v) && SNAP_AS_INT(v) == i
+#define VAL_NUM_EQ(v, i) SNAP_AS_NUM(v) && SNAP_AS_NUM(v) == i
 
 #define EXPECT_VAL_EQ(a, b)                                                                        \
 	ASSERT_BODY(snap::Value::are_equal(a, b), {                                                    \

@@ -1,12 +1,19 @@
+#include "scanner.hpp"
 #include <iostream>
 #include <vm.hpp>
 
+using namespace snap;
+
 int main() {
-	std::string test = R"(let foo = 2;
-						let bar = 5;
-						let baz = bar / 0;)";
-	snap::VM vm{&test};
-	auto code = vm.interpret();
+	std::string code = R"(
+		let a = 2
+		let b = 5
+		let c = b % 2
+	)";
+
+	VM vm{&code};
+	vm.interpret();
+
 	std::printf("Snap programming language.\n");
 	return 0;
 }

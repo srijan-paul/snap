@@ -10,7 +10,7 @@ void block_test() {
 	std::printf("--- block test ---\n");
 
 	Block b;
-	const u8 index = b.add_value(SNAP_FLOAT_VAL(1.5));
+	const u8 index = b.add_value(SNAP_NUM_VAL(1.5));
 	b.add_instruction(Op::load_const);
 	b.add_num(index);
 	b.add_instruction(Op::pop);

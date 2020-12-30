@@ -3,7 +3,7 @@
 static void run_test() {
 	std::printf("--- parser test ---\n");
 	// expressions and precedence
-	print_parsetree("1 + 2; 3 + 4;");
+	print_parsetree("1 + 2; 3 + 4;  ");
 	print_parsetree("1 | 2 | 3 || 4");
 
 	// variable declaration

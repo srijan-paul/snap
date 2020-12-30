@@ -1,3 +1,4 @@
+#include "value.hpp"
 #include <cmath>
 #include <common.hpp>
 #include <compiler.hpp>
@@ -21,60 +22,23 @@ namespace snap {
 using Op = Opcode;
 using VT = ValueType;
 
-static bool try_float_cast(Value& v, double* d) {
-	if (v.is_float()) {
-		*d = v.as_float();
-		return true;
-	}
-
-	if (v.is_int()) {
-		*d = v.as_int();
-		v.tag = VT::Float;
-		return true;
-	}
-
-	return false;
-}
-
-static bool try_int_cast(Value& v, int* iptr) {
-	if (v.is_int()) {
-		*iptr = v.as_int();
-		return true;
-	}
-
-	if (v.is_float()) {
-		*iptr = v.as_float();
-		v.tag = VT::Int;
-		return true;
-	}
-
-	return false;
-}
-
 VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 
-// TODO: errors
+#define BINOP_ERROR(op, v1, v2)                                                                    \
+	runtime_error("Cannot use operator '%s' on operands of type '%s' and '%s'.", op,               \
+				  SNAP_TYPE_CSTR(v1), SNAP_TYPE_CSTR(v2))
+
 #define BINOP(op)                                                                                  \
 	do {                                                                                           \
-		Value& b = m_stack[sp - 1];                                                                \
-		Value& a = m_stack[sp - 2];                                                                \
+		Value& a = m_stack[sp - 1];                                                                \
+		Value& b = m_stack[sp - 2];                                                                \
                                                                                                    \
-		if (a.is_float()) {                                                                        \
-			if (b.is_float()) {                                                                    \
-				a.as.float_ = a.as_float() op b.as_float();                                        \
-			} else if (b.is_int()) {                                                               \
-				a.set_float(a.as_float() op b.as_int());                                           \
-			}                                                                                      \
+		if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {                                                    \
+			SNAP_SET_NUM(b, SNAP_AS_NUM(b) op SNAP_AS_NUM(a));                                     \
 			pop();                                                                                 \
-		} else if (a.is_int()) {                                                                   \
-			if (b.is_int()) {                                                                      \
-				a.as.int_ = a.as_int() op b.as_int();                                              \
-			} else if (b.is_float()) {                                                             \
-				a.as.float_ = a.as_float() op b.as_float();                                        \
-			}                                                                                      \
-			pop();                                                                                 \
+		} else {                                                                                   \
+			BINOP_ERROR(#op, b, a);                                                                \
 		}                                                                                          \
-                                                                                                   \
 	} while (false);
 
 #ifdef SNAP_DEBUG_RUNTIME
@@ -104,22 +68,16 @@ ExitCode VM::run(bool run_till_end) {
 			Value& a = m_stack[sp - 1];
 			Value& b = m_stack[sp - 2];
 
-			double a_flt, b_flt;
-
-			if (try_float_cast(a, &a_flt) && try_float_cast(b, &b_flt)) {
-				if (a_flt == 0) {
-					runtime_error("Cannot divide by zero.\n");
-					return ExitCode::RuntimeError;
-				} else {
-					b.as.float_ = b_flt / a_flt;
+			if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {
+				if (SNAP_AS_NUM(b) == 0) {
+					return runtime_error("Attempt to divide by 0.\n", SNAP_TYPE_CSTR(b),
+										 SNAP_TYPE_CSTR(a));
 				}
+				SNAP_SET_NUM(b, SNAP_AS_NUM(a) / SNAP_AS_NUM(a));
+				pop();
 			} else {
-				runtime_error("Bad operand types for operator '/': '%s' and '%s'.\n",
-								 b.type_name(), a.type_name());
-				return ExitCode::RuntimeError;
+				BINOP_ERROR("/", b, a);
 			}
-
-			pop();
 			break;
 		}
 
@@ -127,16 +85,10 @@ ExitCode VM::run(bool run_till_end) {
 			Value& a = m_stack[sp - 1];
 			Value& b = m_stack[sp - 2];
 
-			double a_flt, b_flt;
-
-			if (a.is_int() && b.is_int()) {
-				b.as.int_ = b.as_int() % a.as_int();
-			} else if (try_float_cast(a, &a_flt) && try_float_cast(b, &b_flt)) {
-				b.as.float_ = fmod(b_flt, a_flt);
+			if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {
+				SNAP_SET_NUM(b, fmod(SNAP_AS_NUM(b), SNAP_AS_NUM(a)));
 			} else {
-				runtime_error("Bad operand types for operator '%%': '%s' and '%s'.\n",
-								 b.type_name(), a.type_name());
-				return ExitCode::RuntimeError;
+				BINOP_ERROR("%", b, a);
 			}
 
 			pop();
@@ -217,11 +169,17 @@ bool VM::init() {
 	return true;
 }
 
-void VM::runtime_error(const char* fstring, ...) const {
+ExitCode VM::binop_error(const char* opstr, Value& a, Value& b) {
+	return runtime_error("Cannot use operator '%s' on operands of type '%s' and '%s'.", opstr,
+						 SNAP_TYPE_CSTR(a), SNAP_TYPE_CSTR(b));
+}
+
+ExitCode VM::runtime_error(const char* fstring, ...) const {
 	va_list args;
 	va_start(args, fstring);
 	default_error_fn(*this, fstring, args);
 	va_end(args);
+	return ExitCode::RuntimeError;
 }
 
 void default_error_fn(const VM& vm, const char* message, va_list args) {
