@@ -11,7 +11,7 @@
 	{                                                                                              \
 		if (!(cond)) {                                                                             \
 			body;                                                                                  \
-			assert(cond);                                                                          \
+			abort();                                                                               \
 		}                                                                                          \
 	}
 
@@ -21,7 +21,7 @@
 inline void xassert(bool condition, std::string&& message) {
 	if (!(condition)) {
 		std::cout << message << std::endl;
-		assert(condition);
+		abort();
 	}
 }
 

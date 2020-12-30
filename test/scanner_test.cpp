@@ -6,41 +6,39 @@
 using namespace snap;
 using TT = TokenType;
 
-static void assert_token(snap::TokenType a, snap::TokenType b) {
-	if (a != b) {
-		printf("Expected token: ");
-		print_ttype(a);
-		printf(" Got: ");
-		print_ttype(b);
-		printf("\n");
-	}
-
-	assert(a == b);
-}
-
 static bool compare_ttypes(const std::string* code, std::vector<TT> expected) {
 	Scanner sc{code};
 	for (auto tt : expected) {
-		assert_token(tt, sc.next_token().type);
+		TT type = sc.next_token().type;
+		if (type != tt) {
+			std::printf("Expected token: ");
+			print_ttype(type);
+			std::printf(" Got: ");
+			print_ttype(tt);
+			std::printf("\n");
+			return false;
+		}
 	}
 	return true;
 }
 
-static void run_tests() {
+static bool run_tests() {
+	bool passed = true;
 	std::string code = "123 4.55 + - -= += >= >> << > < <=";
-	compare_ttypes(&code, {TT::Integer, TT::Float, TT::Plus, TT::Minus,
+	passed = passed && compare_ttypes(&code, {TT::Integer, TT::Float, TT::Plus, TT::Minus,
 											  TT::MinusEq, TT::PlusEq, TT::GtEq, TT::BitRShift,
 											  TT::BitLShift, TT::Gt, TT::Lt, TT::LtEq});
 
 	// test keyword and identifier scanning
 	code = "let true false xyz";
-	compare_ttypes(&code, {TT::Let, TT::True, TT::False, TT::Id, TT::Eof});
+	passed = passed && compare_ttypes(&code, {TT::Let, TT::True, TT::False, TT::Id, TT::Eof});
 
 	code = "'this is a string' .. 'this is also string'";
-	compare_ttypes(&code, {TT::String, TT::Concat, TT::String, TT::Eof});
+	passed = passed && compare_ttypes(&code, {TT::String, TT::Concat, TT::String, TT::Eof});
+	return passed;
 }
 
 int main() {
-    run_tests();
-    return 0;
+	if (run_tests()) return 0;
+	return 1;
 }

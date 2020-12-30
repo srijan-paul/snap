@@ -53,6 +53,19 @@ std::string Value::name_str() const {
 	}
 }
 
+const char* Value::type_name() const {
+	switch (tag) {
+	case VT::Int: return "int";
+	case VT::Float: return "float";
+	case VT::Bool: return "bool";
+	case VT::Object: {
+		if (is_string()) return "string";
+		return "object";
+	}
+	default: return "unknown";
+	}
+}
+
 bool Value::are_equal(Value a, Value b) {
 	switch (a.tag) {
 	case VT::Float:

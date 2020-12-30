@@ -65,6 +65,7 @@ void Compiler::compile_binexp(const BinExpr* exp) {
 	case TT::Mult:
 	case TT::Mod:
 	case TT::Concat:
+	case TT::Div:
 		compile_exp(exp->left);
 		compile_exp(exp->right);
 		emit(toktype_to_op(exp->token.type));
@@ -128,6 +129,7 @@ Op Compiler::toktype_to_op(TT toktype) {
 	switch (toktype) {
 	case TT::Plus: return Op::add;
 	case TT::Minus: return Op::sub;
+	case TT::Div: return Op::div;
 	case TT::Mult: return Op::mult;
 	case TT::Mod: return Op::mod;
 	case TT::EqEq: return Op::eq;
@@ -148,7 +150,7 @@ int Compiler::new_variable(const Token* varname) {
 	return symbol_table.add(name, length);
 }
 
-/* --- Symbol Table --- */
+// -- Symbol Table --
 
 int SymbolTable::add(const char* name, u32 length) {
 	symbols[num_symbols++] = Symbol(name, length, scope_depth);

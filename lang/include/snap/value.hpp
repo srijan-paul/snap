@@ -122,9 +122,10 @@ struct Value {
 
 	std::string name_str() const;
 	const char* name_cstr() const;
+	const char* type_name() const;
+
 
 	static bool are_equal(Value a, Value b);
-	static ValueType numeric_upcast(Value& a, Value& b);
 };
 
 #define SNAP_INT_VAL(n)	   (snap::Value((s64)n))

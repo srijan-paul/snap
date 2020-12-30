@@ -1,6 +1,8 @@
 #include <cmath>
 #include <common.hpp>
 #include <compiler.hpp>
+#include <cstdarg>
+#include <cstdio>
 #include <parser.hpp>
 #include <vm.hpp>
 
@@ -77,7 +79,7 @@ VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 
 #ifdef SNAP_DEBUG_RUNTIME
 void print_stack(Value stack[VM::StackMaxSize], size_t sp) {
-	printf("(%zu) [", sp);
+	printf("(%zu)	[ ", sp);
 	for (Value* v = stack; v < stack + sp; v++) {
 		printf("%s", v->name_str().c_str());
 		printf(" ");
@@ -104,14 +106,17 @@ ExitCode VM::run(bool run_till_end) {
 
 			double a_flt, b_flt;
 
-			if (try_float_cast(a, &a_flt) && try_float_cast(a, &b_flt)) {
-				if (b_flt == 0) {
-					// TODO error
+			if (try_float_cast(a, &a_flt) && try_float_cast(b, &b_flt)) {
+				if (a_flt == 0) {
+					runtime_error("Cannot divide by zero.\n");
+					return ExitCode::RuntimeError;
 				} else {
-					b.as.float_ = a_flt / b_flt;
+					b.as.float_ = b_flt / a_flt;
 				}
 			} else {
-				// TODO error
+				runtime_error("Bad operand types for operator '/': '%s' and '%s'.\n",
+								 b.type_name(), a.type_name());
+				return ExitCode::RuntimeError;
 			}
 
 			pop();
@@ -125,9 +130,13 @@ ExitCode VM::run(bool run_till_end) {
 			double a_flt, b_flt;
 
 			if (a.is_int() && b.is_int()) {
-				b.as.int_ = a.as_int() % b.as_int();
-			} else if (try_float_cast(a, &a_flt) && try_float_cast(a, &b_flt)) {
-				b.as.float_ = fmod(a_flt, b_flt);
+				b.as.int_ = b.as_int() % a.as_int();
+			} else if (try_float_cast(a, &a_flt) && try_float_cast(b, &b_flt)) {
+				b.as.float_ = fmod(b_flt, a_flt);
+			} else {
+				runtime_error("Bad operand types for operator '%%': '%s' and '%s'.\n",
+								 b.type_name(), a.type_name());
+				return ExitCode::RuntimeError;
 			}
 
 			pop();
@@ -206,6 +215,18 @@ bool VM::init() {
 #endif
 
 	return true;
+}
+
+void VM::runtime_error(const char* fstring, ...) const {
+	va_list args;
+	va_start(args, fstring);
+	default_error_fn(*this, fstring, args);
+	va_end(args);
+}
+
+void default_error_fn(const VM& vm, const char* message, va_list args) {
+	vfprintf(stderr, message, args);
+	fputc('\n', stderr);
 }
 
 } // namespace snap

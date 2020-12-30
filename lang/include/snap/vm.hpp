@@ -1,21 +1,25 @@
 #pragma once
+#include "ast.hpp"
 #include "block.hpp"
 #include "opcode.hpp"
-#include "ast.hpp"
+#include <cstdarg>
 #include <functional>
 #include <iostream>
+
 
 namespace snap {
 enum class ExitCode { Success, CompileError, RuntimeError };
 
 using VM = class VM;
-using PrintFn = std::function<void(const VM& vm, const char* string)>;
-using ErrorFn = std::function<void(const VM& vm, const char* err_message)>;
+using PrintFn = std::function<void(const VM& vm, String* string)>;
+using ErrorFn = std::function<void(const VM& vm, const char* fstring, va_list fmt)>;
 using AllocateFn = std::function<void*(VM& vm, size_t old_size, size_t new_size)>;
 
-inline void defaultPrintFn(const VM& vm, const char* string) {
-	printf("%s", string);
+inline void default_print_fn(const VM& vm, String* string) {
+	printf("%s\n", string->chars);
 }
+
+void default_error_fn(const VM& vm, const char* message, va_list args);
 
 class VM {
   public:
@@ -23,7 +27,12 @@ class VM {
 	ExitCode interpret();
 	/// the function that snap uses to print stuff onto the console.
 	/// It is called whenever the `print` function is called in snap source code.
-	PrintFn print = defaultPrintFn;
+	PrintFn print = default_print_fn;
+
+	/// The function called when there a runtime error
+	/// in the VM. It takes a const reference to the VM, a format string
+	/// and a variadic argument list.
+	ErrorFn log_error = default_error_fn;
 
 	/// The memory allocator used by snap's garbage collector.
 	/// This function is called whenever any memory is moved, freed or requested
@@ -66,6 +75,8 @@ class VM {
 	size_t ip = 0; // instruction ptr
 	size_t sp = 0; // stack-top ptr
 	Value m_stack[StackMaxSize];
+
+	void runtime_error(const char* fstring, ...) const;
 };
 
 } // namespace snap
