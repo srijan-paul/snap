@@ -24,6 +24,8 @@ using VT = ValueType;
 
 VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 
+#define IS_VAL_TRUTHY(v) ((SNAP_IS_BOOL(v) && SNAP_AS_BOOL(v)) || !SNAP_IS_NIL(v))
+
 #define BINOP_ERROR(op, v1, v2)                                                                    \
 	runtime_error("Cannot use operator '%s' on operands of type '%s' and '%s'.", op,               \
 				  SNAP_TYPE_CSTR(v1), SNAP_TYPE_CSTR(v2))
@@ -43,7 +45,7 @@ VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 
 #ifdef SNAP_DEBUG_RUNTIME
 void print_stack(Value stack[VM::StackMaxSize], size_t sp) {
-	printf("(%zu)	[ ", sp);
+	printf("(%zu)[ ", sp);
 	for (Value* v = stack; v < stack + sp; v++) {
 		printf("%s", v->name_str().c_str());
 		printf(" ");
@@ -70,10 +72,9 @@ ExitCode VM::run(bool run_till_end) {
 
 			if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {
 				if (SNAP_AS_NUM(b) == 0) {
-					return runtime_error("Attempt to divide by 0.\n", SNAP_TYPE_CSTR(b),
-										 SNAP_TYPE_CSTR(a));
+					return runtime_error("Attempt to divide by 0.\n");
 				}
-				SNAP_SET_NUM(b, SNAP_AS_NUM(a) / SNAP_AS_NUM(a));
+				SNAP_SET_NUM(b, SNAP_AS_NUM(b) / SNAP_AS_NUM(a));
 				pop();
 			} else {
 				BINOP_ERROR("/", b, a);
@@ -98,8 +99,23 @@ ExitCode VM::run(bool run_till_end) {
 		case Op::eq: {
 			Value a = pop();
 			Value b = pop();
+			push(SNAP_BOOL_VAL(Value::are_equal(a, b)));
+			break;
+		}
 
-			push(Value(Value::are_equal(a, b)));
+		case Op::neq: {
+			Value a = pop();
+			Value b = pop();
+			push(SNAP_BOOL_VAL(!Value::are_equal(a, b)));
+			break;
+		}
+
+		case Op::jmp: {
+			Value& b = m_stack[sp - 1];
+			Value& a = m_stack[sp - 2];
+
+			// a && b -> a is truthy ? a : b
+			(IS_VAL_TRUTHY(a)) ? (b = a, pop()) : pop();
 			break;
 		}
 
@@ -132,8 +148,9 @@ ExitCode VM::run(bool run_till_end) {
 		default: std::cout << "not implemented yet" << std::endl;
 		}
 #ifdef SNAP_DEBUG_RUNTIME
-		printf("%-4s   ", op2s(op));
+		disassemble_instr(m_block, op, ip);
 		print_stack(m_stack, sp);
+		printf("\n");
 #endif
 	} while (run_till_end);
 
@@ -147,6 +164,8 @@ ExitCode VM::run(bool run_till_end) {
 #undef GET_VAR
 #undef SET_VAR
 #undef BINOP
+#undef BINOP_ERROR
+#undef IS_VAL_TRUTHY
 
 ExitCode VM::interpret() {
 	init();

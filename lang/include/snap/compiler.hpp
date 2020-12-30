@@ -72,10 +72,13 @@ class Compiler {
 	int new_variable(const Token* name);
 	int find_var(const Token* name);
 
-	inline void emit(Opcode op);
-	inline void emit(Opcode a, Opcode b);
+	inline void emit(Opcode op, u32 line);
+	inline void emit(Opcode op, const Token& token);
+	inline void emit_bytes(Opcode a, Opcode b, u32 line);
+	inline void emit_bytes(Opcode a, Opcode b, const Token& token);
 	inline size_t emit_value(Value value);
 	size_t emit_string(const Token& token);
+	
 	Opcode toktype_to_op(TokenType type);
 };
 

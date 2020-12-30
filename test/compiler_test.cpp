@@ -11,9 +11,9 @@ void block_test() {
 
 	Block b;
 	const u8 index = b.add_value(SNAP_NUM_VAL(1.5));
-	b.add_instruction(Op::load_const);
+	b.add_instruction(Op::load_const, 1);
 	b.add_num(index);
-	b.add_instruction(Op::pop);
+	b.add_instruction(Op::pop, 1);
 
 	disassemble_block(b);
 

@@ -36,7 +36,7 @@ void print_value(Value v) {
 		else
 			std::printf("<snap object>");
 		break;
-	default: std::printf("Internal error: Impossible value type tag!.\n");
+	default: std::printf("Internal error: Impossible value type tag %zu!.\n", static_cast<size_t>(v.tag));
 	}
 }
 

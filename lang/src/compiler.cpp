@@ -2,7 +2,8 @@
 #include <cstring>
 #include <string>
 
-#define TOK2NUM(t) SNAP_NUM_VAL(std::stof(t.raw(*source)))
+#define TOK2NUM(t)		   SNAP_NUM_VAL(std::stof(t.raw(*source)))
+#define SPTR_CAST(type, v) static_cast<const type*>(v)
 
 namespace snap {
 using Op = Opcode;
@@ -12,14 +13,14 @@ void Compiler::compile() {
 	for (auto s : m_ast->stmts) {
 		compile_stmt(s);
 	}
-	emit(Op::return_val);
+	emit(Op::return_val, 1);
 }
 
 void Compiler::compile_stmt(const Stmt* s) {
 	switch (s->type) {
 	case NodeType::ExprStmt:
-		compile_exp(((ExprStmt*)s)->exp);
-		emit(Op::pop);
+		compile_exp((SPTR_CAST(ExprStmt, s)->exp));
+		emit(Op::pop, (SPTR_CAST(ExprStmt, s)->exp->token));
 		break;
 	case NodeType::VarDeclaration: compile_vardecl((VarDecl*)s); break;
 	default:;
@@ -33,7 +34,7 @@ void Compiler::compile_vardecl(const VarDecl* stmt) {
 		if (decl->init != nullptr) {
 			compile_exp(decl->init);
 		} else {
-			emit(Op::nil);
+			emit(Op::load_nil, decl->var);
 		}
 	}
 }
@@ -53,23 +54,18 @@ void Compiler::compile_binexp(const BinExpr* exp) {
 		switch (exp->left->type) {
 		case NodeType::VarId: {
 			compile_exp(exp->right);
-			emit(Op::set_var, (Op)find_var(&exp->left->token));
+			emit_bytes(Op::set_var, static_cast<Op>(find_var(&exp->left->token)),
+					   (&exp->left->token)->location.line);
 			break;
 		}
 		default: return;
 		}
 		break;
-	case TT::Plus:
-	case TT::Minus:
-	case TT::Mult:
-	case TT::Mod:
-	case TT::Concat:
-	case TT::Div:
+	default:;
 		compile_exp(exp->left);
 		compile_exp(exp->right);
-		emit(toktype_to_op(exp->token.type));
+		emit(toktype_to_op(exp->token.type), exp->token);
 		return;
-	default:;
 	}
 }
 
@@ -95,7 +91,7 @@ void Compiler::compile_literal(const Literal* literal) {
 		// TODO: Too many constants error.
 	}
 
-	emit(Op::load_const, (Op)index);
+	emit_bytes(Op::load_const, static_cast<Op>(index), literal->token);
 }
 
 int Compiler::find_var(const Token* name_token) {
@@ -108,20 +104,29 @@ int Compiler::find_var(const Token* name_token) {
 }
 
 void Compiler::compile_var(const VarId* var) {
-	emit(Op::get_var, (Op)find_var(&var->token));
+	emit_bytes(Op::get_var, static_cast<Op>(find_var(&var->token)), var->token);
 }
 
 inline size_t Compiler::emit_value(Value v) {
 	return m_block->add_value(v);
 }
 
-inline void Compiler::emit(Op op) {
-	m_block->add_instruction(op);
+inline void Compiler::emit(Op op, const Token& token) {
+	m_block->add_instruction(op, token.location.line);
 }
 
-inline void Compiler::emit(Op a, Op b) {
-	emit(a);
-	emit(b);
+inline void Compiler::emit(Op op, u32 line) {
+	m_block->add_instruction(op, line);
+}
+
+inline void Compiler::emit_bytes(Op a, Op b, const Token& token) {
+	emit(a, token);
+	emit(b, token);
+}
+
+inline void Compiler::emit_bytes(Op a, Op b, u32 line) {
+	emit(a, line);
+	emit(b, line);
 }
 
 Op Compiler::toktype_to_op(TT toktype) {
@@ -132,6 +137,7 @@ Op Compiler::toktype_to_op(TT toktype) {
 	case TT::Mult: return Op::mult;
 	case TT::Mod: return Op::mod;
 	case TT::EqEq: return Op::eq;
+	case TT::BangEq: return Op::neq;
 	case TT::Concat: return Op::concat;
 	default: return Op::op_count;
 	}

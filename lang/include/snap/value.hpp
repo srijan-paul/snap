@@ -101,11 +101,11 @@ struct Value {
 };
 
 #define SNAP_SET_NUM(v, i)	  ((v).as.num = i)
-#define SPAN_SET_BOOL(v, b)	  ((v).as.boolean = b)
+#define SNAP_SET_BOOL(v, b)	  ((v).as.boolean = b)
 #define SNAP_SET_OBJECT(v, o) ((v).as.object = o)
 
 #define SNAP_NUM_VAL(n)	   (snap::Value(static_cast<number>(n)))
-#define SNAP_BOOL_VAL(b)   (snap::Value(static_cast<bool>(n)))
+#define SNAP_BOOL_VAL(b)   (snap::Value(static_cast<bool>(b)))
 #define SNAP_NIL_VAL	   (snap::Value())
 #define SNAP_OBJECT_VAL(o) (snap::Value(static_cast<Obj*>(o)))
 
@@ -122,7 +122,9 @@ struct Value {
 #define SNAP_AS_STRING(v)  (static_cast<String*>(SNAP_AS_OBJECT(v)))
 #define SNAP_AS_CSTRING(v) ((SNAP_AS_STRING(v))->chars)
 
-#define SNAP_TYPE_CSTR(v) ((v).type_name())
+#define SNAP_SET_TT(v, tt) ((v).tag = tt)
+#define SNAP_GET_TT(v)	   ((v).tag)
+#define SNAP_TYPE_CSTR(v)  ((v).type_name())
 
 void print_value(Value v);
 }; // namespace snap

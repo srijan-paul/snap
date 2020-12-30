@@ -31,7 +31,7 @@ inline void xassert(bool condition, std::string&& message) {
 	ASSERT_BODY(snap::Value::are_equal(a, b), {                                                    \
 		std::printf("Expected values to be equal: ");                                              \
 		print_value(a);                                                                            \
-		std::printf("\n");                                                                         \
+		std::printf("\t");                                                                         \
 		print_value(b);                                                                            \
 	})
 

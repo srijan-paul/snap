@@ -85,10 +85,7 @@ struct Location {
 };
 
 struct Token {
-  private:
 	Location location;
-
-  public:
 	TokenType type = TokenType::Error;
 	Token(TokenType type, Location loc) : type{type}, location{loc} {};
 	Token() : location{} {};

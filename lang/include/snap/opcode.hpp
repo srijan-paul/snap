@@ -24,8 +24,12 @@ enum class Opcode {
 	mod,
 	div,
 	eq,
-	nil,
+	neq,
+	load_nil,
 	return_val,
+
+	// opcodes with 2 operands
+	jmp,
 
 	op_count
 };
