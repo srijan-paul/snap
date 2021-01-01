@@ -5,6 +5,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <parser.hpp>
+#include <stdio.h>
 #include <vm.hpp>
 
 #if defined(SNAP_DEBUG_RUNTIME) || defined(SNAP_DEBUG_DISASSEMBLY)
@@ -213,13 +214,18 @@ ExitCode VM::binop_error(const char* opstr, Value& a, Value& b) {
 ExitCode VM::runtime_error(const char* fstring, ...) const {
 	va_list args;
 	va_start(args, fstring);
-	default_error_fn(*this, fstring, args);
+
+	std::size_t bufsize = vsnprintf(nullptr, 0, fstring, args) + 1;
+	char buf[bufsize];
+	vsnprintf(buf, bufsize, fstring, args);
+
+	default_error_fn(*this, buf);
 	va_end(args);
 	return ExitCode::RuntimeError;
 }
 
-void default_error_fn(const VM& vm, const char* message, va_list args) {
-	vfprintf(stderr, message, args);
+void default_error_fn(const VM& vm, const char* message) {
+	fprintf(stderr, "%s", message);
 	fputc('\n', stderr);
 }
 

@@ -87,7 +87,7 @@ class Compiler {
 
 	void error_at_token(const char* message, const Token& token);
 	void error_at(const char* message, u32 line);
-	void error(const char* fmt, ...);
+	void error(const char* fmt...);
 
 	void recover();
 

@@ -1,6 +1,7 @@
 #include "token.hpp"
 #include <compiler.hpp>
 #include <cstdarg>
+#include <cstdio>
 #include <cstring>
 #include <iterator>
 #include <string>
@@ -121,7 +122,12 @@ void Compiler::primary(bool can_assign) {
 			emit_bytes(Op::get_var, static_cast<Op>(index), token);
 		}
 	} else {
-		error("Unexpected '%s'.", peek.raw(*m_source).c_str());
+		const std::string raw = peek.raw(*m_source);
+		const char fmt[] = "Unexpected '%s'.";
+		std::size_t bufsize = strlen(fmt) + raw.length() - 1;
+		char buf[bufsize];
+		sprintf(buf, fmt, raw.c_str());
+		error_at(buf, peek.location.line);
 	}
 }
 
@@ -136,7 +142,7 @@ void Compiler::literal() {
 	}
 
 	if (index >= UINT8_MAX) {
-		// TODO: Too many constants error.
+		error_at_token("Too many literal constants in one function.", token);
 	}
 
 	emit_bytes(Op::load_const, static_cast<Op>(index), token);
@@ -173,22 +179,25 @@ void Compiler::expect(TT expected, const char* err_msg) {
 	error_at_token(err_msg, token);
 }
 
-void Compiler::error_at(const char* message, u32 line) {
-	error("[Error at line %d] - %s.\n", line, message);
+void Compiler::error_at(const char* fmt, u32 line) {
+	error("[line %d]: %s", line, fmt);
 }
 
 void Compiler::error_at_token(const char* message, const Token& token) {
-	error("[Error at line %d] - near '%s' : %s\n.", token.location.line,
-		  token.raw(*m_source).c_str(), message);
+	error("[line %d]: near '%s': %s", token.location.line, token.raw(*m_source).c_str(), message);
 }
 
-void Compiler::error(const char* fmt, ...) {
+void Compiler::error(const char* fmt...) {
 	has_error = true;
 
 	va_list args;
 	va_start(args, fmt);
 
-	m_vm->log_error(*m_vm, fmt, args);
+	std::size_t bufsize = vsnprintf(nullptr, 0, fmt, args) + 1;
+	char buf[bufsize];
+	vsnprintf(buf, bufsize, fmt, args);
+
+	m_vm->log_error(*m_vm, buf);
 
 	va_end(args);
 }
@@ -205,8 +214,6 @@ int Compiler::find_var(const Token& name_token) {
 	const char* name = name_token.raw_cstr(m_source);
 	int length = name_token.length();
 	const int idx = m_symtable.find(name, length);
-	if (idx == -1) { /* TODO: Reference error */
-	}
 	return idx;
 }
 
@@ -253,7 +260,7 @@ int Compiler::new_variable(const Token& varname) {
 	const u32 length = varname.length();
 
 	if (m_symtable.find_in_current_scope(name, length) != -1) {
-		// TODO throw error
+		error_at("Attempt to redeclare variable", varname.location.line);
 		return -1;
 	}
 
