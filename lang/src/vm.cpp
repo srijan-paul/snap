@@ -4,7 +4,6 @@
 #include <compiler.hpp>
 #include <cstdarg>
 #include <cstdio>
-#include <parser.hpp>
 #include <stdio.h>
 #include <vm.hpp>
 

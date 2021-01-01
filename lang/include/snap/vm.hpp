@@ -1,5 +1,4 @@
 #pragma once
-#include "ast.hpp"
 #include "block.hpp"
 #include "common.hpp"
 #include "opcode.hpp"
