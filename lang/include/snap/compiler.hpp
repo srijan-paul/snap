@@ -1,6 +1,7 @@
 #pragma once
 #include "opcode.hpp"
 #include "scanner.hpp"
+#include "token.hpp"
 #include "vm.hpp"
 #include <array>
 
@@ -52,6 +53,7 @@ class Compiler {
   private:
 	VM* m_vm;
 	const std::string* m_source;
+	bool has_error = false;
 
 	Scanner m_scanner;
 
@@ -83,7 +85,11 @@ class Compiler {
 	/// an error message.
 	void expect(TokenType type, const char* err_msg);
 
-	void error(const char* message);
+	void error_at_token(const char* message, const Token& token);
+	void error_at(const char* message, u32 line);
+	void error(const char* fmt, ...);
+
+	void recover();
 
 	void toplevel();
 	void stmt();

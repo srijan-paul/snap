@@ -13,5 +13,11 @@ using number = double;
 
 } // namespace snap
 
+// If this macro is defined, then snap will use
+// NaN tagged values that shorten the value representation
+// of the interpreter to a simple 8 byte double, using the NaN
+// bits to encode the type information.
+#define SNAP_NAN_TAGGING 1
+
 #define SNAP_DEBUG_RUNTIME	   1
 #define SNAP_DEBUG_DISASSEMBLY 1

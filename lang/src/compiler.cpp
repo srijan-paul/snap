@@ -1,6 +1,10 @@
+#include "token.hpp"
 #include <compiler.hpp>
+#include <cstdarg>
 #include <cstring>
+#include <iterator>
 #include <string>
+
 
 #define TOK2NUM(t)		   SNAP_NUM_VAL(std::stof(t.raw(*m_source)))
 #define SPTR_CAST(type, v) static_cast<const type*>(v)
@@ -38,6 +42,9 @@ void Compiler::compile() {
 // - call expr
 // - export statement
 void Compiler::toplevel() {
+	if (has_error) recover();
+	if (eof()) return;
+
 	if (match(TT::Let)) {
 		return var_decl();
 	} else {
@@ -90,7 +97,7 @@ DEFINE_PARSE_FN(Compiler::sum, (match(TT::Plus) || match(TT::Minus) || match(TT:
 DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) || match(TT::Mod) || match(TT::Div)), unary)
 
 void Compiler::unary(bool can_assign) {
-	grouping(true);
+	grouping(can_assign);
 }
 
 void Compiler::grouping(bool can_assign) {
@@ -113,8 +120,9 @@ void Compiler::primary(bool can_assign) {
 		} else {
 			emit_bytes(Op::get_var, static_cast<Op>(index), token);
 		}
+	} else {
+		error("Unexpected '%s'.", peek.raw(*m_source).c_str());
 	}
-	std::cout << (int)peek.type;
 }
 
 void Compiler::literal() {
@@ -132,6 +140,12 @@ void Compiler::literal() {
 	}
 
 	emit_bytes(Op::load_const, static_cast<Op>(index), token);
+}
+
+void Compiler::recover() {
+	while (!(eof() || match(TT::Semi) || match(TT::LCurlBrace) || match(TT::LSqBrace))) {
+		advance();
+	}
 }
 
 // helper functions:
@@ -156,11 +170,27 @@ void Compiler::expect(TT expected, const char* err_msg) {
 		return;
 	}
 
-	error(err_msg);
+	error_at_token(err_msg, token);
 }
 
-void Compiler::error(const char* message) {
-	std::cout << message << std::endl;
+void Compiler::error_at(const char* message, u32 line) {
+	error("[Error at line %d] - %s.\n", line, message);
+}
+
+void Compiler::error_at_token(const char* message, const Token& token) {
+	error("[Error at line %d] - near '%s' : %s\n.", token.location.line,
+		  token.raw(*m_source).c_str(), message);
+}
+
+void Compiler::error(const char* fmt, ...) {
+	has_error = true;
+
+	va_list args;
+	va_start(args, fmt);
+
+	m_vm->log_error(*m_vm, fmt, args);
+
+	va_end(args);
 }
 
 size_t Compiler::emit_string(const Token& token) {
@@ -179,10 +209,6 @@ int Compiler::find_var(const Token& name_token) {
 	}
 	return idx;
 }
-
-// void Compiler::compile_var(const VarId* var) {
-// 	emit_bytes(Op::get_var, static_cast<Op>(find_var(&var->token)), var->token);
-// }
 
 inline size_t Compiler::emit_value(Value v) {
 	return m_vm->m_block.add_value(v);

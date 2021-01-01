@@ -5,7 +5,7 @@ using namespace snap;
 
 /// Runs the next `op_count` instructions in the `code` string in a VM.
 /// Then asserts that the value on top of the stack is equal to `expected_value`.
-static void test_code(std::string&& code, int op_count, Value expected_value) {
+static void test_code(const std::string&& code, int op_count, Value expected_value) {
 	VM vm{&code};
 	vm.init();
 	vm.step(op_count);
@@ -13,12 +13,12 @@ static void test_code(std::string&& code, int op_count, Value expected_value) {
 }
 
 static void expr_tests() {
-	test_code("let a = 5 / 2", 3, 2.5);
-	test_code("let a = 5 % 2", 3, 1.0);
-	test_code("let a = 5 + 2", 3, 7.0);
-	test_code("let a = 5 - 2", 3, 3.0);
-	test_code("let a = 3 * 5", 3, 15.0);
-	test_code("let a = 10 - 5 - 2", 5, 3.0);
+	test_code("5 / 2", 3, 2.5);
+	test_code("5 % 2", 3, 1.0);
+	test_code("5 + 2", 3, 7.0);
+	test_code("5 - 2", 3, 3.0);
+	test_code("3 * 5", 3, 15.0);
+	test_code("10 - 5 - 2", 5, 3.0);
 }
 
 void vm_test() {
