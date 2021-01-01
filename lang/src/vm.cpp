@@ -11,7 +11,7 @@
 #include <debug.hpp>
 #endif
 
-#define NEXT_OP()				(m_block.code[ip++])
+#define FETCH()					(m_block.code[ip++])
 #define NEXT_BYTE()				((u8)(m_block.code[ip++]))
 #define READ_VALUE()			(m_block.constant_pool[NEXT_BYTE()])
 #define SET_VALUE(depth, value) (m_stack[sp - depth - 1] = value)
@@ -43,6 +43,17 @@ VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 		}                                                                                          \
 	} while (false);
 
+#define BIT_BINOP(op)                                                                              \
+	Value& b = m_stack[sp - 1];                                                                    \
+	Value& a = m_stack[sp - 2];                                                                    \
+                                                                                                   \
+	if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {                                                        \
+		SNAP_SET_NUM(a, SNAP_CAST_INT(a) op SNAP_CAST_INT(b));                                     \
+		pop();                                                                                     \
+	} else {                                                                                       \
+		BINOP_ERROR(#op, a, b);                                                                    \
+	}
+
 #ifdef SNAP_DEBUG_RUNTIME
 void print_stack(Value stack[VM::StackMaxSize], size_t sp) {
 	printf("(%zu)[ ", sp);
@@ -57,7 +68,12 @@ void print_stack(Value stack[VM::StackMaxSize], size_t sp) {
 ExitCode VM::run(bool run_till_end) {
 
 	do {
-		const Op op = NEXT_OP();
+		const Op op = FETCH();
+
+#ifdef SNAP_DEBUG_RUNTIME
+		disassemble_instr(m_block, op, ip - 1);
+#endif
+
 		switch (op) {
 		case Op::load_const: push(READ_VALUE()); break;
 
@@ -96,6 +112,16 @@ ExitCode VM::run(bool run_till_end) {
 			break;
 		}
 
+		case Op::lshift: {
+			BIT_BINOP(<<);
+			break;
+		}
+
+		case Op::rshift: {
+			BIT_BINOP(>>);
+			break;
+		}
+
 		case Op::eq: {
 			Value a = pop();
 			Value b = pop();
@@ -111,11 +137,7 @@ ExitCode VM::run(bool run_till_end) {
 		}
 
 		case Op::jmp: {
-			Value& b = m_stack[sp - 1];
-			Value& a = m_stack[sp - 2];
-
-			// a && b -> a is truthy ? a : b
-			(IS_VAL_TRUTHY(a)) ? (b = a, pop()) : pop();
+			ip = static_cast<size_t>(FETCH());
 			break;
 		}
 
@@ -132,14 +154,14 @@ ExitCode VM::run(bool run_till_end) {
 		}
 
 		case Op::concat: {
-			Value& a = m_stack[sp - 1];
-			Value& b = m_stack[sp - 2];
+			Value& a = m_stack[sp - 2];
+			Value& b = m_stack[sp - 1];
 
 			if (!(a.is_string() && b.is_string())) {
-				// TODO: error
+				return binop_error("..", a, b);
 			} else {
-				String* s = String::concatenate(b.as_string(), a.as_string());
-				b.as.object = s;
+				String* s = String::concatenate(a.as_string(), b.as_string());
+				a.as.object = s;
 			}
 			pop();
 			break;
@@ -148,7 +170,6 @@ ExitCode VM::run(bool run_till_end) {
 		default: std::cout << "not implemented yet" << std::endl;
 		}
 #ifdef SNAP_DEBUG_RUNTIME
-		disassemble_instr(m_block, op, ip);
 		print_stack(m_stack, sp);
 		printf("\n");
 #endif
@@ -157,7 +178,7 @@ ExitCode VM::run(bool run_till_end) {
 	return ExitCode::Success;
 }
 
-#undef NEXT_OP
+#undef FETCH
 #undef NEXT_BYTE
 #undef READ_VALUE
 #undef SET_VALUE
@@ -173,12 +194,8 @@ ExitCode VM::interpret() {
 }
 
 bool VM::init() {
-	Parser parser{source};
-	Program* ast = parser.parse();
-
-	Compiler compiler{&m_block, ast, source};
+	Compiler compiler{this, source};
 	compiler.compile();
-	delete ast;
 
 #ifdef SNAP_DEBUG_DISASSEMBLY
 	disassemble_block(m_block);

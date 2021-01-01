@@ -1,12 +1,11 @@
 #pragma once
-#include "common.hpp"
 #include "ast.hpp"
 #include "block.hpp"
+#include "common.hpp"
 #include "opcode.hpp"
 #include <cstdarg>
 #include <functional>
 #include <iostream>
-
 
 namespace snap {
 enum class ExitCode { Success, CompileError, RuntimeError };
@@ -25,6 +24,7 @@ void default_error_fn(const VM& vm, const char* message, va_list args);
 class VM {
   public:
 	VM(const std::string* src);
+	Block m_block;
 	ExitCode interpret();
 	/// the function that snap uses to print stuff onto the console.
 	/// It is called whenever the `print` function is called in snap source code.
@@ -72,7 +72,7 @@ class VM {
 	/// the VM maintains it's personal linked list of objects
 	/// for garbage collection.
 	Obj* gc_objects;
-	Block m_block;
+
 	size_t ip = 0; // instruction ptr
 	size_t sp = 0; // stack-top ptr
 	Value m_stack[StackMaxSize];

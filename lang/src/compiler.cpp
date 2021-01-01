@@ -2,88 +2,128 @@
 #include <cstring>
 #include <string>
 
-#define TOK2NUM(t)		   SNAP_NUM_VAL(std::stof(t.raw(*source)))
+#define TOK2NUM(t)		   SNAP_NUM_VAL(std::stof(t.raw(*m_source)))
 #define SPTR_CAST(type, v) static_cast<const type*>(v)
+
+#define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
+	void name(bool can_assign) {                                                                   \
+		next_fn(can_assign);                                                                       \
+		while (cond) {                                                                             \
+			Token op_token = token;                                                                \
+			next_fn(false);                                                                        \
+			emit(toktype_to_op(op_token.type), op_token);                                          \
+		}                                                                                          \
+	}
 
 namespace snap {
 using Op = Opcode;
 using TT = TokenType;
 
+Compiler::Compiler(VM* vm, const std::string* src)
+	: m_vm{vm}, m_source{src}, m_scanner(Scanner{src}) {
+	advance(); // set `peek` to the first token in the token stream.
+}
+
 void Compiler::compile() {
-	for (auto s : m_ast->stmts) {
-		compile_stmt(s);
+	while (!eof()) {
+		toplevel();
 	}
-	emit(Op::return_val, 1);
+	emit(Op::return_val, -1);
 }
 
-void Compiler::compile_stmt(const Stmt* s) {
-	switch (s->type) {
-	case NodeType::ExprStmt:
-		compile_exp((SPTR_CAST(ExprStmt, s)->exp));
-		emit(Op::pop, (SPTR_CAST(ExprStmt, s)->exp->token));
-		break;
-	case NodeType::VarDeclaration: compile_vardecl((VarDecl*)s); break;
-	default:;
-	}
-}
-
-void Compiler::compile_vardecl(const VarDecl* stmt) {
-	for (auto decl : stmt->declarators) {
-		new_variable(&decl->var);
-
-		if (decl->init != nullptr) {
-			compile_exp(decl->init);
-		} else {
-			emit(Op::load_nil, decl->var);
-		}
+// top level statements are one of:
+// - var declaration
+// - function declaration
+// - assignment
+// - call expr
+// - export statement
+void Compiler::toplevel() {
+	if (match(TT::Let)) {
+		return var_decl();
+	} else {
+		expr_stmt();
 	}
 }
 
-void Compiler::compile_exp(const Expr* exp) {
-	switch (exp->type) {
-	case NodeType::BinExpr: compile_binexp((BinExpr*)exp); break;
-	case NodeType::Literal: compile_literal((Literal*)exp); break;
-	case NodeType::VarId: compile_var((VarId*)exp); break;
-	default:;
-	}
+/// @brief compiles a variable declaration assuming a `let` or `const`
+/// has been consumed.
+void Compiler::var_decl() {
+	do {
+		declarator();
+	} while (match(TT::Comma));
+	match(TT::Semi); // optional semi colon at the end.
 }
 
-void Compiler::compile_binexp(const BinExpr* exp) {
-	switch (exp->token.type) {
-	case TT::Eq:
-		switch (exp->left->type) {
-		case NodeType::VarId: {
-			compile_exp(exp->right);
-			emit_bytes(Op::set_var, static_cast<Op>(find_var(&exp->left->token)),
-					   (&exp->left->token)->location.line);
-			break;
-		}
-		default: return;
-		}
-		break;
-	default:;
-		compile_exp(exp->left);
-		compile_exp(exp->right);
-		emit(toktype_to_op(exp->token.type), exp->token);
+void Compiler::declarator() {
+	expect(TT::Id, "Expected variable name.");
+	// add the new variable to the symbol table.
+	new_variable(token);
+	// default value is `nil`.
+	match(TT::Eq) ? expr() : emit(Op::load_nil, token.location.line);
+}
+
+void Compiler::expr_stmt() {
+	expr();
+	emit(Opcode::pop, token);
+	match(TT::Semi);
+}
+
+void Compiler::expr() {
+	logic_or(true);
+}
+
+void Compiler::logic_or(bool can_assign) {
+	logic_and(true);
+}
+
+void Compiler::logic_and(bool can_assign) {
+	bit_or(true);
+}
+
+DEFINE_PARSE_FN(Compiler::bit_or, match(TT::BitOr), bit_and)
+DEFINE_PARSE_FN(Compiler::bit_and, match(TT::BitAnd), equality)
+DEFINE_PARSE_FN(Compiler::equality, match(TT::EqEq) || match(TT::BangEq), comparison)
+DEFINE_PARSE_FN(Compiler::comparison, match(TT::BitLShift) || match(TT::BitRShift), b_shift)
+DEFINE_PARSE_FN(Compiler::b_shift,
+				match(TT::Gt) || match(TT::Lt) || match(TT::GtEq) || match(TT::LtEq), sum)
+DEFINE_PARSE_FN(Compiler::sum, (match(TT::Plus) || match(TT::Minus) || match(TT::Concat)), mult)
+DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) || match(TT::Mod) || match(TT::Div)), unary)
+
+void Compiler::unary(bool can_assign) {
+	grouping(true);
+}
+
+void Compiler::grouping(bool can_assign) {
+	if (match(TT::LParen)) {
+		expr();
+		expect(TT::RParen, "Expected ')' after grouping expression.");
 		return;
 	}
+	primary(can_assign);
 }
 
-size_t Compiler::emit_string(const Token& token) {
-	size_t length = token.length() - 2; // minus the quotes
-	char* buf = new char[length + 1];
-	std::memcpy(buf, token.raw_cstr(source) + 1, length); // +1 to skip the openening quote.
-	buf[length] = '\0';
-	return emit_value(Value(buf, length));
+void Compiler::primary(bool can_assign) {
+	if (isLiteral(peek.type)) {
+		literal();
+	} else if (match(TT::Id)) {
+		const size_t index = find_var(token);
+		if (can_assign && match(TT::Eq)) {
+			expr(); // compile assignment RHS
+			emit_bytes(Op::set_var, static_cast<Op>(index), token);
+		} else {
+			emit_bytes(Op::get_var, static_cast<Op>(index), token);
+		}
+	}
+	std::cout << (int)peek.type;
 }
 
-void Compiler::compile_literal(const Literal* literal) {
-	const Token& t = literal->token;
-	size_t index;
-	switch (literal->token.type) {
+void Compiler::literal() {
+	advance();
+	std::size_t index;
+	switch (token.type) {
 	case TT::Integer:
-	case TT::Float: index = emit_value(TOK2NUM(t)); break;
-	case TT::String: index = emit_string(t); break;
+	case TT::Float: index = emit_value(TOK2NUM(token)); break;
+	case TT::String: index = emit_string(token); break;
 	default:;
 	}
 
@@ -91,32 +131,69 @@ void Compiler::compile_literal(const Literal* literal) {
 		// TODO: Too many constants error.
 	}
 
-	emit_bytes(Op::load_const, static_cast<Op>(index), literal->token);
+	emit_bytes(Op::load_const, static_cast<Op>(index), token);
 }
 
-int Compiler::find_var(const Token* name_token) {
-	const char* name = name_token->raw_cstr(source);
-	int length = name_token->length();
-	const int idx = symbol_table.find(name, length);
+// helper functions:
+
+void Compiler::advance() {
+	prev = token;
+	token = peek;
+	peek = m_scanner.next_token();
+}
+
+bool Compiler::match(TT expected) {
+	if (check(expected)) {
+		advance();
+		return true;
+	}
+	return false;
+}
+
+void Compiler::expect(TT expected, const char* err_msg) {
+	if (check(expected)) {
+		advance();
+		return;
+	}
+
+	error(err_msg);
+}
+
+void Compiler::error(const char* message) {
+	std::cout << message << std::endl;
+}
+
+size_t Compiler::emit_string(const Token& token) {
+	size_t length = token.length() - 2; // minus the quotes
+	char* buf = new char[length + 1];
+	std::memcpy(buf, token.raw_cstr(m_source) + 1, length); // +1 to skip the openening quote.
+	buf[length] = '\0';
+	return emit_value(Value(buf, length));
+}
+
+int Compiler::find_var(const Token& name_token) {
+	const char* name = name_token.raw_cstr(m_source);
+	int length = name_token.length();
+	const int idx = m_symtable.find(name, length);
 	if (idx == -1) { /* TODO: Reference error */
 	}
 	return idx;
 }
 
-void Compiler::compile_var(const VarId* var) {
-	emit_bytes(Op::get_var, static_cast<Op>(find_var(&var->token)), var->token);
-}
+// void Compiler::compile_var(const VarId* var) {
+// 	emit_bytes(Op::get_var, static_cast<Op>(find_var(&var->token)), var->token);
+// }
 
 inline size_t Compiler::emit_value(Value v) {
-	return m_block->add_value(v);
+	return m_vm->m_block.add_value(v);
 }
 
 inline void Compiler::emit(Op op, const Token& token) {
-	m_block->add_instruction(op, token.location.line);
+	m_vm->m_block.add_instruction(op, token.location.line);
 }
 
 inline void Compiler::emit(Op op, u32 line) {
-	m_block->add_instruction(op, line);
+	m_vm->m_block.add_instruction(op, line);
 }
 
 inline void Compiler::emit_bytes(Op a, Op b, const Token& token) {
@@ -139,20 +216,22 @@ Op Compiler::toktype_to_op(TT toktype) {
 	case TT::EqEq: return Op::eq;
 	case TT::BangEq: return Op::neq;
 	case TT::Concat: return Op::concat;
+	case TT::BitLShift: return Op::lshift;
+	case TT::BitRShift: return Op::rshift;
 	default: return Op::op_count;
 	}
 }
 
-int Compiler::new_variable(const Token* varname) {
-	const char* name = varname->raw_cstr(source);
-	const u32 length = varname->length();
+int Compiler::new_variable(const Token& varname) {
+	const char* name = varname.raw_cstr(m_source);
+	const u32 length = varname.length();
 
-	if (symbol_table.find_in_current_scope(name, length) != -1) {
+	if (m_symtable.find_in_current_scope(name, length) != -1) {
 		// TODO throw error
 		return -1;
 	}
 
-	return symbol_table.add(name, length);
+	return m_symtable.add(name, length);
 }
 
 // -- Symbol Table --

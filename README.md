@@ -27,6 +27,7 @@ The several complaints that people have about Lua that Snap intends to address a
 - Lacks many features that are common in other languages such as :
   - Compound assignment operators (`+=`, `-=`, `*=`) and decrement and increment operators (`++`, `--`) .
   - `continue` statement for skipping over some loop iterations.
+  - `switch` statements.
 - Arrays starting at 1.
 
 Snap aims to keep most of what Lua provides, but address the aforementioned complaints and offer the following QoL feautures:

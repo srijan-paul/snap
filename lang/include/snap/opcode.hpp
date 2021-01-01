@@ -25,6 +25,8 @@ enum class Opcode {
 	div,
 	eq,
 	neq,
+	lshift,
+	rshift,
 	load_nil,
 	return_val,
 

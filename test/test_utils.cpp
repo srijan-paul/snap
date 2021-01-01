@@ -39,29 +39,16 @@ void print_token(const snap::Token& token, const std::string& src) {
 	std::printf("'%s'", token.raw(src).c_str());
 }
 
-void print_parsetree(const std::string&& code) {
-	snap::Parser parser{&code};
-	auto tree = parser.parse();
 
-	snap::ASTPrinter printer{&code};
-	std::cout << "code: " << code << std::endl;
-	printer.visit(tree);
-}
-
-void compile(const std::string* code, Block* block) {
-	Parser parser(code);
-	auto ast = parser.parse();
-	ASTPrinter printer(code);
-	printer.visit(ast);
-
-	Compiler compiler(block, ast, code);
+void compile(const std::string* code, VM* vm) {
+	Compiler compiler(vm, code);
 	compiler.compile();
 }
 
 void print_disassembly(const char* code) {
 	const std::string code_s{code};
-	snap::Block block;
-	compile(&code_s, &block);
-	disassemble_block(block);
+	snap::VM vm{&code_s};
+	compile(&code_s, &vm);
+	disassemble_block(vm.m_block);
 	printf("\n");
 }

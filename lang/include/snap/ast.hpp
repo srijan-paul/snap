@@ -45,6 +45,9 @@ struct BinExpr : public Expr {
 struct UnaryExpr : Expr {
 	Expr* operand;
 	UnaryExpr(Token op, Expr* exp) : Expr(NodeType::UnaryExpr, op), operand(exp){};
+	~UnaryExpr() {
+		delete operand;
+	}
 };
 
 struct Literal : Expr {
@@ -67,22 +70,38 @@ struct Declaration : Stmt {
 struct ExprStmt : Stmt {
 	Expr* exp;
 	ExprStmt(Expr* expr) : Stmt(NodeType::ExprStmt), exp{expr} {};
+	~ExprStmt() {
+		delete exp;
+	}
 };
 
 struct Declarator : Stmt {
 	Token var;
 	Expr* init{nullptr};
 	Declarator(Token tk) : Stmt(NodeType::VarDeclarator), var{tk} {};
+	~Declarator() {
+		delete init;
+	}
 };
 
 struct VarDecl : Declaration {
 	std::vector<Declarator*> declarators = {};
 	VarDecl() : Declaration(NodeType::VarDeclaration){};
+	~VarDecl() {
+		for (auto decl : declarators) {
+			delete decl;
+		}
+	}
 };
 
 struct Program : public ASTNode {
 	std::vector<Stmt*> stmts;
 	Program() : ASTNode(NodeType::Program){};
+	~Program() {
+		for (auto s : stmts) {
+			delete s;
+		}
+	}
 };
 
 } // namespace snap

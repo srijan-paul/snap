@@ -1,10 +1,8 @@
 #pragma once
-#include "block.hpp"
 #include "opcode.hpp"
-#include "ast.hpp"
+#include "scanner.hpp"
 #include "vm.hpp"
 #include <array>
-#include <stdint.h>
 
 namespace snap {
 
@@ -48,37 +46,83 @@ struct SymbolTable {
 
 class Compiler {
   public:
-	Compiler(Block* block, const Program* ast, const std::string* src)
-		: m_block{block}, m_ast{ast}, source{src} {};
+	Compiler(VM* vm, const std::string* src);
 	void compile();
 
   private:
-	Block* m_block;
-	const Program* m_ast;
-	const std::string* source;
+	VM* m_vm;
+	const std::string* m_source;
 
-	SymbolTable symbol_table;
+	Scanner m_scanner;
 
-	void compile_stmt(const Stmt* stmt);
+	Token token; // current token under analysis.
+	Token prev;	 // previous token.
+	Token peek;	 // lookahead token.
 
-	void compile_vardecl(const VarDecl* decl);
+	SymbolTable m_symtable;
 
-	void compile_exp(const Expr* exp);
-	void compile_node(const Stmt* stmt);
-	void compile_binexp(const BinExpr* exp);
-	void compile_literal(const Literal* exp);
-	void compile_var(const VarId* var);
+	void advance(); // move 1 step forward in the token stream.
 
-	int new_variable(const Token* name);
-	int find_var(const Token* name);
+	inline bool eof() const {
+		return peek.type == TokenType::Eof;
+	}
+
+	inline bool check(TokenType expected) const {
+		return !eof() && peek.type == expected;
+	}
+
+	inline bool isLiteral(TokenType type) const {
+		return (type == TokenType::Integer || type == TokenType::String ||
+				type == TokenType::Float);
+	}
+
+	/// If the next token is of type `expected` then
+	/// consumes it and returns true.
+	bool match(TokenType expected);
+	/// If the `peek` is not of type `type` then throws
+	/// an error message.
+	void expect(TokenType type, const char* err_msg);
+
+	void error(const char* message);
+
+	void toplevel();
+	void stmt();
+
+	void var_decl();
+	void declarator();
+	void expr_stmt();
+
+	void expr();
+
+	void logic_or(bool can_assign);	 // ||
+	void logic_and(bool can_assign); // &&
+
+	void bit_or(bool can_assign);  // |
+	void bit_and(bool can_assign); // &
+
+	void equality(bool can_assign);	  // == !=
+	void comparison(bool can_assign); // > >= < <=
+	void b_shift(bool can_assign);	  // >> <<
+
+	void sum(bool can_assign);		// + - ..
+	void mult(bool can_assign);		// * / %
+	void unary(bool can_assign);	// - + ! not
+	void index(bool can_assign);	// [] .
+	void call(bool can_assign);		// ()
+	void grouping(bool can_assign); // (expr)
+	void primary(bool can_assign);	// literal | id
+	void literal();
+
+	int new_variable(const Token& name);
+	int find_var(const Token& name);
 
 	inline void emit(Opcode op, u32 line);
 	inline void emit(Opcode op, const Token& token);
-	inline void emit_bytes(Opcode a, Opcode b, u32 line);
-	inline void emit_bytes(Opcode a, Opcode b, const Token& token);
-	inline size_t emit_value(Value value);
+	void emit_bytes(Opcode a, Opcode b, u32 line);
+	void emit_bytes(Opcode a, Opcode b, const Token& token);
+	size_t emit_value(Value value);
 	size_t emit_string(const Token& token);
-	
+
 	Opcode toktype_to_op(TokenType type);
 };
 

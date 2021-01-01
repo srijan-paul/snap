@@ -126,5 +126,7 @@ struct Value {
 #define SNAP_GET_TT(v)	   ((v).tag)
 #define SNAP_TYPE_CSTR(v)  ((v).type_name())
 
+#define SNAP_CAST_INT(v) ((s64)((v).as.num))
+
 void print_value(Value v);
 }; // namespace snap

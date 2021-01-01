@@ -14,6 +14,7 @@ static constexpr std::array<const char*, static_cast<size_t>(Op::op_count)> op_s
 	"pop", "add", "concat",
 	"sub", "mult", "mod", 
 	"div", "eq", "neq", 
+	"lshift", "rshift",
 	"nil", "return", "jmp"
 };
 // clang-format on

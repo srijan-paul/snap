@@ -45,7 +45,7 @@ Stmt* Parser::declaration() {
 VarDecl* Parser::var_decl() {
 	VarDecl* vdecl = new VarDecl();
 	do {
-		vdecl->declarators.push_back(var_declarator());
+		vdecl->declarators.emplace_back(var_declarator());
 	} while (match(TT::Comma));
 	return vdecl;
 }
