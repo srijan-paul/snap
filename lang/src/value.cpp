@@ -47,7 +47,7 @@ std::string Value::name_str() const {
 	case VT::Object:
 		if (is_string()) return std::string(SNAP_AS_CSTRING(*this));
 		return "<snap object>";
-	default: return "Unknown type tag!";
+	default: return "<unknown value>";
 	}
 }
 

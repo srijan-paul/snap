@@ -85,6 +85,7 @@ TT Scanner::check_kw_chars(const char* rest, u32 kwlen, u32 cmplen, TT ttype) co
 
 TT Scanner::kw_or_id_type() const {
 	switch (lexeme_start()) {
+	case 'c': return check_kw_chars("onst", 5, 4, TT::Const);
 	case 'l': return check_kw_chars("et", 3, 2, TT::Let);
 	case 't': return check_kw_chars("rue", 4, 3, TT::True);
 	case 'f': return check_kw_chars("alse", 5, 4, TT::False);

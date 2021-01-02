@@ -70,7 +70,8 @@ enum class TokenType {
 	RSqBrace,	// ]
 
 	// Keywords
-	Let
+	Let,
+	Const,
 };
 
 struct SourcePosition {

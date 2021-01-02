@@ -6,7 +6,7 @@
 #include <iterator>
 #include <string>
 
-#define TOK2NUM(t) SNAP_NUM_VAL(std::stof(t.raw(*m_source)))
+#define TOK2NUM(t) SNAP_NUM_VAL(std::stod(t.raw(*m_source)))
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
 	void name(bool can_assign) {                                                                   \
@@ -45,34 +45,37 @@ void Compiler::toplevel() {
 	if (has_error) recover();
 	if (eof()) return;
 
-	if (match(TT::Let)) {
-		return var_decl();
-	} else if (match(TT::LCurlBrace)) {
-		block_stmt();
-	} else {
-		expr_stmt();
+	const auto tt = peek.type;
+
+	switch (tt) {
+	case TT::Const:
+	case TT::Let: return var_decl();
+	case TT::LCurlBrace: return block_stmt();
+	default: expr_stmt();
 	}
 }
 
-/// @brief compiles a variable declaration assuming a `let` or `const`
-/// has been consumed.
 void Compiler::var_decl() {
+	advance(); // eat the 'let'|'const'
+	const bool is_const = token.type == TT::Const;
 	do {
-		declarator();
+		declarator(is_const);
 	} while (match(TT::Comma));
 	match(TT::Semi); // optional semi colon at the end.
 }
 
-void Compiler::declarator() {
+void Compiler::declarator(bool is_const) {
 	expect(TT::Id, "Expected variable name.");
 	// add the new variable to the symbol table.
-	new_variable(token);
 	// default value is `nil`.
+	const Token name = token;
+
 	match(TT::Eq) ? expr() : emit(Op::load_nil, token.location.line);
+	int idx = new_variable(name, is_const);
 }
 
-/// @brief parses a block assuming the opening '{' has been consumed already.
 void Compiler::block_stmt() {
+	advance(); // eat the opening '{'
 	enter_block();
 	while (!(eof() || check(TT::RCurlBrace))) {
 		toplevel();
@@ -124,15 +127,8 @@ void Compiler::grouping(bool can_assign) {
 void Compiler::primary(bool can_assign) {
 	if (isLiteral(peek.type)) {
 		literal();
-	} else if (match(TT::Id)) {
-		const size_t index = find_var(token);
-
-		if (can_assign && match(TT::Eq)) {
-			expr(); // compile assignment RHS
-			emit_bytes(Op::set_var, static_cast<Op>(index), token);
-		} else {
-			emit_bytes(Op::get_var, static_cast<Op>(index), token);
-		}
+	} else if (check(TT::Id)) {
+		variable(can_assign);
 	} else {
 		const std::string raw = peek.raw(*m_source);
 		const char fmt[] = "Unexpected '%s'.";
@@ -140,6 +136,26 @@ void Compiler::primary(bool can_assign) {
 		char buf[bufsize];
 		sprintf(buf, fmt, raw.c_str());
 		error_at(buf, peek.location.line);
+	}
+}
+
+void Compiler::variable(bool can_assign) {
+	advance();
+	const size_t index = find_var(token);
+
+	if (can_assign && match(TT::Eq)) {
+		const Symbol* local = m_symtable.find_by_slot(index);
+		if (local->is_const) {
+			std::string message{"Cannot assign to variable '"};
+			message = message + prev.raw(*m_source) + "' which is marked 'const'.";
+			error_at_token(message.c_str(), token);
+			has_error = false; // don't sen the compiler into error recovery mode.
+		}
+
+		expr(); // compile assignment RHS
+		emit_bytes(Op::set_var, static_cast<Op>(index), token);
+	} else {
+		emit_bytes(Op::get_var, static_cast<Op>(index), token);
 	}
 }
 
@@ -153,7 +169,7 @@ void Compiler::literal() {
 	default:;
 	}
 
-	if (index >= UINT8_MAX) {
+	if (index >= Compiler::MaxLocalVars) {
 		error_at_token("Too many literal constants in one function.", token);
 	}
 
@@ -174,7 +190,7 @@ void Compiler::enter_block() {
 // variables off the stack and closing any upvalues.
 void Compiler::exit_block() {
 	for (int i = m_symtable.num_symbols - 1; i >= 0; i--) {
-		const Symbol& var = m_symtable.symbols[i];
+		const Symbol& var = m_symtable.m_symbols[i];
 
 		if (var.depth != m_symtable.scope_depth) break;
 
@@ -287,24 +303,23 @@ Op Compiler::toktype_to_op(TT toktype) {
 	}
 }
 
-int Compiler::new_variable(const Token& varname) {
+int Compiler::new_variable(const Token& varname, bool is_const) {
 	const char* name = varname.raw_cstr(m_source);
 	const u32 length = varname.length();
 
-	// check of a varaible with this name already exists in the current
-	// scope.
+	// check of a varaible with this name already exists in the current scope.
 	if (m_symtable.find_in_current_scope(name, length) != -1) {
 		error_at("Attempt to redeclare existing variable.", varname.location.line);
 		return -1;
 	}
 
-	return m_symtable.add(name, length);
+	return m_symtable.add(name, length, is_const);
 }
 
 // -- Symbol Table --
 
-int SymbolTable::add(const char* name, u32 length) {
-	symbols[num_symbols++] = Symbol(name, length, scope_depth);
+int SymbolTable::add(const char* name, u32 length, bool is_const = false) {
+	m_symbols[num_symbols++] = Symbol(name, length, scope_depth, is_const);
 	return num_symbols - 1;
 }
 
@@ -317,7 +332,7 @@ int SymbolTable::find(const char* name, int length) const {
 	// start looking from the innermost scope, and work our way
 	// upwards.
 	for (int i = num_symbols - 1; i >= 0; i--) {
-		const Symbol& symbol = symbols[i];
+		const Symbol& symbol = m_symbols[i];
 		if (names_equal(name, length, symbol.name, symbol.length)) return i;
 	}
 	return -1;
@@ -325,11 +340,15 @@ int SymbolTable::find(const char* name, int length) const {
 
 int SymbolTable::find_in_current_scope(const char* name, int length) const {
 	for (int i = num_symbols - 1; i >= 0; i--) {
-		const Symbol& symbol = symbols[i];
+		const Symbol& symbol = m_symbols[i];
 		if (symbol.depth < scope_depth) return -1; // we've reached an outer scope
 		if (names_equal(name, length, symbol.name, symbol.length)) return i;
 	}
 	return -1;
+}
+
+Symbol* SymbolTable::find_by_slot(const u8 index) {
+	return &m_symbols[index];
 }
 
 } // namespace snap

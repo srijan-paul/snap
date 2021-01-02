@@ -22,6 +22,9 @@ struct Symbol {
 	const char* name = nullptr;
 	/// length of the variable name.
 	u32 length = 0;
+	
+	// name token of this variable.
+	Token token;
 
 	/// this field is true when the variable is
 	/// initialized with a `const` qualifier. Making this
@@ -29,23 +32,26 @@ struct Symbol {
 	bool is_const = false;
 
 	Symbol(){};
-	Symbol(const char* varname, u32 name_len, u8 scope_depth = 0)
-		: name{varname}, length{name_len}, depth{scope_depth} {};
+	Symbol(const char* varname, u32 name_len, u8 scope_depth = 0, bool isconst = false)
+		: name{varname}, length{name_len}, depth{scope_depth}, is_const{isconst} {};
 };
 
 struct SymbolTable {
 	int num_symbols = 0;
 	u8 scope_depth = 0;
-	std::array<Symbol, UINT8_MAX + 1> symbols;
+	std::array<Symbol, UINT8_MAX + 1> m_symbols;
 
 	int find(const char* name, int length) const;
 	int find_in_current_scope(const char* name, int length) const;
-	int add(const char* name, u32 length);
-	int find_by_slot(const u8 offset);
+	int add(const char* name, u32 length, bool is_const);
+	Symbol* find_by_slot(const u8 offset);
 };
 
 class Compiler {
   public:
+	static constexpr std::size_t MaxLocalVars = UINT8_MAX;
+	static constexpr std::size_t MaxUpValues = UINT8_MAX;
+
 	Compiler(VM* vm, const std::string* src);
 	void compile();
 
@@ -97,7 +103,7 @@ class Compiler {
 	void stmt();
 
 	void var_decl();
-	void declarator();
+	void declarator(bool is_const);
 	void block_stmt(); // {stmt*}
 	void expr_stmt();
 
@@ -120,6 +126,7 @@ class Compiler {
 	void call(bool can_assign);		// ()
 	void grouping(bool can_assign); // (expr)
 	void primary(bool can_assign);	// literal | id
+	void variable(bool can_assign);
 	void literal();
 
 	void enter_block();
@@ -127,7 +134,7 @@ class Compiler {
 
 	/// create a new variable and add it to the
 	/// current scope in the symbol table.
-	int new_variable(const Token& name);
+	int new_variable(const Token& name, bool is_const = false);
 	/// Look for a variable by it's name token, starting from
 	/// the current scope, moving outward.
 	/// If found, return it's stack slot.
