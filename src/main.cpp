@@ -7,7 +7,12 @@ using namespace snap;
 
 int main() {
 	std::string code = R"(
-		let a = 1 + 2;
+		{
+			let a = 1;
+			let b = 2;
+			{let c = a + 1;}
+		}
+		let a = b;
 	)";
 
 	VM vm{&code};

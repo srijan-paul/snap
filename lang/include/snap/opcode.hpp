@@ -27,6 +27,8 @@ enum class Opcode {
 	neq,
 	lshift,
 	rshift,
+	band,
+	bor,
 	load_nil,
 	return_val,
 

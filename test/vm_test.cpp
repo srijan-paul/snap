@@ -26,6 +26,10 @@ static void expr_tests() {
 		a = b = 5
 		let c = a + b
 	)", 8, 5.0);
+
+	test_code("4 | 9", 3, SNAP_NUM_VAL(13));
+	test_code("9 & 7", 3, SNAP_NUM_VAL(1));
+
 }
 
 void vm_test() {

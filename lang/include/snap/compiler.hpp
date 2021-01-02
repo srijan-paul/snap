@@ -36,13 +36,12 @@ struct Symbol {
 struct SymbolTable {
 	int num_symbols = 0;
 	u8 scope_depth = 0;
+	std::array<Symbol, UINT8_MAX + 1> symbols;
+
 	int find(const char* name, int length) const;
 	int find_in_current_scope(const char* name, int length) const;
 	int add(const char* name, u32 length);
 	int find_by_slot(const u8 offset);
-
-  private:
-	std::array<Symbol, UINT8_MAX + 1> symbols;
 };
 
 class Compiler {
@@ -89,6 +88,9 @@ class Compiler {
 	void error_at(const char* message, u32 line);
 	void error(const char* fmt...);
 
+	// keep eating tokens until a token
+	// that may indicate the end of a block is
+	// found.
 	void recover();
 
 	void toplevel();
@@ -96,6 +98,7 @@ class Compiler {
 
 	void var_decl();
 	void declarator();
+	void block_stmt(); // {stmt*}
 	void expr_stmt();
 
 	void expr();
@@ -119,7 +122,16 @@ class Compiler {
 	void primary(bool can_assign);	// literal | id
 	void literal();
 
+	void enter_block();
+	void exit_block();
+
+	/// create a new variable and add it to the
+	/// current scope in the symbol table.
 	int new_variable(const Token& name);
+	/// Look for a variable by it's name token, starting from
+	/// the current scope, moving outward.
+	/// If found, return it's stack slot.
+	/// Else return -1.
 	int find_var(const Token& name);
 
 	inline void emit(Opcode op, u32 line);
@@ -129,6 +141,9 @@ class Compiler {
 	size_t emit_value(Value value);
 	size_t emit_string(const Token& token);
 
+	/// returns the corresponding bytecode
+	/// from a token. e.g- TokenType::Add
+	/// corresponds to Opcode::add.
 	Opcode toktype_to_op(TokenType type);
 };
 

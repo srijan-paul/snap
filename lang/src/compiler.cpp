@@ -6,9 +6,7 @@
 #include <iterator>
 #include <string>
 
-
-#define TOK2NUM(t)		   SNAP_NUM_VAL(std::stof(t.raw(*m_source)))
-#define SPTR_CAST(type, v) static_cast<const type*>(v)
+#define TOK2NUM(t) SNAP_NUM_VAL(std::stof(t.raw(*m_source)))
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
 	void name(bool can_assign) {                                                                   \
@@ -21,6 +19,7 @@
 	}
 
 namespace snap {
+
 using Op = Opcode;
 using TT = TokenType;
 
@@ -33,7 +32,7 @@ void Compiler::compile() {
 	while (!eof()) {
 		toplevel();
 	}
-	emit(Op::return_val, -1);
+	emit(Op::return_val, token);
 }
 
 // top level statements are one of:
@@ -48,6 +47,8 @@ void Compiler::toplevel() {
 
 	if (match(TT::Let)) {
 		return var_decl();
+	} else if (match(TT::LCurlBrace)) {
+		block_stmt();
 	} else {
 		expr_stmt();
 	}
@@ -68,6 +69,16 @@ void Compiler::declarator() {
 	new_variable(token);
 	// default value is `nil`.
 	match(TT::Eq) ? expr() : emit(Op::load_nil, token.location.line);
+}
+
+/// @brief parses a block assuming the opening '{' has been consumed already.
+void Compiler::block_stmt() {
+	enter_block();
+	while (!(eof() || check(TT::RCurlBrace))) {
+		toplevel();
+	}
+	expect(TT::RCurlBrace, "Expected '}' to close block.");
+	exit_block();
 }
 
 void Compiler::expr_stmt() {
@@ -115,6 +126,7 @@ void Compiler::primary(bool can_assign) {
 		literal();
 	} else if (match(TT::Id)) {
 		const size_t index = find_var(token);
+
 		if (can_assign && match(TT::Eq)) {
 			expr(); // compile assignment RHS
 			emit_bytes(Op::set_var, static_cast<Op>(index), token);
@@ -152,6 +164,24 @@ void Compiler::recover() {
 	while (!(eof() || match(TT::Semi) || match(TT::LCurlBrace) || match(TT::LSqBrace))) {
 		advance();
 	}
+}
+
+void Compiler::enter_block() {
+	m_symtable.scope_depth++;
+}
+
+// Exit the current scope, popping all local
+// variables off the stack and closing any upvalues.
+void Compiler::exit_block() {
+	for (int i = m_symtable.num_symbols - 1; i >= 0; i--) {
+		const Symbol& var = m_symtable.symbols[i];
+
+		if (var.depth != m_symtable.scope_depth) break;
+
+		emit(Opcode::pop, token);
+		m_symtable.num_symbols--;
+	}
+	m_symtable.scope_depth--;
 }
 
 // helper functions:
@@ -251,6 +281,8 @@ Op Compiler::toktype_to_op(TT toktype) {
 	case TT::Concat: return Op::concat;
 	case TT::BitLShift: return Op::lshift;
 	case TT::BitRShift: return Op::rshift;
+	case TT::BitAnd: return Op::band;
+	case TT::BitOr: return Op::bor;
 	default: return Op::op_count;
 	}
 }
@@ -259,8 +291,10 @@ int Compiler::new_variable(const Token& varname) {
 	const char* name = varname.raw_cstr(m_source);
 	const u32 length = varname.length();
 
+	// check of a varaible with this name already exists in the current
+	// scope.
 	if (m_symtable.find_in_current_scope(name, length) != -1) {
-		error_at("Attempt to redeclare variable", varname.location.line);
+		error_at("Attempt to redeclare existing variable.", varname.location.line);
 		return -1;
 	}
 
@@ -280,18 +314,20 @@ static bool names_equal(const char* a, int len_a, const char* b, int len_b) {
 }
 
 int SymbolTable::find(const char* name, int length) const {
+	// start looking from the innermost scope, and work our way
+	// upwards.
 	for (int i = num_symbols - 1; i >= 0; i--) {
-		const Symbol* symbol = &symbols[i];
-		if (names_equal(name, length, symbol->name, symbol->length)) return i;
+		const Symbol& symbol = symbols[i];
+		if (names_equal(name, length, symbol.name, symbol.length)) return i;
 	}
 	return -1;
 }
 
 int SymbolTable::find_in_current_scope(const char* name, int length) const {
 	for (int i = num_symbols - 1; i >= 0; i--) {
-		const Symbol* symbol = &symbols[i];
-		if (symbol->depth < scope_depth) return -1;
-		if (names_equal(name, length, symbol->name, symbol->length)) return i;
+		const Symbol& symbol = symbols[i];
+		if (symbol.depth < scope_depth) return -1; // we've reached an outer scope
+		if (names_equal(name, length, symbol.name, symbol.length)) return i;
 	}
 	return -1;
 }

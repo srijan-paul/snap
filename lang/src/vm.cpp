@@ -122,6 +122,16 @@ ExitCode VM::run(bool run_till_end) {
 			break;
 		}
 
+		case Op::band: {
+			BIT_BINOP(&);
+			break;
+		}
+
+		case Op::bor: {
+			BIT_BINOP(|);
+			break;
+		}
+
 		case Op::eq: {
 			Value a = pop();
 			Value b = pop();
