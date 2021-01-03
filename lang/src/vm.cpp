@@ -13,6 +13,7 @@
 
 #define FETCH()					(m_block.code[ip++])
 #define NEXT_BYTE()				((u8)(m_block.code[ip++]))
+#define FETCH_SHORT()			(ip += 2, (u16)(((u8)m_block.code[ip - 2] << 8) | (u8)m_block.code[ip - 1]))
 #define READ_VALUE()			(m_block.constant_pool[NEXT_BYTE()])
 #define SET_VALUE(depth, value) (m_stack[sp - depth - 1] = value)
 #define GET_VAR(index)			(m_stack[index])
@@ -24,11 +25,24 @@ using VT = ValueType;
 
 VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 
+#define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) && !(SNAP_AS_BOOL(v))) || SNAP_IS_NIL(v))
 #define IS_VAL_TRUTHY(v) ((SNAP_IS_BOOL(v) && SNAP_AS_BOOL(v)) || !SNAP_IS_NIL(v))
 
 #define BINOP_ERROR(op, v1, v2)                                                                    \
 	runtime_error("Cannot use operator '%s' on operands of type '%s' and '%s'.", op,               \
 				  SNAP_TYPE_CSTR(v1), SNAP_TYPE_CSTR(v2))
+
+#define CMP_OP(op)                                                                                 \
+	do {                                                                                           \
+		Value b = pop();                                                                           \
+		Value a = pop();                                                                           \
+                                                                                                   \
+		if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {                                                    \
+			push(SNAP_BOOL_VAL(SNAP_AS_NUM(a) op SNAP_AS_NUM(b)));                                 \
+		} else {                                                                                   \
+			BINOP_ERROR(#op, b, a);                                                                \
+		}                                                                                          \
+	} while (false);
 
 #define BINOP(op)                                                                                  \
 	do {                                                                                           \
@@ -81,6 +95,11 @@ ExitCode VM::run(bool run_till_end) {
 		case Op::add: BINOP(+); break;
 		case Op::sub: BINOP(-); break;
 		case Op::mult: BINOP(*); break;
+
+		case Op::gt: CMP_OP(>); break;
+		case Op::lt: CMP_OP(<); break;
+		case Op::gte: CMP_OP(>=); break;
+		case Op::lte: CMP_OP(<=); break;
 
 		case Op::div: {
 			Value& a = m_stack[sp - 1];
@@ -147,7 +166,7 @@ ExitCode VM::run(bool run_till_end) {
 		}
 
 		case Op::jmp: {
-			ip = static_cast<size_t>(FETCH());
+			ip += FETCH_SHORT();
 			break;
 		}
 
@@ -176,6 +195,14 @@ ExitCode VM::run(bool run_till_end) {
 			pop();
 			break;
 		}
+
+		case Op::pop_jmp_if_false: {
+			Value& value = m_stack[sp - 1];
+			ip += IS_VAL_FALSY(value) ? FETCH_SHORT() : 2;
+			pop();
+			break;
+		}
+
 		case Op::return_val: return ExitCode::Success;
 		default: std::cout << "not implemented yet" << std::endl;
 		}
@@ -189,6 +216,7 @@ ExitCode VM::run(bool run_till_end) {
 }
 
 #undef FETCH
+#undef FETCH_SHORT
 #undef NEXT_BYTE
 #undef READ_VALUE
 #undef SET_VALUE
@@ -197,6 +225,7 @@ ExitCode VM::run(bool run_till_end) {
 #undef BINOP
 #undef BINOP_ERROR
 #undef IS_VAL_TRUTHY
+#undef CMP_OP
 
 ExitCode VM::interpret() {
 	init();

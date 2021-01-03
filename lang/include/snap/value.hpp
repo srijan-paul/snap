@@ -15,8 +15,10 @@ struct Obj {
 
 	// pointer to the next object in the VM's GC linked list.
 	Obj* next;
-	size_t hash = -1;
+	s32 m_hash = -1;
 	Obj(ObjType tt) : tag{tt} {};
+
+	s32 hash();
 };
 
 /// Strings in snap are heap allocated, and contain 3 important fields:
@@ -28,6 +30,8 @@ struct String : Obj {
 	/// @param chrs pointer to the character buffer. must be null terminated.
 	/// @param len length of the string.
 	String(char* chrs, size_t len) : Obj(ObjType::string), chars{chrs}, length{len} {};
+
+	s32 hash();
 
 	static String* concatenate(const String* a, const String* b);
 	~String();
@@ -50,13 +54,16 @@ struct Value {
 
 	Value(double v) : tag{ValueType::Number} {
 		as.num = v;
-	};
+	}
+
 	Value(bool v) : tag{ValueType::Bool} {
 		as.boolean = v;
-	};
+	}
+
 	Value() : tag{ValueType::Nil} {
 		as.num = 0.0f;
-	};
+	}
+
 	// string object value constructor
 	Value(Obj* s) : tag{ValueType::Object} {};
 	Value(char* s, int len);

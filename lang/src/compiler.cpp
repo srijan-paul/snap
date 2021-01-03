@@ -7,6 +7,7 @@
 #include <string>
 
 #define TOK2NUM(t) SNAP_NUM_VAL(std::stod(t.raw(*m_source)))
+#define THIS_BLOCK (m_vm->m_block)
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
 	void name(bool can_assign) {                                                                   \
@@ -38,8 +39,7 @@ void Compiler::compile() {
 // top level statements are one of:
 // - var declaration
 // - function declaration
-// - assignment
-// - call expr
+// - expression statement
 // - export statement
 void Compiler::toplevel() {
 	if (has_error) recover();
@@ -51,6 +51,7 @@ void Compiler::toplevel() {
 	case TT::Const:
 	case TT::Let: return var_decl();
 	case TT::LCurlBrace: return block_stmt();
+	case TT::If: return if_stmt();
 	default: expr_stmt();
 	}
 }
@@ -84,6 +85,23 @@ void Compiler::block_stmt() {
 	exit_block();
 }
 
+void Compiler::if_stmt() {
+	advance(); // consume 'if'
+	expr();	   // parse condition.
+	std::size_t jmp = emit_jump(Op::pop_jmp_if_false);
+	toplevel();
+
+	// if (match(TT::Else)) {
+	// 	std::size_t else_jump = emit_jump(Op::jmp);
+	// 	patch_jump(jmp);
+	// 	toplevel();
+	// 	patch_jump(else_jump);
+	// 	return;
+	// }
+
+	patch_jump(jmp);
+}
+
 void Compiler::expr_stmt() {
 	expr();
 	emit(Opcode::pop, token);
@@ -105,9 +123,9 @@ void Compiler::logic_and(bool can_assign) {
 DEFINE_PARSE_FN(Compiler::bit_or, match(TT::BitOr), bit_and)
 DEFINE_PARSE_FN(Compiler::bit_and, match(TT::BitAnd), equality)
 DEFINE_PARSE_FN(Compiler::equality, match(TT::EqEq) || match(TT::BangEq), comparison)
-DEFINE_PARSE_FN(Compiler::comparison, match(TT::BitLShift) || match(TT::BitRShift), b_shift)
-DEFINE_PARSE_FN(Compiler::b_shift,
-				match(TT::Gt) || match(TT::Lt) || match(TT::GtEq) || match(TT::LtEq), sum)
+DEFINE_PARSE_FN(Compiler::comparison,
+				match(TT::Gt) || match(TT::Lt) || match(TT::GtEq) || match(TT::LtEq), b_shift)
+DEFINE_PARSE_FN(Compiler::b_shift, match(TT::BitLShift) || match(TT::BitRShift), sum)
 DEFINE_PARSE_FN(Compiler::sum, (match(TT::Plus) || match(TT::Minus) || match(TT::Concat)), mult)
 DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) || match(TT::Mod) || match(TT::Div)), unary)
 
@@ -186,8 +204,6 @@ void Compiler::enter_block() {
 	m_symtable.scope_depth++;
 }
 
-// Exit the current scope, popping all local
-// variables off the stack and closing any upvalues.
 void Compiler::exit_block() {
 	for (int i = m_symtable.num_symbols - 1; i >= 0; i--) {
 		const Symbol& var = m_symtable.m_symbols[i];
@@ -197,7 +213,30 @@ void Compiler::exit_block() {
 		emit(Opcode::pop, token);
 		m_symtable.num_symbols--;
 	}
+
 	m_symtable.scope_depth--;
+}
+
+std::size_t Compiler::emit_jump(Opcode op) {
+	std::size_t index = THIS_BLOCK.code.size();
+	emit(op, token);
+	emit(static_cast<Op>(0xff), token);
+	emit(static_cast<Op>(0xff), token);
+	return index + 1;
+}
+
+void Compiler::patch_jump(std::size_t index) {
+	patch_jump_at(index, THIS_BLOCK.op_count());
+}
+
+void Compiler::patch_jump_at(std::size_t index, std::size_t address) {
+	u16 jump_dist = address - index - 2;
+	if (jump_dist > UINT16_MAX) {
+		error_at("Too much code to jump over.", token.location.line);
+	}
+
+	THIS_BLOCK.code[index] = static_cast<Op>((jump_dist >> 8) & 0xff);
+	THIS_BLOCK.code[index + 1] = static_cast<Op>(jump_dist & 0xff);
 }
 
 // helper functions:
@@ -264,15 +303,19 @@ int Compiler::find_var(const Token& name_token) {
 }
 
 inline size_t Compiler::emit_value(Value v) {
-	return m_vm->m_block.add_value(v);
+	return THIS_BLOCK.add_value(v);
+}
+
+inline void Compiler::emit(Op op) {
+	THIS_BLOCK.add_instruction(op, token.location.line);
 }
 
 inline void Compiler::emit(Op op, const Token& token) {
-	m_vm->m_block.add_instruction(op, token.location.line);
+	THIS_BLOCK.add_instruction(op, token.location.line);
 }
 
 inline void Compiler::emit(Op op, u32 line) {
-	m_vm->m_block.add_instruction(op, line);
+	THIS_BLOCK.add_instruction(op, line);
 }
 
 inline void Compiler::emit_bytes(Op a, Op b, const Token& token) {
@@ -299,6 +342,10 @@ Op Compiler::toktype_to_op(TT toktype) {
 	case TT::BitRShift: return Op::rshift;
 	case TT::BitAnd: return Op::band;
 	case TT::BitOr: return Op::bor;
+	case TT::Gt: return Op::gt;
+	case TT::Lt: return Op::lt;
+	case TT::GtEq: return Op::gte;
+	case TT::LtEq: return Op::lte;
 	default: return Op::op_count;
 	}
 }

@@ -3,11 +3,33 @@
 #include <cstring>
 #include <value.hpp>
 
+// this hash function is from: https://craftinginterpreters.com/hash-tables.html
+static uint32_t fnv1a(const char* key, int length) {
+	uint32_t hash = 2166136261u;
+
+	for (int i = 0; i < length; i++) {
+		hash ^= key[i];
+		hash *= 16777619;
+	}
+
+	return hash;
+}
+
 namespace snap {
 
 using VT = ValueType;
 using OT = ObjType;
 using TT = TokenType;
+
+s32 Obj::hash() {
+	m_hash = (std::size_t)(this);
+	return m_hash;
+}
+
+s32 String::hash() {
+	m_hash = fnv1a(chars, length);
+	return m_hash;
+}
 
 Value::Value(char* s, int len) : tag{VT::Object} {
 	as.object = new String(s, len);
@@ -36,7 +58,9 @@ void print_value(Value v) {
 		else
 			std::printf("<snap object>");
 		break;
-	default: std::printf("Internal error: Impossible value type tag %zu!.\n", static_cast<size_t>(v.tag));
+	default:
+		std::printf("Internal error: Impossible value type tag %zu!.\n",
+					static_cast<size_t>(v.tag));
 	}
 }
 

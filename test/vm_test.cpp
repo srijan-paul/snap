@@ -1,5 +1,6 @@
 #include "assert.hpp"
 #include "test_utils.hpp"
+#include "value.hpp"
 
 using namespace snap;
 
@@ -18,6 +19,12 @@ static void expr_tests() {
 	test_code("5 + 2", 3, SNAP_NUM_VAL(7.0));
 	test_code("5 - 2", 3, SNAP_NUM_VAL(3.0));
 	test_code("3 * 5", 3, SNAP_NUM_VAL(15.0));
+	
+	test_code("3 < 5", 3, SNAP_BOOL_VAL(true));
+	test_code("3 > 5", 3, SNAP_BOOL_VAL(false));
+	test_code("3 <= 3", 3, SNAP_BOOL_VAL(true));
+	test_code("4 >= 4", 3, SNAP_BOOL_VAL(true));
+
 	test_code("10 - 5 - 2", 5, SNAP_NUM_VAL(3.0));
 
 	test_code(R"(
@@ -25,11 +32,21 @@ static void expr_tests() {
 		let b = 3
 		a = b = 5
 		let c = a + b
-	)", 8, 5.0);
+	)",
+			  8, 5.0);
 
 	test_code("4 | 9", 3, SNAP_NUM_VAL(13));
 	test_code("9 & 7", 3, SNAP_NUM_VAL(1));
+}
 
+static void stmt_tests() {
+	test_code(R"(
+		let a = 1;
+		let b = 2;
+		if a < b {
+			b = 5
+		})",
+			  6, SNAP_NUM_VAL(2));
 }
 
 void vm_test() {
@@ -66,6 +83,7 @@ void vm_test() {
 
 int main() {
 	expr_tests();
+	stmt_tests();
 	vm_test();
 	return 0;
 }

@@ -72,6 +72,8 @@ enum class TokenType {
 	// Keywords
 	Let,
 	Const,
+	If,
+	Else,
 };
 
 struct SourcePosition {

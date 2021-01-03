@@ -1,8 +1,6 @@
-#include <scanner.hpp>
 #include <cctype>
 #include <cstring>
-#include <ctype.h>
-#include <stdint.h>
+#include <scanner.hpp>
 #include <string>
 
 namespace snap {
@@ -89,6 +87,8 @@ TT Scanner::kw_or_id_type() const {
 	case 'l': return check_kw_chars("et", 3, 2, TT::Let);
 	case 't': return check_kw_chars("rue", 4, 3, TT::True);
 	case 'f': return check_kw_chars("alse", 5, 4, TT::False);
+	case 'e': return check_kw_chars("lse", 4, 3, TT::Else);
+	case 'i': return check_kw_chars("f", 2, 1, TT::If);
 	default: return TT::Id;
 	}
 }

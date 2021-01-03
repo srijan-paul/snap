@@ -61,7 +61,7 @@ class VM {
 
 	/// pops a value from the VM stack and returns it.
 	inline Value pop() {
-		return m_stack[sp--];
+		return m_stack[--sp];
 	}
 
 	bool init();

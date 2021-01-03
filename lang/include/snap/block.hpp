@@ -11,9 +11,11 @@ struct Block {
 	std::vector<Value> constant_pool = {};
 	std::vector<u32> lines = {};
 
-	size_t add_instruction(Opcode i, u32 line);
-	size_t add_num(u8 i);
-	size_t add_value(Value value);
+	std::size_t add_instruction(Opcode i, u32 line);
+	std::size_t add_num(u8 i);
+	std::size_t add_value(Value value);
+	std::size_t op_count();
 };
+
 
 } // namespace snap

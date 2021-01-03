@@ -22,7 +22,7 @@ struct Symbol {
 	const char* name = nullptr;
 	/// length of the variable name.
 	u32 length = 0;
-	
+
 	// name token of this variable.
 	Token token;
 
@@ -105,6 +105,7 @@ class Compiler {
 	void var_decl();
 	void declarator(bool is_const);
 	void block_stmt(); // {stmt*}
+	void if_stmt();
 	void expr_stmt();
 
 	void expr();
@@ -130,7 +131,19 @@ class Compiler {
 	void literal();
 
 	void enter_block();
+	// Exit the current scope, popping all local
+	// variables off the stack and closing any upvalues.
 	void exit_block();
+
+	// Emits a jump instruction, followed by two opcodes
+	// that encode the jump location. Returns the index
+	// of the first half of the jump offset.
+	std::size_t emit_jump(Opcode op);
+	// Patches the jump instruction wjhose offset opererand is at index `index`,
+	// encoding the address of the most recently emitted opcode.
+	void patch_jump(std::size_t index);
+
+	void patch_jump_at(std::size_t index, std::size_t address);
 
 	/// create a new variable and add it to the
 	/// current scope in the symbol table.
@@ -141,6 +154,7 @@ class Compiler {
 	/// Else return -1.
 	int find_var(const Token& name);
 
+	inline void emit(Opcode op);
 	inline void emit(Opcode op, u32 line);
 	inline void emit(Opcode op, const Token& token);
 	void emit_bytes(Opcode a, Opcode b, u32 line);
