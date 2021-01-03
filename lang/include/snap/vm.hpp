@@ -41,7 +41,7 @@ class VM {
 	AllocateFn allocator;
 
 	inline Value peek(u8 depth = 0) {
-		return m_stack[sp - 1 - depth];
+		return *(sp - 1 - depth);
 	}
 
 	static constexpr size_t StackMaxSize = 256;
@@ -56,12 +56,12 @@ class VM {
 	/// pushes a value onto the VM's stack.
 	/// @param value The Value to push onto the stack.
 	inline void push(Value value) {
-		m_stack[sp++] = value;
+		*(sp++) = value;
 	}
 
 	/// pops a value from the VM stack and returns it.
 	inline Value pop() {
-		return m_stack[--sp];
+		return *(--sp);
 	}
 
 	bool init();
@@ -74,8 +74,9 @@ class VM {
 	Obj* gc_objects;
 
 	size_t ip = 0; // instruction ptr
-	size_t sp = 0; // stack-top ptr
+	
 	Value m_stack[StackMaxSize];
+	Value* sp = m_stack;
 
 	ExitCode binop_error(const char* opstr, Value& a, Value& b);
 	ExitCode runtime_error(const char* fstring...) const;

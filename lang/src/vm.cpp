@@ -11,13 +11,16 @@
 #include <debug.hpp>
 #endif
 
-#define FETCH()					(m_block.code[ip++])
-#define NEXT_BYTE()				((u8)(m_block.code[ip++]))
-#define FETCH_SHORT()			(ip += 2, (u16)(((u8)m_block.code[ip - 2] << 8) | (u8)m_block.code[ip - 1]))
-#define READ_VALUE()			(m_block.constant_pool[NEXT_BYTE()])
-#define SET_VALUE(depth, value) (m_stack[sp - depth - 1] = value)
-#define GET_VAR(index)			(m_stack[index])
-#define SET_VAR(index, value)	(m_stack[index] = value)
+#define FETCH()		(m_block.code[ip++])
+#define NEXT_BYTE() (static_cast<u8>(m_block.code[ip++]))
+#define FETCH_SHORT()                                                                              \
+	(ip += 2,                                                                                      \
+	 (u16)((static_cast<u8>(m_block.code[ip - 2]) << 8) | static_cast<u8>(m_block.code[ip - 1])))
+#define READ_VALUE()		  (m_block.constant_pool[NEXT_BYTE()])
+#define GET_VAR(index)		  (m_stack[index])
+#define SET_VAR(index, value) (m_stack[index] = value)
+
+#define PEEK(depth) sp[-depth]
 
 namespace snap {
 using Op = Opcode;
@@ -46,8 +49,8 @@ VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 
 #define BINOP(op)                                                                                  \
 	do {                                                                                           \
-		Value& a = m_stack[sp - 1];                                                                \
-		Value& b = m_stack[sp - 2];                                                                \
+		Value& a = PEEK(1);                                                                        \
+		Value& b = PEEK(2);                                                                        \
                                                                                                    \
 		if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {                                                    \
 			SNAP_SET_NUM(b, SNAP_AS_NUM(b) op SNAP_AS_NUM(a));                                     \
@@ -58,8 +61,8 @@ VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 	} while (false);
 
 #define BIT_BINOP(op)                                                                              \
-	Value& b = m_stack[sp - 1];                                                                    \
-	Value& a = m_stack[sp - 2];                                                                    \
+	Value& b = PEEK(1);                                                                            \
+	Value& a = PEEK(2);                                                                            \
                                                                                                    \
 	if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {                                                        \
 		SNAP_SET_NUM(a, SNAP_CAST_INT(a) op SNAP_CAST_INT(b));                                     \
@@ -102,8 +105,8 @@ ExitCode VM::run(bool run_till_end) {
 		case Op::lte: CMP_OP(<=); break;
 
 		case Op::div: {
-			Value& a = m_stack[sp - 1];
-			Value& b = m_stack[sp - 2];
+			Value& a = PEEK(1);
+			Value& b = PEEK(2);
 
 			if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {
 				if (SNAP_AS_NUM(b) == 0) {
@@ -118,8 +121,8 @@ ExitCode VM::run(bool run_till_end) {
 		}
 
 		case Op::mod: {
-			Value& a = m_stack[sp - 1];
-			Value& b = m_stack[sp - 2];
+			Value& a = PEEK(1);
+			Value& b = PEEK(2);
 
 			if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {
 				SNAP_SET_NUM(b, fmod(SNAP_AS_NUM(b), SNAP_AS_NUM(a)));
@@ -183,8 +186,8 @@ ExitCode VM::run(bool run_till_end) {
 		}
 
 		case Op::concat: {
-			Value& a = m_stack[sp - 2];
-			Value& b = m_stack[sp - 1];
+			Value& a = PEEK(2);
+			Value& b = PEEK(1);
 
 			if (!(a.is_string() && b.is_string())) {
 				return binop_error("..", a, b);
@@ -197,7 +200,7 @@ ExitCode VM::run(bool run_till_end) {
 		}
 
 		case Op::pop_jmp_if_false: {
-			Value& value = m_stack[sp - 1];
+			Value& value = PEEK(1);
 			ip += IS_VAL_FALSY(value) ? FETCH_SHORT() : 2;
 			pop();
 			break;
@@ -207,7 +210,7 @@ ExitCode VM::run(bool run_till_end) {
 		default: std::cout << "not implemented yet" << std::endl;
 		}
 #ifdef SNAP_DEBUG_RUNTIME
-		print_stack(m_stack, sp);
+		print_stack(m_stack, sp - m_stack);
 		printf("\n");
 #endif
 	} while (run_till_end);
@@ -219,13 +222,13 @@ ExitCode VM::run(bool run_till_end) {
 #undef FETCH_SHORT
 #undef NEXT_BYTE
 #undef READ_VALUE
-#undef SET_VALUE
 #undef GET_VAR
 #undef SET_VAR
 #undef BINOP
 #undef BINOP_ERROR
 #undef IS_VAL_TRUTHY
 #undef CMP_OP
+#undef PEEK
 
 ExitCode VM::interpret() {
 	init();
