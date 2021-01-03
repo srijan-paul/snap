@@ -8,8 +8,13 @@ using namespace snap;
 /// Then asserts that the value on top of the stack is equal to `expected_value`.
 static void test_code(const std::string&& code, int op_count, Value expected_value) {
 	VM vm{&code};
-	vm.init();
-	vm.step(op_count);
+	if (op_count == -1) {
+		vm.interpret();
+	} else {
+		vm.init();
+		vm.step(op_count);
+	}
+
 	EXPECT_VAL_EQ(vm.peek(0), expected_value);
 }
 
@@ -19,7 +24,7 @@ static void expr_tests() {
 	test_code("5 + 2", 3, SNAP_NUM_VAL(7.0));
 	test_code("5 - 2", 3, SNAP_NUM_VAL(3.0));
 	test_code("3 * 5", 3, SNAP_NUM_VAL(15.0));
-	
+
 	test_code("3 < 5", 3, SNAP_BOOL_VAL(true));
 	test_code("3 > 5", 3, SNAP_BOOL_VAL(false));
 	test_code("3 <= 3", 3, SNAP_BOOL_VAL(true));
@@ -47,6 +52,18 @@ static void stmt_tests() {
 			b = 5
 		})",
 			  6, SNAP_NUM_VAL(2));
+
+	test_code(R"(
+		let a = 3;
+		let b = 3;
+		if a < b {
+			b = 5
+		} else if b > a {
+			b = 6
+		} else {
+			b = 7
+		})",
+			  -1, SNAP_NUM_VAL(7));
 }
 
 void vm_test() {

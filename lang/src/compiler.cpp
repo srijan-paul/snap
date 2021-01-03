@@ -91,14 +91,14 @@ void Compiler::if_stmt() {
 	std::size_t jmp = emit_jump(Op::pop_jmp_if_false);
 	toplevel();
 
-	// if (match(TT::Else)) {
-	// 	std::size_t else_jump = emit_jump(Op::jmp);
-	// 	patch_jump(jmp);
-	// 	toplevel();
-	// 	patch_jump(else_jump);
-	// 	return;
-	// }
-
+	if (match(TT::Else)) {
+		std::size_t else_jmp = emit_jump(Op::jmp);
+		patch_jump_at(jmp, THIS_BLOCK.op_count());
+		toplevel();
+		patch_jump(else_jmp);
+		return;
+	}
+	
 	patch_jump(jmp);
 }
 
