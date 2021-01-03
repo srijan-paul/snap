@@ -34,6 +34,8 @@ VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 #define BINOP_ERROR(op, v1, v2)                                                                    \
 	runtime_error("Cannot use operator '%s' on operands of type '%s' and '%s'.", op,               \
 				  SNAP_TYPE_CSTR(v1), SNAP_TYPE_CSTR(v2))
+#define UNOP_ERROR(op, v)                                                                          \
+	runtime_error("Cannot use operator '%s' on type '%s'.", op, SNAP_TYPE_CSTR(v))
 
 #define CMP_OP(op)                                                                                 \
 	do {                                                                                           \
@@ -165,6 +167,22 @@ ExitCode VM::run(bool run_till_end) {
 			Value a = pop();
 			Value b = pop();
 			push(SNAP_BOOL_VAL(!Value::are_equal(a, b)));
+			break;
+		}
+
+		case Op::negate: {
+			Value& a = PEEK(1);
+			if (SNAP_IS_NUM(a)) {
+				SNAP_SET_NUM(a, -SNAP_AS_NUM(a));
+			} else {
+				UNOP_ERROR("-", a);
+			}
+			break;
+		}
+
+		case Op::lnot: {
+			Value a = pop();
+			push(SNAP_BOOL_VAL(IS_VAL_FALSY(a)));
 			break;
 		}
 

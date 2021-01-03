@@ -33,6 +33,8 @@ enum class Opcode : u8 {
 	lt,
 	gte,
 	lte,
+	negate,
+	lnot,
 	load_nil,
 	return_val,
 

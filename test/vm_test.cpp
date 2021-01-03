@@ -46,6 +46,10 @@ static void expr_tests() {
 
 	test_code("4 | 9", 3, SNAP_NUM_VAL(13));
 	test_code("9 & 7", 3, SNAP_NUM_VAL(1));
+
+	// test precedence
+
+	test_code("let a = 5 > 2 && 3 > -10", -1, SNAP_BOOL_VAL(true));
 }
 
 static void stmt_tests() {

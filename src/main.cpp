@@ -7,7 +7,7 @@ using namespace snap;
 
 int main() {
 	std::string code = R"(
-		const a = 1 && 2 && false && 4 && 5
+		let a = -10 + 1;
 	)";
 
 	VM vm{&code};

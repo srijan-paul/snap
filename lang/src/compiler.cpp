@@ -141,6 +141,17 @@ DEFINE_PARSE_FN(Compiler::sum, (match(TT::Plus) || match(TT::Minus) || match(TT:
 DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) || match(TT::Mod) || match(TT::Div)), unary)
 
 void Compiler::unary(bool can_assign) {
+	if (check(TT::Bang) || check(TT::Minus)) {
+		advance();
+		const Token op_token = token;
+		grouping(false);
+		switch(op_token.type) {
+			case TT::Bang: emit(Op::lnot, op_token); break;
+			case TT::Minus: emit(Op::negate, op_token); break;
+			default:;
+		}
+		return;
+	}
 	grouping(can_assign);
 }
 

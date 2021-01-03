@@ -16,8 +16,9 @@ static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)>
 	"div", "eq", "neq", 
 	"lshift", "rshift", "band",
 	"bor", "gt", "lt", "gte",
-	"lte", "nil", "return", 
-	"jmp", "jmp_if_false_or_pop",
+	"lte", "negate", "lnot",
+	"nil", "return", "jmp",
+	"jmp_if_false_or_pop",
 	"jmp_if_true_or_pop", "pop_jmp_if_false"
 };
 // clang-format on
