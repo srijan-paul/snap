@@ -17,8 +17,8 @@ static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)>
 	"lshift", "rshift", "band",
 	"bor", "gt", "lt", "gte",
 	"lte", "nil", "return", 
-	"jmp", "jmp_if_false",
-	"pop_jmp_if_false"
+	"jmp", "jmp_if_false_or_pop",
+	"jmp_if_true_or_pop", "pop_jmp_if_false"
 };
 // clang-format on
 
@@ -29,7 +29,7 @@ const char* const op2s(Op op) {
 static std::size_t constant_instr(const Block& block, Op op, std::size_t index) {
 	const auto const_index = (u8)(block.code[index + 1]);
 	const Value v = block.constant_pool[const_index];
-	std::printf("%04d	%-4zu  %-16s (%d) ", block.lines[index], index, op2s(op), const_index);
+	std::printf("%04d	%-4zu  %-22s (%d) ", block.lines[index], index, op2s(op), const_index);
 	PRINT_VAL(v);
 	printf("\n");
 	return 2;
@@ -40,7 +40,7 @@ static std::size_t simple_instr(const Block& block, Op op, std::size_t index) {
 		std::printf("    	");
 	else
 		std::printf("%04d	", block.lines[index]);
-	std::printf("%-4zu  %-16s\n", index, op2s(op));
+	std::printf("%-4zu  %-22s\n", index, op2s(op));
 	return 1;
 }
 
@@ -52,7 +52,7 @@ static std::size_t instr_single_operand(const Block& block, std::size_t index) {
 		std::printf("    	");
 	else
 		std::printf("%04d	", block.lines[index]);
-	std::printf("%-4zu  %-16s  %d\n", index, op2s(op), static_cast<int>(operand));
+	std::printf("%-4zu  %-22s  %d\n", index, op2s(op), static_cast<int>(operand));
 	return 2;
 }
 
@@ -62,13 +62,13 @@ static std::size_t instr_two_operand(const Block& block, std::size_t index) {
 	u8 a = (u8)(block.code[index + 1]);
 	u8 b = (u8)(block.code[index + 2]);
 
-	u16 address = (u16)((a << 8) | b);
+	u16 distance = (u16)((a << 8) | b);
 
 	if (block.lines[index] == block.lines[index - 1])
 		std::printf("    	");
 	else
 		std::printf("%04d	", block.lines[index]);
-	std::printf("%-4zu  %-16s  %d\n", index, op2s(op), address);
+	std::printf("%-4zu  %-22s  %d  (%zu)\n", index, op2s(op), distance, index + distance + 3);
 
 	return 3;
 }

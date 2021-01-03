@@ -68,6 +68,7 @@ std::string Value::name_str() const {
 	switch (tag) {
 	case VT::Number: return std::to_string(as_num());
 	case VT::Bool: return as_bool() ? std::string("true") : std::string("false");
+	case VT::Nil: return "nil";
 	case VT::Object:
 		if (is_string()) return std::string(SNAP_AS_CSTRING(*this));
 		return "<snap object>";
@@ -83,6 +84,7 @@ const char* Value::type_name() const {
 		if (is_string()) return "string";
 		return "object";
 	}
+	case VT::Nil: return "nil";
 	default: return "unknown";
 	}
 }

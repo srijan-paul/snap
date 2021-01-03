@@ -7,16 +7,9 @@ using namespace snap;
 
 int main() {
 	std::string code = R"(
-		let a = 1;
-		let b = 2;
-		if a < 1 {
-			b = 5
-		} else if a < 0.5 {
-			b = 6
-		} else {
-			b = 12
-		}
-		a =  7
+		const a = nil && 1 && 3 && 5;
+		const foo = false || false || 123;
+		const b = 10;
 	)";
 
 	VM vm{&code};

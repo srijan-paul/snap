@@ -29,7 +29,7 @@ using VT = ValueType;
 VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 
 #define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) && !(SNAP_AS_BOOL(v))) || SNAP_IS_NIL(v))
-#define IS_VAL_TRUTHY(v) ((SNAP_IS_BOOL(v) && SNAP_AS_BOOL(v)) || !SNAP_IS_NIL(v))
+#define IS_VAL_TRUTHY(v) (!IS_VAL_FALSY(v))
 
 #define BINOP_ERROR(op, v1, v2)                                                                    \
 	runtime_error("Cannot use operator '%s' on operands of type '%s' and '%s'.", op,               \
@@ -165,6 +165,28 @@ ExitCode VM::run(bool run_till_end) {
 			Value a = pop();
 			Value b = pop();
 			push(SNAP_BOOL_VAL(!Value::are_equal(a, b)));
+			break;
+		}
+
+		case Op::jmp_if_true_or_pop: {
+			Value& top = PEEK(1);
+			if (IS_VAL_TRUTHY(top)) {
+				ip += FETCH_SHORT();
+			} else {
+				ip += 2;
+				pop();
+			}
+			break;
+		}
+
+		case Op::jmp_if_false_or_pop: {
+			Value& top = PEEK(1);
+			if (IS_VAL_FALSY(top)) {
+				ip += FETCH_SHORT();
+			} else {
+				ip += 2;
+				pop();
+			}
 			break;
 		}
 

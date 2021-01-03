@@ -27,7 +27,7 @@ void print_ttype(snap::TokenType type) {
 		"Semi",		  "Colon",	  "Comma",	   "LParen",	"RParen",  "LCurlBrace",
 		"RCurlBrace", "LSqBrace", "RSqBrace",
 
-		"Let", "Const", "If", "Else"
+		"Let", "Const", "If", "Else", "Nil"
 	};
 
 	const std::string& str = type_strs[static_cast<size_t>(type)];

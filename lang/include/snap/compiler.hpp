@@ -79,8 +79,9 @@ class Compiler {
 	}
 
 	inline bool isLiteral(TokenType type) const {
-		return (type == TokenType::Integer || type == TokenType::String ||
-				type == TokenType::Float);
+		return type == TokenType::Integer || type == TokenType::String ||
+			   type == TokenType::Float || type == TokenType::False || type == TokenType::True ||
+			   type == TokenType::Nil;
 	}
 
 	/// If the next token is of type `expected` then

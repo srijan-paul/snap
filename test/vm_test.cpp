@@ -6,6 +6,7 @@ using namespace snap;
 
 /// Runs the next `op_count` instructions in the `code` string in a VM.
 /// Then asserts that the value on top of the stack is equal to `expected_value`.
+// If `op_count` is -1 then interprets the entire bytecode.
 static void test_code(const std::string&& code, int op_count, Value expected_value) {
 	VM vm{&code};
 	if (op_count == -1) {
@@ -30,6 +31,9 @@ static void expr_tests() {
 	test_code("3 <= 3", 3, SNAP_BOOL_VAL(true));
 	test_code("4 >= 4", 3, SNAP_BOOL_VAL(true));
 
+	test_code("10 - 5 - 2", 5, SNAP_NUM_VAL(3.0));
+	test_code("let a = 10 && 5 && 2", -1, SNAP_NUM_VAL(2));
+	test_code("let a = 10 || 5 || 2", -1, SNAP_NUM_VAL(10));
 	test_code("10 - 5 - 2", 5, SNAP_NUM_VAL(3.0));
 
 	test_code(R"(

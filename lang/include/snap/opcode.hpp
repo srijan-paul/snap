@@ -38,7 +38,8 @@ enum class Opcode : u8 {
 
 	// opcodes with 2 operands
 	jmp,
-	jmp_if_false,
+	jmp_if_false_or_pop,
+	jmp_if_true_or_pop,
 	pop_jmp_if_false,
 	op_count
 };

@@ -74,6 +74,7 @@ enum class TokenType {
 	Const,
 	If,
 	Else,
+	Nil,
 };
 
 struct SourcePosition {

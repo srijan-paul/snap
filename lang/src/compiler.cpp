@@ -1,4 +1,5 @@
 #include "token.hpp"
+#include "value.hpp"
 #include <compiler.hpp>
 #include <cstdarg>
 #include <cstdio>
@@ -93,12 +94,12 @@ void Compiler::if_stmt() {
 
 	if (match(TT::Else)) {
 		std::size_t else_jmp = emit_jump(Op::jmp);
-		patch_jump_at(jmp, THIS_BLOCK.op_count());
+		patch_jump(jmp);
 		toplevel();
 		patch_jump(else_jmp);
 		return;
 	}
-	
+
 	patch_jump(jmp);
 }
 
@@ -113,11 +114,33 @@ void Compiler::expr() {
 }
 
 void Compiler::logic_or(bool can_assign) {
-	logic_and(true);
+	static std::vector<std::size_t> to_patch;
+	to_patch.clear();
+
+	logic_and(can_assign);
+	while (match(TT::Or)) {
+		to_patch.emplace_back(emit_jump(Op::jmp_if_true_or_pop));
+		logic_and(false);
+	}
+
+	for (std::size_t jump : to_patch) {
+		patch_jump(jump);
+	}
 }
 
 void Compiler::logic_and(bool can_assign) {
-	bit_or(true);
+	static std::vector<std::size_t> to_patch;
+	to_patch.clear();
+
+	bit_or(can_assign);
+	while (match(TT::And)) {
+		to_patch.emplace_back(emit_jump(Op::jmp_if_false_or_pop));
+		bit_or(false);
+	}
+
+	for (std::size_t jump : to_patch) {
+		patch_jump(jump);
+	}
 }
 
 DEFINE_PARSE_FN(Compiler::bit_or, match(TT::BitOr), bit_and)
@@ -184,6 +207,9 @@ void Compiler::literal() {
 	case TT::Integer:
 	case TT::Float: index = emit_value(TOK2NUM(token)); break;
 	case TT::String: index = emit_string(token); break;
+	case TT::True: index = emit_value(SNAP_BOOL_VAL(true)); break;
+	case TT::False: index = emit_value(SNAP_BOOL_VAL(false)); break;
+	case TT::Nil: index = emit_value(SNAP_NIL_VAL); break;
 	default:;
 	}
 
