@@ -144,8 +144,6 @@ class Compiler {
 	// encoding the address of the most recently emitted opcode.
 	void patch_jump(std::size_t index);
 
-	void patch_jump_at(std::size_t index, std::size_t address);
-
 	/// create a new variable and add it to the
 	/// current scope in the symbol table.
 	int new_variable(const Token& name, bool is_const = false);

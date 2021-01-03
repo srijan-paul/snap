@@ -114,31 +114,19 @@ void Compiler::expr() {
 }
 
 void Compiler::logic_or(bool can_assign) {
-	static std::vector<std::size_t> to_patch;
-	to_patch.clear();
-
 	logic_and(can_assign);
-	while (match(TT::Or)) {
-		to_patch.emplace_back(emit_jump(Op::jmp_if_true_or_pop));
-		logic_and(false);
-	}
-
-	for (std::size_t jump : to_patch) {
+	if (match(TT::Or)) {
+		std::size_t jump = emit_jump(Op::jmp_if_true_or_pop);
+		logic_or(false);
 		patch_jump(jump);
 	}
 }
 
 void Compiler::logic_and(bool can_assign) {
-	static std::vector<std::size_t> to_patch;
-	to_patch.clear();
-
 	bit_or(can_assign);
-	while (match(TT::And)) {
-		to_patch.emplace_back(emit_jump(Op::jmp_if_false_or_pop));
-		bit_or(false);
-	}
-
-	for (std::size_t jump : to_patch) {
+	if (match(TT::And)) {
+		std::size_t jump = emit_jump(Op::jmp_if_false_or_pop);
+		logic_and(false);
 		patch_jump(jump);
 	}
 }
@@ -252,11 +240,7 @@ std::size_t Compiler::emit_jump(Opcode op) {
 }
 
 void Compiler::patch_jump(std::size_t index) {
-	patch_jump_at(index, THIS_BLOCK.op_count());
-}
-
-void Compiler::patch_jump_at(std::size_t index, std::size_t address) {
-	u16 jump_dist = address - index - 2;
+	u16 jump_dist = THIS_BLOCK.op_count() - index - 2;
 	if (jump_dist > UINT16_MAX) {
 		error_at("Too much code to jump over.", token.location.line);
 	}

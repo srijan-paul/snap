@@ -90,6 +90,8 @@ TT Scanner::kw_or_id_type() const {
 	case 'e': return check_kw_chars("lse", 4, 3, TT::Else);
 	case 'i': return check_kw_chars("f", 2, 1, TT::If);
 	case 'n': return check_kw_chars("il", 3, 2, TT::Nil);
+	case 'a': return check_kw_chars("nd", 3, 2, TT::And);
+	case 'o': return check_kw_chars("r", 2, 1, TT::Or);
 	default: return TT::Id;
 	}
 }
