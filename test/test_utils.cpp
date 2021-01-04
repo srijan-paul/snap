@@ -49,7 +49,7 @@ void compile(const std::string* code, VM* vm) {
 void print_disassembly(const char* code) {
 	const std::string code_s{code};
 	snap::VM vm{&code_s};
-	compile(&code_s, &vm);
-	disassemble_block(vm.m_block);
+	vm.init();
+	disassemble_block(*vm.m_current_block);
 	printf("\n");
 }

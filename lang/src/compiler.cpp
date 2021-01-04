@@ -38,6 +38,8 @@ Function* Compiler::compile() {
 	while (!eof()) {
 		toplevel();
 	}
+	
+	emit(Op::load_nil); // TODO replace with return value.
 	emit(Op::return_val, token);
 	return m_func;
 }
