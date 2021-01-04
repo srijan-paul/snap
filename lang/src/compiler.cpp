@@ -1,6 +1,7 @@
 #include "token.hpp"
 #include "value.hpp"
 #include <compiler.hpp>
+#include <vm.hpp>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
@@ -8,7 +9,7 @@
 #include <string>
 
 #define TOK2NUM(t) SNAP_NUM_VAL(std::stod(t.raw(*m_source)))
-#define THIS_BLOCK (m_vm->m_block)
+#define THIS_BLOCK (m_current_block)
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
 	void name(bool can_assign) {                                                                   \
@@ -26,7 +27,7 @@ using Op = Opcode;
 using TT = TokenType;
 
 Compiler::Compiler(VM* vm, const std::string* src)
-	: m_vm{vm}, m_source{src}, m_scanner(Scanner{src}) {
+	: m_vm{vm}, m_current_block(&vm->m_block), m_source{src}, m_scanner(Scanner{src}) {
 	advance(); // set `peek` to the first token in the token stream.
 }
 
@@ -73,7 +74,7 @@ void Compiler::declarator(bool is_const) {
 	const Token name = token;
 
 	match(TT::Eq) ? expr() : emit(Op::load_nil, token.location.line);
-	int idx = new_variable(name, is_const);
+	new_variable(name, is_const);
 }
 
 void Compiler::block_stmt() {
@@ -145,10 +146,10 @@ void Compiler::unary(bool can_assign) {
 		advance();
 		const Token op_token = token;
 		grouping(false);
-		switch(op_token.type) {
-			case TT::Bang: emit(Op::lnot, op_token); break;
-			case TT::Minus: emit(Op::negate, op_token); break;
-			default:;
+		switch (op_token.type) {
+		case TT::Bang: emit(Op::lnot, op_token); break;
+		case TT::Minus: emit(Op::negate, op_token); break;
+		default:;
 		}
 		return;
 	}
@@ -173,9 +174,10 @@ void Compiler::primary(bool can_assign) {
 		const std::string raw = peek.raw(*m_source);
 		const char fmt[] = "Unexpected '%s'.";
 		std::size_t bufsize = strlen(fmt) + raw.length() - 1;
-		char buf[bufsize];
+		char* buf = new char[bufsize];
 		sprintf(buf, fmt, raw.c_str());
 		error_at(buf, peek.location.line);
+		free(buf);
 	}
 }
 
@@ -243,7 +245,7 @@ void Compiler::exit_block() {
 }
 
 std::size_t Compiler::emit_jump(Opcode op) {
-	std::size_t index = THIS_BLOCK.code.size();
+	std::size_t index = THIS_BLOCK->code.size();
 	emit(op, token);
 	emit(static_cast<Op>(0xff), token);
 	emit(static_cast<Op>(0xff), token);
@@ -251,13 +253,13 @@ std::size_t Compiler::emit_jump(Opcode op) {
 }
 
 void Compiler::patch_jump(std::size_t index) {
-	u16 jump_dist = THIS_BLOCK.op_count() - index - 2;
+	u32 jump_dist = THIS_BLOCK->op_count() - index - 2;
 	if (jump_dist > UINT16_MAX) {
 		error_at("Too much code to jump over.", token.location.line);
 	}
 
-	THIS_BLOCK.code[index] = static_cast<Op>((jump_dist >> 8) & 0xff);
-	THIS_BLOCK.code[index + 1] = static_cast<Op>(jump_dist & 0xff);
+	THIS_BLOCK->code[index] = static_cast<Op>((jump_dist >> 8) & 0xff);
+	THIS_BLOCK->code[index + 1] = static_cast<Op>(jump_dist & 0xff);
 }
 
 // helper functions:
@@ -300,10 +302,11 @@ void Compiler::error(const char* fmt...) {
 	va_start(args, fmt);
 
 	std::size_t bufsize = vsnprintf(nullptr, 0, fmt, args) + 1;
-	char buf[bufsize];
+	char* buf = new char[bufsize];
 	vsnprintf(buf, bufsize, fmt, args);
 
 	m_vm->log_error(*m_vm, buf);
+	free(buf);
 
 	va_end(args);
 }
@@ -313,7 +316,9 @@ size_t Compiler::emit_string(const Token& token) {
 	char* buf = new char[length + 1];
 	std::memcpy(buf, token.raw_cstr(m_source) + 1, length); // +1 to skip the openening quote.
 	buf[length] = '\0';
-	return emit_value(Value(buf, length));
+
+	String* string = new String(*m_vm, buf, length);
+	return emit_value(SNAP_OBJECT_VAL(string));
 }
 
 int Compiler::find_var(const Token& name_token) {
@@ -324,19 +329,19 @@ int Compiler::find_var(const Token& name_token) {
 }
 
 inline size_t Compiler::emit_value(Value v) {
-	return THIS_BLOCK.add_value(v);
+	return THIS_BLOCK->add_value(v);
 }
 
 inline void Compiler::emit(Op op) {
-	THIS_BLOCK.add_instruction(op, token.location.line);
+	THIS_BLOCK->add_instruction(op, token.location.line);
 }
 
 inline void Compiler::emit(Op op, const Token& token) {
-	THIS_BLOCK.add_instruction(op, token.location.line);
+	THIS_BLOCK->add_instruction(op, token.location.line);
 }
 
 inline void Compiler::emit(Op op, u32 line) {
-	THIS_BLOCK.add_instruction(op, line);
+	THIS_BLOCK->add_instruction(op, line);
 }
 
 inline void Compiler::emit_bytes(Op a, Op b, const Token& token) {

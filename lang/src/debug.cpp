@@ -23,7 +23,7 @@ static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)>
 };
 // clang-format on
 
-const char* const op2s(Op op) {
+const char* op2s(Op op) {
 	return op_strs[static_cast<u32>(op)];
 }
 

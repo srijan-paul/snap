@@ -109,7 +109,6 @@ Token Scanner::number() {
 
 // TODO: escape characters.
 Token Scanner::make_string(char quote) {
-	TT type = TT::String;
 	while (!(eof() || check(quote))) next();
 	if (eof()) {
 		// TODO: error

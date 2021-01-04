@@ -6,7 +6,9 @@
 
 namespace snap {
 
-enum ObjType { string };
+enum class ObjType : u8 { string };
+
+class VM;
 
 // Objects always live on the heap. A value which is an object contains a a pointer
 // to this data on the heap. The `tag` specifies what kind of object this is.
@@ -14,9 +16,11 @@ struct Obj {
 	ObjType tag;
 
 	// pointer to the next object in the VM's GC linked list.
-	Obj* next;
+	Obj* next = nullptr;
 	s32 m_hash = -1;
+	bool marked = false;
 	Obj(ObjType tt) : tag{tt} {};
+	Obj(VM& vm, ObjType tt);
 
 	s32 hash();
 };
@@ -30,6 +34,7 @@ struct String : Obj {
 	/// @param chrs pointer to the character buffer. must be null terminated.
 	/// @param len length of the string.
 	String(char* chrs, size_t len) : Obj(ObjType::string), chars{chrs}, length{len} {};
+	String(VM& vm, char* chrs, size_t len) : Obj(vm, ObjType::string), chars{chrs}, length{len} {};
 
 	s32 hash();
 
@@ -64,9 +69,10 @@ struct Value {
 		as.num = 0.0f;
 	}
 
-	// string object value constructor
-	Value(Obj* s) : tag{ValueType::Object} {};
-	Value(char* s, int len);
+	Value(Obj* o) : tag{ValueType::Object} {
+		as.object = o;
+	}
+	Value(char* s, int len); // string object value constructor
 
 	inline number as_num() const {
 		return as.num;
@@ -136,4 +142,4 @@ struct Value {
 #define SNAP_CAST_INT(v) ((s64)((v).as.num))
 
 void print_value(Value v);
-}; // namespace snap
+} // namespace snap

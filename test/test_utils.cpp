@@ -1,5 +1,6 @@
 #include "test_utils.hpp"
 #include <debug.hpp>
+#include <vm.hpp>
 #include <iostream>
 
 using namespace snap;

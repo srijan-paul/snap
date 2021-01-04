@@ -89,8 +89,8 @@ struct Location {
 };
 
 struct Token {
-	Location location;
 	TokenType type = TokenType::Error;
+	Location location;
 	Token(TokenType type, Location loc) : type{type}, location{loc} {};
 	Token() : location{} {};
 	std::string raw(const std::string& source) const;

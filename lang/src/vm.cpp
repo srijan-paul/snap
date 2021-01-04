@@ -1,3 +1,4 @@
+#include "gc.hpp"
 #include "value.hpp"
 #include <cmath>
 #include <common.hpp>
@@ -26,7 +27,8 @@ namespace snap {
 using Op = Opcode;
 using VT = ValueType;
 
-VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
+VM::VM(const std::string* src) : m_block{Block{}}, m_compiler(this, src), source{src} {
+}
 
 #define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) && !(SNAP_AS_BOOL(v))) || SNAP_IS_NIL(v))
 #define IS_VAL_TRUTHY(v) (!IS_VAL_FALSY(v))
@@ -45,7 +47,7 @@ VM::VM(const std::string* src) : source{src}, m_block{Block{}} {};
 		if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {                                                    \
 			push(SNAP_BOOL_VAL(SNAP_AS_NUM(a) op SNAP_AS_NUM(b)));                                 \
 		} else {                                                                                   \
-			BINOP_ERROR(#op, b, a);                                                                \
+			binop_error(#op, b, a);                                                                \
 		}                                                                                          \
 	} while (false);
 
@@ -229,11 +231,12 @@ ExitCode VM::run(bool run_till_end) {
 			Value& a = PEEK(2);
 			Value& b = PEEK(1);
 
-			if (!(a.is_string() && b.is_string())) {
+			if (!(SNAP_IS_STRING(a) && SNAP_IS_STRING(b))) {
 				return binop_error("..", a, b);
 			} else {
-				String* s = String::concatenate(a.as_string(), b.as_string());
-				a.as.object = s;
+				String* s = String::concatenate(SNAP_AS_STRING(a), SNAP_AS_STRING(b));
+				SNAP_SET_OBJECT(a, s);
+				register_object(s);
 			}
 			pop();
 			break;
@@ -287,6 +290,17 @@ bool VM::init() {
 	return true;
 }
 
+// 	-- Garbage collection --
+using OT = ObjType;
+
+void VM::collect_garbage() {
+	GC::mark_roots(*this);
+	GC::trace_refs(*this);
+	GC::sweep(*this);
+}
+
+//  --- Error reporting ---
+
 ExitCode VM::binop_error(const char* opstr, Value& a, Value& b) {
 	return runtime_error("Cannot use operator '%s' on operands of type '%s' and '%s'.", opstr,
 						 SNAP_TYPE_CSTR(a), SNAP_TYPE_CSTR(b));
@@ -297,10 +311,11 @@ ExitCode VM::runtime_error(const char* fstring, ...) const {
 	va_start(args, fstring);
 
 	std::size_t bufsize = vsnprintf(nullptr, 0, fstring, args) + 1;
-	char buf[bufsize];
+	char* buf = new char[bufsize];
 	vsnprintf(buf, bufsize, fstring, args);
 
 	default_error_fn(*this, buf);
+	free(buf);
 	va_end(args);
 	return ExitCode::RuntimeError;
 }
@@ -308,6 +323,13 @@ ExitCode VM::runtime_error(const char* fstring, ...) const {
 void default_error_fn(const VM& vm, const char* message) {
 	fprintf(stderr, "%s", message);
 	fputc('\n', stderr);
+}
+
+VM::~VM() {
+	if (gc_objects == nullptr) return;
+	for (Obj* object = gc_objects; object != nullptr; object = object->next) {
+		GC::free_object(object);
+	}
 }
 
 } // namespace snap

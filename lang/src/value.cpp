@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <value.hpp>
+#include <vm.hpp>
 
 // this hash function is from: https://craftinginterpreters.com/hash-tables.html
 static uint32_t fnv1a(const char* key, int length) {
@@ -20,6 +21,10 @@ namespace snap {
 using VT = ValueType;
 using OT = ObjType;
 using TT = TokenType;
+
+Obj::Obj(VM& vm, OT type): tag{type} {
+	vm.register_object(this);
+}
 
 s32 Obj::hash() {
 	m_hash = (std::size_t)(this);

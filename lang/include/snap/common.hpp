@@ -12,13 +12,21 @@ using u16 = uint16_t;
 
 using number = double;
 
-} // namespace snap
+class VM;
+class Compiler;
+class VM;
 
 // If this macro is defined, then snap will use
 // NaN tagged values that shorten the value representation
 // of the interpreter to a simple 8 byte double, using the NaN
 // bits to encode the type information.
-#define SNAP_NAN_TAGGING 1
+// #define SNAP_NAN_TAGGING 1
 
 #define SNAP_DEBUG_RUNTIME	   1
-#define SNAP_DEBUG_DISASSEMBLY 1
+// #define SNAP_DEBUG_DISASSEMBLY 1
+
+#define SNAP_STRESS_GC 1
+#define SNAP_LOG_GC 1
+
+} // namespace snap
+

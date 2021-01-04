@@ -2,7 +2,7 @@
 #include "opcode.hpp"
 #include "scanner.hpp"
 #include "token.hpp"
-#include "vm.hpp"
+#include "block.hpp"
 #include <array>
 
 namespace snap {
@@ -11,9 +11,7 @@ struct Symbol {
 	/// the distance of the local's value from the base of the VM stack
 	/// at runtime.
 	u8 slot = 0;
-	/// the level of nesting at which this local variable
-	/// is present.
-	u8 depth = 0;
+
 	/// whether or not this local
 	/// variable has been initialized with a value.
 	bool is_initialized = false;
@@ -22,9 +20,9 @@ struct Symbol {
 	const char* name = nullptr;
 	/// length of the variable name.
 	u32 length = 0;
-
-	// name token of this variable.
-	Token token;
+	/// the level of nesting at which this local variable
+	/// is present.
+	u8 depth = 0;
 
 	/// this field is true when the variable is
 	/// initialized with a `const` qualifier. Making this
@@ -49,6 +47,8 @@ struct SymbolTable {
 
 class Compiler {
   public:
+	VM* m_vm;
+	Block* m_current_block;
 	static constexpr std::size_t MaxLocalVars = UINT8_MAX;
 	static constexpr std::size_t MaxUpValues = UINT8_MAX;
 
@@ -56,7 +56,6 @@ class Compiler {
 	void compile();
 
   private:
-	VM* m_vm;
 	const std::string* m_source;
 	bool has_error = false;
 
