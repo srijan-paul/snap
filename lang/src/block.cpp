@@ -1,5 +1,6 @@
 #include <block.hpp>
 #include <common.hpp>
+#include <value.hpp>
 
 namespace snap {
 

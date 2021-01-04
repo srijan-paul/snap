@@ -1,4 +1,5 @@
 #pragma once
+#include "block.hpp"
 #include "common.hpp"
 #include "token.hpp"
 #include <cstdint>
@@ -6,7 +7,9 @@
 
 namespace snap {
 
-enum class ObjType : u8 { string };
+enum class ObjType : u8 { string, func };
+
+using StackId = Value*;
 
 class VM;
 
@@ -29,17 +32,35 @@ struct Obj {
 /// `chars`  -> Pointer to the first character of the string on the heap (null terminated).
 /// `length` -> Length of the string.
 struct String : Obj {
-	char* chars = nullptr;
+	const char* chars = nullptr;
 	size_t length = 0;
 	/// @param chrs pointer to the character buffer. must be null terminated.
 	/// @param len length of the string.
-	String(char* chrs, size_t len) : Obj(ObjType::string), chars{chrs}, length{len} {};
-	String(VM& vm, char* chrs, size_t len) : Obj(vm, ObjType::string), chars{chrs}, length{len} {};
+	String(const char* chrs, size_t len);
+	// creates a string that owns the characters `chrs`.
+	String(char* chrs) : Obj(ObjType::string), chars{chrs} {};
+	String(VM& vm, const char* chrs, size_t len);
 
 	s32 hash();
 
 	static String* concatenate(const String* a, const String* b);
 	~String();
+};
+
+// A protoype is the body of a function
+// that contains the bytecode.
+struct Prototype {
+	String* name;
+	u32 num_params = 0;
+	Block m_block;
+	u32 num_upvals = 0;
+	Prototype(String* funcname) : name{funcname} {};
+	Prototype(String* funcname, u32 param_count) : name{funcname}, num_params{param_count} {};
+};
+
+struct Function : Obj {
+	Prototype* proto;
+	Function(String* name) : Obj(ObjType::func), proto(new Prototype(name)){};
 };
 
 enum class ValueType {
@@ -128,12 +149,13 @@ struct Value {
 #define SNAP_IS_OBJECT(v) ((v).tag == snap::ValueType::Object)
 #define SNAP_IS_STRING(v) (SNAP_IS_OBJECT(v) && SNAP_AS_OBJECT(v)->tag == snap::ObjType::string)
 
-#define SNAP_AS_NUM(v)	   ((v).as.num)
-#define SNAP_AS_BOOL(v)	   ((v).as.boolean)
-#define SNAP_AS_NIL(v)	   ((v).as.double)
-#define SNAP_AS_OBJECT(v)  ((v).as.object)
-#define SNAP_AS_STRING(v)  (static_cast<String*>(SNAP_AS_OBJECT(v)))
-#define SNAP_AS_CSTRING(v) ((SNAP_AS_STRING(v))->chars)
+#define SNAP_AS_NUM(v)		((v).as.num)
+#define SNAP_AS_BOOL(v)		((v).as.boolean)
+#define SNAP_AS_NIL(v)		((v).as.double)
+#define SNAP_AS_OBJECT(v)	((v).as.object)
+#define SNAP_AS_FUNCTION(v) (static_cast<snap::Function*>(SNAP_AS_OBJECT(v)))
+#define SNAP_AS_STRING(v)	(static_cast<snap::String*>(SNAP_AS_OBJECT(v)))
+#define SNAP_AS_CSTRING(v)	((SNAP_AS_STRING(v))->chars)
 
 #define SNAP_SET_TT(v, tt) ((v).tag = tt)
 #define SNAP_GET_TT(v)	   ((v).tag)

@@ -25,7 +25,7 @@ static void mark_block(VM& vm, Block* block) {
 
 static void mark_compiler(VM& vm) {
 	Compiler& compiler = vm.m_compiler;
-	mark_block(vm, compiler.m_current_block);
+	mark_block(vm, &compiler.m_func->proto->m_block);
 }
 
 static void mark_value(VM& vm, Value& value) {
@@ -70,6 +70,7 @@ void GC::free_object(Obj* object) {
 #endif
 		static_cast<String*>(object)->~String();
 		break;
+	case OT::func: break;
 	default: delete object; break;
 	}
 	}

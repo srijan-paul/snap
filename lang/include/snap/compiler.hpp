@@ -1,9 +1,11 @@
 #pragma once
+#include "block.hpp"
 #include "opcode.hpp"
 #include "scanner.hpp"
 #include "token.hpp"
-#include "block.hpp"
+#include "value.hpp"
 #include <array>
+
 
 namespace snap {
 
@@ -48,12 +50,12 @@ struct SymbolTable {
 class Compiler {
   public:
 	VM* m_vm;
-	Block* m_current_block;
+	Function* m_func = nullptr;
 	static constexpr std::size_t MaxLocalVars = UINT8_MAX;
 	static constexpr std::size_t MaxUpValues = UINT8_MAX;
 
 	Compiler(VM* vm, const std::string* src);
-	void compile();
+	Function* compile();
 
   private:
 	const std::string* m_source;

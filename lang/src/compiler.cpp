@@ -1,15 +1,15 @@
 #include "token.hpp"
 #include "value.hpp"
 #include <compiler.hpp>
-#include <vm.hpp>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
 #include <iterator>
 #include <string>
+#include <vm.hpp>
 
 #define TOK2NUM(t) SNAP_NUM_VAL(std::stod(t.raw(*m_source)))
-#define THIS_BLOCK (m_current_block)
+#define THIS_BLOCK (m_func->proto->m_block)
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
 	void name(bool can_assign) {                                                                   \
@@ -27,15 +27,19 @@ using Op = Opcode;
 using TT = TokenType;
 
 Compiler::Compiler(VM* vm, const std::string* src)
-	: m_vm{vm}, m_current_block(&vm->m_block), m_source{src}, m_scanner(Scanner{src}) {
+	: m_vm{vm}, m_source{src}, m_scanner(Scanner{src}) {
 	advance(); // set `peek` to the first token in the token stream.
+	String* fname = new String("<script>", 8);
+	m_symtable.add("<script>", 8, true); // reserve the first slot for this toplevel function.
+	m_func = new Function(fname);
 }
 
-void Compiler::compile() {
+Function* Compiler::compile() {
 	while (!eof()) {
 		toplevel();
 	}
 	emit(Op::return_val, token);
+	return m_func;
 }
 
 // top level statements are one of:
@@ -245,7 +249,7 @@ void Compiler::exit_block() {
 }
 
 std::size_t Compiler::emit_jump(Opcode op) {
-	std::size_t index = THIS_BLOCK->code.size();
+	std::size_t index = THIS_BLOCK.code.size();
 	emit(op, token);
 	emit(static_cast<Op>(0xff), token);
 	emit(static_cast<Op>(0xff), token);
@@ -253,13 +257,13 @@ std::size_t Compiler::emit_jump(Opcode op) {
 }
 
 void Compiler::patch_jump(std::size_t index) {
-	u32 jump_dist = THIS_BLOCK->op_count() - index - 2;
+	u32 jump_dist = THIS_BLOCK.op_count() - index - 2;
 	if (jump_dist > UINT16_MAX) {
 		error_at("Too much code to jump over.", token.location.line);
 	}
 
-	THIS_BLOCK->code[index] = static_cast<Op>((jump_dist >> 8) & 0xff);
-	THIS_BLOCK->code[index + 1] = static_cast<Op>(jump_dist & 0xff);
+	THIS_BLOCK.code[index] = static_cast<Op>((jump_dist >> 8) & 0xff);
+	THIS_BLOCK.code[index + 1] = static_cast<Op>(jump_dist & 0xff);
 }
 
 // helper functions:
@@ -313,11 +317,8 @@ void Compiler::error(const char* fmt...) {
 
 size_t Compiler::emit_string(const Token& token) {
 	size_t length = token.length() - 2; // minus the quotes
-	char* buf = new char[length + 1];
-	std::memcpy(buf, token.raw_cstr(m_source) + 1, length); // +1 to skip the openening quote.
-	buf[length] = '\0';
-
-	String* string = new String(*m_vm, buf, length);
+	// +1 to skip the openening quote.
+	String* string = new String(*m_vm, token.raw_cstr(m_source) + 1, length);
 	return emit_value(SNAP_OBJECT_VAL(string));
 }
 
@@ -329,19 +330,19 @@ int Compiler::find_var(const Token& name_token) {
 }
 
 inline size_t Compiler::emit_value(Value v) {
-	return THIS_BLOCK->add_value(v);
+	return THIS_BLOCK.add_value(v);
 }
 
 inline void Compiler::emit(Op op) {
-	THIS_BLOCK->add_instruction(op, token.location.line);
+	THIS_BLOCK.add_instruction(op, token.location.line);
 }
 
 inline void Compiler::emit(Op op, const Token& token) {
-	THIS_BLOCK->add_instruction(op, token.location.line);
+	THIS_BLOCK.add_instruction(op, token.location.line);
 }
 
 inline void Compiler::emit(Op op, u32 line) {
-	THIS_BLOCK->add_instruction(op, line);
+	THIS_BLOCK.add_instruction(op, line);
 }
 
 inline void Compiler::emit_bytes(Op a, Op b, const Token& token) {

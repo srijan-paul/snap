@@ -1,8 +1,19 @@
 #include "assert.hpp"
 #include "test_utils.hpp"
 #include "value.hpp"
+#include <stdlib.h>
 
 using namespace snap;
+
+void assert_val_eq(Value& expected, Value&& actual) {
+	if (!Value::are_equal(expected, actual)) {
+		fprintf(stderr, "Expected value to be: ");
+		print_value(expected);
+		fprintf(stderr, " But got:  ");
+		print_value(actual);
+		abort();
+	}
+}
 
 /// Runs the next `op_count` instructions in the `code` string in a VM.
 /// Then asserts that the value on top of the stack is equal to `expected_value`.
@@ -16,7 +27,7 @@ static void test_code(const std::string&& code, int op_count, Value expected_val
 		vm.step(op_count);
 	}
 
-	EXPECT_VAL_EQ(vm.peek(0), expected_value);
+	assert_val_eq(expected_value, vm.peek());
 }
 
 static void expr_tests() {

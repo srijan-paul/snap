@@ -12,14 +12,14 @@
 #include <debug.hpp>
 #endif
 
-#define FETCH()		(m_block.code[ip++])
-#define NEXT_BYTE() (static_cast<u8>(m_block.code[ip++]))
+#define FETCH()		(m_current_block->code[ip++])
+#define NEXT_BYTE() (static_cast<u8>(m_current_block->code[ip++]))
 #define FETCH_SHORT()                                                                              \
-	(ip += 2,                                                                                      \
-	 (u16)((static_cast<u8>(m_block.code[ip - 2]) << 8) | static_cast<u8>(m_block.code[ip - 1])))
-#define READ_VALUE()		  (m_block.constant_pool[NEXT_BYTE()])
-#define GET_VAR(index)		  (m_stack[index])
-#define SET_VAR(index, value) (m_stack[index] = value)
+	(ip += 2, (u16)((static_cast<u8>(m_current_block->code[ip - 2]) << 8) |                        \
+					static_cast<u8>(m_current_block->code[ip - 1])))
+#define READ_VALUE()		  (m_current_block->constant_pool[NEXT_BYTE()])
+#define GET_VAR(index)		  (frame->slots[index])
+#define SET_VAR(index, value) (frame->slots[index] = value)
 
 #define PEEK(depth) sp[-depth]
 
@@ -27,7 +27,7 @@ namespace snap {
 using Op = Opcode;
 using VT = ValueType;
 
-VM::VM(const std::string* src) : m_block{Block{}}, m_compiler(this, src), source{src} {
+VM::VM(const std::string* src) : m_compiler(this, src), source{src} {
 }
 
 #define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) && !(SNAP_AS_BOOL(v))) || SNAP_IS_NIL(v))
@@ -92,7 +92,7 @@ ExitCode VM::run(bool run_till_end) {
 		const Op op = FETCH();
 
 #ifdef SNAP_DEBUG_RUNTIME
-		disassemble_instr(m_block, op, ip - 1);
+		disassemble_instr(*m_current_block, op, ip - 1);
 #endif
 
 		switch (op) {
@@ -279,14 +279,25 @@ ExitCode VM::interpret() {
 }
 
 bool VM::init() {
-	Compiler compiler{this, source};
-	compiler.compile();
+	Function* func = m_compiler.compile();
+	std::cout << "compilation done\n";
+	push(SNAP_OBJECT_VAL(func));
+	callfunc(func, 0);
 
 #ifdef SNAP_DEBUG_DISASSEMBLY
-	disassemble_block(m_block);
+	disassemble_block(*m_current_block);
 	printf("\n");
 #endif
 
+	return true;
+}
+
+bool VM::callfunc(Function* func, u8 argc) {
+	frame = &frames[frame_count++];
+	frame->func = func;
+	frame->ip = 0;
+	frame->slots = sp - argc - 1;
+	m_current_block = &func->proto->m_block;
 	return true;
 }
 

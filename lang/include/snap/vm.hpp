@@ -12,7 +12,6 @@
 namespace snap {
 enum class ExitCode { Success, CompileError, RuntimeError };
 
-using VM = class VM;
 using PrintFn = std::function<void(const VM& vm, String* string)>;
 using ErrorFn = std::function<void(const VM& vm, const char* fstring)>;
 using AllocateFn = std::function<void*(VM& vm, size_t old_size, size_t new_size)>;
@@ -51,14 +50,22 @@ struct ObjectSet {
 	}
 };
 
+struct CallFrame {
+	Function* func;
+	std::size_t ip;
+	// the base of the call frame in the Value's struct
+	Value* slots;
+};
+
 class VM {
   public:
 	VM(const std::string* src);
 	~VM();
-	Block m_block;
 	Compiler m_compiler;
-
+	
+	Block* m_current_block = nullptr;
 	static constexpr std::size_t StackMaxSize = 256;
+	static constexpr std::size_t MaxCallStack = 128;
 	Value m_stack[StackMaxSize];
 	Value* sp = m_stack; // points to the next free slot where a value can go
 
@@ -101,6 +108,7 @@ class VM {
 	}
 
 	bool init();
+	bool callfunc(Function* func, u8 argc);
 
 	// register an object as 'present' in the object pool.
 	// This allows the objectto be marked as available
@@ -119,8 +127,11 @@ class VM {
 
   private:
 	const std::string* source;
+	CallFrame frames[MaxCallStack];
+	CallFrame* frame = frames; // current frame.
+	u32 frame_count = 0;
 
-	size_t ip = 0; // instruction ptr
+	std::size_t ip = 0; // instruction ptr
 
 	ExitCode binop_error(const char* opstr, Value& a, Value& b);
 	ExitCode runtime_error(const char* fstring...) const;

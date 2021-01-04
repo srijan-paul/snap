@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <debug.hpp>
 #include <iostream>
+#include <value.hpp>
 
 namespace snap {
 using Op = Opcode;

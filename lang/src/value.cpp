@@ -22,7 +22,7 @@ using VT = ValueType;
 using OT = ObjType;
 using TT = TokenType;
 
-Obj::Obj(VM& vm, OT type): tag{type} {
+Obj::Obj(VM& vm, OT type) : tag{type} {
 	vm.register_object(this);
 }
 
@@ -31,13 +31,23 @@ s32 Obj::hash() {
 	return m_hash;
 }
 
+String::String(const char* chrs, std::size_t len) : Obj(ObjType::string), length{len} {
+	char* buf = new char[len + 1];
+	std::memcpy(buf, chrs, len);
+	buf[len] = '\0';
+	chars = buf;
+}
+
+String::String(VM& vm, const char* chrs, size_t len) : Obj(vm, ObjType::string), length{len} {
+	char* buf = new char[len + 1];
+	std::memcpy(buf, chrs, len);
+	buf[len] = '\0';
+	chars = buf;
+}
+
 s32 String::hash() {
 	m_hash = fnv1a(chars, length);
 	return m_hash;
-}
-
-Value::Value(char* s, int len) : tag{VT::Object} {
-	as.object = new String(s, len);
 }
 
 String* String::concatenate(const String* a, const String* b) {
@@ -50,7 +60,11 @@ String* String::concatenate(const String* a, const String* b) {
 }
 
 String::~String() {
-	free(chars);
+	delete[] chars;
+}
+
+Value::Value(char* s, int len) : tag{VT::Object} {
+	as.object = new String(s, len);
 }
 
 void print_value(Value v) {
@@ -74,9 +88,18 @@ std::string Value::name_str() const {
 	case VT::Number: return std::to_string(as_num());
 	case VT::Bool: return as_bool() ? std::string("true") : std::string("false");
 	case VT::Nil: return "nil";
-	case VT::Object:
-		if (is_string()) return std::string(SNAP_AS_CSTRING(*this));
+	case VT::Object: {
+		const Obj* obj = as_object();
+
+		switch (obj->tag) {
+		case ObjType::string: return SNAP_AS_CSTRING(*this);
+		case ObjType::func: {
+			return static_cast<const Function*>(obj)->proto->name->chars;
+		}
+		}
+
 		return "<snap object>";
+	}
 	default: return "<unknown value>";
 	}
 }

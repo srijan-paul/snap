@@ -1,7 +1,7 @@
 #pragma once
 #include "common.hpp"
 #include "opcode.hpp"
-#include "value.hpp"
+
 #include <vector>
 
 namespace snap {
