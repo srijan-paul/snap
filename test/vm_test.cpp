@@ -5,7 +5,7 @@
 
 using namespace snap;
 
-void assert_val_eq(Value& expected, Value&& actual) {
+void assert_val_eq(Value& expected, Value actual) {
 	if (!Value::are_equal(expected, actual)) {
 		fprintf(stderr, "Expected value to be: ");
 		print_value(expected);
@@ -17,17 +17,17 @@ void assert_val_eq(Value& expected, Value&& actual) {
 
 /// Runs the next `op_count` instructions in the `code` string in a VM.
 /// Then asserts that the value on top of the stack is equal to `expected_value`.
-// If `op_count` is -1 then interprets the entire bytecode.
+/// If `op_count` is -1 then interprets the entire bytecode and checks the return value.
 static void test_code(const std::string&& code, int op_count, Value expected_value) {
 	VM vm{&code};
 	if (op_count == -1) {
 		vm.interpret();
+		assert_val_eq(expected_value, vm.return_value);
 	} else {
 		vm.init();
 		vm.step(op_count);
+		assert_val_eq(expected_value, vm.peek());
 	}
-
-	assert_val_eq(expected_value, vm.peek());
 }
 
 static void expr_tests() {
@@ -43,8 +43,8 @@ static void expr_tests() {
 	test_code("4 >= 4", 3, SNAP_BOOL_VAL(true));
 
 	test_code("10 - 5 - 2", 5, SNAP_NUM_VAL(3.0));
-	test_code("let a = 10 && 5 && 2", -1, SNAP_NUM_VAL(2));
-	test_code("let a = 10 || 5 || 2", -1, SNAP_NUM_VAL(10));
+	test_code("let a = 10 && 5 && 2", 5, SNAP_NUM_VAL(2));
+	test_code("let a = 10 || 5 || 2", 2, SNAP_NUM_VAL(10));
 	test_code("10 - 5 - 2", 5, SNAP_NUM_VAL(3.0));
 
 	test_code(R"(
@@ -60,7 +60,7 @@ static void expr_tests() {
 
 	// test precedence
 
-	test_code("let a = 5 > 2 && 3 > -10", -1, SNAP_BOOL_VAL(true));
+	test_code("let a = 5 > 2 && 3 > -10", 8, SNAP_BOOL_VAL(true));
 }
 
 static void stmt_tests() {
@@ -81,7 +81,9 @@ static void stmt_tests() {
 			b = 6
 		} else {
 			b = 7
-		})",
+		}
+		return 7
+	)",
 			  -1, SNAP_NUM_VAL(7));
 }
 

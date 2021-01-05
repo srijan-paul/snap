@@ -68,25 +68,13 @@ Value::Value(char* s, int len) : tag{VT::Object} {
 }
 
 void print_value(Value v) {
-	switch (v.tag) {
-	case VT::Number: std::printf("%f", SNAP_AS_NUM(v)); break;
-	case VT::Bool: std::printf("%s", (SNAP_AS_BOOL(v) ? "true" : "false")); break;
-	case VT::Object:
-		if (SNAP_IS_STRING(v))
-			std::printf("%s", SNAP_AS_CSTRING(v));
-		else
-			std::printf("<snap object>");
-		break;
-	default:
-		std::printf("Internal error: Impossible value type tag %zu!.\n",
-					static_cast<size_t>(v.tag));
-	}
+	std::printf("%s", v.name_str().c_str());
 }
 
 std::string Value::name_str() const {
 	switch (tag) {
 	case VT::Number: return std::to_string(as_num());
-	case VT::Bool: return as_bool() ? std::string("true") : std::string("false");
+	case VT::Bool: return as_bool() ? "true" : "false";
 	case VT::Nil: return "nil";
 	case VT::Object: {
 		const Obj* obj = as_object();
@@ -94,11 +82,11 @@ std::string Value::name_str() const {
 		switch (obj->tag) {
 		case ObjType::string: return SNAP_AS_CSTRING(*this);
 		case ObjType::func: {
-			return static_cast<const Function*>(obj)->proto->name->chars;
+			return std::string("[function ") +
+				   static_cast<const Function*>(obj)->proto->name->chars + "]";
 		}
+		default: return "<snap object>";
 		}
-
-		return "<snap object>";
 	}
 	default: return "<unknown value>";
 	}
@@ -109,7 +97,9 @@ const char* Value::type_name() const {
 	case VT::Number: return "number";
 	case VT::Bool: return "bool";
 	case VT::Object: {
+		const Obj* obj = as_object();
 		if (is_string()) return "string";
+		if (obj->tag == OT::func) return "function";
 		return "object";
 	}
 	case VT::Nil: return "nil";

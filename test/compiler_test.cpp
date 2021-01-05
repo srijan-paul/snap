@@ -15,7 +15,7 @@ void block_test() {
 	b.add_instruction(static_cast<Op>(index), 1);
 	b.add_instruction(Op::pop, 1);
 
-	disassemble_block(b);
+	disassemble_block("test block", b);
 
 	std::printf("--- /block test ---\n\n");
 }

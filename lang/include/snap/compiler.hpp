@@ -6,7 +6,6 @@
 #include "value.hpp"
 #include <array>
 
-
 namespace snap {
 
 struct Symbol {
@@ -38,7 +37,7 @@ struct Symbol {
 
 struct SymbolTable {
 	int num_symbols = 0;
-	u8 scope_depth = 0;
+	u32 scope_depth = 0;
 	std::array<Symbol, UINT8_MAX + 1> m_symbols;
 
 	int find(const char* name, int length) const;
@@ -50,18 +49,40 @@ struct SymbolTable {
 class Compiler {
   public:
 	VM* m_vm;
-	Function* m_func = nullptr;
-	static constexpr std::size_t MaxLocalVars = UINT8_MAX;
-	static constexpr std::size_t MaxUpValues = UINT8_MAX;
+	Function* m_func;
+	Compiler* m_parent = nullptr;
 
+	static constexpr u8 MaxLocalVars = UINT8_MAX;
+	static constexpr u8 MaxUpValues = UINT8_MAX;
+	static constexpr u8 MaxFuncParams = UINT8_MAX;
+
+	// Creates a fresh new compiler that will
+	// parse the toplevel script `src`.
 	Compiler(VM* vm, const std::string* src);
+
+	/// @brief Create a child compiler used for
+	/// compiling function bodies. This assumes
+	/// the parent compiler has already consumed
+	/// the everything up to the functions body.
+	/// @param parent The parent compiler that created this compiler. Used for looking up upvalues.
+	/// @param fname name of the function that this compiler is commpiling into.
+	Compiler(VM* vm, Compiler* parent, String* fname);
+
+	// Compile a top level script
 	Function* compile();
+
+	// Compile a function's body (if this is a child compiler).
+	Function* compile_func();
+
+	/// @brief If this compiler is compiling a function body, then
+	/// reserve a stack slot for the parameter, and add the parameter
+	/// name to the symbol table.
+	void add_param(const Token& token);
 
   private:
 	const std::string* m_source;
 	bool has_error = false;
-
-	Scanner m_scanner;
+	Scanner* m_scanner;
 
 	Token token; // current token under analysis.
 	Token prev;	 // previous token.
@@ -89,8 +110,12 @@ class Compiler {
 	/// consumes it and returns true.
 	bool match(TokenType expected);
 	/// If the `peek` is not of type `type` then throws
-	/// an error message.
+	/// an error message. Else consumes the token and stays quiet.
 	void expect(TokenType type, const char* err_msg);
+
+	/// If `peek` is not of the type `type` then throws 
+	/// an error message. 
+	void test(TokenType type, const char* errmsg);
 
 	void error_at_token(const char* message, const Token& token);
 	void error_at(const char* message, u32 line);
@@ -109,6 +134,8 @@ class Compiler {
 	void block_stmt(); // {stmt*}
 	void if_stmt();
 	void expr_stmt();
+	void fn_decl();
+	void ret_stmt();
 
 	void expr();
 

@@ -11,15 +11,16 @@ using Op = Opcode;
 
 // clang-format off
 static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)> op_strs = {
-	"load_const", "set_var", "get_var",
+	"load_const", "set_var", 
+	"get_var", "call_func",
 	"pop", "add", "concat",
 	"sub", "mult", "mod", 
 	"div", "eq", "neq", 
 	"lshift", "rshift", "band",
 	"bor", "gt", "lt", "gte",
 	"lte", "negate", "lnot",
-	"nil", "return", "jmp",
-	"jmp_if_false_or_pop",
+	"load_nil", "return_val",
+	"jmp", "jmp_if_false_or_pop",
 	"jmp_if_true_or_pop", "pop_jmp_if_false"
 };
 // clang-format on
@@ -88,7 +89,8 @@ std::size_t disassemble_instr(const Block& block, Op op, std::size_t offset) {
 	return 1;
 }
 
-void disassemble_block(const Block& block) {
+void disassemble_block(const char* name, const Block& block) {
+	std::printf("< Disassembly: %s >\n", name);
 	for (std::size_t i = 0; i < block.code.size();) {
 		i += disassemble_instr(block, block.code[i], i);
 	}

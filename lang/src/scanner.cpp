@@ -81,19 +81,25 @@ TT Scanner::check_kw_chars(const char* rest, u32 kwlen, u32 cmplen, TT ttype) co
 	return TT::Id;
 }
 
+typedef struct {
+	const char* word;
+	u32 length;
+	TT ttype;
+} KeywordData;
+
+static constexpr KeywordData keywords[] = {
+	{"false", 5, TT::False}, {"true", 4, TT::True}, {"nil", 3, TT::Nil},	   {"or", 2, TT::Or},
+	{"and", 3, TT::Or},		 {"let", 3, TT::Let},	{"const", 5, TT::Const},   {"if", 2, TT::If},
+	{"else", 2, TT::Else},	 {"fn", 2, TT::Fn},		{"return", 6, TT::Return},
+};
+
 TT Scanner::kw_or_id_type() const {
-	switch (lexeme_start()) {
-	case 'c': return check_kw_chars("onst", 5, 4, TT::Const);
-	case 'l': return check_kw_chars("et", 3, 2, TT::Let);
-	case 't': return check_kw_chars("rue", 4, 3, TT::True);
-	case 'f': return check_kw_chars("alse", 5, 4, TT::False);
-	case 'e': return check_kw_chars("lse", 4, 3, TT::Else);
-	case 'i': return check_kw_chars("f", 2, 1, TT::If);
-	case 'n': return check_kw_chars("il", 3, 2, TT::Nil);
-	case 'a': return check_kw_chars("nd", 3, 2, TT::And);
-	case 'o': return check_kw_chars("r", 2, 1, TT::Or);
-	default: return TT::Id;
+	for (auto& kw : keywords) {
+		if (kw.length == (current - start) &&
+			std::memcmp(source->c_str() + start, kw.word, kw.length) == 0)
+			return kw.ttype;
 	}
+	return TT::Id;
 }
 
 // TODO binary, hex, scientific notation

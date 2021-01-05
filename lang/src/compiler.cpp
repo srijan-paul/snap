@@ -1,3 +1,4 @@
+#include "debug.hpp"
 #include "token.hpp"
 #include "value.hpp"
 #include <compiler.hpp>
@@ -26,21 +27,42 @@ namespace snap {
 using Op = Opcode;
 using TT = TokenType;
 
-Compiler::Compiler(VM* vm, const std::string* src)
-	: m_vm{vm}, m_source{src}, m_scanner(Scanner{src}) {
+Compiler::Compiler(VM* vm, const std::string* src) : m_vm{vm}, m_source{src} {
+	m_scanner = new Scanner{src};
 	advance(); // set `peek` to the first token in the token stream.
 	String* fname = new String("<script>", 8);
 	m_symtable.add("<script>", 8, true); // reserve the first slot for this toplevel function.
 	m_func = new Function(fname);
 }
 
+Compiler::Compiler(VM* vm, Compiler* parent, String* name) : m_vm{vm}, m_parent{parent} {
+	m_scanner = m_parent->m_scanner;
+	m_func = new Function(name);
+	m_symtable.add(name->chars, name->length, false);
+
+	m_source = parent->m_source;
+
+	prev = parent->prev;
+	token = parent->token;
+	peek = parent->peek;
+}
+
 Function* Compiler::compile() {
 	while (!eof()) {
 		toplevel();
 	}
-	
+
 	emit(Op::load_nil); // TODO replace with return value.
 	emit(Op::return_val, token);
+	return m_func;
+}
+
+Function* Compiler::compile_func() {
+	test(TT::LCurlBrace, "Expected '{' before function body.");
+
+	block_stmt();
+	emit(Op::load_nil);
+	emit(Op::return_val);
 	return m_func;
 }
 
@@ -60,6 +82,8 @@ void Compiler::toplevel() {
 	case TT::Let: return var_decl();
 	case TT::LCurlBrace: return block_stmt();
 	case TT::If: return if_stmt();
+	case TT::Fn: return fn_decl();
+	case TT::Return: return ret_stmt();
 	default: expr_stmt();
 	}
 }
@@ -110,6 +134,53 @@ void Compiler::if_stmt() {
 	patch_jump(jmp);
 }
 
+void Compiler::fn_decl() {
+	advance(); // consume 'fn' token.
+	expect(TT::Id, "expected function name");
+
+	Token name_token = token;
+	String* fname = new String(name_token.raw_cstr(m_source), name_token.length());
+	expect(TT::LParen, "Expected '(' before function parameters.");
+
+	Compiler compiler{m_vm, this, fname};
+
+	if (!compiler.check(TT::RParen)) {
+		do {
+			compiler.expect(TT::Id, "Expected parameter name.");
+			compiler.add_param(compiler.token);
+		} while (compiler.match(TT::Comma));
+	}
+
+	compiler.expect(TT::RParen, "Expected ')' after function parameters.");
+
+	Function* func = compiler.compile_func();
+	u8 idx = emit_value(SNAP_OBJECT_VAL(func));
+
+	emit_bytes(Op::load_const, static_cast<Op>(idx), token);
+	m_vm->register_object(func);
+
+#ifdef SNAP_DEBUG_DISASSEMBLY
+	disassemble_block(func->proto->name->chars, func->proto->m_block);
+#endif
+
+	new_variable(name_token);
+
+	prev = compiler.prev;
+	token = compiler.token;
+	peek = compiler.peek;
+}
+
+void Compiler::ret_stmt() {
+	advance(); // eat the return keyword.
+	if (isLiteral(peek.type) || check(TT::Id) || check(TT::Bang) || check(TT::Minus) ||
+		check(TT::LParen)) {
+		expr();
+	} else {
+		emit(Op::load_nil);
+	}
+	emit(Opcode::return_val);
+}
+
 void Compiler::expr_stmt() {
 	expr();
 	emit(Opcode::pop, token);
@@ -151,7 +222,7 @@ void Compiler::unary(bool can_assign) {
 	if (check(TT::Bang) || check(TT::Minus)) {
 		advance();
 		const Token op_token = token;
-		grouping(false);
+		call(false);
 		switch (op_token.type) {
 		case TT::Bang: emit(Op::lnot, op_token); break;
 		case TT::Minus: emit(Op::negate, op_token); break;
@@ -159,7 +230,25 @@ void Compiler::unary(bool can_assign) {
 		}
 		return;
 	}
+	call(can_assign);
+}
+
+void Compiler::call(bool can_assign) {
 	grouping(can_assign);
+
+	if (match(TT::LParen)) {
+		u8 argc = 0;
+
+		if (!check(TT::RParen)) {
+			do {
+				argc++;
+				expr(); // push the arguments on the stack,
+			} while (match(TT::Comma));
+		}
+
+		expect(TT::RParen, "Expected ')' after call.");
+		emit_bytes(Op::call_func, static_cast<Op>(argc), token.location.line);
+	}
 }
 
 void Compiler::grouping(bool can_assign) {
@@ -268,12 +357,20 @@ void Compiler::patch_jump(std::size_t index) {
 	THIS_BLOCK.code[index + 1] = static_cast<Op>(jump_dist & 0xff);
 }
 
+void Compiler::add_param(const Token& token) {
+	new_variable(token);
+	m_func->proto->num_params++;
+	if (m_func->proto->num_params > MaxFuncParams) {
+		error_at_token("Too many function parameters.", token);
+	}
+}
+
 // helper functions:
 
 void Compiler::advance() {
 	prev = token;
 	token = peek;
-	peek = m_scanner.next_token();
+	peek = m_scanner->next_token();
 }
 
 bool Compiler::match(TT expected) {
@@ -291,6 +388,12 @@ void Compiler::expect(TT expected, const char* err_msg) {
 	}
 
 	error_at_token(err_msg, token);
+}
+
+void Compiler::test(TT expected, const char* errmsg) {
+	if (!check(expected)) {
+		error_at_token(errmsg, peek);
+	}
 }
 
 void Compiler::error_at(const char* fmt, u32 line) {
@@ -312,6 +415,7 @@ void Compiler::error(const char* fmt...) {
 	vsnprintf(buf, bufsize, fmt, args);
 
 	m_vm->log_error(*m_vm, buf);
+
 	free(buf);
 
 	va_end(args);
@@ -383,7 +487,7 @@ int Compiler::new_variable(const Token& varname, bool is_const) {
 	const char* name = varname.raw_cstr(m_source);
 	const u32 length = varname.length();
 
-	// check of a varaible with this name already exists in the current scope.
+	// check of a variable with this name already exists in the current scope.
 	if (m_symtable.find_in_current_scope(name, length) != -1) {
 		error_at("Attempt to redeclare existing variable.", varname.location.line);
 		return -1;

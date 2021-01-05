@@ -18,12 +18,13 @@
 	(ip += 2, (u16)((static_cast<u8>(m_current_block->code[ip - 2]) << 8) |                        \
 					static_cast<u8>(m_current_block->code[ip - 1])))
 #define READ_VALUE()		  (m_current_block->constant_pool[NEXT_BYTE()])
-#define GET_VAR(index)		  (frame->slots[index])
-#define SET_VAR(index, value) (frame->slots[index] = value)
+#define GET_VAR(index)		  (frame->base[index])
+#define SET_VAR(index, value) (frame->base[index] = value)
 
 #define PEEK(depth) sp[-depth]
 
 namespace snap {
+
 using Op = Opcode;
 using VT = ValueType;
 
@@ -76,7 +77,7 @@ VM::VM(const std::string* src) : m_compiler(this, src), source{src} {
 	}
 
 #ifdef SNAP_DEBUG_RUNTIME
-void print_stack(Value stack[VM::StackMaxSize], size_t sp) {
+void print_stack(Value* stack, size_t sp) {
 	printf("(%zu)[ ", sp);
 	for (Value* v = stack; v < stack + sp; v++) {
 		printf("%s", v->name_str().c_str());
@@ -97,6 +98,7 @@ ExitCode VM::run(bool run_till_end) {
 
 		switch (op) {
 		case Op::load_const: push(READ_VALUE()); break;
+		case Op::load_nil: push(SNAP_NIL_VAL); break;
 
 		case Op::pop: pop(); break;
 		case Op::add: BINOP(+); break;
@@ -249,8 +251,36 @@ ExitCode VM::run(bool run_till_end) {
 			break;
 		}
 
-		case Op::return_val: return ExitCode::Success;
-		default: std::cout << "not implemented yet" << std::endl;
+		case Op::call_func: {
+			u8 argc = NEXT_BYTE();
+			Value value = PEEK(argc - 1);
+			if (!call(value, argc)) return ExitCode::RuntimeError;
+			break;
+		}
+
+		case Op::return_val: {
+			Value result = pop();
+			sp = frame->base + 1;
+
+			pop(); // pop the function off the stack.
+			push(result);
+			return_value = result;
+
+			frame_count--;
+			if (frame_count == 0) {
+				return ExitCode::Success;
+			}
+
+			frame = &frames[frame_count - 1];
+			m_current_block = &frame->func->proto->m_block;
+			ip = frame->ip;
+
+			break;
+		}
+		default: {
+			std::cout << "not implemented " << int(op) << " yet" << std::endl;
+			return ExitCode::RuntimeError;
+		}
 		}
 #ifdef SNAP_DEBUG_RUNTIME
 		print_stack(m_stack, sp - m_stack);
@@ -280,29 +310,64 @@ ExitCode VM::interpret() {
 
 bool VM::init() {
 	Function* func = m_compiler.compile();
-	std::cout << "compilation done\n";
 	push(SNAP_OBJECT_VAL(func));
 	callfunc(func, 0);
 
 #ifdef SNAP_DEBUG_DISASSEMBLY
-	disassemble_block(*m_current_block);
+	disassemble_block(func->proto->name->chars, *m_current_block);
 	printf("\n");
 #endif
 
 	return true;
 }
 
-bool VM::callfunc(Function* func, u8 argc) {
+using OT = ObjType;
+
+bool VM::call(Value value, u8 argc) {
+	switch (SNAP_GET_TT(value)) {
+	case VT::Object: {
+		switch (SNAP_AS_OBJECT(value)->tag) {
+		case OT::func: return callfunc(SNAP_AS_FUNCTION(value), argc);
+		default: runtime_error("Attempt to call a %s value.", SNAP_TYPE_CSTR(value)); return false;
+		}
+		break;
+	}
+	default: runtime_error("Attempt to call a %s value.", SNAP_TYPE_CSTR(value));
+	}
+
+	return false;
+}
+
+bool VM::callfunc(Function* func, int argc) {
+	int extra = argc - func->proto->num_params;
+	int pop_count = 0;
+
+	// extra arguments are ignored and 
+	// arguments that aren't provded are replaced with zero.
+	if (extra < 0) {
+		while (extra < 0) {
+			push(SNAP_NIL_VAL);
+			argc++;
+			extra++;
+		}
+	} else {
+		while (extra > 0) {
+			pop();
+			argc--;
+			extra--;
+		}
+	}
+
+	frame->ip = ip;
 	frame = &frames[frame_count++];
 	frame->func = func;
-	frame->ip = 0;
-	frame->slots = sp - argc - 1;
+	ip = frame->ip = 0;
+	frame->base = sp - argc - 1;
 	m_current_block = &func->proto->m_block;
 	return true;
 }
 
 // 	-- Garbage collection --
-using OT = ObjType;
 
 void VM::collect_garbage() {
 	GC::mark_roots(*this);

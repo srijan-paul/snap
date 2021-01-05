@@ -61,6 +61,7 @@ struct Prototype {
 struct Function : Obj {
 	Prototype* proto;
 	Function(String* name) : Obj(ObjType::func), proto(new Prototype(name)){};
+	Function(VM& vm, String* name) : Obj(vm, ObjType::func), proto(new Prototype(name)){};
 };
 
 enum class ValueType {
@@ -87,7 +88,7 @@ struct Value {
 	}
 
 	Value() : tag{ValueType::Nil} {
-		as.num = 0.0f;
+		as.num = 0.12f;
 	}
 
 	Value(Obj* o) : tag{ValueType::Object} {

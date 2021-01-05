@@ -14,6 +14,7 @@ enum class Opcode : u8 {
 	// opcodes with one operand
 	set_var,
 	get_var,
+	call_func,
 
 	// opcodes with no operands
 	pop,
@@ -57,7 +58,7 @@ constexpr auto Op_const_end = Opcode::load_const;
 /// numerically lowest opcode that takes one operand
 constexpr auto Op_1_operands_start = Opcode::set_var;
 /// numerically highest opcode that takes one operand
-constexpr auto Op_1_operands_end = Opcode::get_var;
+constexpr auto Op_1_operands_end = Opcode::call_func;
 
 constexpr auto Op_2_operands_start = Opcode::jmp;
 constexpr auto Op_2_operands_end = Opcode::pop_jmp_if_false;

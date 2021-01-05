@@ -54,7 +54,7 @@ struct CallFrame {
 	Function* func;
 	std::size_t ip;
 	// the base of the call frame in the Value's struct
-	Value* slots;
+	StackId base;
 };
 
 class VM {
@@ -62,12 +62,13 @@ class VM {
 	VM(const std::string* src);
 	~VM();
 	Compiler m_compiler;
-	
+	Value return_value;
+
 	Block* m_current_block = nullptr;
 	static constexpr std::size_t StackMaxSize = 256;
 	static constexpr std::size_t MaxCallStack = 128;
 	Value m_stack[StackMaxSize];
-	Value* sp = m_stack; // points to the next free slot where a value can go
+	StackId sp = m_stack; // points to the next free slot where a value can go
 
 	/// the VM maintains it's personal linked list of objects
 	/// for garbage collection.
@@ -108,7 +109,8 @@ class VM {
 	}
 
 	bool init();
-	bool callfunc(Function* func, u8 argc);
+	bool call(Value value, u8 argc);
+	bool callfunc(Function* func, int argc);
 
 	// register an object as 'present' in the object pool.
 	// This allows the objectto be marked as available
