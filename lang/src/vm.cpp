@@ -277,6 +277,11 @@ ExitCode VM::run(bool run_till_end) {
 
 			break;
 		}
+		case Op::make_func: {
+			Prototype* proto = static_cast<Prototype*>(SNAP_AS_OBJECT(READ_VALUE()));
+			Function* func = new Function(*this, proto);
+			break;
+		}
 		default: {
 			std::cout << "not implemented " << int(op) << " yet" << std::endl;
 			return ExitCode::RuntimeError;
@@ -309,7 +314,10 @@ ExitCode VM::interpret() {
 }
 
 bool VM::init() {
-	Function* func = m_compiler.compile();
+	Prototype* proto = m_compiler.compile();
+	push(SNAP_OBJECT_VAL(proto));
+	Function* func = new Function(*this, proto);
+	pop();
 	push(SNAP_OBJECT_VAL(func));
 	callfunc(func, 0);
 
@@ -342,7 +350,7 @@ bool VM::callfunc(Function* func, int argc) {
 	int extra = argc - func->proto->num_params;
 	int pop_count = 0;
 
-	// extra arguments are ignored and 
+	// extra arguments are ignored and
 	// arguments that aren't provded are replaced with zero.
 	if (extra < 0) {
 		while (extra < 0) {
@@ -382,7 +390,7 @@ ExitCode VM::binop_error(const char* opstr, Value& a, Value& b) {
 						 SNAP_TYPE_CSTR(a), SNAP_TYPE_CSTR(b));
 }
 
-ExitCode VM::runtime_error(const char* fstring, ...) const {
+ExitCode VM::runtime_error(const char* fstring...) const {
 	va_list args;
 	va_start(args, fstring);
 

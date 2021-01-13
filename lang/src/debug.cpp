@@ -12,7 +12,7 @@ using Op = Opcode;
 // clang-format off
 static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)> op_strs = {
 	"load_const", "set_var", 
-	"get_var", "call_func",
+	"get_var", "call_func", "make_func",
 	"pop", "add", "concat",
 	"sub", "mult", "mod", 
 	"div", "eq", "neq", 

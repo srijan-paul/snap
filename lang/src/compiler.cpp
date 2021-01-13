@@ -10,7 +10,7 @@
 #include <vm.hpp>
 
 #define TOK2NUM(t) SNAP_NUM_VAL(std::stod(t.raw(*m_source)))
-#define THIS_BLOCK (m_func->proto->m_block)
+#define THIS_BLOCK (m_func->m_block)
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
 	void name(bool can_assign) {                                                                   \
@@ -32,12 +32,12 @@ Compiler::Compiler(VM* vm, const std::string* src) : m_vm{vm}, m_source{src} {
 	advance(); // set `peek` to the first token in the token stream.
 	String* fname = new String("<script>", 8);
 	m_symtable.add("<script>", 8, true); // reserve the first slot for this toplevel function.
-	m_func = new Function(fname);
+	m_func = new Prototype(fname);
 }
 
 Compiler::Compiler(VM* vm, Compiler* parent, String* name) : m_vm{vm}, m_parent{parent} {
 	m_scanner = m_parent->m_scanner;
-	m_func = new Function(name);
+	m_func = new Prototype(name);
 	m_symtable.add(name->chars, name->length, false);
 
 	m_source = parent->m_source;
@@ -47,7 +47,13 @@ Compiler::Compiler(VM* vm, Compiler* parent, String* name) : m_vm{vm}, m_parent{
 	peek = parent->peek;
 }
 
-Function* Compiler::compile() {
+Compiler::~Compiler() {
+	if (m_parent == nullptr) {
+		delete m_scanner;
+	}
+}
+
+Prototype* Compiler::compile() {
 	while (!eof()) {
 		toplevel();
 	}
@@ -57,7 +63,7 @@ Function* Compiler::compile() {
 	return m_func;
 }
 
-Function* Compiler::compile_func() {
+Prototype* Compiler::compile_func() {
 	test(TT::LCurlBrace, "Expected '{' before function body.");
 
 	block_stmt();
@@ -153,14 +159,14 @@ void Compiler::fn_decl() {
 
 	compiler.expect(TT::RParen, "Expected ')' after function parameters.");
 
-	Function* func = compiler.compile_func();
-	u8 idx = emit_value(SNAP_OBJECT_VAL(func));
+	Prototype* proto = compiler.compile_func();
+	u8 idx = emit_value(SNAP_OBJECT_VAL(proto));
 
-	emit_bytes(Op::load_const, static_cast<Op>(idx), token);
-	m_vm->register_object(func);
+	emit_bytes(Op::make_func, static_cast<Op>(idx), token);
+	m_vm->register_object(proto);
 
 #ifdef SNAP_DEBUG_DISASSEMBLY
-	disassemble_block(func->proto->name->chars, func->proto->m_block);
+	disassemble_block(proto->name->chars, proto->m_block);
 #endif
 
 	new_variable(name_token);
@@ -179,6 +185,7 @@ void Compiler::ret_stmt() {
 		emit(Op::load_nil);
 	}
 	emit(Opcode::return_val);
+	match(TT::Semi);
 }
 
 void Compiler::expr_stmt() {
@@ -269,10 +276,9 @@ void Compiler::primary(bool can_assign) {
 		const std::string raw = peek.raw(*m_source);
 		const char fmt[] = "Unexpected '%s'.";
 		std::size_t bufsize = strlen(fmt) + raw.length() - 1;
-		char* buf = new char[bufsize];
-		sprintf(buf, fmt, raw.c_str());
-		error_at(buf, peek.location.line);
-		free(buf);
+		std::unique_ptr<char[]> buf{new char[bufsize]};
+		sprintf(buf.get(), fmt, raw.c_str());
+		error_at(buf.get(), peek.location.line);
 	}
 }
 
@@ -359,8 +365,8 @@ void Compiler::patch_jump(std::size_t index) {
 
 void Compiler::add_param(const Token& token) {
 	new_variable(token);
-	m_func->proto->num_params++;
-	if (m_func->proto->num_params > MaxFuncParams) {
+	m_func->num_params++;
+	if (m_func->num_params > MaxFuncParams) {
 		error_at_token("Too many function parameters.", token);
 	}
 }
@@ -411,12 +417,11 @@ void Compiler::error(const char* fmt...) {
 	va_start(args, fmt);
 
 	std::size_t bufsize = vsnprintf(nullptr, 0, fmt, args) + 1;
-	char* buf = new char[bufsize];
-	vsnprintf(buf, bufsize, fmt, args);
 
-	m_vm->log_error(*m_vm, buf);
+	std::unique_ptr<char[]> buf{new char[bufsize]};
 
-	free(buf);
+	vsnprintf(buf.get(), bufsize, fmt, args);
+	m_vm->log_error(*m_vm, buf.get());
 
 	va_end(args);
 }

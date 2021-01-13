@@ -10,7 +10,7 @@
 #include <iostream>
 
 namespace snap {
-enum class ExitCode { Success, CompileError, RuntimeError };
+enum class ExitCode : u8 { Success, CompileError, RuntimeError };
 
 using PrintFn = std::function<void(const VM& vm, String* string)>;
 using ErrorFn = std::function<void(const VM& vm, const char* fstring)>;
@@ -69,6 +69,9 @@ class VM {
 	static constexpr std::size_t MaxCallStack = 128;
 	Value m_stack[StackMaxSize];
 	StackId sp = m_stack; // points to the next free slot where a value can go
+
+	CallFrame frames[MaxCallStack];
+	CallFrame* frame = frames; // current frame.
 
 	/// the VM maintains it's personal linked list of objects
 	/// for garbage collection.
@@ -129,8 +132,6 @@ class VM {
 
   private:
 	const std::string* source;
-	CallFrame frames[MaxCallStack];
-	CallFrame* frame = frames; // current frame.
 	u32 frame_count = 0;
 
 	std::size_t ip = 0; // instruction ptr

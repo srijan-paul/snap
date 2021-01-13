@@ -7,7 +7,7 @@
 
 namespace snap {
 
-enum class ObjType : u8 { string, func };
+enum class ObjType : u8 { string, proto, func };
 
 using StackId = Value*;
 
@@ -49,18 +49,21 @@ struct String : Obj {
 
 // A protoype is the body of a function
 // that contains the bytecode.
-struct Prototype {
+struct Prototype: Obj {
 	String* name;
 	u32 num_params = 0;
-	Block m_block;
 	u32 num_upvals = 0;
-	Prototype(String* funcname) : name{funcname} {};
-	Prototype(String* funcname, u32 param_count) : name{funcname}, num_params{param_count} {};
+	Block m_block;
+	Prototype(String* funcname) : Obj{ObjType::proto}, name{funcname} {};
+	Prototype(String* funcname, u32 param_count) : Obj{ObjType::proto}, name{funcname}, num_params{param_count} {};
 };
 
 struct Function : Obj {
 	Prototype* proto;
 	Function(String* name) : Obj(ObjType::func), proto(new Prototype(name)){};
+	Function(Prototype* proto_) : Obj(ObjType::func), proto{proto_}{};
+	Function(VM& vm, Prototype* proto_);
+
 	Function(VM& vm, String* name) : Obj(vm, ObjType::func), proto(new Prototype(name)){};
 };
 

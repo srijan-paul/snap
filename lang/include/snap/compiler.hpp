@@ -9,7 +9,7 @@
 namespace snap {
 
 struct Symbol {
-	/// the distance of the local's value from the base of the VM stack
+	/// the distance of the local's value from the base of it's function's stack
 	/// at runtime.
 	u8 slot = 0;
 
@@ -49,7 +49,7 @@ struct SymbolTable {
 class Compiler {
   public:
 	VM* m_vm;
-	Function* m_func;
+	Prototype* m_func;
 	Compiler* m_parent = nullptr;
 
 	static constexpr u8 MaxLocalVars = UINT8_MAX;
@@ -68,11 +68,13 @@ class Compiler {
 	/// @param fname name of the function that this compiler is commpiling into.
 	Compiler(VM* vm, Compiler* parent, String* fname);
 
+	~Compiler();
+
 	// Compile a top level script
-	Function* compile();
+	Prototype* compile();
 
 	// Compile a function's body (if this is a child compiler).
-	Function* compile_func();
+	Prototype* compile_func();
 
 	/// @brief If this compiler is compiling a function body, then
 	/// reserve a stack slot for the parameter, and add the parameter
@@ -113,8 +115,8 @@ class Compiler {
 	/// an error message. Else consumes the token and stays quiet.
 	void expect(TokenType type, const char* err_msg);
 
-	/// If `peek` is not of the type `type` then throws 
-	/// an error message. 
+	/// If `peek` is not of the type `type` then throws
+	/// an error message.
 	void test(TokenType type, const char* errmsg);
 
 	void error_at_token(const char* message, const Token& token);

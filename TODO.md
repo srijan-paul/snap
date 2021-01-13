@@ -3,7 +3,7 @@
 - [x] Variable declarations
 - [x] Variable access
 - [x] Tagged unions as values
-- [ ] Strings and interning
+- [-] Strings and interning
 - [ ] Object representation (Tables)
 - [ ] Meta tables
 - [ ] Control flow
@@ -11,4 +11,4 @@
   - [ ] For loops
   - [ ] While loops
 - [ ] GC
-- [ ] Functions and Closures
+- [-] Functions and Closures

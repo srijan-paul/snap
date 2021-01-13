@@ -1,4 +1,5 @@
 #include "gc.hpp"
+#include "vm.hpp"
 #include <compiler.hpp>
 #include <value.hpp>
 
@@ -14,6 +15,11 @@ void GC::mark_roots(VM& vm) {
 	for (Value* value = vm.m_stack; value < vm.sp; value++) {
 		mark_value(vm, *value);
 	}
+
+	for (CallFrame* frame = vm.frames; frame < vm.frame; frame++) {
+		mark_object(vm, frame->func);
+	}
+
 	mark_compiler(vm);
 }
 
@@ -25,7 +31,7 @@ static void mark_block(VM& vm, Block* block) {
 
 static void mark_compiler(VM& vm) {
 	Compiler& compiler = vm.m_compiler;
-	mark_block(vm, &compiler.m_func->proto->m_block);
+	mark_block(vm, &compiler.m_func->m_block);
 }
 
 static void mark_value(VM& vm, Value& value) {
@@ -47,15 +53,20 @@ static void mark_object(VM& vm, Obj* object) {
 	vm.gray_objects.push(object);
 }
 
-static void blacken_object(Obj* obj) {
+static void blacken_object(VM& vm, Obj* obj) {
 	switch (obj->tag) {
 	case OT::string: break;
+	case OT::func: {
+		mark_block(vm, &static_cast<Function*>(obj)->proto->m_block);
+		mark_object(vm, static_cast<Function*>(obj)->proto->name);
+		break;
+	}
 	}
 }
 
 void GC::trace_refs(VM& vm) {
 	while (vm.gray_objects.count > 0) {
-		blacken_object(vm.gray_objects.pop());
+		blacken_object(vm, vm.gray_objects.pop());
 	}
 }
 
@@ -97,7 +108,6 @@ void GC::sweep(VM& vm) {
 			free_object(unreachable);
 		}
 	}
-	printf("\n");
 }
 
 } // namespace snap
