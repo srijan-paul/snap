@@ -49,7 +49,7 @@ struct SymbolTable {
 class Compiler {
   public:
 	VM* m_vm;
-	Prototype* m_func;
+	Prototype* m_proto;
 	Compiler* m_parent = nullptr;
 
 	static constexpr u8 MaxLocalVars = UINT8_MAX;

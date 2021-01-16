@@ -1,10 +1,10 @@
 #include "test_utils.hpp"
-#include <opcode.hpp>
 #include <debug.hpp>
+#include <opcode.hpp>
+
 
 using namespace snap;
 using Op = snap::Opcode;
-
 
 void block_test() {
 	std::printf("--- block test ---\n");
@@ -38,7 +38,7 @@ static void compiler_test() {
 }
 
 int main() {
-    block_test();
+	block_test();
 	compiler_test();
 	return 0;
 }

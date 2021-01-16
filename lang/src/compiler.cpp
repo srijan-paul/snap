@@ -10,7 +10,7 @@
 #include <vm.hpp>
 
 #define TOK2NUM(t) SNAP_NUM_VAL(std::stod(t.raw(*m_source)))
-#define THIS_BLOCK (m_func->m_block)
+#define THIS_BLOCK (m_proto->m_block)
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
 	void name(bool can_assign) {                                                                   \
@@ -32,12 +32,12 @@ Compiler::Compiler(VM* vm, const std::string* src) : m_vm{vm}, m_source{src} {
 	advance(); // set `peek` to the first token in the token stream.
 	String* fname = new String("<script>", 8);
 	m_symtable.add("<script>", 8, true); // reserve the first slot for this toplevel function.
-	m_func = new Prototype(fname);
+	m_proto = new Prototype(fname);
 }
 
 Compiler::Compiler(VM* vm, Compiler* parent, String* name) : m_vm{vm}, m_parent{parent} {
 	m_scanner = m_parent->m_scanner;
-	m_func = new Prototype(name);
+	m_proto = new Prototype(name);
 	m_symtable.add(name->chars, name->length, false);
 
 	m_source = parent->m_source;
@@ -60,7 +60,7 @@ Prototype* Compiler::compile() {
 
 	emit(Op::load_nil); // TODO replace with return value.
 	emit(Op::return_val, token);
-	return m_func;
+	return m_proto;
 }
 
 Prototype* Compiler::compile_func() {
@@ -69,7 +69,7 @@ Prototype* Compiler::compile_func() {
 	block_stmt();
 	emit(Op::load_nil);
 	emit(Op::return_val);
-	return m_func;
+	return m_proto;
 }
 
 // top level statements are one of:
@@ -365,8 +365,8 @@ void Compiler::patch_jump(std::size_t index) {
 
 void Compiler::add_param(const Token& token) {
 	new_variable(token);
-	m_func->num_params++;
-	if (m_func->num_params > MaxFuncParams) {
+	m_proto->num_params++;
+	if (m_proto->num_params > MaxFuncParams) {
 		error_at_token("Too many function parameters.", token);
 	}
 }

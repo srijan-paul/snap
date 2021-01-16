@@ -8,15 +8,7 @@ using namespace snap;
 
 int main() {
 	std::string code = R"(
-		fn bar() {
-			return 1
-		}
-		
-		fn foo() {
-			return bar();
-		}
-		
-		fib(5)
+		let a = 1 + 3 * 4;
 	)";
 
 	VM vm{&code};

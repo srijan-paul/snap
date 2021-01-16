@@ -280,6 +280,7 @@ ExitCode VM::run(bool run_till_end) {
 		case Op::make_func: {
 			Prototype* proto = static_cast<Prototype*>(SNAP_AS_OBJECT(READ_VALUE()));
 			Function* func = new Function(*this, proto);
+			push(func);
 			break;
 		}
 		default: {
@@ -348,7 +349,6 @@ bool VM::call(Value value, u8 argc) {
 
 bool VM::callfunc(Function* func, int argc) {
 	int extra = argc - func->proto->num_params;
-	int pop_count = 0;
 
 	// extra arguments are ignored and
 	// arguments that aren't provded are replaced with zero.
@@ -410,8 +410,8 @@ void default_error_fn(const VM& vm, const char* message) {
 }
 
 VM::~VM() {
-	if (gc_objects == nullptr) return;
-	for (Obj* object = gc_objects; object != nullptr; object = object->next) {
+	if (m_gc_objects == nullptr) return;
+	for (Obj* object = m_gc_objects; object != nullptr; object = object->next) {
 		GC::free_object(object);
 	}
 }

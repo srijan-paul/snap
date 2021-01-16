@@ -75,7 +75,7 @@ class VM {
 
 	/// the VM maintains it's personal linked list of objects
 	/// for garbage collection.
-	Obj* gc_objects = nullptr;
+	Obj* m_gc_objects = nullptr;
 	ObjectSet gray_objects;
 
 	ExitCode interpret();
@@ -116,14 +116,14 @@ class VM {
 	bool callfunc(Function* func, int argc);
 
 	// register an object as 'present' in the object pool.
-	// This allows the objectto be marked as available
+	// This allows the object to be marked as available
 	// for garbage collection when no longer in use.
 	void register_object(Obj* object) {
 #ifdef SNAP_STRESS_GC
 		collect_garbage();
 #endif
-		object->next = gc_objects;
-		gc_objects = object;
+		object->next = m_gc_objects;
+		m_gc_objects = object;
 	}
 
 	void collect_garbage();

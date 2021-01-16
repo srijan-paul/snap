@@ -31,7 +31,7 @@ static void mark_block(VM& vm, Block* block) {
 
 static void mark_compiler(VM& vm) {
 	Compiler& compiler = vm.m_compiler;
-	mark_block(vm, &compiler.m_func->m_block);
+	mark_block(vm, &compiler.m_proto->m_block);
 }
 
 static void mark_value(VM& vm, Value& value) {
@@ -82,14 +82,14 @@ void GC::free_object(Obj* object) {
 		static_cast<String*>(object)->~String();
 		break;
 	case OT::func: break;
-	default: delete object; break;
+	default: break;
 	}
 	}
 }
 
 void GC::sweep(VM& vm) {
 	Obj* prev = nullptr;
-	Obj* object = vm.gc_objects;
+	Obj* object = vm.m_gc_objects;
 
 	while (object != nullptr) {
 		if (object->marked) {
@@ -103,7 +103,7 @@ void GC::sweep(VM& vm) {
 			if (prev != nullptr) {
 				prev->next = object;
 			} else { // if the very first object was unreachable.
-				vm.gc_objects = object;
+				vm.m_gc_objects = object;
 			}
 			free_object(unreachable);
 		}

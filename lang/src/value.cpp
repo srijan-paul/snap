@@ -63,10 +63,10 @@ String::~String() {
 	delete[] chars;
 }
 
-Function::Function(VM& vm, Prototype* proto_) : Obj(ObjType::func), proto{proto_}{
+Function::Function(VM& vm, Prototype* proto_) : Obj(ObjType::func), proto{proto_} {
+	vm.register_object(proto_);
 	vm.register_object(this);
-};
-
+}
 
 Value::Value(char* s, int len) : tag{VT::Object} {
 	as.object = new String(s, len);
@@ -91,8 +91,8 @@ std::string Value::name_str() const {
 				   static_cast<const Function*>(obj)->proto->name->chars + "]";
 		}
 		case ObjType::proto: {
-			return std::string("[prototype ") +
-				   static_cast<const Prototype*>(obj)->name->chars + "]";
+			return std::string("[prototype ") + static_cast<const Prototype*>(obj)->name->chars +
+				   "]";
 		}
 		default: return "<snap object>";
 		}

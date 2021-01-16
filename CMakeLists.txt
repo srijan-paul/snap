@@ -8,6 +8,7 @@ add_compile_options(
   "-Wall" "-Wpedantic" "-Wextra" "-fexceptions"
   "$<$<CONFIG:DEBUG>:-O0;-g3;-ggdb>" "-g"
 )
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 enable_testing()
 
 function(LINK_SNAP_DEPS EXEC)
