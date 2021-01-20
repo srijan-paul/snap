@@ -2,12 +2,13 @@
 #include "block.hpp"
 #include "common.hpp"
 #include "token.hpp"
+#include "value.hpp"
 #include <cstdint>
 #include <string>
 
 namespace snap {
 
-enum class ObjType : u8 { string, proto, func };
+enum class ObjType : u8 { string, proto, func, upvalue };
 
 using StackId = Value*;
 
@@ -49,19 +50,28 @@ struct String : Obj {
 
 // A protoype is the body of a function
 // that contains the bytecode.
-struct Prototype: Obj {
+struct Prototype : Obj {
 	String* name;
 	u32 num_params = 0;
 	u32 num_upvals = 0;
 	Block m_block;
 	Prototype(String* funcname) : Obj{ObjType::proto}, name{funcname} {};
-	Prototype(String* funcname, u32 param_count) : Obj{ObjType::proto}, name{funcname}, num_params{param_count} {};
+	Prototype(String* funcname, u32 param_count)
+		: Obj{ObjType::proto}, name{funcname}, num_params{param_count} {};
 };
 
+struct Upvalue : Obj {
+	Value* slot; // points to a stack slot.
+	Upvalue(Value* v) : Obj(ObjType::upvalue), slot{v} {};
+};
+
+// The "Closure"
 struct Function : Obj {
 	Prototype* proto;
-	Function(String* name) : Obj(ObjType::func), proto(new Prototype(name)){};
-	Function(Prototype* proto_) : Obj(ObjType::func), proto{proto_}{};
+	Upvalue* upvals = nullptr;
+	u32 num_upvals = 0;
+	Function(String* name) : Obj(ObjType::func), proto{new Prototype(name)} {};
+	Function(Prototype* proto_) : Obj(ObjType::func), proto{proto_} {};
 	Function(VM& vm, Prototype* proto_);
 
 	Function(VM& vm, String* name) : Obj(vm, ObjType::func), proto(new Prototype(name)){};

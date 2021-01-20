@@ -30,19 +30,38 @@ struct Symbol {
 	/// Local variable immutable.
 	bool is_const = false;
 
+	// true if this local variable has been captured by nested closure
+	// as an upvalue.
+	bool is_captured = false;
+
 	Symbol(){};
 	Symbol(const char* varname, u32 name_len, u8 scope_depth = 0, bool isconst = false)
 		: name{varname}, length{name_len}, depth{scope_depth}, is_const{isconst} {};
 };
 
+struct CompilerUpval {
+	int index = -1;
+	bool is_local = false;
+};
+
 struct SymbolTable {
 	int num_symbols = 0;
-	u32 scope_depth = 0;
+	u32 m_scope_depth = 0;
 	std::array<Symbol, UINT8_MAX + 1> m_symbols;
 
+	int num_upvals = 0;
+	std::array<CompilerUpval, UINT8_MAX + 1> m_upvals;
+
+	// Recursively search the nested scopes going outward,
+	// looking for a variable with the name `name`.
 	int find(const char* name, int length) const;
 	int find_in_current_scope(const char* name, int length) const;
 	int add(const char* name, u32 length, bool is_const);
+
+	// add an upvalue to the `m_upvals` array, if it exists already
+	// then don't add a copy, instead return the index.
+	int add_upvalue(u8 index, bool is_local);
+	// takes in the index of a local variable and returns it's Symbol info.
 	Symbol* find_by_slot(const u8 offset);
 };
 
@@ -181,7 +200,16 @@ class Compiler {
 	/// the current scope, moving outward.
 	/// If found, return it's stack slot.
 	/// Else return -1.
-	int find_var(const Token& name);
+	int find_local_var(const Token& name);
+
+	// Find an upvalue by it's name token.
+	// Starts looking in the current symboltable's upvalue
+	// array, If it isn't found there then it recursively
+	// searches up the parent compiler chain repeating the process.
+	// Once an upvalue is found, it adds it the current
+	// Upvalue list and returns an index to that.
+	// If no upvalue is found, returns -1.
+	int find_upvalue(const Token& name);
 
 	inline void emit(Opcode op);
 	inline void emit(Opcode op, u32 line);

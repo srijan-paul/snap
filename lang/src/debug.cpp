@@ -9,21 +9,43 @@ using Op = Opcode;
 
 #define PRINT_VAL(v) (printf("%s", ((v).name_str().c_str())))
 
-// clang-format off
 static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)> op_strs = {
-	"load_const", "set_var", 
-	"get_var", "call_func", "make_func",
-	"pop", "add", "concat",
-	"sub", "mult", "mod", 
-	"div", "eq", "neq", 
-	"lshift", "rshift", "band",
-	"bor", "gt", "lt", "gte",
-	"lte", "negate", "lnot",
-	"load_nil", "return_val",
-	"jmp", "jmp_if_false_or_pop",
-	"jmp_if_true_or_pop", "pop_jmp_if_false"
+	"load_const",
+
+	"set_var",
+	"get_var",
+	"set_upval",
+	"get_upval",
+	"make_func",
+	"call_func",
+
+	"pop",
+	"add",
+	"concat",
+	"sub",
+	"mult",
+	"mod",
+	"div",
+	"eq",
+	"neq",
+	"lshift",
+	"rshift",
+	"band",
+	"bor",
+	"gt",
+	"lt",
+	"gte",
+	"lte",
+	"negate",
+	"lnot",
+	"load_nil",
+	"return_val",
+
+	"jmp",
+	"jmp_if_false_or_pop",
+	"jmp_if_true_or_pop",
+	"pop_jmp_if_false",
 };
-// clang-format on
 
 const char* op2s(Op op) {
 	return op_strs[static_cast<u32>(op)];
@@ -77,6 +99,27 @@ static std::size_t instr_two_operand(const Block& block, std::size_t index) {
 }
 
 std::size_t disassemble_instr(const Block& block, Op op, std::size_t offset) {
+
+	if (op == Op::make_func) {
+		int old_loc = offset;
+
+		std::printf("%04d	", block.lines[offset]);
+		std::printf("%-4zu  %-22s  ", offset++, op2s(op));
+		print_value(block.constant_pool[(size_t)block.code[offset]]);
+		std::printf("\n");
+		
+		u8 num_upvals = static_cast<u8>(block.code[++offset]);
+		for (int i = 0; i < num_upvals; ++i) {
+			bool is_local = static_cast<bool>(block.code[offset++]);
+			if (is_local) {
+				int idx = static_cast<int>(block.code[offset++]);
+				std::printf("%-4zu %-22s %s %d\n", offset, "-", is_local ? "upvalue" : "local",
+							idx);
+			}
+		}
+		return offset - old_loc + 1;
+	}
+
 	if (op >= Op_0_operands_start && op <= Op_0_operands_end) {
 		return simple_instr(block, op, offset);
 	} else if (op >= Op_const_start && op <= Op_const_end) {

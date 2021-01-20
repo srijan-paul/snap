@@ -58,8 +58,8 @@ Prototype* Compiler::compile() {
 		toplevel();
 	}
 
-	emit(Op::load_nil); // TODO replace with return value.
-	emit(Op::return_val, token);
+	m_proto->num_upvals = m_symtable.num_upvals;
+	emit_bytes(Op::load_nil, Op::return_val, token.location.line);
 	return m_proto;
 }
 
@@ -67,6 +67,7 @@ Prototype* Compiler::compile_func() {
 	test(TT::LCurlBrace, "Expected '{' before function body.");
 
 	block_stmt();
+	m_proto->num_upvals = m_symtable.num_upvals;
 	emit(Op::load_nil);
 	emit(Op::return_val);
 	return m_proto;
@@ -163,6 +164,16 @@ void Compiler::fn_decl() {
 	u8 idx = emit_value(SNAP_OBJECT_VAL(proto));
 
 	emit_bytes(Op::make_func, static_cast<Op>(idx), token);
+	emit(static_cast<Op>(proto->num_upvals), token);
+
+	std::cout << proto->num_upvals << "\n";
+
+	for (int i = 0; i < compiler.m_symtable.num_upvals; ++i) {
+		CompilerUpval& upval = compiler.m_symtable.m_upvals[i];
+		emit(upval.is_local ? static_cast<Op>(1) : static_cast<Op>(0));
+		emit(static_cast<Op>(upval.index));
+	}
+
 	m_vm->register_object(proto);
 
 #ifdef SNAP_DEBUG_DISASSEMBLY
@@ -284,7 +295,7 @@ void Compiler::primary(bool can_assign) {
 
 void Compiler::variable(bool can_assign) {
 	advance();
-	const size_t index = find_var(token);
+	const size_t index = find_local_var(token);
 
 	if (can_assign && match(TT::Eq)) {
 		const Symbol* local = m_symtable.find_by_slot(index);
@@ -329,20 +340,20 @@ void Compiler::recover() {
 }
 
 void Compiler::enter_block() {
-	m_symtable.scope_depth++;
+	m_symtable.m_scope_depth++;
 }
 
 void Compiler::exit_block() {
 	for (int i = m_symtable.num_symbols - 1; i >= 0; i--) {
 		const Symbol& var = m_symtable.m_symbols[i];
 
-		if (var.depth != m_symtable.scope_depth) break;
+		if (var.depth != m_symtable.m_scope_depth) break;
 
 		emit(Opcode::pop, token);
 		m_symtable.num_symbols--;
 	}
 
-	m_symtable.scope_depth--;
+	m_symtable.m_scope_depth--;
 }
 
 std::size_t Compiler::emit_jump(Opcode op) {
@@ -433,11 +444,38 @@ size_t Compiler::emit_string(const Token& token) {
 	return emit_value(SNAP_OBJECT_VAL(string));
 }
 
-int Compiler::find_var(const Token& name_token) {
+int Compiler::find_local_var(const Token& name_token) {
 	const char* name = name_token.raw_cstr(m_source);
 	int length = name_token.length();
 	const int idx = m_symtable.find(name, length);
 	return idx;
+}
+
+int Compiler::find_upvalue(const Token& token) {
+	if (m_parent == nullptr) return -1;
+	
+	// First search among the local variables of the enclosing 
+	// compiler.
+	int index = m_parent->find_local_var(token);
+	
+	// If found the local var, then add it to the upvalues list.
+	// and mark the upvalue is "local".
+	if (index != -1) {
+		return m_symtable.add_upvalue(index, true);
+	}
+
+	// If not found within the parent compiler's local vars
+	// then look into the parent compiler's upvalues.
+	index = m_parent->find_upvalue(token);
+
+	// If found in some enclosing scope, add it to the current
+	// upvalues list and return it.
+	if (index != -1) {
+		// is not local since we found it in an enclosing compiler.
+		return m_symtable.add_upvalue(index, false);
+	}
+
+	return -1;
 }
 
 inline size_t Compiler::emit_value(Value v) {
@@ -504,7 +542,7 @@ int Compiler::new_variable(const Token& varname, bool is_const) {
 // -- Symbol Table --
 
 int SymbolTable::add(const char* name, u32 length, bool is_const = false) {
-	m_symbols[num_symbols++] = Symbol(name, length, scope_depth, is_const);
+	m_symbols[num_symbols++] = Symbol(name, length, m_scope_depth, is_const);
 	return num_symbols - 1;
 }
 
@@ -526,7 +564,7 @@ int SymbolTable::find(const char* name, int length) const {
 int SymbolTable::find_in_current_scope(const char* name, int length) const {
 	for (int i = num_symbols - 1; i >= 0; i--) {
 		const Symbol& symbol = m_symbols[i];
-		if (symbol.depth < scope_depth) return -1; // we've reached an outer scope
+		if (symbol.depth < m_scope_depth) return -1; // we've reached an outer scope
 		if (names_equal(name, length, symbol.name, symbol.length)) return i;
 	}
 	return -1;
@@ -534,6 +572,20 @@ int SymbolTable::find_in_current_scope(const char* name, int length) const {
 
 Symbol* SymbolTable::find_by_slot(const u8 index) {
 	return &m_symbols[index];
+}
+
+int SymbolTable::add_upvalue(u8 index, bool is_local) {
+	// If the upvalue has already been cached, then return the stored value.
+	for (int i = 0; i < num_upvals; ++i) {
+			CompilerUpval& upval = m_upvals[i];
+			if (upval.index == index and upval.is_local == is_local) {
+				return i;
+			}
+	}
+
+	m_upvals[num_upvals].index = index;
+	m_upvals[num_upvals].is_local = is_local;
+	return num_upvals++;
 }
 
 } // namespace snap

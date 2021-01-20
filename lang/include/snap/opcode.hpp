@@ -14,8 +14,10 @@ enum class Opcode : u8 {
 	// opcodes with one operand
 	set_var,
 	get_var,
-	call_func,
+	set_upval,
+	get_upval,
 	make_func,
+	call_func,
 
 	// opcodes with no operands
 	pop,

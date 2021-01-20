@@ -91,7 +91,6 @@ ExitCode VM::run(bool run_till_end) {
 
 	do {
 		const Op op = FETCH();
-
 #ifdef SNAP_DEBUG_RUNTIME
 		disassemble_instr(*m_current_block, op, ip - 1);
 #endif
@@ -280,6 +279,7 @@ ExitCode VM::run(bool run_till_end) {
 		case Op::make_func: {
 			Prototype* proto = static_cast<Prototype*>(SNAP_AS_OBJECT(READ_VALUE()));
 			Function* func = new Function(*this, proto);
+			u8 num_upvals = NEXT_BYTE();
 			push(func);
 			break;
 		}
