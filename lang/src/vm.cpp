@@ -228,6 +228,18 @@ ExitCode VM::run(bool run_till_end) {
 			break;
 		}
 
+		case Op::set_upval: {
+			u8 idx = NEXT_BYTE();
+			*frame->func->upvals[idx]->value = peek(0);
+			break;
+		}
+
+		case Op::get_upval: {
+			u8 idx = NEXT_BYTE();
+			push(*frame->func->upvals[idx]->value);
+			break;
+		}
+
 		case Op::concat: {
 			Value& a = PEEK(2);
 			Value& b = PEEK(1);
@@ -259,6 +271,7 @@ ExitCode VM::run(bool run_till_end) {
 
 		case Op::return_val: {
 			Value result = pop();
+			close_upvalues_upto(frame->base);
 			sp = frame->base + 1;
 
 			pop(); // pop the function off the stack.
@@ -280,6 +293,18 @@ ExitCode VM::run(bool run_till_end) {
 			Prototype* proto = static_cast<Prototype*>(SNAP_AS_OBJECT(READ_VALUE()));
 			Function* func = new Function(*this, proto);
 			u8 num_upvals = NEXT_BYTE();
+
+			for (u8 i = 0; i < num_upvals; ++i) {
+				bool is_local = NEXT_BYTE();
+				u8 index = NEXT_BYTE();
+
+				if (is_local) {
+					func->upvals.emplace_back(capture_upvalue(index));
+				} else {
+					func->upvals.emplace_back(frame->func->upvals[index]);
+				}
+			}
+
 			push(func);
 			break;
 		}
@@ -331,6 +356,14 @@ bool VM::init() {
 }
 
 using OT = ObjType;
+
+Upvalue* VM::capture_upvalue(u8 index) {
+	return new Upvalue(*this, frame->base + index);
+}
+
+void VM::close_upvalues_upto(Value* last) {
+	// TODO
+}
 
 bool VM::call(Value value, u8 argc) {
 	switch (SNAP_GET_TT(value)) {

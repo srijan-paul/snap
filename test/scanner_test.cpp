@@ -30,8 +30,8 @@ static bool run_tests() {
 											  TT::BitLShift, TT::Gt, TT::Lt, TT::LtEq});
 
 	// test keyword and identifier scanning
-	code = "let true false xyz";
-	passed = passed && compare_ttypes(&code, {TT::Let, TT::True, TT::False, TT::Id, TT::Eof});
+	code = "let true false xyz else";
+	passed = passed && compare_ttypes(&code, {TT::Let, TT::True, TT::False, TT::Id, TT::Else, TT::Eof});
 
 	code = "'this is a string' .. 'this is also string'";
 	passed = passed && compare_ttypes(&code, {TT::String, TT::Concat, TT::String, TT::Eof});

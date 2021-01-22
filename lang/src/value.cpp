@@ -68,6 +68,10 @@ Function::Function(VM& vm, Prototype* proto_) : Obj(ObjType::func), proto{proto_
 	vm.register_object(this);
 }
 
+void Function::set_num_upvals(u32 count) {
+	upvals.reserve(count);
+}
+
 Value::Value(char* s, int len) : tag{VT::Object} {
 	as.object = new String(s, len);
 }

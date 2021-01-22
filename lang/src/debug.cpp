@@ -39,6 +39,7 @@ static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)>
 	"negate",
 	"lnot",
 	"load_nil",
+	"close_upval",
 	"return_val",
 
 	"jmp",
@@ -113,7 +114,7 @@ std::size_t disassemble_instr(const Block& block, Op op, std::size_t offset) {
 			bool is_local = static_cast<bool>(block.code[offset++]);
 			if (is_local) {
 				int idx = static_cast<int>(block.code[offset++]);
-				std::printf("%-4zu %-22s %s %d\n", offset, "-", is_local ? "upvalue" : "local",
+				std::printf("        %-4zu  %-22s  %s %d\n", offset - 1, " ", is_local ? "local" : "upvalue",
 							idx);
 			}
 		}

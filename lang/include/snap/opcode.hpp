@@ -40,6 +40,7 @@ enum class Opcode : u8 {
 	negate,
 	lnot,
 	load_nil,
+	close_upval,
 	return_val,
 
 	// opcodes with 2 operands

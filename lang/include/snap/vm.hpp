@@ -132,10 +132,23 @@ class VM {
 
   private:
 	const std::string* source;
+	// total number of stack frames that have been allocated.
 	u32 frame_count = 0;
+	// instruction ptr
+	std::size_t ip = 0;
+	
+	// VM's personal list of all open upvalues.
+	Upvalue* m_open_upvals = nullptr;
 
-	std::size_t ip = 0; // instruction ptr
-
+	// Wrap a value present at stack slot `index`
+	// inside an Upvalue struct and add to the 
+	// VM's currently open Upvalue list in the right
+	// position (if it isn't already there).
+	Upvalue* capture_upvalue(u8 index);
+	// close all the upvalues that are present between the
+	// top of the stack and `last`. 
+	// `last` must point to some value in the VM's stack.
+	void close_upvalues_upto(Value* last);
 	ExitCode binop_error(const char* opstr, Value& a, Value& b);
 	ExitCode runtime_error(const char* fstring...) const;
 };

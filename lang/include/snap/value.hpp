@@ -61,20 +61,24 @@ struct Prototype : Obj {
 };
 
 struct Upvalue : Obj {
-	Value* slot; // points to a stack slot.
-	Upvalue(Value* v) : Obj(ObjType::upvalue), slot{v} {};
+	Value* value; // points to a stack slot until closed.
+	Upvalue* next = nullptr; // next upvalue in the VM's upvalue list.
+	Upvalue(Value* v) : Obj(ObjType::upvalue), value{v} {};
+	Upvalue(VM& vm, Value* v) : Obj(vm, ObjType::upvalue), value{v} {};
 };
 
 // The "Closure"
 struct Function : Obj {
 	Prototype* proto;
-	Upvalue* upvals = nullptr;
+	std::vector<Upvalue*> upvals;
 	u32 num_upvals = 0;
 	Function(String* name) : Obj(ObjType::func), proto{new Prototype(name)} {};
 	Function(Prototype* proto_) : Obj(ObjType::func), proto{proto_} {};
 	Function(VM& vm, Prototype* proto_);
 
 	Function(VM& vm, String* name) : Obj(vm, ObjType::func), proto(new Prototype(name)){};
+
+	void set_num_upvals(u32 count);
 };
 
 enum class ValueType {

@@ -295,21 +295,32 @@ void Compiler::primary(bool can_assign) {
 
 void Compiler::variable(bool can_assign) {
 	advance();
-	const size_t index = find_local_var(token);
+
+	Op get_op = Op::get_var, set_op = Op::set_var;
+
+	int index = find_local_var(token);
+
+	// if no local variable with that name was found then look for an
+	// upval.
+	if (index == -1) {
+		index = find_upvalue(token);
+		get_op = Opcode::get_upval;
+		set_op = Opcode::set_upval;
+	}
 
 	if (can_assign && match(TT::Eq)) {
-		const Symbol* local = m_symtable.find_by_slot(index);
-		if (local->is_const) {
-			std::string message{"Cannot assign to variable '"};
-			message = message + prev.raw(*m_source) + "' which is marked 'const'.";
-			error_at_token(message.c_str(), token);
-			has_error = false; // don't sen the compiler into error recovery mode.
-		}
+		// const Symbol* local = m_symtable.find_by_slot(index);
+		// if (local->is_const) {
+		// 	std::string message{"Cannot assign to variable '"};
+		// 	message = message + prev.raw(*m_source) + "' which is marked 'const'.";
+		// 	error_at_token(message.c_str(), token);
+		// 	has_error = false; // don't send the compiler into error recovery mode.
+		// }
 
 		expr(); // compile assignment RHS
-		emit_bytes(Op::set_var, static_cast<Op>(index), token);
+		emit_bytes(set_op, static_cast<Op>(index), token);
 	} else {
-		emit_bytes(Op::get_var, static_cast<Op>(index), token);
+		emit_bytes(get_op, static_cast<Op>(index), token);
 	}
 }
 
@@ -349,7 +360,7 @@ void Compiler::exit_block() {
 
 		if (var.depth != m_symtable.m_scope_depth) break;
 
-		emit(Opcode::pop, token);
+		emit(var.is_captured ? Op::close_upval : Op::pop);
 		m_symtable.num_symbols--;
 	}
 
@@ -358,9 +369,9 @@ void Compiler::exit_block() {
 
 std::size_t Compiler::emit_jump(Opcode op) {
 	std::size_t index = THIS_BLOCK.code.size();
-	emit(op, token);
-	emit(static_cast<Op>(0xff), token);
-	emit(static_cast<Op>(0xff), token);
+	emit(op);
+	emit(static_cast<Op>(0xff));
+	emit(static_cast<Op>(0xff));
 	return index + 1;
 }
 
@@ -453,14 +464,15 @@ int Compiler::find_local_var(const Token& name_token) {
 
 int Compiler::find_upvalue(const Token& token) {
 	if (m_parent == nullptr) return -1;
-	
-	// First search among the local variables of the enclosing 
+
+	// First search among the local variables of the enclosing
 	// compiler.
 	int index = m_parent->find_local_var(token);
-	
+
 	// If found the local var, then add it to the upvalues list.
 	// and mark the upvalue is "local".
 	if (index != -1) {
+		m_parent->m_symtable.m_symbols[index].is_captured = true;
 		return m_symtable.add_upvalue(index, true);
 	}
 
@@ -577,10 +589,10 @@ Symbol* SymbolTable::find_by_slot(const u8 index) {
 int SymbolTable::add_upvalue(u8 index, bool is_local) {
 	// If the upvalue has already been cached, then return the stored value.
 	for (int i = 0; i < num_upvals; ++i) {
-			CompilerUpval& upval = m_upvals[i];
-			if (upval.index == index and upval.is_local == is_local) {
-				return i;
-			}
+		CompilerUpval& upval = m_upvals[i];
+		if (upval.index == index and upval.is_local == is_local) {
+			return i;
+		}
 	}
 
 	m_upvals[num_upvals].index = index;
