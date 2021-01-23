@@ -140,8 +140,8 @@ class VM {
 	// VM's personal list of all open upvalues.
 	Upvalue* m_open_upvals = nullptr;
 
-	// Wrap a value present at stack slot `index`
-	// inside an Upvalue struct and add to the 
+	// Wrap a value present at stack slot `slot`
+	// inside an Upvalue object and add it to the 
 	// VM's currently open Upvalue list in the right
 	// position (if it isn't already there).
 	Upvalue* capture_upvalue(Value* slot);

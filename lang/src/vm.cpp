@@ -364,13 +364,6 @@ bool VM::init() {
 using OT = ObjType;
 
 Upvalue* VM::capture_upvalue(Value* slot) {
-	// If the open upvalues list is empty
-	// Then add a head node to this list.
-	if (m_open_upvals == nullptr) {
-		m_open_upvals = new Upvalue(*this, slot);
-		return m_open_upvals;
-	}
-
 	// start at the head of the linked list
 	Upvalue* current = m_open_upvals;
 	Upvalue* prev = nullptr;
@@ -378,33 +371,30 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 	// keep going until we reach a slot whose
 	// depth is lower than what we've been looking
 	// for, or until we reach the end of the list.
-	while (current->value < slot) {
+	while (current != nullptr and current->value < slot) {
 		prev = current;
 		current = current->next_upval;
-
-		// if we're at the end of the list, then
-		// no such upvalue was found, so we add it.
-		if (current == nullptr) {
-			prev->next = new Upvalue(slot);
-			return prev->next_upval;
-		}
 	}
 
 	// We've found an upvalue that was
 	// already capturing a value at this stack
 	// slot, so we reuse the existing upvalue
-	if (current->value == slot) return current;
+	if (current != nullptr and current->value == slot) return current;
 
-	// We've reached a node in the list
-	// where the previous node is above the
-	// slot we wanted to capture, but the current
-	// node is deeper. Meaning we found a new value
-	// that hasn't been captured before. So we
-	// add to the middle of the list.
+	// We've reached a node in the list where the previous node is above the
+	// slot we wanted to capture, but the current node is deeper.
+	// Meaning `slot` points to a new value that hasn't been captured before.
+	// So we add it between `prev` and `current`.
 
 	Upvalue* upval = new Upvalue(*this, slot);
-	prev->next = upval;
 	upval->next = current;
+
+	// prev is null when there are no upvalues.
+	if (prev == nullptr) {
+		m_open_upvals = upval;
+	} else {
+		prev->next = upval;
+	}
 
 	return upval;
 }
@@ -413,7 +403,7 @@ void VM::close_upvalues_upto(Value* last) {
 	Upvalue* current = m_open_upvals;
 
 	while (current != nullptr and current->value >= last) {
-		
+
 		// these two lines are the last rites of an
 		// upvalue, closing it.
 		current->closed = *current->value;
