@@ -60,12 +60,7 @@ struct Prototype : Obj {
 		: Obj{ObjType::proto}, name{funcname}, num_params{param_count} {};
 };
 
-struct Upvalue : Obj {
-	Value* value; // points to a stack slot until closed.
-	Upvalue* next = nullptr; // next upvalue in the VM's upvalue list.
-	Upvalue(Value* v) : Obj(ObjType::upvalue), value{v} {};
-	Upvalue(VM& vm, Value* v) : Obj(vm, ObjType::upvalue), value{v} {};
-};
+struct Upvalue;
 
 // The "Closure"
 struct Function : Obj {
@@ -104,9 +99,7 @@ struct Value {
 		as.boolean = v;
 	}
 
-	Value() : tag{ValueType::Nil} {
-		as.num = 0.12f;
-	}
+	Value() : tag{ValueType::Nil}  {} ;
 
 	Value(Obj* o) : tag{ValueType::Object} {
 		as.object = o;
@@ -150,6 +143,14 @@ struct Value {
 	const char* type_name() const;
 
 	static bool are_equal(Value a, Value b);
+};
+
+struct Upvalue : Obj {
+	Value* value;			 // points to a stack slot until closed.
+	Value closed;			 // The value is stored here upon closing.
+	Upvalue* next_upval = nullptr; // next upvalue in the VM's upvalue list.
+	Upvalue(Value* v) : Obj(ObjType::upvalue), value{v} {};
+	Upvalue(VM& vm, Value* v) : Obj(vm, ObjType::upvalue), value{v} {};
 };
 
 #define SNAP_SET_NUM(v, i)	  ((v).as.num = i)

@@ -144,7 +144,7 @@ class VM {
 	// inside an Upvalue struct and add to the 
 	// VM's currently open Upvalue list in the right
 	// position (if it isn't already there).
-	Upvalue* capture_upvalue(u8 index);
+	Upvalue* capture_upvalue(Value* slot);
 	// close all the upvalues that are present between the
 	// top of the stack and `last`. 
 	// `last` must point to some value in the VM's stack.

@@ -31,7 +31,7 @@ using VT = ValueType;
 VM::VM(const std::string* src) : m_compiler(this, src), source{src} {
 }
 
-#define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) && !(SNAP_AS_BOOL(v))) || SNAP_IS_NIL(v))
+#define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) and !(SNAP_AS_BOOL(v))) || SNAP_IS_NIL(v))
 #define IS_VAL_TRUTHY(v) (!IS_VAL_FALSY(v))
 
 #define BINOP_ERROR(op, v1, v2)                                                                    \
@@ -45,7 +45,7 @@ VM::VM(const std::string* src) : m_compiler(this, src), source{src} {
 		Value b = pop();                                                                           \
 		Value a = pop();                                                                           \
                                                                                                    \
-		if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {                                                    \
+		if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {                                                   \
 			push(SNAP_BOOL_VAL(SNAP_AS_NUM(a) op SNAP_AS_NUM(b)));                                 \
 		} else {                                                                                   \
 			binop_error(#op, b, a);                                                                \
@@ -57,7 +57,7 @@ VM::VM(const std::string* src) : m_compiler(this, src), source{src} {
 		Value& a = PEEK(1);                                                                        \
 		Value& b = PEEK(2);                                                                        \
                                                                                                    \
-		if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {                                                    \
+		if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {                                                   \
 			SNAP_SET_NUM(b, SNAP_AS_NUM(b) op SNAP_AS_NUM(a));                                     \
 			pop();                                                                                 \
 		} else {                                                                                   \
@@ -69,7 +69,7 @@ VM::VM(const std::string* src) : m_compiler(this, src), source{src} {
 	Value& b = PEEK(1);                                                                            \
 	Value& a = PEEK(2);                                                                            \
                                                                                                    \
-	if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {                                                        \
+	if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {                                                       \
 		SNAP_SET_NUM(a, SNAP_CAST_INT(a) op SNAP_CAST_INT(b));                                     \
 		pop();                                                                                     \
 	} else {                                                                                       \
@@ -113,7 +113,7 @@ ExitCode VM::run(bool run_till_end) {
 			Value& a = PEEK(1);
 			Value& b = PEEK(2);
 
-			if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {
+			if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {
 				if (SNAP_AS_NUM(b) == 0) {
 					return runtime_error("Attempt to divide by 0.\n");
 				}
@@ -129,7 +129,7 @@ ExitCode VM::run(bool run_till_end) {
 			Value& a = PEEK(1);
 			Value& b = PEEK(2);
 
-			if (SNAP_IS_NUM(a) && SNAP_IS_NUM(b)) {
+			if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {
 				SNAP_SET_NUM(b, fmod(SNAP_AS_NUM(b), SNAP_AS_NUM(a)));
 			} else {
 				BINOP_ERROR("%", b, a);
@@ -240,11 +240,17 @@ ExitCode VM::run(bool run_till_end) {
 			break;
 		}
 
+		case Op::close_upval: {
+			close_upvalues_upto(sp - 1);
+			pop();
+			break;
+		}
+
 		case Op::concat: {
 			Value& a = PEEK(2);
 			Value& b = PEEK(1);
 
-			if (!(SNAP_IS_STRING(a) && SNAP_IS_STRING(b))) {
+			if (!(SNAP_IS_STRING(a) and SNAP_IS_STRING(b))) {
 				return binop_error("..", a, b);
 			} else {
 				String* s = String::concatenate(SNAP_AS_STRING(a), SNAP_AS_STRING(b));
@@ -299,7 +305,7 @@ ExitCode VM::run(bool run_till_end) {
 				u8 index = NEXT_BYTE();
 
 				if (is_local) {
-					func->upvals.emplace_back(capture_upvalue(index));
+					func->upvals.emplace_back(capture_upvalue(frame->base + index));
 				} else {
 					func->upvals.emplace_back(frame->func->upvals[index]);
 				}
@@ -357,12 +363,64 @@ bool VM::init() {
 
 using OT = ObjType;
 
-Upvalue* VM::capture_upvalue(u8 index) {
-	return new Upvalue(*this, frame->base + index);
+Upvalue* VM::capture_upvalue(Value* slot) {
+	// If the open upvalues list is empty
+	// Then add a head node to this list.
+	if (m_open_upvals == nullptr) {
+		m_open_upvals = new Upvalue(*this, slot);
+		return m_open_upvals;
+	}
+
+	// start at the head of the linked list
+	Upvalue* current = m_open_upvals;
+	Upvalue* prev = nullptr;
+
+	// keep going until we reach a slot whose
+	// depth is lower than what we've been looking
+	// for, or until we reach the end of the list.
+	while (current->value < slot) {
+		prev = current;
+		current = current->next_upval;
+
+		// if we're at the end of the list, then
+		// no such upvalue was found, so we add it.
+		if (current == nullptr) {
+			prev->next = new Upvalue(slot);
+			return prev->next_upval;
+		}
+	}
+
+	// We've found an upvalue that was
+	// already capturing a value at this stack
+	// slot, so we reuse the existing upvalue
+	if (current->value == slot) return current;
+
+	// We've reached a node in the list
+	// where the previous node is above the
+	// slot we wanted to capture, but the current
+	// node is deeper. Meaning we found a new value
+	// that hasn't been captured before. So we
+	// add to the middle of the list.
+
+	Upvalue* upval = new Upvalue(*this, slot);
+	prev->next = upval;
+	upval->next = current;
+
+	return upval;
 }
 
 void VM::close_upvalues_upto(Value* last) {
-	// TODO
+	Upvalue* current = m_open_upvals;
+
+	while (current != nullptr and current->value >= last) {
+		
+		// these two lines are the last rites of an
+		// upvalue, closing it.
+		current->closed = *current->value;
+		current->value = &current->closed;
+
+		current = current->next_upval;
+	}
 }
 
 bool VM::call(Value value, u8 argc) {

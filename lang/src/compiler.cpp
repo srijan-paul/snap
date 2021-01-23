@@ -166,8 +166,6 @@ void Compiler::fn_decl() {
 	emit_bytes(Op::make_func, static_cast<Op>(idx), token);
 	emit(static_cast<Op>(proto->num_upvals), token);
 
-	std::cout << proto->num_upvals << "\n";
-
 	for (int i = 0; i < compiler.m_symtable.num_upvals; ++i) {
 		CompilerUpval& upval = compiler.m_symtable.m_upvals[i];
 		emit(upval.is_local ? static_cast<Op>(1) : static_cast<Op>(0));

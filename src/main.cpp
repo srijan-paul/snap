@@ -8,14 +8,14 @@ using namespace snap;
 
 int main() {
 	std::string code = R"(
-			fn outer() {
-				let x = "x"
-				fn inner() {
-					return x .. "-woot"
-				}
-				return inner()
+		fn make_adder(x) {
+			fn adder(y) {
+				return x + y
 			}
-			return outer()
+			return adder
+		}
+		let add10 =  make_adder(10)
+		return add10(20)
 	)";
 
 	VM vm{&code};
