@@ -69,7 +69,14 @@ Function::Function(VM& vm, Prototype* proto_) : Obj(ObjType::func), proto{proto_
 }
 
 void Function::set_num_upvals(u32 count) {
+	num_upvals = count;
 	upvals.reserve(count);
+}
+
+Function::~Function() {
+	for (int i = 0; i < num_upvals; ++i) {
+		delete upvals[i];
+	}
 }
 
 Value::Value(char* s, int len) : tag{VT::Object} {
@@ -97,6 +104,9 @@ std::string Value::name_str() const {
 		case ObjType::proto: {
 			return std::string("[prototype ") + static_cast<const Prototype*>(obj)->name->chars +
 				   "]";
+		}
+		case ObjType::upvalue: {
+			return static_cast<const Upvalue*>(obj)->value->name_str();
 		}
 		default: return "<snap object>";
 		}

@@ -42,6 +42,8 @@ Compiler::Compiler(VM* vm, Compiler* parent, String* name) : m_vm{vm}, m_parent{
 
 	m_source = parent->m_source;
 
+	vm->m_compiler = this;
+
 	prev = parent->prev;
 	token = parent->token;
 	peek = parent->peek;
@@ -70,6 +72,7 @@ Prototype* Compiler::compile_func() {
 	m_proto->num_upvals = m_symtable.num_upvals;
 	emit(Op::load_nil);
 	emit(Op::return_val);
+	m_vm->m_compiler = m_parent;
 	return m_proto;
 }
 
@@ -172,7 +175,6 @@ void Compiler::fn_decl() {
 		emit(static_cast<Op>(upval.index));
 	}
 
-	m_vm->register_object(proto);
 
 #ifdef SNAP_DEBUG_DISASSEMBLY
 	disassemble_block(proto->name->chars, proto->m_block);
@@ -252,7 +254,7 @@ void Compiler::unary(bool can_assign) {
 void Compiler::call(bool can_assign) {
 	grouping(can_assign);
 
-	if (match(TT::LParen)) {
+	while (!eof() and match(TT::LParen)) {
 		u8 argc = 0;
 
 		if (!check(TT::RParen)) {

@@ -1,11 +1,11 @@
-#include "gc.hpp"
-#include "value.hpp"
 #include <cmath>
 #include <common.hpp>
 #include <compiler.hpp>
 #include <cstdarg>
 #include <cstdio>
+#include <memory>
 #include <stdio.h>
+#include <value.hpp>
 #include <vm.hpp>
 
 #if defined(SNAP_DEBUG_RUNTIME) || defined(SNAP_DEBUG_DISASSEMBLY)
@@ -28,7 +28,7 @@ namespace snap {
 using Op = Opcode;
 using VT = ValueType;
 
-VM::VM(const std::string* src) : m_compiler(this, src), source{src} {
+VM::VM(const std::string* src) : source{src} {
 }
 
 #define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) and !(SNAP_AS_BOOL(v))) || SNAP_IS_NIL(v))
@@ -282,10 +282,10 @@ ExitCode VM::run(bool run_till_end) {
 
 			pop(); // pop the function off the stack.
 			push(result);
-			return_value = result;
 
 			frame_count--;
 			if (frame_count == 0) {
+				return_value = result;
 				return ExitCode::Success;
 			}
 
@@ -298,20 +298,23 @@ ExitCode VM::run(bool run_till_end) {
 		case Op::make_func: {
 			Prototype* proto = static_cast<Prototype*>(SNAP_AS_OBJECT(READ_VALUE()));
 			Function* func = new Function(*this, proto);
+
+			push(SNAP_OBJECT_VAL(func));
+
 			u8 num_upvals = NEXT_BYTE();
+			func->set_num_upvals(num_upvals);
 
 			for (u8 i = 0; i < num_upvals; ++i) {
 				bool is_local = NEXT_BYTE();
 				u8 index = NEXT_BYTE();
 
 				if (is_local) {
-					func->upvals.emplace_back(capture_upvalue(frame->base + index));
+					func->upvals[i] = (capture_upvalue(frame->base + index));
 				} else {
-					func->upvals.emplace_back(frame->func->upvals[index]);
+					func->upvals[i] = (frame->func->upvals[index]);
 				}
 			}
 
-			push(func);
 			break;
 		}
 		default: {
@@ -346,7 +349,10 @@ ExitCode VM::interpret() {
 }
 
 bool VM::init() {
-	Prototype* proto = m_compiler.compile();
+	Compiler compiler{this, source};
+	m_compiler = &compiler;
+
+	Prototype* proto = m_compiler->compile();
 	push(SNAP_OBJECT_VAL(proto));
 	Function* func = new Function(*this, proto);
 	pop();
@@ -358,6 +364,7 @@ bool VM::init() {
 	printf("\n");
 #endif
 
+	m_compiler = nullptr;
 	return true;
 }
 
@@ -387,13 +394,13 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 	// So we add it between `prev` and `current`.
 
 	Upvalue* upval = new Upvalue(*this, slot);
-	upval->next = current;
+	upval->next_upval = current;
 
 	// prev is null when there are no upvalues.
 	if (prev == nullptr) {
 		m_open_upvals = upval;
 	} else {
-		prev->next = upval;
+		prev->next_upval = upval;
 	}
 
 	return upval;
@@ -408,7 +415,6 @@ void VM::close_upvalues_upto(Value* last) {
 		// upvalue, closing it.
 		current->closed = *current->value;
 		current->value = &current->closed;
-
 		current = current->next_upval;
 	}
 }
@@ -432,7 +438,7 @@ bool VM::callfunc(Function* func, int argc) {
 	int extra = argc - func->proto->num_params;
 
 	// extra arguments are ignored and
-	// arguments that aren't provded are replaced with zero.
+	// arguments that aren't provded are replaced with nil.
 	if (extra < 0) {
 		while (extra < 0) {
 			push(SNAP_NIL_VAL);
@@ -459,9 +465,7 @@ bool VM::callfunc(Function* func, int argc) {
 // 	-- Garbage collection --
 
 void VM::collect_garbage() {
-	GC::mark_roots(*this);
-	GC::trace_refs(*this);
-	GC::sweep(*this);
+	// TODO
 }
 
 //  --- Error reporting ---
@@ -476,11 +480,10 @@ ExitCode VM::runtime_error(const char* fstring...) const {
 	va_start(args, fstring);
 
 	std::size_t bufsize = vsnprintf(nullptr, 0, fstring, args) + 1;
-	char* buf = new char[bufsize];
-	vsnprintf(buf, bufsize, fstring, args);
+	std::unique_ptr<char> buf{new char[bufsize]};
+	vsnprintf(buf.get(), bufsize, fstring, args);
 
-	default_error_fn(*this, buf);
-	free(buf);
+	default_error_fn(*this, buf.get());
 	va_end(args);
 	return ExitCode::RuntimeError;
 }
@@ -490,11 +493,25 @@ void default_error_fn(const VM& vm, const char* message) {
 	fputc('\n', stderr);
 }
 
-VM::~VM() {
-	if (m_gc_objects == nullptr) return;
-	for (Obj* object = m_gc_objects; object != nullptr; object = object->next) {
-		GC::free_object(object);
+static void free_object(Obj* object) {
+	switch (object->tag) {
+	case OT::func: static_cast<Function*>(object)->~Function(); break;
+	case OT::proto: static_cast<Prototype*>(object)->~Prototype(); break;
+	case OT::string: static_cast<String*>(object)->~String(); break;
+	case OT::upvalue: static_cast<Upvalue*>(object)->~Upvalue(); break;
 	}
+}
+
+// TODO: FIX THIS MESS
+VM::~VM() {
+	// if (m_gc_objects == nullptr) return;
+	// for (Obj* object = m_gc_objects; object != nullptr; ) {
+	// 	print_value(SNAP_OBJECT_VAL(object));
+	// 	printf("\n");
+	// 	Obj* temp = object->next;
+	// 	free_object(object);
+	// 	object = temp;
+	// }
 }
 
 } // namespace snap

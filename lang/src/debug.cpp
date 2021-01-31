@@ -113,7 +113,7 @@ std::size_t disassemble_instr(const Block& block, Op op, std::size_t offset) {
 		for (int i = 0; i < num_upvals; ++i) {
 			bool is_local = static_cast<bool>(block.code[offset++]);
 			if (is_local) {
-				int idx = static_cast<int>(block.code[offset++]);
+				int idx = static_cast<int>(block.code[++offset]);
 				std::printf("        %-4zu  %-22s  %s %d\n", offset - 1, " ", is_local ? "local" : "upvalue",
 							idx);
 			}

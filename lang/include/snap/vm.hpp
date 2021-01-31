@@ -6,6 +6,7 @@
 #include "value.hpp"
 #include "vm.hpp"
 #include <cstdarg>
+#include <cstddef>
 #include <functional>
 #include <iostream>
 
@@ -61,7 +62,7 @@ class VM {
   public:
 	VM(const std::string* src);
 	~VM();
-	Compiler m_compiler;
+	Compiler* m_compiler;
 	Value return_value;
 
 	Block* m_current_block = nullptr;
@@ -77,6 +78,10 @@ class VM {
 	/// for garbage collection.
 	Obj* m_gc_objects = nullptr;
 	ObjectSet gray_objects;
+
+		
+	// VM's personal list of all open upvalues.
+	Upvalue* m_open_upvals = nullptr;
 
 	ExitCode interpret();
 
@@ -136,9 +141,7 @@ class VM {
 	u32 frame_count = 0;
 	// instruction ptr
 	std::size_t ip = 0;
-	
-	// VM's personal list of all open upvalues.
-	Upvalue* m_open_upvals = nullptr;
+
 
 	// Wrap a value present at stack slot `slot`
 	// inside an Upvalue object and add it to the 

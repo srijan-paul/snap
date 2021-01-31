@@ -15,6 +15,12 @@ void assert_val_eq(Value& expected, Value actual) {
 	}
 }
 
+static void test_return(const std::string&& code, Value expected) {
+	VM vm{&code};
+	vm.interpret();
+	assert_val_eq(expected, vm.return_value);
+}
+
 /// Runs the next `op_count` instructions in the `code` string in a VM.
 /// Then asserts that the value on top of the stack is equal to `expected_value`.
 /// If `op_count` is -1 then interprets the entire bytecode and checks the return value.
@@ -87,6 +93,34 @@ static void stmt_tests() {
 			  -1, SNAP_NUM_VAL(7));
 }
 
+void fn_tests() {
+	test_return(R"(
+		fn adder(x) {
+			fn add(y) {
+				return x + y
+			}	
+			return add
+		}
+		return adder(10)(20)
+	)", SNAP_NUM_VAL(30.0));
+
+	test_return(R"(
+		fn x() {
+			let a = 1
+			let b = 2
+			fn y() {
+				let c = 3
+				fn z() {
+					return a + b + c;
+				}
+				return z
+			}
+			return y
+		}
+		return x()()()
+	)", SNAP_NUM_VAL(6.0));
+}
+
 void vm_test() {
 	std::printf("--- VM Tests ---\n");
 
@@ -122,6 +156,7 @@ void vm_test() {
 int main() {
 	expr_tests();
 	stmt_tests();
+	fn_tests();
 	vm_test();
 	return 0;
 }
