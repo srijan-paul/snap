@@ -496,15 +496,6 @@ void default_error_fn(const VM& vm, const char* message) {
 	fputc('\n', stderr);
 }
 
-static void free_object(Obj* object) {
-	switch (object->tag) {
-	case OT::func: static_cast<Function*>(object)->~Function(); break;
-	case OT::proto: static_cast<Prototype*>(object)->~Prototype(); break;
-	case OT::string: static_cast<String*>(object)->~String(); break;
-	case OT::upvalue: static_cast<Upvalue*>(object)->~Upvalue(); break;
-	}
-}
-
 // TODO: FIX THIS MESS
 VM::~VM() {
 	// if (m_gc_objects == nullptr) return;
