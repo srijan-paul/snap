@@ -54,7 +54,8 @@ struct ObjectSet {
 struct CallFrame {
 	Function* func;
 	std::size_t ip;
-	// the base of the call frame in the Value's struct
+	// the base of the call frame in the VM's
+	// callframe
 	StackId base;
 };
 
@@ -65,23 +66,11 @@ class VM {
 	Compiler* m_compiler;
 	Value return_value;
 
-	Block* m_current_block = nullptr;
 	static constexpr std::size_t StackMaxSize = 256;
 	static constexpr std::size_t MaxCallStack = 128;
 	Value m_stack[StackMaxSize];
-	StackId sp = m_stack; // points to the next free slot where a value can go
-
-	CallFrame frames[MaxCallStack];
-	CallFrame* frame = frames; // current frame.
-
-	/// the VM maintains it's personal linked list of objects
-	/// for garbage collection.
-	Obj* m_gc_objects = nullptr;
-	ObjectSet gray_objects;
-
-		
-	// VM's personal list of all open upvalues.
-	Upvalue* m_open_upvals = nullptr;
+	// points to the next free slot where a value can go
+	StackId sp = m_stack;
 
 	ExitCode interpret();
 
@@ -136,20 +125,36 @@ class VM {
 	ExitCode run(bool run_till_end = true);
 
   private:
-	const std::string* source;
-	// total number of stack frames that have been allocated.
-	u32 frame_count = 0;
+	const std::string* m_source;
+
 	// instruction ptr
 	std::size_t ip = 0;
 
+	/// the VM maintains it's personal linked list of objects
+	/// for garbage collection.
+	Obj* m_gc_objects = nullptr;
+	ObjectSet gray_objects;
+
+	// VM's personal list of all open upvalues.
+	Upvalue* m_open_upvals = nullptr;
+
+	CallFrame m_frames[MaxCallStack];
+	// current call frame.
+	CallFrame* m_current_frame = m_frames;
+	// total number of stack frames that have been allocated.
+	u32 m_frame_count = 0;
+
+	// current block from which the opcodes
+	// are being red. This always `m_current_frame->func->block`
+	Block* m_current_block = nullptr;
 
 	// Wrap a value present at stack slot `slot`
-	// inside an Upvalue object and add it to the 
+	// inside an Upvalue object and add it to the
 	// VM's currently open Upvalue list in the right
 	// position (if it isn't already there).
 	Upvalue* capture_upvalue(Value* slot);
 	// close all the upvalues that are present between the
-	// top of the stack and `last`. 
+	// top of the stack and `last`.
 	// `last` must point to some value in the VM's stack.
 	void close_upvalues_upto(Value* last);
 	ExitCode binop_error(const char* opstr, Value& a, Value& b);

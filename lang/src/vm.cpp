@@ -18,8 +18,8 @@
 	(ip += 2, (u16)((static_cast<u8>(m_current_block->code[ip - 2]) << 8) |                        \
 					static_cast<u8>(m_current_block->code[ip - 1])))
 #define READ_VALUE()		  (m_current_block->constant_pool[NEXT_BYTE()])
-#define GET_VAR(index)		  (frame->base[index])
-#define SET_VAR(index, value) (frame->base[index] = value)
+#define GET_VAR(index)		  (m_current_frame->base[index])
+#define SET_VAR(index, value) (m_current_frame->base[index] = value)
 
 #define PEEK(depth) sp[-depth]
 
@@ -28,7 +28,7 @@ namespace snap {
 using Op = Opcode;
 using VT = ValueType;
 
-VM::VM(const std::string* src) : source{src} {
+VM::VM(const std::string* src) : m_source{src} {
 }
 
 #define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) and !(SNAP_AS_BOOL(v))) || SNAP_IS_NIL(v))
@@ -230,13 +230,13 @@ ExitCode VM::run(bool run_till_end) {
 
 		case Op::set_upval: {
 			u8 idx = NEXT_BYTE();
-			*frame->func->upvals[idx]->value = peek(0);
+			*m_current_frame->func->upvals[idx]->value = peek(0);
 			break;
 		}
 
 		case Op::get_upval: {
 			u8 idx = NEXT_BYTE();
-			push(*frame->func->upvals[idx]->value);
+			push(*m_current_frame->func->upvals[idx]->value);
 			break;
 		}
 
@@ -277,21 +277,21 @@ ExitCode VM::run(bool run_till_end) {
 
 		case Op::return_val: {
 			Value result = pop();
-			close_upvalues_upto(frame->base);
-			sp = frame->base + 1;
+			close_upvalues_upto(m_current_frame->base);
+			sp = m_current_frame->base + 1;
 
 			pop(); // pop the function off the stack.
 			push(result);
 
-			frame_count--;
-			if (frame_count == 0) {
+			m_frame_count--;
+			if (m_frame_count == 0) {
 				return_value = result;
 				return ExitCode::Success;
 			}
 
-			frame = &frames[frame_count - 1];
-			m_current_block = &frame->func->proto->m_block;
-			ip = frame->ip;
+			m_current_frame = &m_frames[m_frame_count - 1];
+			m_current_block = &m_current_frame->func->proto->m_block;
+			ip = m_current_frame->ip;
 
 			break;
 		}
@@ -309,9 +309,9 @@ ExitCode VM::run(bool run_till_end) {
 				u8 index = NEXT_BYTE();
 
 				if (is_local) {
-					func->upvals[i] = (capture_upvalue(frame->base + index));
+					func->upvals[i] = (capture_upvalue(m_current_frame->base + index));
 				} else {
-					func->upvals[i] = (frame->func->upvals[index]);
+					func->upvals[i] = (m_current_frame->func->upvals[index]);
 				}
 			}
 
@@ -349,7 +349,7 @@ ExitCode VM::interpret() {
 }
 
 bool VM::init() {
-	Compiler compiler{this, source};
+	Compiler compiler{this, m_source};
 	m_compiler = &compiler;
 
 	Prototype* proto = m_compiler->compile();
@@ -453,11 +453,11 @@ bool VM::callfunc(Function* func, int argc) {
 		}
 	}
 
-	frame->ip = ip;
-	frame = &frames[frame_count++];
-	frame->func = func;
-	ip = frame->ip = 0;
-	frame->base = sp - argc - 1;
+	m_current_frame->ip = ip;
+	m_current_frame = &m_frames[m_frame_count++];
+	m_current_frame->func = func;
+	ip = m_current_frame->ip = 0;
+	m_current_frame->base = sp - argc - 1;
 	m_current_block = &func->proto->m_block;
 	return true;
 }
