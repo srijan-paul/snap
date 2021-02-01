@@ -468,6 +468,10 @@ void VM::collect_garbage() {
 	// TODO
 }
 
+const Block* VM::block() {
+	return m_current_block;
+}
+
 //  --- Error reporting ---
 
 ExitCode VM::binop_error(const char* opstr, Value& a, Value& b) {

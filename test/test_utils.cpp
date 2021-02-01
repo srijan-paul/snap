@@ -48,6 +48,6 @@ void print_disassembly(const char* code) {
 	const std::string code_s{code};
 	snap::VM vm{&code_s};
 	vm.init();
-	disassemble_block("test_block", *vm.m_current_block);
+	disassemble_block("test_block", *vm.block());
 	printf("\n");
 }
