@@ -26,7 +26,7 @@ struct Obj {
 
 	s32 hash();
 
-	virtual ~Obj(){};
+	virtual ~Obj() = default;
 };
 
 /// Strings in snap are heap allocated, and contain 3 important fields:
