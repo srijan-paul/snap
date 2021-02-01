@@ -12,7 +12,6 @@ enum class ObjType : u8 { string, proto, func, upvalue };
 
 using StackId = Value*;
 
-class VM;
 
 // Objects always live on the heap. A value which is an object contains a a pointer
 // to this data on the heap. The `tag` specifies what kind of object this is.
@@ -24,7 +23,6 @@ struct Obj {
 	s32 m_hash = -1;
 	bool marked = false;
 	Obj(ObjType tt) : tag{tt} {};
-	Obj(VM& vm, ObjType tt);
 
 	s32 hash();
 };
@@ -41,7 +39,8 @@ struct String : Obj {
 	// creates a string that owns the characters `chrs`.
 	/// @param chrs pointer to the character buffer. Must be null terminated.
 	String(char* chrs) : Obj(ObjType::string), chars{chrs} {};
-	String(VM& vm, const char* chrs, size_t len);
+	/// @brief concatenates [left] and [right] into a string
+	String(const String* left, const String* right);
 
 	s32 hash();
 
@@ -70,9 +69,6 @@ struct Function : Obj {
 	u32 num_upvals = 0;
 	Function(String* name) : Obj(ObjType::func), proto{new Prototype(name)} {};
 	Function(Prototype* proto_) : Obj(ObjType::func), proto{proto_} {};
-	Function(VM& vm, Prototype* proto_);
-
-	Function(VM& vm, String* name) : Obj(vm, ObjType::func), proto(new Prototype(name)){};
 
 	void set_num_upvals(u32 count);
 
@@ -153,7 +149,6 @@ struct Upvalue : Obj {
 	Value closed;			 // The value is stored here upon closing.
 	Upvalue* next_upval = nullptr; // next upvalue in the VM's upvalue list.
 	Upvalue(Value* v) : Obj(ObjType::upvalue), value{v} {};
-	Upvalue(VM& vm, Value* v) : Obj(vm, ObjType::upvalue), value{v} {};
 };
 
 #define SNAP_SET_NUM(v, i)	  ((v).as.num = i)

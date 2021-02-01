@@ -30,14 +30,15 @@ using TT = TokenType;
 Compiler::Compiler(VM* vm, const std::string* src) : m_vm{vm}, m_source{src} {
 	m_scanner = new Scanner{src};
 	advance(); // set `peek` to the first token in the token stream.
-	String* fname = new String("<script>", 8);
-	m_symtable.add("<script>", 8, true); // reserve the first slot for this toplevel function.
-	m_proto = new Prototype(fname);
+	String* fname = &vm->make<String>("<script>", 8);
+	// reserve the first slot for this toplevel function.
+	m_symtable.add("<script>", 8, true);
+	m_proto = &vm->make<Prototype>(fname);
 }
 
 Compiler::Compiler(VM* vm, Compiler* parent, String* name) : m_vm{vm}, m_parent{parent} {
 	m_scanner = m_parent->m_scanner;
-	m_proto = new Prototype(name);
+	m_proto = &m_vm->make<Prototype>(name);
 	m_symtable.add(name->chars, name->length, false);
 
 	m_source = parent->m_source;
@@ -149,7 +150,7 @@ void Compiler::fn_decl() {
 	expect(TT::Id, "expected function name");
 
 	Token name_token = token;
-	String* fname = new String(name_token.raw_cstr(m_source), name_token.length());
+	String* fname = &m_vm->make<String>(name_token.raw_cstr(m_source), name_token.length());
 	expect(TT::LParen, "Expected '(' before function parameters.");
 
 	Compiler compiler{m_vm, this, fname};
@@ -451,8 +452,8 @@ void Compiler::error(const char* fmt...) {
 size_t Compiler::emit_string(const Token& token) {
 	size_t length = token.length() - 2; // minus the quotes
 	// +1 to skip the openening quote.
-	String* string = new String(*m_vm, token.raw_cstr(m_source) + 1, length);
-	return emit_value(SNAP_OBJECT_VAL(string));
+	String& string = m_vm->make<String>(token.raw_cstr(m_source) + 1, length);
+	return emit_value(SNAP_OBJECT_VAL(&string));
 }
 
 int Compiler::find_local_var(const Token& name_token) {

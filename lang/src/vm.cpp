@@ -253,9 +253,8 @@ ExitCode VM::run(bool run_till_end) {
 			if (!(SNAP_IS_STRING(a) and SNAP_IS_STRING(b))) {
 				return binop_error("..", a, b);
 			} else {
-				String* s = String::concatenate(SNAP_AS_STRING(a), SNAP_AS_STRING(b));
+				String* s = &make<String>(SNAP_AS_STRING(a), SNAP_AS_STRING(b));
 				SNAP_SET_OBJECT(a, s);
-				register_object(s);
 			}
 			pop();
 			break;
@@ -297,7 +296,7 @@ ExitCode VM::run(bool run_till_end) {
 		}
 		case Op::make_func: {
 			Prototype* proto = static_cast<Prototype*>(SNAP_AS_OBJECT(READ_VALUE()));
-			Function* func = new Function(*this, proto);
+			Function* func = &make<Function>(proto);
 
 			push(SNAP_OBJECT_VAL(func));
 
@@ -354,7 +353,7 @@ bool VM::init() {
 
 	Prototype* proto = m_compiler->compile();
 	push(SNAP_OBJECT_VAL(proto));
-	Function* func = new Function(*this, proto);
+	Function* func = &make<Function>(proto);
 	pop();
 	push(SNAP_OBJECT_VAL(func));
 	callfunc(func, 0);
@@ -393,7 +392,7 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 	// Meaning `slot` points to a new value that hasn't been captured before.
 	// So we add it between `prev` and `current`.
 
-	Upvalue* upval = new Upvalue(*this, slot);
+	Upvalue* upval = &make<Upvalue>(slot);
 	upval->next_upval = current;
 
 	// prev is null when there are no upvalues.

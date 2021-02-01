@@ -93,29 +93,29 @@ class VM {
 	bool call(Value value, u8 argc);
 	bool callfunc(Function* func, int argc);
 
-	// register an object as 'present' in the object pool.
-	// This allows the object to be marked as available
-	// for garbage collection when no longer in use.
-	void register_object(Obj* object) {
-#ifdef SNAP_STRESS_GC
-		collect_garbage();
-#endif
-		object->next = m_gc_objects;
-		m_gc_objects = object;
-	}
-
 	void collect_garbage();
 	ExitCode run(bool run_till_end = true);
 	const Block* block();
 
+	template<typename T, typename... Args>
+	T& make(Args&&... args) {
+		T* object = new T(std::forward<Args>(args)...);
+		object->next = m_gc_objects;
+		m_gc_objects = object;
+		return *object;
+	}
+
   private:
 	const std::string* m_source;
 
-	// instruction ptr
+	// The instruction pointer.
+	// It stores the index of the next instruction
+	// to be executed. An "instruction" here is an Opcode
+	// inside the current function's `m_block`.
 	std::size_t ip = 0;
 
-	/// the VM maintains it's personal linked list of objects
-	/// for garbage collection.
+	// the VM maintains it's personal linked list of objects
+	// for garbage collection.
 	Obj* m_gc_objects = nullptr;
 	std::vector<Obj*> m_gray_objects;
 
@@ -128,13 +128,15 @@ class VM {
 	u32 m_frame_count = 0;
 
 	// current block from which the opcodes
-	// are being red. This always `m_current_frame->func->block`
+	// are being read. This always `m_current_frame->func->block`
 	Block* m_current_block = nullptr;
 
 	/// Wrap a value present at stack slot [slot]
 	/// inside an Upvalue object and add it to the
 	/// VM's currently open Upvalue list in the right
 	/// position (if it isn't already there).
+	/// @param slot A `Value*` referencing a valueinside the VM's 
+	///             value stack.
 	Upvalue* capture_upvalue(Value* slot);
 	// close all the upvalues that are present between the
 	// top of the stack and [last].
@@ -142,10 +144,15 @@ class VM {
 	void close_upvalues_upto(Value* last);
 
 	/// @brief Throw an error caused by a binary operator's bad operand types.
-	/// @param opstr a `char*` represenging the binary operator. (eg - "+")
+	/// @param opstr a `C string representing the binary operator. (eg - "+")
 	/// @param a The left operand
 	/// @param b The right operand
 	ExitCode binop_error(const char* opstr, Value& a, Value& b);
+
+	/// @brief Throws a runtime error by calling the `log_error` and
+	/// then shutting down the VM by returning an ExitCode::RuntimeError
+	/// @param fstring the format string, followed by format args. 
+	///        Similar to `printf`.
 	ExitCode runtime_error(const char* fstring...) const;
 };
 

@@ -22,9 +22,6 @@ using VT = ValueType;
 using OT = ObjType;
 using TT = TokenType;
 
-Obj::Obj(VM& vm, OT type) : tag{type} {
-	vm.register_object(this);
-}
 
 s32 Obj::hash() {
 	m_hash = (std::size_t)(this);
@@ -38,10 +35,14 @@ String::String(const char* chrs, std::size_t len) : Obj(ObjType::string), length
 	chars = buf;
 }
 
-String::String(VM& vm, const char* chrs, size_t len) : Obj(vm, ObjType::string), length{len} {
-	char* buf = new char[len + 1];
-	std::memcpy(buf, chrs, len);
-	buf[len] = '\0';
+String::String(const String* left, const String* right): Obj(OT::string) {
+	length = left->length + right->length;
+
+	char* buf = new char[length + 1];
+	buf[length] = '\0';
+	std::memcpy(buf, left->chars, left->length);
+	std::memcpy(buf + left->length, right->chars, right->length);
+
 	chars = buf;
 }
 
@@ -50,22 +51,18 @@ s32 String::hash() {
 	return m_hash;
 }
 
-String* String::concatenate(const String* a, const String* b) {
-	size_t length = a->length + b->length;
+String* String::concatenate(const String* left, const String* right) {
+	std::size_t length = left->length + right->length;
+
 	char* buf = new char[length + 1];
 	buf[length] = '\0';
-	std::memcpy(buf, a->chars, a->length);
-	std::memcpy(buf + a->length, b->chars, b->length);
+	std::memcpy(buf, left->chars, left->length);
+	std::memcpy(buf + left->length, right->chars, right->length);
 	return new String(buf, length);
 }
 
 String::~String() {
 	delete[] chars;
-}
-
-Function::Function(VM& vm, Prototype* proto_) : Obj(ObjType::func), proto{proto_} {
-	vm.register_object(proto_);
-	vm.register_object(this);
 }
 
 void Function::set_num_upvals(u32 count) {
