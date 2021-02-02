@@ -1,10 +1,8 @@
 #pragma once
-#include "block.hpp"
-#include "opcode.hpp"
+#include "function.hpp"
 #include "scanner.hpp"
-#include "token.hpp"
-#include "value.hpp"
 #include <array>
+
 
 namespace snap {
 

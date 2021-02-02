@@ -1,83 +1,19 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <function.hpp>
+#include <string.hpp>
 #include <value.hpp>
 #include <vm.hpp>
-
-// this hash function is from: https://craftinginterpreters.com/hash-tables.html
-static uint32_t fnv1a(const char* key, int length) {
-	uint32_t hash = 2166136261u;
-
-	for (int i = 0; i < length; i++) {
-		hash ^= key[i];
-		hash *= 16777619;
-	}
-
-	return hash;
-}
 
 namespace snap {
 
 using VT = ValueType;
 using OT = ObjType;
-using TT = TokenType;
-
 
 s32 Obj::hash() {
 	m_hash = (std::size_t)(this);
 	return m_hash;
-}
-
-String::String(const char* chrs, std::size_t len) : Obj(ObjType::string), length{len} {
-	char* buf = new char[len + 1];
-	std::memcpy(buf, chrs, len);
-	buf[len] = '\0';
-	chars = buf;
-}
-
-String::String(const String* left, const String* right): Obj(OT::string) {
-	length = left->length + right->length;
-
-	char* buf = new char[length + 1];
-	buf[length] = '\0';
-	std::memcpy(buf, left->chars, left->length);
-	std::memcpy(buf + left->length, right->chars, right->length);
-
-	chars = buf;
-}
-
-s32 String::hash() {
-	m_hash = fnv1a(chars, length);
-	return m_hash;
-}
-
-String* String::concatenate(const String* left, const String* right) {
-	std::size_t length = left->length + right->length;
-
-	char* buf = new char[length + 1];
-	buf[length] = '\0';
-	std::memcpy(buf, left->chars, left->length);
-	std::memcpy(buf + left->length, right->chars, right->length);
-	return new String(buf, length);
-}
-
-String::~String() {
-	delete[] chars;
-}
-
-void Function::set_num_upvals(u32 count) {
-	num_upvals = count;
-	upvals.reserve(count);
-}
-
-Function::~Function() {
-	for (int i = 0; i < num_upvals; ++i) {
-		delete upvals[i];
-	}
-}
-
-Value::Value(char* s, int len) : tag{VT::Object} {
-	as.object = new String(s, len);
 }
 
 void print_value(Value v) {
@@ -95,12 +31,12 @@ std::string Value::name_str() const {
 		switch (obj->tag) {
 		case ObjType::string: return SNAP_AS_CSTRING(*this);
 		case ObjType::func: {
-			return std::string("[function ") +
-				   static_cast<const Function*>(obj)->proto->name->chars + "]";
+			return std::string("[function ") + static_cast<const Function*>(obj)->name_cstr() +
+				   "]";
 		}
 		case ObjType::proto: {
-			return std::string("[prototype ") + static_cast<const Prototype*>(obj)->name->chars +
-				   "]";
+			return std::string("[prototype ") +
+				   static_cast<const Prototype*>(obj)->name_cstr() + "]";
 		}
 		case ObjType::upvalue: {
 			return static_cast<const Upvalue*>(obj)->value->name_str();

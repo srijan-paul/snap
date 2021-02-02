@@ -1,10 +1,5 @@
 #pragma once
-#include "block.hpp"
-#include "common.hpp"
 #include "compiler.hpp"
-#include "opcode.hpp"
-#include "value.hpp"
-#include "vm.hpp"
 #include <cstdarg>
 #include <cstddef>
 #include <functional>
@@ -18,7 +13,7 @@ using ErrorFn = std::function<void(const VM& vm, const char* fstring)>;
 using AllocateFn = std::function<void*(VM& vm, size_t old_size, size_t new_size)>;
 
 inline void default_print_fn([[maybe_unused]] const VM& vm, String* string) {
-	printf("%s\n", string->chars);
+	printf("%s\n", string->c_str());
 }
 
 void default_error_fn(const VM& vm, const char* message);

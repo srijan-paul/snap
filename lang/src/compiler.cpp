@@ -40,7 +40,7 @@ Compiler::Compiler(VM* vm, Compiler* parent, const String* name) : m_vm{vm}, m_p
 	m_scanner = m_parent->m_scanner;
 	m_proto = &m_vm->make<Prototype>(name);
 
-	m_symtable.add(name->chars, name->length, false);
+	m_symtable.add(name->c_str(), name->m_length, false);
 
 	m_source = parent->m_source;
 	vm->m_compiler = this;
@@ -61,7 +61,7 @@ Prototype* Compiler::compile() {
 		toplevel();
 	}
 
-	m_proto->num_upvals = m_symtable.num_upvals;
+	m_proto->m_num_upvals = m_symtable.num_upvals;
 	emit_bytes(Op::load_nil, Op::return_val, token.location.line);
 	return m_proto;
 }
@@ -70,7 +70,7 @@ Prototype* Compiler::compile_func() {
 	test(TT::LCurlBrace, "Expected '{' before function body.");
 
 	block_stmt();
-	m_proto->num_upvals = m_symtable.num_upvals;
+	m_proto->m_num_upvals = m_symtable.num_upvals;
 	emit(Op::load_nil);
 	emit(Op::return_val);
 	m_vm->m_compiler = m_parent;
@@ -176,7 +176,7 @@ void Compiler::func_expr(const String* fname) {
 	u8 idx = emit_value(SNAP_OBJECT_VAL(proto));
 
 	emit_bytes(Op::make_func, static_cast<Op>(idx), token);
-	emit(static_cast<Op>(proto->num_upvals), token);
+	emit(static_cast<Op>(proto->m_num_upvals), token);
 
 	for (int i = 0; i < compiler.m_symtable.num_upvals; ++i) {
 		CompilerUpval& upval = compiler.m_symtable.m_upvals[i];
@@ -185,7 +185,7 @@ void Compiler::func_expr(const String* fname) {
 	}
 
 #ifdef SNAP_DEBUG_DISASSEMBLY
-	disassemble_block(proto->name->chars, proto->m_block);
+	disassemble_block(proto->name_cstr(), proto->m_block);
 #endif
 
 	prev = compiler.prev;
@@ -402,8 +402,8 @@ void Compiler::patch_jump(std::size_t index) {
 
 void Compiler::add_param(const Token& token) {
 	new_variable(token);
-	m_proto->num_params++;
-	if (m_proto->num_params > MaxFuncParams) {
+	m_proto->m_num_params++;
+	if (m_proto->m_num_params > MaxFuncParams) {
 		error_at_token("Too many function parameters.", token);
 	}
 }

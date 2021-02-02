@@ -5,7 +5,10 @@
 #include <cstdio>
 #include <stdio.h>
 #include <value.hpp>
+#include <string.hpp>
+#include <function.hpp>
 #include <vm.hpp>
+#include <upvalue.hpp>
 
 #if defined(SNAP_DEBUG_RUNTIME) || defined(SNAP_DEBUG_DISASSEMBLY)
 #include <debug.hpp>
@@ -229,13 +232,13 @@ ExitCode VM::run(bool run_till_end) {
 
 		case Op::set_upval: {
 			u8 idx = NEXT_BYTE();
-			*m_current_frame->func->upvals[idx]->value = peek(0);
+			*m_current_frame->func->m_upvals[idx]->value = peek(0);
 			break;
 		}
 
 		case Op::get_upval: {
 			u8 idx = NEXT_BYTE();
-			push(*m_current_frame->func->upvals[idx]->value);
+			push(*m_current_frame->func->m_upvals[idx]->value);
 			break;
 		}
 
@@ -288,7 +291,7 @@ ExitCode VM::run(bool run_till_end) {
 			}
 
 			m_current_frame = &m_frames[m_frame_count - 1];
-			m_current_block = &m_current_frame->func->proto->m_block;
+			m_current_block = &m_current_frame->func->m_proto->m_block;
 			ip = m_current_frame->ip;
 
 			break;
@@ -307,9 +310,9 @@ ExitCode VM::run(bool run_till_end) {
 				u8 index = NEXT_BYTE();
 
 				if (is_local) {
-					func->upvals[i] = (capture_upvalue(m_current_frame->base + index));
+					func->m_upvals[i] = (capture_upvalue(m_current_frame->base + index));
 				} else {
-					func->upvals[i] = (m_current_frame->func->upvals[index]);
+					func->m_upvals[i] = (m_current_frame->func->m_upvals[index]);
 				}
 			}
 
@@ -358,7 +361,7 @@ bool VM::init() {
 	callfunc(func, 0);
 
 #ifdef SNAP_DEBUG_DISASSEMBLY
-	disassemble_block(func->proto->name->chars, *m_current_block);
+	disassemble_block(func->name()->c_str(), *m_current_block);
 	printf("\n");
 #endif
 
@@ -433,7 +436,7 @@ bool VM::call(Value value, u8 argc) {
 }
 
 bool VM::callfunc(Function* func, int argc) {
-	int extra = argc - func->proto->num_params;
+	int extra = argc - func->m_proto->m_num_params;
 
 	// extra arguments are ignored and
 	// arguments that aren't provded are replaced with nil.
@@ -456,7 +459,7 @@ bool VM::callfunc(Function* func, int argc) {
 	m_current_frame->func = func;
 	ip = m_current_frame->ip = 0;
 	m_current_frame->base = sp - argc - 1;
-	m_current_block = &func->proto->m_block;
+	m_current_block = &func->m_proto->m_block;
 	return true;
 }
 
