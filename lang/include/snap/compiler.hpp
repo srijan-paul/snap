@@ -67,9 +67,6 @@ struct SymbolTable {
 class Compiler {
   public:
 	VM* m_vm;
-	Prototype* m_proto;
-	Compiler* m_parent = nullptr;
-
 	static constexpr u8 MaxLocalVars = UINT8_MAX;
 	static constexpr u8 MaxUpValues = UINT8_MAX;
 	static constexpr u8 MaxFuncParams = UINT8_MAX;
@@ -88,11 +85,10 @@ class Compiler {
 
 	~Compiler();
 
-	// Compile a top level script
+	/// @brief Compile a top level script
+	/// @return a function prototype containing the bytecode for the script.
 	Prototype* compile();
 
-	// Compile a function's body (if this is a child compiler).
-	Prototype* compile_func();
 
 	/// @brief If this compiler is compiling a function body, then
 	/// reserve a stack slot for the parameter, and add the parameter
@@ -100,6 +96,10 @@ class Compiler {
 	void add_param(const Token& token);
 
   private:
+
+	Prototype* m_proto;
+	Compiler* m_parent = nullptr;
+
 	const std::string* m_source;
 	bool has_error = false;
 	Scanner* m_scanner;
@@ -141,6 +141,9 @@ class Compiler {
 	void error_at(const char* message, u32 line);
 	void error(const char* fmt...);
 
+	// Compile a function's body (if this is a child compiler).
+	Prototype* compile_func();
+	
 	// keep eating tokens until a token
 	// that may indicate the end of a block is
 	// found.

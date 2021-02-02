@@ -121,7 +121,7 @@ void Compiler::declarator(bool is_const) {
 void Compiler::block_stmt() {
 	advance(); // eat the opening '{'
 	enter_block();
-	while (!(eof() || check(TT::RCurlBrace))) {
+	while (!(eof() or check(TT::RCurlBrace))) {
 		toplevel();
 	}
 	expect(TT::RCurlBrace, "Expected '}' to close block.");
@@ -195,8 +195,8 @@ void Compiler::func_expr(const String* fname) {
 
 void Compiler::ret_stmt() {
 	advance(); // eat the return keyword.
-	if (isLiteral(peek.type) || check(TT::Id) || check(TT::Bang) || check(TT::Minus) ||
-		check(TT::LParen) || check(TT::Fn)) {
+	if (isLiteral(peek.type) or check(TT::Id) or check(TT::Bang) or check(TT::Minus) or
+		check(TT::LParen) or check(TT::Fn)) {
 		expr();
 	} else {
 		emit(Op::load_nil);
@@ -235,15 +235,15 @@ void Compiler::logic_and(bool can_assign) {
 
 DEFINE_PARSE_FN(Compiler::bit_or, match(TT::BitOr), bit_and)
 DEFINE_PARSE_FN(Compiler::bit_and, match(TT::BitAnd), equality)
-DEFINE_PARSE_FN(Compiler::equality, match(TT::EqEq) || match(TT::BangEq), comparison)
+DEFINE_PARSE_FN(Compiler::equality, match(TT::EqEq) or match(TT::BangEq), comparison)
 DEFINE_PARSE_FN(Compiler::comparison,
-				match(TT::Gt) || match(TT::Lt) || match(TT::GtEq) || match(TT::LtEq), b_shift)
-DEFINE_PARSE_FN(Compiler::b_shift, match(TT::BitLShift) || match(TT::BitRShift), sum)
-DEFINE_PARSE_FN(Compiler::sum, (match(TT::Plus) || match(TT::Minus) || match(TT::Concat)), mult)
-DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) || match(TT::Mod) || match(TT::Div)), unary)
+				match(TT::Gt) or match(TT::Lt) or match(TT::GtEq) or match(TT::LtEq), b_shift)
+DEFINE_PARSE_FN(Compiler::b_shift, match(TT::BitLShift) or match(TT::BitRShift), sum)
+DEFINE_PARSE_FN(Compiler::sum, (match(TT::Plus) or match(TT::Minus) or match(TT::Concat)), mult)
+DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) or match(TT::Mod) or match(TT::Div)), unary)
 
 void Compiler::unary(bool can_assign) {
-	if (check(TT::Bang) || check(TT::Minus)) {
+	if (check(TT::Bang) or check(TT::Minus)) {
 		advance();
 		const Token op_token = token;
 		call(false);
@@ -360,7 +360,7 @@ void Compiler::literal() {
 }
 
 void Compiler::recover() {
-	while (!(eof() || match(TT::Semi) || match(TT::LCurlBrace) || match(TT::LSqBrace))) {
+	while (!(eof() or match(TT::Semi) or match(TT::LCurlBrace) or match(TT::LSqBrace))) {
 		advance();
 	}
 }

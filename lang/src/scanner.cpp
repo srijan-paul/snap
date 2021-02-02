@@ -64,8 +64,8 @@ Token Scanner::next_token() {
 			return number();
 		}
 
-		if (isalpha(c) || c == '_') {
-			while (isalnum(peek()) || check('_')) next();
+		if (isalpha(c) or c == '_') {
+			while (isalnum(peek()) or check('_')) next();
 			return make_token(kw_or_id_type());
 		}
 	}
@@ -95,7 +95,7 @@ static constexpr KeywordData keywords[] = {
 
 TT Scanner::kw_or_id_type() const {
 	for (auto& kw : keywords) {
-		if (kw.length == (current - start) &&
+		if (kw.length == (current - start) and
 			std::memcmp(source->c_str() + start, kw.word, kw.length) == 0)
 			return kw.ttype;
 	}
@@ -115,7 +115,7 @@ Token Scanner::number() {
 
 // TODO: escape characters.
 Token Scanner::make_string(char quote) {
-	while (!(eof() || check(quote))) next();
+	while (!(eof() or check(quote))) next();
 	if (eof()) {
 		// TODO: error
 	} else {
@@ -139,7 +139,7 @@ char Scanner::next() {
 }
 
 bool Scanner::eof() const {
-	return current >= source->length() || source->at(current) == '\0';
+	return current >= source->length() or source->at(current) == '\0';
 }
 
 bool Scanner::check(char expected) const {

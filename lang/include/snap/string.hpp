@@ -4,7 +4,7 @@
 namespace snap {
 
 /// Strings in snap are heap allocated, and contain 3 important fields:
-/// `chars`  -> Pointer to the first character of the string on the heap (null terminated).
+/// `chars`  -> Pointer to the C string on the heap (null terminated).
 /// `length` -> Length of the string.
 /// `hash` ->  Unlike other objects, a string's hash is computed by walking over it's characters.
 class String : public Obj {

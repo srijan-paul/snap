@@ -33,7 +33,7 @@ using VT = ValueType;
 VM::VM(const std::string* src) : m_source{src} {
 }
 
-#define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) and !(SNAP_AS_BOOL(v))) || SNAP_IS_NIL(v))
+#define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) and !(SNAP_AS_BOOL(v))) or SNAP_IS_NIL(v))
 #define IS_VAL_TRUTHY(v) (!IS_VAL_FALSY(v))
 
 #define BINOP_ERROR(op, v1, v2)                                                                    \

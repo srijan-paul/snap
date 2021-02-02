@@ -62,7 +62,7 @@ class VM {
 	/// message as a c string.
 	ErrorFn log_error = default_error_fn;
 
-	inline Value peek(u8 depth = 0) {
+	inline Value peek(u8 depth = 0) const {
 		return *(sp - 1 - depth);
 	}
 

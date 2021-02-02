@@ -10,7 +10,6 @@ class Scanner {
   public:
 	Scanner(const std::string* src) : source{src} {};
 	Token next_token();
-	TokenType kw_or_id_type() const;
 
   private:
 	const std::string* source;
@@ -36,6 +35,7 @@ class Scanner {
 	}
 
 	TokenType check_kw_chars(const char* rest, u32 offset, u32 length, TokenType ttype) const;
+	TokenType kw_or_id_type() const;
 	Token make_token(TokenType type) const;
 	Token number();
 	Token make_string(char quote);
