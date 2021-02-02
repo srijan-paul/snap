@@ -41,6 +41,7 @@ struct Symbol {
 
 struct CompilerUpval {
 	int index = -1;
+	bool is_const = false;
 	bool is_local = false;
 };
 
@@ -60,7 +61,7 @@ struct SymbolTable {
 
 	// add an upvalue to the `m_upvals` array, if it exists already
 	// then don't add a copy, instead return the index.
-	int add_upvalue(u8 index, bool is_local);
+	int add_upvalue(u8 index, bool is_local, bool is_const);
 	// takes in the index of a local variable and returns it's Symbol info.
 	Symbol* find_by_slot(const u8 offset);
 };

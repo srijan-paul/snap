@@ -40,7 +40,7 @@ Compiler::Compiler(VM* vm, Compiler* parent, const String* name) : m_vm{vm}, m_p
 	m_scanner = m_parent->m_scanner;
 	m_proto = &m_vm->make<Prototype>(name);
 
-  m_symtable.add(name->chars, name->length, false);
+	m_symtable.add(name->chars, name->length, false);
 
 	m_source = parent->m_source;
 	vm->m_compiler = this;
@@ -68,7 +68,6 @@ Prototype* Compiler::compile() {
 
 Prototype* Compiler::compile_func() {
 	test(TT::LCurlBrace, "Expected '{' before function body.");
-
 
 	block_stmt();
 	m_proto->num_upvals = m_symtable.num_upvals;
@@ -154,7 +153,7 @@ void Compiler::fn_decl() {
 	String* fname = &m_vm->make<String>(name_token.raw_cstr(m_source), name_token.length());
 
 	func_expr(fname);
-  new_variable(name_token);
+	new_variable(name_token);
 }
 
 /// Compiles the body of a function assuming everything until the
@@ -314,23 +313,24 @@ void Compiler::variable(bool can_assign) {
 	Op get_op = Op::get_var, set_op = Op::set_var;
 
 	int index = find_local_var(token);
+	bool is_const = (index == -1) ? false : m_symtable.find_by_slot(index)->is_const;
 
 	// if no local variable with that name was found then look for an
-	// upval.
+	// upvalue.
 	if (index == -1) {
 		index = find_upvalue(token);
 		get_op = Opcode::get_upval;
 		set_op = Opcode::set_upval;
+		is_const = (index == -1) ? false : m_symtable.m_upvals[index].is_const;
 	}
 
 	if (can_assign && match(TT::Eq)) {
-		// const Symbol* local = m_symtable.find_by_slot(index);
-		// if (local->is_const) {
-		// 	std::string message{"Cannot assign to variable '"};
-		// 	message = message + prev.raw(*m_source) + "' which is marked 'const'.";
-		// 	error_at_token(message.c_str(), token);
-		// 	has_error = false; // don't send the compiler into error recovery mode.
-		// }
+		if (is_const) {
+			std::string message{"Cannot assign to variable '"};
+			message = message + prev.raw(*m_source) + "' which is marked 'const'.";
+			error_at_token(message.c_str(), token);
+			has_error = false; // don't send the compiler into error recovery mode.
+		}
 
 		expr(); // compile assignment RHS
 		emit_bytes(set_op, static_cast<Op>(index), token);
@@ -487,8 +487,9 @@ int Compiler::find_upvalue(const Token& token) {
 	// If found the local var, then add it to the upvalues list.
 	// and mark the upvalue is "local".
 	if (index != -1) {
-		m_parent->m_symtable.m_symbols[index].is_captured = true;
-		return m_symtable.add_upvalue(index, true);
+		Symbol& symbol = m_parent->m_symtable.m_symbols[index];
+		symbol.is_captured = true;
+		return m_symtable.add_upvalue(index, true, symbol.is_const);
 	}
 
 	// If not found within the parent compiler's local vars
@@ -499,7 +500,7 @@ int Compiler::find_upvalue(const Token& token) {
 	// upvalues list and return it.
 	if (index != -1) {
 		// is not local since we found it in an enclosing compiler.
-		return m_symtable.add_upvalue(index, false);
+		return m_symtable.add_upvalue(index, false, m_parent->m_symtable.m_upvals[index].is_const);
 	}
 
 	return -1;
@@ -601,7 +602,7 @@ Symbol* SymbolTable::find_by_slot(const u8 index) {
 	return &m_symbols[index];
 }
 
-int SymbolTable::add_upvalue(u8 index, bool is_local) {
+int SymbolTable::add_upvalue(u8 index, bool is_local, bool is_const) {
 	// If the upvalue has already been cached, then return the stored value.
 	for (int i = 0; i < num_upvals; ++i) {
 		CompilerUpval& upval = m_upvals[i];
@@ -610,8 +611,11 @@ int SymbolTable::add_upvalue(u8 index, bool is_local) {
 		}
 	}
 
-	m_upvals[num_upvals].index = index;
-	m_upvals[num_upvals].is_local = is_local;
+	CompilerUpval& upval = m_upvals[num_upvals];
+
+	upval.index = index;
+	upval.is_local = is_local;
+	upval.is_const = is_const;
 	return num_upvals++;
 }
 
