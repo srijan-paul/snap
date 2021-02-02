@@ -85,7 +85,7 @@ class Compiler {
 	/// the everything up to the functions body.
 	/// @param parent The parent compiler that created this compiler. Used for looking up upvalues.
 	/// @param fname name of the function that this compiler is commpiling into.
-	Compiler(VM* vm, Compiler* parent, String* fname);
+	Compiler(VM* vm, Compiler* parent, const String* fname);
 
 	~Compiler();
 
@@ -179,6 +179,7 @@ class Compiler {
 	void primary(bool can_assign);	// literal | id
 	void variable(bool can_assign);
 	void literal();
+	void func_expr(const String* fname);
 
 	void enter_block();
 	// Exit the current scope, popping all local

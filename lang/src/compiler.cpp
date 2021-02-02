@@ -36,13 +36,13 @@ Compiler::Compiler(VM* vm, const std::string* src) : m_vm{vm}, m_source{src} {
 	m_proto = &vm->make<Prototype>(fname);
 }
 
-Compiler::Compiler(VM* vm, Compiler* parent, String* name) : m_vm{vm}, m_parent{parent} {
+Compiler::Compiler(VM* vm, Compiler* parent, const String* name) : m_vm{vm}, m_parent{parent} {
 	m_scanner = m_parent->m_scanner;
 	m_proto = &m_vm->make<Prototype>(name);
-	m_symtable.add(name->chars, name->length, false);
+
+  m_symtable.add(name->chars, name->length, false);
 
 	m_source = parent->m_source;
-
 	vm->m_compiler = this;
 
 	prev = parent->prev;
@@ -68,6 +68,7 @@ Prototype* Compiler::compile() {
 
 Prototype* Compiler::compile_func() {
 	test(TT::LCurlBrace, "Expected '{' before function body.");
+
 
 	block_stmt();
 	m_proto->num_upvals = m_symtable.num_upvals;
@@ -151,9 +152,17 @@ void Compiler::fn_decl() {
 
 	Token name_token = token;
 	String* fname = &m_vm->make<String>(name_token.raw_cstr(m_source), name_token.length());
-	expect(TT::LParen, "Expected '(' before function parameters.");
 
+	func_expr(fname);
+  new_variable(name_token);
+}
+
+/// Compiles the body of a function assuming everything until the
+/// the opening parenthesis has been consumed.
+void Compiler::func_expr(const String* fname) {
 	Compiler compiler{m_vm, this, fname};
+
+	compiler.expect(TT::LParen, "Expected '(' before function parameters.");
 
 	if (!compiler.check(TT::RParen)) {
 		do {
@@ -176,12 +185,9 @@ void Compiler::fn_decl() {
 		emit(static_cast<Op>(upval.index));
 	}
 
-
 #ifdef SNAP_DEBUG_DISASSEMBLY
 	disassemble_block(proto->name->chars, proto->m_block);
 #endif
-
-	new_variable(name_token);
 
 	prev = compiler.prev;
 	token = compiler.token;
@@ -191,7 +197,7 @@ void Compiler::fn_decl() {
 void Compiler::ret_stmt() {
 	advance(); // eat the return keyword.
 	if (isLiteral(peek.type) || check(TT::Id) || check(TT::Bang) || check(TT::Minus) ||
-		check(TT::LParen)) {
+		check(TT::LParen) || check(TT::Fn)) {
 		expr();
 	} else {
 		emit(Op::load_nil);
@@ -282,6 +288,14 @@ void Compiler::grouping(bool can_assign) {
 void Compiler::primary(bool can_assign) {
 	if (isLiteral(peek.type)) {
 		literal();
+	} else if (match(TT::Fn)) {
+		constexpr const char* name = "<anonymous>";
+		const String* fname = &m_vm->make<String>(name, 11);
+		if (check(TT::LParen)) return func_expr(fname);
+		// Names of lambda expressions are simply ignored
+		// Unless found in a statement context.
+		expect(TT::Id, "Expected function name or '('.");
+		return func_expr(fname);
 	} else if (check(TT::Id)) {
 		variable(can_assign);
 	} else {

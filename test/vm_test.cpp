@@ -102,7 +102,8 @@ void fn_tests() {
 			return add
 		}
 		return adder(10)(20)
-	)", SNAP_NUM_VAL(30.0));
+	)",
+				SNAP_NUM_VAL(30));
 
 	test_return(R"(
 		fn x() {
@@ -118,7 +119,29 @@ void fn_tests() {
 			return y
 		}
 		return x()()()
-	)", SNAP_NUM_VAL(6.0));
+	)",
+				SNAP_NUM_VAL(6));
+
+	test_return(R"(
+		fn fib(n) {
+			if (n <= 1) return 1
+			return fib(n - 1) + fib(n - 2)
+		}
+		return fib(10)
+	)",
+				SNAP_NUM_VAL(89));
+
+	test_return(R"(
+		fn make_adder(x) {
+			return fn(y) {
+				return x + y
+			}
+		}
+
+		const add10 = make_adder(10)
+		return add10(-10)
+	)",
+				SNAP_NUM_VAL(0));
 }
 
 void vm_test() {

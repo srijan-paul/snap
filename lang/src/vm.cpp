@@ -3,7 +3,6 @@
 #include <compiler.hpp>
 #include <cstdarg>
 #include <cstdio>
-#include <memory>
 #include <stdio.h>
 #include <value.hpp>
 #include <vm.hpp>
@@ -279,7 +278,7 @@ ExitCode VM::run(bool run_till_end) {
 			close_upvalues_upto(m_current_frame->base);
 			sp = m_current_frame->base + 1;
 
-			pop(); // pop the function off the stack.
+			pop();
 			push(result);
 
 			m_frame_count--;

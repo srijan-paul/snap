@@ -8,19 +8,14 @@ using namespace snap;
 
 int main() {
 	std::string code = R"(
-		fn x() {
-			let a = 1
-			let b = 2
-			fn y() {
-				let c = 3
-				fn z() {
-					return a + b + c;
-				}
-				return z
+		fn make_barker() {
+			return fn() {
+				return "bow bow!"
 			}
-			return y
 		}
-		return x()()()
+
+		const barker = make_barker()
+		return barker()
 	)";
 
 	VM vm{&code};

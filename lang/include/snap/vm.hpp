@@ -59,7 +59,7 @@ class VM {
 	ExitCode interpret();
 
 	/// the function that snap uses to print stuff onto the console.
-	/// It is called whenever the `print function is called in snap source code.
+	/// It is called whenever the `print` function is called in snap source code.
 	PrintFn print = default_print_fn;
 
 	/// The function called when there is a compile or runtime error
@@ -84,7 +84,7 @@ class VM {
 		*(sp++) = value;
 	}
 
-	/// pops a value from the VM stack and returns it.
+	/// @brief pops a value from the VM stack and returns it.
 	inline Value pop() {
 		return *(--sp);
 	}
@@ -97,6 +97,11 @@ class VM {
 	ExitCode run(bool run_till_end = true);
 	const Block* block();
 
+  /// @brief makes an object of type [T], 
+	/// registers it with the VM and return a reference to
+	/// the newly created object.
+	/// The object is registered simply by attaching 
+	/// it to the head of the VM's object linked list.
 	template<typename T, typename... Args>
 	T& make(Args&&... args) {
 		T* object = new T(std::forward<Args>(args)...);
@@ -115,11 +120,16 @@ class VM {
 	std::size_t ip = 0;
 
 	// the VM maintains it's personal linked list of objects
-	// for garbage collection.
+	// for garbage collection. GC is achieved by walking over 
+	// this list, and removing all objects that have no other
+	// references anywhere else in the VM
 	Obj* m_gc_objects = nullptr;
 	std::vector<Obj*> m_gray_objects;
 
 	// VM's personal list of all open upvalues.
+	// This is a sorted linked list, the head
+	// contains the upvalue pointing to the 
+	// highest value on the stack.
 	Upvalue* m_open_upvals = nullptr;
 
 	CallFrame m_frames[MaxCallStack];
