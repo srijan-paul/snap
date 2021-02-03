@@ -8,7 +8,6 @@
 #include <chrono>
 #include <iostream>
 #include <string>
-#include <windows.h>
 
 // TODO: make this class thread safe, to enable parallel benchmarks.
 class Clock final {
