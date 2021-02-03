@@ -31,7 +31,7 @@ class Clock final {
 
 	~Clock() {
 		const auto dt = highres_clock::now() - m_start_time;
-		const auto dt_ms = std::chrono::duration<double>(dt).count() / m_num_runs;
+		const auto dt_ms = std::chrono::duration<float, std::milli>(dt).count() / m_num_runs;
 
 		std::cout << "[";
 
@@ -47,7 +47,7 @@ class Clock final {
 #endif
 		std::cout << std::fixed << dt_ms << "ms";
 
-#ifdef _WIN32 
+#ifdef _WIN32
 		SetConsoleTextAttribute(h_console, saved_attrs);
 #endif
 
