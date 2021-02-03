@@ -1,4 +1,4 @@
-#if defined(_WIN32) || defined(_WIN64)
+#ifdef _WIN32
 #define OS_WINDOWS
 #define WIN_CONSOLE_COLOR_GREEN 0x02
 #include <windows.h>
@@ -55,4 +55,4 @@ class Clock final {
 	}
 };
 
-#undef OS_WINDOWS 
+#undef OS_WINDOWS
