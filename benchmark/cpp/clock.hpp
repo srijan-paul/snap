@@ -1,5 +1,6 @@
+#pragma once
+
 #ifdef _WIN32
-#define OS_WINDOWS
 #define WIN_CONSOLE_COLOR_GREEN 0x02
 #include <windows.h>
 #endif
@@ -35,7 +36,7 @@ class Clock final {
 
 		std::cout << "[";
 
-#ifdef OS_WINDOWS
+#ifdef _WIN32
 		HANDLE h_console = GetStdHandle(STD_OUTPUT_HANDLE);
 		CONSOLE_SCREEN_BUFFER_INFO console_info;
 		WORD saved_attrs;
@@ -47,12 +48,10 @@ class Clock final {
 #endif
 		std::cout << std::fixed << dt_ms << "ms";
 
-#ifdef OS_WINDOWS
+#ifdef _WIN32 
 		SetConsoleTextAttribute(h_console, saved_attrs);
 #endif
 
 		std::cout << "] " << m_message << std::endl;
 	}
 };
-
-#undef OS_WINDOWS
