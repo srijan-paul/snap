@@ -164,14 +164,14 @@ ExitCode VM::run(bool run_till_end) {
 		case Op::eq: {
 			Value a = pop();
 			Value b = pop();
-			push(SNAP_BOOL_VAL(Value::are_equal(a, b)));
+			push(SNAP_BOOL_VAL(a == b));
 			break;
 		}
 
 		case Op::neq: {
 			Value a = pop();
 			Value b = pop();
-			push(SNAP_BOOL_VAL(!Value::are_equal(a, b)));
+			push(SNAP_BOOL_VAL(a != b));
 			break;
 		}
 

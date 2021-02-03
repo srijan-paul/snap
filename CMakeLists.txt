@@ -42,3 +42,9 @@ endfunction()
 PREPARE_TEST(scanner_test ScannerTests "scanner_test.cpp")
 PREPARE_TEST(compiler_test CompilerTests "compiler_test.cpp")
 PREPARE_TEST(vm_test VMTest "vm_test.cpp")
+
+# benchmarks
+set(BENCHMARK_SUITE "benchmark")
+add_executable(${BENCHMARK_SUITE} ${CMAKE_CURRENT_SOURCE_DIR}/benchmark/cpp/benchmark.cpp)
+LINK_SNAP_DEPS(${BENCHMARK_SUITE})
+target_compile_features(${BENCHMARK_SUITE} PRIVATE cxx_std_17)

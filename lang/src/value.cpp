@@ -63,7 +63,7 @@ const char* Value::type_name() const {
 	}
 }
 
-bool Value::are_equal(Value a, Value b) {
+bool operator==(const Value& a, const Value& b) {
 	if (a.tag != b.tag) return false;
 	switch (a.tag) {
 	case VT::Number: return b.as_num() == a.as_num();
@@ -71,6 +71,10 @@ bool Value::are_equal(Value a, Value b) {
 	case VT::Object: return a.as_object() == b.as_object();
 	default: return false;
 	}
+}
+
+bool operator!=(const Value&a, const Value& b) {
+	return !(a == b);
 }
 
 } // namespace snap

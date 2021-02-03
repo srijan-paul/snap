@@ -85,9 +85,10 @@ struct Value {
 	std::string name_str() const;
 	const char* name_cstr() const;
 	const char* type_name() const;
-
-	static bool are_equal(Value a, Value b);
 };
+
+bool operator==(const Value& a, const Value& b);
+bool operator!=(const Value& a, const Value& b);
 
 #define SNAP_SET_NUM(v, i)	  ((v).as.num = i)
 #define SNAP_SET_BOOL(v, b)	  ((v).as.boolean = b)

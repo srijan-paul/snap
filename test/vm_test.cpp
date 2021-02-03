@@ -6,7 +6,7 @@
 using namespace snap;
 
 void assert_val_eq(Value& expected, Value actual) {
-	if (!Value::are_equal(expected, actual)) {
+	if (expected != actual) {
 		fprintf(stderr, "Expected value to be: ");
 		print_value(expected);
 		fprintf(stderr, " But got:  ");
