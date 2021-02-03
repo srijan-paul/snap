@@ -11,7 +11,7 @@ using Op = Opcode;
 
 static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)> op_strs = {
 	"load_const",
-
+	"make_table",
 	"set_var",
 	"get_var",
 	"set_upval",
@@ -41,6 +41,8 @@ static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)>
 	"load_nil",
 	"close_upval",
 	"return_val",
+	"table_set",
+	"table_set_safe",
 
 	"jmp",
 	"jmp_if_false_or_pop",
@@ -108,14 +110,14 @@ std::size_t disassemble_instr(const Block& block, Op op, std::size_t offset) {
 		std::printf("%-4zu  %-22s  ", offset++, op2s(op));
 		print_value(block.constant_pool[(size_t)block.code[offset]]);
 		std::printf("\n");
-		
+
 		u8 num_upvals = static_cast<u8>(block.code[++offset]);
 		for (int i = 0; i < num_upvals; ++i) {
 			bool is_local = static_cast<bool>(block.code[offset++]);
 			if (is_local) {
 				int idx = static_cast<int>(block.code[++offset]);
-				std::printf("        %-4zu  %-22s  %s %d\n", offset - 1, " ", is_local ? "local" : "upvalue",
-							idx);
+				std::printf("        %-4zu  %-22s  %s %d\n", offset - 1, " ",
+							is_local ? "local" : "upvalue", idx);
 			}
 		}
 		return offset - old_loc + 1;

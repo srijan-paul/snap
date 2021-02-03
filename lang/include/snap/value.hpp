@@ -5,7 +5,7 @@
 
 namespace snap {
 
-enum class ObjType : u8 { string, proto, func, upvalue };
+enum class ObjType : u8 { string, proto, func, upvalue, table };
 
 using StackId = Value*;
 
@@ -94,10 +94,11 @@ bool operator!=(const Value& a, const Value& b);
 #define SNAP_SET_BOOL(v, b)	  ((v).as.boolean = b)
 #define SNAP_SET_OBJECT(v, o) ((v).as.object = o)
 
-#define SNAP_NUM_VAL(n)	   (snap::Value(static_cast<number>(n)))
-#define SNAP_BOOL_VAL(b)   (snap::Value(static_cast<bool>(b)))
-#define SNAP_NIL_VAL	   (snap::Value())
-#define SNAP_OBJECT_VAL(o) (snap::Value(static_cast<Obj*>(o)))
+#define SNAP_NUM_VAL(n)		 (snap::Value(static_cast<number>(n)))
+#define SNAP_BOOL_VAL(b)	 (snap::Value(static_cast<bool>(b)))
+#define SNAP_CONST_OBJECT(o) (snap::Value(static_cast<const Obj*>(o)))
+#define SNAP_OBJECT_VAL(o)	 (snap::Value(static_cast<Obj*>(o)))
+#define SNAP_NIL_VAL		 (snap::Value())
 
 #define SNAP_IS_NUM(v)	  ((v).tag == snap::ValueType::Number)
 #define SNAP_IS_BOOL(v)	  ((v).tag == snap::ValueType::Bool)

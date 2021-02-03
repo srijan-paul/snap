@@ -1,3 +1,4 @@
+#include "value.hpp"
 #include <string.hpp>
 
 // this hash function is from: https://craftinginterpreters.com/hash-tables.html
@@ -14,6 +15,8 @@ static uint32_t fnv1a(const char* key, int len) {
 
 namespace snap {
 
+using OT = ObjType;
+
 String::String(const char* chrs, std::size_t len) : Obj(ObjType::string), m_length{len} {
 	char* buf = new char[len + 1];
 	std::memcpy(buf, chrs, len);
@@ -29,6 +32,7 @@ String::String(const String* left, const String* right): Obj(ObjType::string), m
 
 	m_chars = buf;
 }
+
 
 s32 String::hash() {
 	m_hash = fnv1a(m_chars, m_length);

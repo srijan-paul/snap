@@ -10,6 +10,10 @@ namespace snap {
 enum class Opcode : u8 {
 	// opcodes with a constant operand
 	load_const,
+	// take the table object from the
+	// constant pool and  push it on
+	// top of the stack.
+	make_table,
 
 	// opcodes with one operand
 	set_var,
@@ -42,6 +46,14 @@ enum class Opcode : u8 {
 	load_nil,
 	close_upval,
 	return_val,
+	/// Set a table's key to some value.
+	/// Table, Key and Value are expected 
+	/// to be in this order: [<table>, <key>, <value>]
+	table_set,
+	/// same as table_set, but here the value at stack depth
+	/// 3 is guaranteed to be a table, hence no runtime check
+	/// is required.
+	table_set_safe,
 
 	// opcodes with 2 operands
 	jmp,
@@ -54,10 +66,10 @@ enum class Opcode : u8 {
 /// numerically lowest opcode that takes no operands
 constexpr auto Op_0_operands_start = Opcode::pop;
 /// numerically highest opcode that takes no operands
-constexpr auto Op_0_operands_end = Opcode::return_val;
+constexpr auto Op_0_operands_end = Opcode::table_set_safe;
 
 constexpr auto Op_const_start = Opcode::load_const;
-constexpr auto Op_const_end = Opcode::load_const;
+constexpr auto Op_const_end = Opcode::make_table;
 
 /// numerically lowest opcode that takes one operand
 constexpr auto Op_1_operands_start = Opcode::set_var;

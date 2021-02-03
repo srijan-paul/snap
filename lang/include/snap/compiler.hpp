@@ -160,7 +160,7 @@ class Compiler {
 	void fn_decl();
 	void ret_stmt();
 
-	void expr();
+	void expr(bool can_assign = true);
 
 	void logic_or(bool can_assign);	 // ||
 	void logic_and(bool can_assign); // &&
@@ -182,6 +182,7 @@ class Compiler {
 	void variable(bool can_assign);
 	void literal();
 	void func_expr(const String* fname);
+	void table();
 
 	void enter_block();
 	// Exit the current scope, popping all local

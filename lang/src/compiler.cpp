@@ -1,4 +1,5 @@
 #include "debug.hpp"
+#include "table.hpp"
 #include "token.hpp"
 #include "value.hpp"
 #include <compiler.hpp>
@@ -211,8 +212,8 @@ void Compiler::expr_stmt() {
 	match(TT::Semi);
 }
 
-void Compiler::expr() {
-	logic_or(true);
+void Compiler::expr(bool can_assign) {
+	logic_or(can_assign);
 }
 
 void Compiler::logic_or(bool can_assign) {
@@ -297,6 +298,8 @@ void Compiler::primary(bool can_assign) {
 		return func_expr(fname);
 	} else if (check(TT::Id)) {
 		variable(can_assign);
+	} else if (match(TT::LCurlBrace)) {
+		table();
 	} else {
 		const std::string raw = peek.raw(*m_source);
 		const char fmt[] = "Unexpected '%s'.";
@@ -305,6 +308,38 @@ void Compiler::primary(bool can_assign) {
 		sprintf(buf.get(), fmt, raw.c_str());
 		error_at(buf.get(), peek.location.line);
 	}
+}
+
+/// @brief compiles a table, assuming the opening '{' has been
+/// consumed.
+void Compiler::table() {
+	const int index = emit_value(&m_vm->make<Table>());
+	emit_bytes(Op::load_const, static_cast<Op>(index), token);
+
+	do {
+		if (match(TT::LSqBrace)) {
+			expr(false);
+			expect(TT::RSqBrace, "Expected ']' near table key.");
+		} else {
+			expect(TT::Id, "Expected identifier as table key.");
+			String* key_string = &m_vm->make<String>(token.raw(*m_source).c_str(), token.length());
+			const int key_idx = emit_value(key_string);
+			emit_bytes(Op::load_const, static_cast<Op>(key_idx), token);
+		}
+
+		expect(TT::Colon, "Expected ':' after table key.");
+		expr(false);
+		emit(Op::table_set_safe);
+
+		if (check(TT::RCurlBrace)) break;
+	} while (!eof() and match(TT::Comma));
+
+	if (eof()) {
+		error("Reached end of file while compiling.");
+		return;
+	}
+
+	expect(TT::RCurlBrace, "Expected '}' to close table, or ',' to separate entry.");
 }
 
 void Compiler::variable(bool can_assign) {

@@ -29,18 +29,15 @@ std::string Value::name_str() const {
 		const Obj* obj = as_object();
 
 		switch (obj->tag) {
-		case ObjType::string: return SNAP_AS_CSTRING(*this);
-		case ObjType::func: {
-			return std::string("[function ") + static_cast<const Function*>(obj)->name_cstr() +
+		case OT::string: return SNAP_AS_CSTRING(*this);
+		case OT::func:
+			return std::string("[function ") + static_cast<const Function*>(obj)->name_cstr() + "]";
+		case OT::proto:
+			return std::string("[prototype ") + static_cast<const Prototype*>(obj)->name_cstr() +
 				   "]";
-		}
-		case ObjType::proto: {
-			return std::string("[prototype ") +
-				   static_cast<const Prototype*>(obj)->name_cstr() + "]";
-		}
-		case ObjType::upvalue: {
-			return static_cast<const Upvalue*>(obj)->value->name_str();
-		}
+		case OT::upvalue: return static_cast<const Upvalue*>(obj)->value->name_str();
+		case OT::table: return "[table]";
+
 		default: return "<snap object>";
 		}
 	}
@@ -73,7 +70,7 @@ bool operator==(const Value& a, const Value& b) {
 	}
 }
 
-bool operator!=(const Value&a, const Value& b) {
+bool operator!=(const Value& a, const Value& b) {
 	return !(a == b);
 }
 
