@@ -4,11 +4,7 @@ project(snap VERSION ${APP_VERSION})
 set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lang/src")
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${SOURCE_DIR}/*.cpp")
 set(INCLUDE_DIR lang/include/snap)
-add_compile_options(
-  "-Wall" "-Wpedantic" "-Wextra" "-fexceptions"
-  "$<$<CONFIG:DEBUG>:-O0;-g3;-ggdb>" "-g"
-)
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+add_compile_options("-Wall" "-Wpedantic" "-Wextra" "-fexceptions")
 enable_testing()
 
 function(LINK_SNAP_DEPS EXEC)

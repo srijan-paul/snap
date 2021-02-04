@@ -3,12 +3,12 @@
 #include <compiler.hpp>
 #include <cstdarg>
 #include <cstdio>
-#include <stdio.h>
-#include <value.hpp>
-#include <string.hpp>
 #include <function.hpp>
-#include <vm.hpp>
+#include <stdio.h>
+#include <string.hpp>
 #include <upvalue.hpp>
+#include <value.hpp>
+#include <vm.hpp>
 
 #if defined(SNAP_DEBUG_RUNTIME) || defined(SNAP_DEBUG_DISASSEMBLY)
 #include <debug.hpp>
@@ -262,9 +262,36 @@ ExitCode VM::run(bool run_till_end) {
 			break;
 		}
 
+		case Op::table_set_safe: {
+			Value value = pop();
+			Value key = pop();
+
+			if (SNAP_GET_TT(key) == VT::Nil) {
+				return runtime_error("Table key cannot be nil.");
+			}
+
+			SNAP_AS_TABLE(PEEK(1))->set(key, value);
+			break;
+		}
+
+		case Op::table_set: {
+			Value value = pop();
+			Value key = pop();
+
+			Value& tvalue = PEEK(1);
+			if (SNAP_IS_OBJECT(tvalue) && SNAP_AS_OBJECT(tvalue)->tag == ObjType::table) {
+				SNAP_AS_TABLE(tvalue)->set(key, value);
+				if (SNAP_GET_TT(key) == VT::Nil) {
+					return runtime_error("Table key cannot be nil.");
+				}
+			} else {
+				return runtime_error("Attempt to index a %s value", SNAP_TYPE_CSTR(tvalue));
+			}
+			break;
+		}
+
 		case Op::pop_jmp_if_false: {
-			Value& value = PEEK(1);
-			ip += IS_VAL_FALSY(value) ? FETCH_SHORT() : 2;
+			ip += IS_VAL_FALSY(PEEK(1)) ? FETCH_SHORT() : 2;
 			pop();
 			break;
 		}

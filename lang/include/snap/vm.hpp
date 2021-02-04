@@ -1,5 +1,6 @@
 #pragma once
 #include "compiler.hpp"
+#include "table.hpp"
 #include <cstdarg>
 #include <cstddef>
 #include <functional>

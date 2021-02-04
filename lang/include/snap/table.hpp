@@ -16,7 +16,7 @@ class Table : public Obj {
   public:
 	explicit Table() : Obj(ObjType::table){};
 	Value get(const Value& key) const;
-	Value set(const Value& key, Value value);
+	void set(const Value& key, Value value);
 };
 
 } // namespace snap

@@ -113,6 +113,7 @@ bool operator!=(const Value& a, const Value& b);
 #define SNAP_AS_FUNCTION(v) (static_cast<snap::Function*>(SNAP_AS_OBJECT(v)))
 #define SNAP_AS_STRING(v)	(static_cast<snap::String*>(SNAP_AS_OBJECT(v)))
 #define SNAP_AS_CSTRING(v)	((SNAP_AS_STRING(v))->c_str())
+#define SNAP_AS_TABLE(v)	(static_cast<Table*>(SNAP_AS_OBJECT(v)))
 
 #define SNAP_SET_TT(v, tt) ((v).tag = tt)
 #define SNAP_GET_TT(v)	   ((v).tag)

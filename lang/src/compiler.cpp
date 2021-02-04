@@ -498,8 +498,8 @@ void Compiler::error(const char* fmt...) {
 	va_end(args);
 }
 
-size_t Compiler::emit_string(const Token& token) {
-	size_t length = token.length() - 2; // minus the quotes
+std::size_t Compiler::emit_string(const Token& token) {
+	std::size_t length = token.length() - 2; // minus the quotes
 	// +1 to skip the openening quote.
 	String& string = m_vm->make<String>(token.raw_cstr(m_source) + 1, length);
 	return emit_value(SNAP_OBJECT_VAL(&string));
