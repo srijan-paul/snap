@@ -67,6 +67,17 @@ static void expr_tests() {
 	// test precedence
 
 	test_code("let a = 5 > 2 && 3 > -10", 8, SNAP_BOOL_VAL(true));
+
+	// test string equality
+	test_return("return 'abc' == 'abc'", SNAP_BOOL_VAL(true));
+	test_return(R"(
+		const a = 'abcde'
+		const b = "abcde"
+		const c = 'aa'
+		const d = 'bb'
+
+		return a == b and c..d == 'aabb'
+	)", SNAP_BOOL_VAL(true));
 }
 
 static void stmt_tests() {

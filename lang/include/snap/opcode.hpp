@@ -10,10 +10,10 @@ namespace snap {
 enum class Opcode : u8 {
 	// opcodes with a constant operand
 	load_const,
-	// take the table object from the
-	// constant pool and  push it on
-	// top of the stack.
-	make_table,
+	// reads the next opcode as an index
+	// then attempts to get `constant_pool[index]`
+	// field of TOS.
+	index_fast,
 
 	// opcodes with one operand
 	set_var,
@@ -54,6 +54,10 @@ enum class Opcode : u8 {
 	/// 3 is guaranteed to be a table, hence no runtime check
 	/// is required.
 	table_set_safe,
+	// assuming TOS as the field 
+	// and PEEK(1) as the table/array, 
+	// push PEEK(1)[TOS], popping TOS.
+	index,
 
 	// opcodes with 2 operands
 	jmp,
@@ -66,10 +70,10 @@ enum class Opcode : u8 {
 /// numerically lowest opcode that takes no operands
 constexpr auto Op_0_operands_start = Opcode::pop;
 /// numerically highest opcode that takes no operands
-constexpr auto Op_0_operands_end = Opcode::table_set_safe;
+constexpr auto Op_0_operands_end = Opcode::index;
 
 constexpr auto Op_const_start = Opcode::load_const;
-constexpr auto Op_const_end = Opcode::make_table;
+constexpr auto Op_const_end = Opcode::index_fast;
 
 /// numerically lowest opcode that takes one operand
 constexpr auto Op_1_operands_start = Opcode::set_var;

@@ -27,4 +27,6 @@ class String : public Obj {
 	~String();
 };
 
+bool operator==(const String& a, const String& b);
+
 } // namespace snap

@@ -290,6 +290,12 @@ ExitCode VM::run(bool run_till_end) {
 			break;
 		}
 
+		case Op::index_fast: {
+			Value& value = PEEK(1);
+			value = SNAP_AS_TABLE(value)->get(READ_VALUE());
+			break;
+		}
+
 		case Op::pop_jmp_if_false: {
 			ip += IS_VAL_FALSY(PEEK(1)) ? FETCH_SHORT() : 2;
 			pop();

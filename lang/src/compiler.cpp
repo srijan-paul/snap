@@ -247,7 +247,7 @@ void Compiler::unary(bool can_assign) {
 	if (check(TT::Bang) or check(TT::Minus)) {
 		advance();
 		const Token op_token = token;
-		call(false);
+		atomic(false);
 		switch (op_token.type) {
 		case TT::Bang: emit(Op::lnot, op_token); break;
 		case TT::Minus: emit(Op::negate, op_token); break;
@@ -255,25 +255,52 @@ void Compiler::unary(bool can_assign) {
 		}
 		return;
 	}
-	call(can_assign);
+	atomic(can_assign);
 }
 
-void Compiler::call(bool can_assign) {
+void Compiler::atomic(bool can_assign) {
 	grouping(can_assign);
+	suffix_expr(can_assign);
+}
 
-	while (!eof() and match(TT::LParen)) {
-		u8 argc = 0;
-
-		if (!check(TT::RParen)) {
-			do {
-				argc++;
-				expr(); // push the arguments on the stack,
-			} while (match(TT::Comma));
+void Compiler::suffix_expr(bool can_assign) {
+	while (true) {
+		switch (peek.type) {
+		case TT::LSqBrace: {
+			advance();
+			expr(false);
+			expect(TT::RSqBrace, "Expected ']' to close index expression.");
+			emit(Op::index);
+			if (can_assign and match(TT::Eq)) {
+			}
+			break;
 		}
-
-		expect(TT::RParen, "Expected ')' after call.");
-		emit_bytes(Op::call_func, static_cast<Op>(argc), token.location.line);
+		case TT::LParen: call_args(); break;
+		case TT::Dot: {
+			advance();
+			expect(TT::Id, "Expected field name.");
+			u8 index = emit_id_string(token);
+			emit(Op::index_fast, static_cast<Op>(index));
+			break;
+		}
+		default: return;
+		}
 	}
+}
+
+void Compiler::call_args() {
+	advance(); // eat opening '('
+	u8 argc = 0;
+
+	if (!check(TT::RParen)) {
+		do {
+			argc++;
+			expr(); // push the arguments on the stack,
+		} while (match(TT::Comma));
+	}
+
+	expect(TT::RParen, "Expected ')' after call.");
+	emit(Op::call_func, static_cast<Op>(argc));
 }
 
 void Compiler::grouping(bool can_assign) {
@@ -384,14 +411,14 @@ void Compiler::literal() {
 	case TT::True: index = emit_value(SNAP_BOOL_VAL(true)); break;
 	case TT::False: index = emit_value(SNAP_BOOL_VAL(false)); break;
 	case TT::Nil: index = emit_value(SNAP_NIL_VAL); break;
-	default:;
+	default:; // impossible
 	}
 
 	if (index >= Compiler::MaxLocalVars) {
 		error_at_token("Too many literal constants in one function.", token);
 	}
 
-	emit_bytes(Op::load_const, static_cast<Op>(index), token);
+	emit(Op::load_const, static_cast<Op>(index));
 }
 
 void Compiler::recover() {
@@ -498,11 +525,16 @@ void Compiler::error(const char* fmt...) {
 	va_end(args);
 }
 
-std::size_t Compiler::emit_string(const Token& token) {
-	std::size_t length = token.length() - 2; // minus the quotes
+u32 Compiler::emit_string(const Token& token) {
+	u32 length = token.length() - 2; // minus the quotes
 	// +1 to skip the openening quote.
 	String& string = m_vm->make<String>(token.raw_cstr(m_source) + 1, length);
 	return emit_value(SNAP_OBJECT_VAL(&string));
+}
+
+u32 Compiler::emit_id_string(const Token& token) {
+	String* s = &m_vm->make<String>(token.raw(*m_source).c_str(), token.length());
+	return emit_value(SNAP_OBJECT_VAL(s));
 }
 
 int Compiler::find_local_var(const Token& name_token) {
@@ -565,6 +597,11 @@ inline void Compiler::emit_bytes(Op a, Op b, const Token& token) {
 inline void Compiler::emit_bytes(Op a, Op b, u32 line) {
 	emit(a, line);
 	emit(b, line);
+}
+
+inline void Compiler::emit(Op a, Op b) {
+	emit(a, token);
+	emit(b, token);
 }
 
 Op Compiler::toktype_to_op(TT toktype) {

@@ -65,7 +65,17 @@ bool operator==(const Value& a, const Value& b) {
 	switch (a.tag) {
 	case VT::Number: return b.as_num() == a.as_num();
 	case VT::Bool: return a.as_bool() == b.as_bool();
-	case VT::Object: return a.as_object() == b.as_object();
+	case VT::Object: {
+		const Obj* oa = a.as_object();
+		const Obj* ob = b.as_object();
+		if (oa->tag != ob->tag) return false;
+		if (oa->tag == OT::string) {
+			const String& sa = *static_cast<const String*>(oa);
+			const String& sb = *static_cast<const String*>(ob);
+			return sa == sb;
+			}
+		return oa == ob;
+	}
 	default: return false;
 	}
 }

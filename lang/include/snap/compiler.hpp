@@ -3,7 +3,6 @@
 #include "scanner.hpp"
 #include <array>
 
-
 namespace snap {
 
 struct Symbol {
@@ -89,14 +88,12 @@ class Compiler {
 	/// @return a function prototype containing the bytecode for the script.
 	Prototype* compile();
 
-
 	/// @brief If this compiler is compiling a function body, then
 	/// reserve a stack slot for the parameter, and add the parameter
 	/// name to the symbol table.
 	void add_param(const Token& token);
 
   private:
-
 	Prototype* m_proto;
 	Compiler* m_parent = nullptr;
 
@@ -143,7 +140,7 @@ class Compiler {
 
 	// Compile a function's body (if this is a child compiler).
 	Prototype* compile_func();
-	
+
 	// keep eating tokens until a token
 	// that may indicate the end of a block is
 	// found.
@@ -172,13 +169,14 @@ class Compiler {
 	void comparison(bool can_assign); // > >= < <=
 	void b_shift(bool can_assign);	  // >> <<
 
-	void sum(bool can_assign);		// + - ..
-	void mult(bool can_assign);		// * / %
-	void unary(bool can_assign);	// - + ! not
-	void index(bool can_assign);	// [] .
-	void call(bool can_assign);		// ()
-	void grouping(bool can_assign); // (expr)
-	void primary(bool can_assign);	// literal | id
+	void sum(bool can_assign);		   // + - ..
+	void mult(bool can_assign);		   // * / %
+	void unary(bool can_assign);	   // - + ! not
+	void atomic(bool can_assign);	   // (ID|'(' EXPR ')' ) SUFFIX*
+	void suffix_expr(bool can_assign); // [EXPR] | .ID | (ARGS)
+	void call_args();
+	void grouping(bool can_assign);	   // (expr)
+	void primary(bool can_assign);	   // literal | id
 	void variable(bool can_assign);
 	void literal();
 	void func_expr(const String* fname);
@@ -220,8 +218,10 @@ class Compiler {
 	inline void emit(Opcode op, const Token& token);
 	void emit_bytes(Opcode a, Opcode b, u32 line);
 	void emit_bytes(Opcode a, Opcode b, const Token& token);
+	void emit(Opcode a, Opcode b);
 	size_t emit_value(Value value);
-	size_t emit_string(const Token& token);
+	u32 emit_string(const Token& token);
+	u32 emit_id_string(const Token& token);
 
 	/// returns the corresponding bytecode
 	/// from a token. e.g- TokenType::Add

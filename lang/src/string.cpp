@@ -1,4 +1,5 @@
 #include "value.hpp"
+#include <cstring>
 #include <string.hpp>
 
 // this hash function is from: https://craftinginterpreters.com/hash-tables.html
@@ -24,7 +25,8 @@ String::String(const char* chrs, std::size_t len) : Obj(ObjType::string), m_leng
 	m_chars = buf;
 }
 
-String::String(const String* left, const String* right): Obj(ObjType::string), m_length(left->m_length + right->m_length) {
+String::String(const String* left, const String* right)
+	: Obj(ObjType::string), m_length(left->m_length + right->m_length) {
 	char* buf = new char[m_length + 1];
 	buf[m_length] = '\0';
 	std::memcpy(buf, left->m_chars, left->m_length);
@@ -32,7 +34,6 @@ String::String(const String* left, const String* right): Obj(ObjType::string), m
 
 	m_chars = buf;
 }
-
 
 s32 String::hash() {
 	m_hash = fnv1a(m_chars, m_length);
@@ -49,6 +50,11 @@ String* String::concatenate(const String* left, const String* right) {
 	return new String(buf, length);
 }
 
+bool operator==(const String& a, const String& b) {
+	if (a.m_length != b.m_length) return false;
+	return std::memcmp(a.c_str(), b.c_str(), a.m_length) == 0;
+}
+
 const char* String::c_str() const {
 	return m_chars;
 }
@@ -57,4 +63,4 @@ String::~String() {
 	delete[] m_chars;
 }
 
-}
+} // namespace snap

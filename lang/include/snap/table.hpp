@@ -10,7 +10,7 @@ struct ValueHasher {
 	std::size_t operator()(const Value& value) const;
 };
 
-class Table : public Obj {
+class Table final : public Obj {
 	std::unordered_map<Value, Value, ValueHasher> m_entries;
 
   public:

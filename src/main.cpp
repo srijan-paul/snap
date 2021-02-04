@@ -8,10 +8,11 @@ using namespace snap;
 
 int main() {
 	std::string code = R"(
-		fn fib(n) {
-			if (n <= 1) return 1
-			return fib(n - 1) + fib(n - 2)
-		}	
+		const table = {
+			a: 1,
+			b: 2
+		}
+		return 1 + table.b	
 	)";
 
 	VM vm{&code};
