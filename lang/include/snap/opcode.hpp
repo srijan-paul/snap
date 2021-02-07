@@ -14,6 +14,9 @@ enum class Opcode : u8 {
 	// then attempts to get `constant_pool[index]`
 	// field of TOS.
 	index_fast,
+	// Uses the next opcode as an index to load a string `field`
+	// and sets PEEK(1)[field] = TOS
+	table_set_fast,
 
 	// opcodes with one operand
 	set_var,
@@ -47,16 +50,18 @@ enum class Opcode : u8 {
 	close_upval,
 	return_val,
 	/// Set a table's key to some value.
-	/// Table, Key and Value are expected 
+	/// Table, Key and Value are expected
 	/// to be in this order: [<table>, <key>, <value>]
 	table_set,
 	/// same as table_set, but here the value at stack depth
 	/// 3 is guaranteed to be a table, hence no runtime check
 	/// is required.
 	table_set_safe,
-	// assuming TOS as the field 
-	// and PEEK(1) as the table/array, 
-	// push PEEK(1)[TOS], popping TOS.
+
+	// assuming TOS as the field
+	// and PEEK(1) as the table/array,
+	// push field TOS of table PEEK(1)
+	// onto the stack, popping TOS.
 	index,
 
 	// opcodes with 2 operands

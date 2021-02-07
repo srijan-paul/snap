@@ -17,7 +17,7 @@ class String : public Obj {
 	String(const char* chrs, size_t len);
 	// creates a string that owns the characters `chrs`.
 	/// @param chrs pointer to the character buffer. Must be null terminated.
-	String(char* chrs) : Obj(ObjType::string), m_chars{chrs} {};
+	String(char* chrs);
 	/// @brief concatenates [left] and [right] into a string
 	String(const String* left, const String* right);
 

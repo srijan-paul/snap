@@ -22,6 +22,7 @@ String::String(const char* chrs, std::size_t len) : Obj(ObjType::string), m_leng
 	char* buf = new char[len + 1];
 	std::memcpy(buf, chrs, len);
 	buf[len] = '\0';
+	m_hash = fnv1a(buf, m_length);
 	m_chars = buf;
 }
 
@@ -31,8 +32,12 @@ String::String(const String* left, const String* right)
 	buf[m_length] = '\0';
 	std::memcpy(buf, left->m_chars, left->m_length);
 	std::memcpy(buf + left->m_length, right->m_chars, right->m_length);
-
+	m_hash = fnv1a(buf, m_length);
 	m_chars = buf;
+}
+
+String::String(char* chrs) : Obj(ObjType::string), m_chars{chrs}, m_length{strlen(chrs)} {
+	m_hash = fnv1a(chrs, m_length);
 }
 
 s32 String::hash() {
@@ -51,7 +56,7 @@ String* String::concatenate(const String* left, const String* right) {
 }
 
 bool operator==(const String& a, const String& b) {
-	if (a.m_length != b.m_length) return false;
+	if (a.m_length != b.m_length or a.m_hash != b.m_hash) return false;
 	return std::memcmp(a.c_str(), b.c_str(), a.m_length) == 0;
 }
 

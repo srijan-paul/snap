@@ -268,10 +268,12 @@ void Compiler::suffix_expr(bool can_assign) {
 		switch (peek.type) {
 		case TT::LSqBrace: {
 			advance();
-			expr(false);
+			expr();
 			expect(TT::RSqBrace, "Expected ']' to close index expression.");
-			emit(Op::index);
 			if (can_assign and match(TT::Eq)) {
+
+			} else {
+				emit(Op::index);
 			}
 			break;
 		}
@@ -280,7 +282,12 @@ void Compiler::suffix_expr(bool can_assign) {
 			advance();
 			expect(TT::Id, "Expected field name.");
 			u8 index = emit_id_string(token);
-			emit(Op::index_fast, static_cast<Op>(index));
+			if (can_assign && match(TT::Eq)) {
+				expr();
+				emit(Op::table_set_fast, static_cast<Op>(index));
+			} else {
+				emit(Op::index_fast, static_cast<Op>(index));
+			}
 			break;
 		}
 		default: return;

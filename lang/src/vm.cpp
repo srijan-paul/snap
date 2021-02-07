@@ -23,12 +23,14 @@
 #define GET_VAR(index)		  (m_current_frame->base[index])
 #define SET_VAR(index, value) (m_current_frame->base[index] = value)
 
+// PEEK(1) fetches the topmost value in the stack.
 #define PEEK(depth) sp[-depth]
 
 namespace snap {
 
 using Op = Opcode;
 using VT = ValueType;
+using OT = ObjType;
 
 VM::VM(const std::string* src) : m_source{src} {
 }
@@ -279,11 +281,23 @@ ExitCode VM::run(bool run_till_end) {
 			Value key = pop();
 
 			Value& tvalue = PEEK(1);
-			if (SNAP_IS_OBJECT(tvalue) && SNAP_AS_OBJECT(tvalue)->tag == ObjType::table) {
-				SNAP_AS_TABLE(tvalue)->set(key, value);
+			if (SNAP_IS_TABLE(tvalue)) {
 				if (SNAP_GET_TT(key) == VT::Nil) {
 					return runtime_error("Table key cannot be nil.");
 				}
+				SNAP_AS_TABLE(tvalue)->set(key, value);
+			} else {
+				return runtime_error("Attempt to index a %s value", SNAP_TYPE_CSTR(tvalue));
+			}
+			break;
+		}
+
+		case Op::table_set_fast: {
+			const Value& key = READ_VALUE();
+			Value value = pop();
+			Value& tvalue = PEEK(1);
+			if (SNAP_IS_TABLE(tvalue)) {
+				SNAP_AS_TABLE(tvalue)->set(key, value);
 			} else {
 				return runtime_error("Attempt to index a %s value", SNAP_TYPE_CSTR(tvalue));
 			}
@@ -293,6 +307,12 @@ ExitCode VM::run(bool run_till_end) {
 		case Op::index_fast: {
 			Value& value = PEEK(1);
 			value = SNAP_AS_TABLE(value)->get(READ_VALUE());
+			break;
+		}
+
+		case Op::index: {
+			Value key = pop();
+			sp[-1] = SNAP_AS_TABLE(PEEK(1))->get(pop());
 			break;
 		}
 

@@ -104,7 +104,8 @@ bool operator!=(const Value& a, const Value& b);
 #define SNAP_IS_BOOL(v)	  ((v).tag == snap::ValueType::Bool)
 #define SNAP_IS_NIL(v)	  ((v).tag == snap::ValueType::Nil)
 #define SNAP_IS_OBJECT(v) ((v).tag == snap::ValueType::Object)
-#define SNAP_IS_STRING(v) (SNAP_IS_OBJECT(v) && SNAP_AS_OBJECT(v)->tag == snap::ObjType::string)
+#define SNAP_IS_STRING(v) (SNAP_IS_OBJECT(v) and SNAP_AS_OBJECT(v)->tag == snap::ObjType::string)
+#define SNAP_IS_TABLE(v)  (SNAP_IS_OBJECT(v) and SNAP_AS_OBJECT(v)->tag == snap::ObjType::table)
 
 #define SNAP_AS_NUM(v)		((v).as.num)
 #define SNAP_AS_BOOL(v)		((v).as.boolean)

@@ -10,9 +10,13 @@ int main() {
 	std::string code = R"(
 		const table = {
 			a: 1,
-			b: 2
+			b: {
+				a: 100,
+				b: 2
+			} 
 		}
-		return 1 + table.b	
+		table.b = table.b.a + 1 
+		return 1 + table.b
 	)";
 
 	VM vm{&code};
