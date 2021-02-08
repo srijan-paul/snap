@@ -312,7 +312,7 @@ ExitCode VM::run(bool run_till_end) {
 
 		case Op::index: {
 			Value key = pop();
-			sp[-1] = SNAP_AS_TABLE(PEEK(1))->get(pop());
+			sp[-1] = SNAP_AS_TABLE(PEEK(1))->get(key);
 			break;
 		}
 

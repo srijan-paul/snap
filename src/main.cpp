@@ -8,15 +8,11 @@ using namespace snap;
 
 int main() {
 	std::string code = R"(
-		const table = {
-			a: 1,
-			b: {
-				a: 100,
-				b: 2
-			} 
+		fn Node(a, b) {
+			return  { data: a, next: b }
 		}
-		table.b = table.b.a + 1 
-		return 1 + table.b
+		const head = Node(10 Node(20))
+		return head.next.data
 	)";
 
 	VM vm{&code};

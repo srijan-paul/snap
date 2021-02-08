@@ -5,8 +5,9 @@
 
 using namespace snap;
 
-void assert_val_eq(Value& expected, Value actual) {
+void assert_val_eq(Value& expected, Value actual, const char* message = "Test failed! ") {
 	if (expected != actual) {
+		fprintf(stderr, "%s", message);
 		fprintf(stderr, "Expected value to be: ");
 		print_value(expected);
 		fprintf(stderr, " But got:  ");
@@ -77,7 +78,8 @@ static void expr_tests() {
 		const d = 'bb'
 
 		return a == b and c..d == 'aabb'
-	)", SNAP_BOOL_VAL(true));
+	)",
+				SNAP_BOOL_VAL(true));
 }
 
 static void stmt_tests() {
@@ -153,6 +155,48 @@ void fn_tests() {
 		return add10(-10)
 	)",
 				SNAP_NUM_VAL(0));
+
+	test_return(R"(
+		fn Node(a, b){
+			return fn(n) {
+				if n == 0 return a
+				return b
+			}
+		}
+
+		fn data(node) {
+			return node(0)
+		}
+
+		fn next(node) {
+			return node(1)
+		}
+
+		const head = Node(10, Node(20))
+		return data(next(head))
+	)",
+				SNAP_NUM_VAL(20));
+}
+
+void table_test() {
+	test_return(R"(
+		fn Node(a, b) {
+			return  { data: a, next: b }
+		}
+		const head = Node(10, Node(20))
+		return head.next.data
+	)", SNAP_NUM_VAL(20));
+
+	// setting table field names.
+	test_return(R"(
+		const t = {
+			k : 7 
+		}
+		let a = t.k
+		t.k = 3
+		return t.k +  a
+	)", SNAP_NUM_VAL(10));
+
 }
 
 void vm_test() {
