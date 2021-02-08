@@ -1,8 +1,6 @@
 #pragma once
 #include "string.hpp"
 #include "upvalue.hpp"
-#include "value.hpp"
-
 
 namespace snap {
 

@@ -7,8 +7,6 @@ namespace snap {
 
 enum class ObjType : u8 { string, proto, func, upvalue, table };
 
-using StackId = Value*;
-
 // Objects always live on the heap. A value which is an object contains a a pointer
 // to this data on the heap. The `tag` specifies what kind of object this is.
 struct Obj {

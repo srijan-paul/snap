@@ -38,9 +38,6 @@ VM::VM(const std::string* src) : m_source{src} {
 #define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) and !(SNAP_AS_BOOL(v))) or SNAP_IS_NIL(v))
 #define IS_VAL_TRUTHY(v) (!IS_VAL_FALSY(v))
 
-#define BINOP_ERROR(op, v1, v2)                                                                    \
-	runtime_error("Cannot use operator '%s' on operands of type '%s' and '%s'.", op,               \
-				  SNAP_TYPE_CSTR(v1), SNAP_TYPE_CSTR(v2))
 #define UNOP_ERROR(op, v)                                                                          \
 	runtime_error("Cannot use operator '%s' on type '%s'.", op, SNAP_TYPE_CSTR(v))
 
@@ -65,7 +62,7 @@ VM::VM(const std::string* src) : m_source{src} {
 			SNAP_SET_NUM(b, SNAP_AS_NUM(b) op SNAP_AS_NUM(a));                                     \
 			pop();                                                                                 \
 		} else {                                                                                   \
-			BINOP_ERROR(#op, b, a);                                                                \
+			binop_error(#op, b, a);                                                                \
 		}                                                                                          \
 	} while (false);
 
@@ -77,7 +74,7 @@ VM::VM(const std::string* src) : m_source{src} {
 		SNAP_SET_NUM(a, SNAP_CAST_INT(a) op SNAP_CAST_INT(b));                                     \
 		pop();                                                                                     \
 	} else {                                                                                       \
-		BINOP_ERROR(#op, a, b);                                                                    \
+		binop_error(#op, a, b);                                                                    \
 	}
 
 #ifdef SNAP_DEBUG_RUNTIME
@@ -124,7 +121,7 @@ ExitCode VM::run(bool run_till_end) {
 				SNAP_SET_NUM(b, SNAP_AS_NUM(b) / SNAP_AS_NUM(a));
 				pop();
 			} else {
-				BINOP_ERROR("/", b, a);
+				binop_error("/", b, a);
 			}
 			break;
 		}
@@ -136,7 +133,7 @@ ExitCode VM::run(bool run_till_end) {
 			if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {
 				SNAP_SET_NUM(b, fmod(SNAP_AS_NUM(b), SNAP_AS_NUM(a)));
 			} else {
-				BINOP_ERROR("%", b, a);
+				binop_error("%", b, a);
 			}
 
 			pop();
@@ -461,15 +458,14 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 }
 
 void VM::close_upvalues_upto(Value* last) {
-	Upvalue* current = m_open_upvals;
 
-	while (current != nullptr and current->value >= last) {
-
+	while (m_open_upvals != nullptr and m_open_upvals->value >= last) {
+		Upvalue* current = m_open_upvals;
 		// these two lines are the last rites of an
 		// upvalue, closing it.
 		current->closed = *current->value;
 		current->value = &current->closed;
-		current = current->next_upval;
+		m_open_upvals = current->next_upval;
 	}
 }
 

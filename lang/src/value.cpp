@@ -31,7 +31,7 @@ std::string Value::name_str() const {
 		switch (obj->tag) {
 		case OT::string: return SNAP_AS_CSTRING(*this);
 		case OT::func:
-			return std::string("[function ") + static_cast<const Function*>(obj)->name_cstr() + "]";
+			return std::string("[fn ") + static_cast<const Function*>(obj)->name_cstr() + "]";
 		case OT::proto:
 			return std::string("[prototype ") + static_cast<const Prototype*>(obj)->name_cstr() +
 				   "]";

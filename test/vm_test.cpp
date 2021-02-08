@@ -16,10 +16,10 @@ void assert_val_eq(Value& expected, Value actual, const char* message = "Test fa
 	}
 }
 
-static void test_return(const std::string&& code, Value expected) {
+static void test_return(const std::string&& code, Value expected, const char* message = "Test failed!") {
 	VM vm{&code};
 	vm.interpret();
-	assert_val_eq(expected, vm.return_value);
+	assert_val_eq(expected, vm.return_value, message);
 }
 
 /// Runs the next `op_count` instructions in the `code` string in a VM.
@@ -175,7 +175,7 @@ void fn_tests() {
 		const head = Node(10, Node(20))
 		return data(next(head))
 	)",
-				SNAP_NUM_VAL(20));
+				SNAP_NUM_VAL(20), "Linked list closure test.");
 }
 
 void table_test() {
@@ -185,7 +185,7 @@ void table_test() {
 		}
 		const head = Node(10, Node(20))
 		return head.next.data
-	)", SNAP_NUM_VAL(20));
+	)", SNAP_NUM_VAL(20), "Linked lists as tables test.");
 
 	// setting table field names.
 	test_return(R"(
