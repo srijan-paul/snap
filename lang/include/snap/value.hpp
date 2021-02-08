@@ -25,12 +25,7 @@ struct Obj {
 	virtual ~Obj() = default;
 };
 
-enum class ValueType {
-	Number,
-	Bool,
-	Object,
-	Nil,
-};
+enum class ValueType { Number, Bool, Object, Nil };
 
 struct Value {
 	ValueType tag;

@@ -1,0 +1,13 @@
+const child = {
+  name: "Bobo",
+  age: 10
+}
+
+const parent = {
+  name: "Papa",
+  age: 35,
+  race: "Human"
+}
+
+setmeta(child, parent)
+print(child.table)
