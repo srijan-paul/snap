@@ -13,4 +13,4 @@ func fib_test() {
   return clock.now() - start 
 }
 
-printf("Fibonacci snap: (ms) ", fib_test())
+print("Fibonacci snap: (ms) ", fib_test())
