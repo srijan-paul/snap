@@ -197,7 +197,7 @@ void Compiler::func_expr(const String* fname) {
 void Compiler::ret_stmt() {
 	advance(); // eat the return keyword.
 	if (isLiteral(peek.type) or check(TT::Id) or check(TT::Bang) or check(TT::Minus) or
-		check(TT::LParen) or check(TT::Fn)) {
+		check(TT::LParen) or check(TT::Fn) or check(TT::LCurlBrace)) {
 		expr();
 	} else {
 		emit(Op::load_nil);
@@ -347,9 +347,7 @@ void Compiler::primary(bool can_assign) {
 /// @brief compiles a table, assuming the opening '{' has been
 /// consumed.
 void Compiler::table() {
-	const int index = emit_value(&m_vm->make<Table>());
-	emit_bytes(Op::load_const, static_cast<Op>(index), token);
-
+	emit(Opcode::new_table);
 	do {
 		if (match(TT::LSqBrace)) {
 			expr(false);

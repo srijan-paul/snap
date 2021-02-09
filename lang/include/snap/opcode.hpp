@@ -64,6 +64,11 @@ enum class Opcode : u8 {
 	// onto the stack, popping TOS.
 	index,
 
+	// creates a new table and pushes it on top of the 
+	// stack.
+	new_table,
+
+
 	// opcodes with 2 operands
 	jmp,
 	jmp_if_false_or_pop,
@@ -75,7 +80,7 @@ enum class Opcode : u8 {
 /// numerically lowest opcode that takes no operands
 constexpr auto Op_0_operands_start = Opcode::pop;
 /// numerically highest opcode that takes no operands
-constexpr auto Op_0_operands_end = Opcode::index;
+constexpr auto Op_0_operands_end = Opcode::new_table;
 
 constexpr auto Op_const_start = Opcode::load_const;
 constexpr auto Op_const_end = Opcode::index_fast;

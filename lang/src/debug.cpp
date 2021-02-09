@@ -46,6 +46,7 @@ static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)>
 	"table_set",
 	"table_set_safe",
 	"index",
+	"new_table",
 	
 	"jmp",
 	"jmp_if_false_or_pop",

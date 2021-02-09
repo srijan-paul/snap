@@ -1,0 +1,7 @@
+fn Node(data, next) {
+  return { data: data, next: next }
+}
+
+const head = Node(10, Node(20))
+
+return head.next.data

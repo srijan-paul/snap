@@ -261,6 +261,11 @@ ExitCode VM::run(bool run_till_end) {
 			break;
 		}
 
+		case Op::new_table: {
+			push(SNAP_OBJECT_VAL(&make<Table>()));
+			break;
+		}
+
 		case Op::table_set_safe: {
 			Value value = pop();
 			Value key = pop();
@@ -302,8 +307,8 @@ ExitCode VM::run(bool run_till_end) {
 		}
 
 		case Op::index_fast: {
-			Value& value = PEEK(1);
-			value = SNAP_AS_TABLE(value)->get(READ_VALUE());
+			// TOS = as_table(TOS)->get(READ_VAL())
+			sp[-1] = SNAP_AS_TABLE(PEEK(1))->get(READ_VALUE());
 			break;
 		}
 

@@ -1,11 +1,11 @@
 const clock = import('clock')
 
-func fib(n) {
+fn fib(n) {
   if n <= 1 return 1
   return fib(n - 1) + fib(n - 2)
 }
 
-func fib_test() {
+fn fib_test() {
   const start = clock.now()
   for i = 1, 100 
     for i = 1, 20 

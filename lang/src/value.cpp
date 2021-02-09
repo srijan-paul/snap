@@ -36,7 +36,10 @@ std::string Value::name_str() const {
 			return std::string("[prototype ") + static_cast<const Prototype*>(obj)->name_cstr() +
 				   "]";
 		case OT::upvalue: return static_cast<const Upvalue*>(obj)->value->name_str();
-		case OT::table: return "[table]";
+		case OT::table: {
+			Table* tbl = SNAP_AS_TABLE(*this);
+			return "[table " + std::to_string((size_t)tbl) + "]";
+		}
 
 		default: return "<snap object>";
 		}
@@ -73,7 +76,7 @@ bool operator==(const Value& a, const Value& b) {
 			const String& sa = *static_cast<const String*>(oa);
 			const String& sb = *static_cast<const String*>(ob);
 			return sa == sb;
-			}
+		}
 		return oa == ob;
 	}
 	default: return false;

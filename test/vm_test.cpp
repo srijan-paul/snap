@@ -1,25 +1,56 @@
 #include "assert.hpp"
 #include "test_utils.hpp"
 #include "value.hpp"
+#include <fstream>
+#include <memory>
+#include <sstream>
 #include <stdlib.h>
 
 using namespace snap;
 
 void assert_val_eq(Value& expected, Value actual, const char* message = "Test failed! ") {
 	if (expected != actual) {
-		fprintf(stderr, "%s", message);
-		fprintf(stderr, "Expected value to be: ");
+		fprintf(stderr, "%s: ", message);
+		fprintf(stderr, "Expected value to be ");
 		print_value(expected);
-		fprintf(stderr, " But got:  ");
+		fprintf(stderr, " But got  ");
 		print_value(actual);
 		abort();
 	}
 }
 
-static void test_return(const std::string&& code, Value expected, const char* message = "Test failed!") {
+static void test_return(const std::string&& code, Value expected,
+						const char* message = "Test failed!") {
 	VM vm{&code};
 	vm.interpret();
 	assert_val_eq(expected, vm.return_value, message);
+}
+
+/// Given the name of a test file to run, checks the value returned by that file's evaluation.
+/// @param filename name of the file, must be inside 'test/test_programs/'.
+/// @param expected Expected return value once the file is interpreted.
+/// @param message Message to be displayed on failure.
+static void test_file(const char* filename, Value expected, const char* message = "Failure") {
+
+	// Currently files can only be read relative to the path of the binary (which is
+	// in `bin/vm_test`).
+	// So to read the file just from it's name, we append the file beginning of the
+	// file path to it.
+	static const char* path_prefix = "../test/test_programs/";
+	std::string filepath{path_prefix};
+	filepath += filename;
+
+	std::ifstream file(filepath);
+
+	if (file) {
+		std::ostringstream stream;
+		stream << file.rdbuf();
+		test_return(stream.str(), expected, message);
+		return;
+	}
+
+	fprintf(stderr, "Could not open file '%s'", filepath.c_str());
+	abort();
 }
 
 /// Runs the next `op_count` instructions in the `code` string in a VM.
@@ -156,26 +187,7 @@ void fn_tests() {
 	)",
 				SNAP_NUM_VAL(0));
 
-	test_return(R"(
-		fn Node(a, b){
-			return fn(n) {
-				if n == 0 return a
-				return b
-			}
-		}
-
-		fn data(node) {
-			return node(0)
-		}
-
-		fn next(node) {
-			return node(1)
-		}
-
-		const head = Node(10, Node(20))
-		return data(next(head))
-	)",
-				SNAP_NUM_VAL(20), "Linked list closure test.");
+	test_file("llnode-cl.snp", SNAP_NUM_VAL(20), "Linked list closure test");
 }
 
 void table_test() {
@@ -185,7 +197,8 @@ void table_test() {
 		}
 		const head = Node(10, Node(20))
 		return head.next.data
-	)", SNAP_NUM_VAL(20), "Linked lists as tables test.");
+	)",
+				SNAP_NUM_VAL(20), "Linked lists as tables test");
 
 	// setting table field names.
 	test_return(R"(
@@ -195,8 +208,10 @@ void table_test() {
 		let a = t.k
 		t.k = 3
 		return t.k +  a
-	)", SNAP_NUM_VAL(10));
+	)",
+				SNAP_NUM_VAL(10));
 
+	test_file("table-1.snp", SNAP_NUM_VAL(3), "returning tables from a closure.");
 }
 
 void vm_test() {
@@ -235,6 +250,7 @@ int main() {
 	expr_tests();
 	stmt_tests();
 	fn_tests();
+	table_test();
 	vm_test();
 	return 0;
 }
