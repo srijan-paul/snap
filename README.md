@@ -124,12 +124,12 @@ For a more complete spec of the language, and all it's features visit [doc.md](.
 Currently, snap supports basic control flow, variable declaration, usage and basic collection data structures.
 To move towards a more complete implementation, the following tasks have to be attended to:
 
-1. [x] Implement parent tables (metatables in Lua).
-2. [x] Add a complete list of collection types. (Arrays and tables)
-3. [x] Implement proper error reporting in all the passes.
-4. [x] Full support for Lambdas and closures.
-5. [ ] Implement optionally NaN boxed values
-6. [ ] Move from the current mark sweep garbage collector to a Cheney's copying collector
+1. [x] Implement parent tables (metatables in Lua). [**DONE**]
+2. [x] Add a complete list of collection types (Arrays and tables). [**DONE**]
+3. [x] Implement proper error reporting in all the passes. [**DONE**]
+4. [x] Full support for Lambdas and closures. [**DONE**]
+5. [ ] Implement optionally NaN boxed values.
+6. [ ] Move from the current mark sweep garbage collector to a Cheney's copying collector.
 
 # Implementation.
 
