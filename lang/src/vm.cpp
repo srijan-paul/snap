@@ -49,7 +49,7 @@ VM::VM(const std::string* src) : m_source{src} {
 		if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {                                                   \
 			push(SNAP_BOOL_VAL(SNAP_AS_NUM(a) op SNAP_AS_NUM(b)));                                 \
 		} else {                                                                                   \
-			binop_error(#op, b, a);                                                                \
+			return binop_error(#op, b, a);                                                                \
 		}                                                                                          \
 	} while (false);
 
@@ -62,7 +62,7 @@ VM::VM(const std::string* src) : m_source{src} {
 			SNAP_SET_NUM(b, SNAP_AS_NUM(b) op SNAP_AS_NUM(a));                                     \
 			pop();                                                                                 \
 		} else {                                                                                   \
-			binop_error(#op, b, a);                                                                \
+			return binop_error(#op, b, a);                                                                \
 		}                                                                                          \
 	} while (false);
 
@@ -74,7 +74,7 @@ VM::VM(const std::string* src) : m_source{src} {
 		SNAP_SET_NUM(a, SNAP_CAST_INT(a) op SNAP_CAST_INT(b));                                     \
 		pop();                                                                                     \
 	} else {                                                                                       \
-		binop_error(#op, a, b);                                                                    \
+		return binop_error(#op, a, b);                                                             \
 	}
 
 #ifdef SNAP_DEBUG_RUNTIME
