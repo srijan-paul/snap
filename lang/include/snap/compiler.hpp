@@ -1,6 +1,7 @@
 #pragma once
 #include "function.hpp"
 #include "scanner.hpp"
+#include "token.hpp"
 #include <array>
 
 namespace snap {
@@ -175,12 +176,22 @@ class Compiler {
 	void atomic(bool can_assign);	   // (ID|'(' EXPR ')' ) SUFFIX*
 	void suffix_expr(bool can_assign); // [EXPR] | .ID | (ARGS)
 	void call_args();
-	void grouping(bool can_assign);	   // (expr)
-	void primary(bool can_assign);	   // literal | id
+	void grouping(bool can_assign); // (expr)
+	void primary(bool can_assign);	// literal | id
 	void variable(bool can_assign);
 	void literal();
 	void func_expr(const String* fname);
 	void table();
+
+	/// @brief Compiles a variable assignment RHS, assumes the
+	/// the very next token is an assignment token.
+	/// Note that this does not emit `set` instructions for the
+	/// actual assignment, rather consumes the assignment RHS
+	/// and accounts for any compound assignment operators.
+	/// @param get_op The `get` opcode to use, in case it's a compound assignment.
+	/// @param idx_or_name_str The index where to load the variable from, if it's a local
+	///                        else the index in the constant pool for the global's name.
+	void var_assign(Opcode get_op, u32 idx_or_name_str);
 
 	void enter_block();
 	// Exit the current scope, popping all local
@@ -226,7 +237,10 @@ class Compiler {
 	/// returns the corresponding bytecode
 	/// from a token. e.g- TokenType::Add
 	/// corresponds to Opcode::add.
-	Opcode toktype_to_op(TokenType type);
+	Opcode toktype_to_op(TokenType type) const;
+	/// returns true if 'type' is an
+	/// assignment or compound  assignment operator.
+	bool is_assign_tok(TokenType ttype) const;
 };
 
 } // namespace snap

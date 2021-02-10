@@ -64,10 +64,9 @@ enum class Opcode : u8 {
 	// onto the stack, popping TOS.
 	index,
 
-	// creates a new table and pushes it on top of the 
+	// creates a new table and pushes it on top of the
 	// stack.
 	new_table,
-
 
 	// opcodes with 2 operands
 	jmp,

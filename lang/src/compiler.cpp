@@ -17,7 +17,7 @@
 	void name(bool can_assign) {                                                                   \
 		next_fn(can_assign);                                                                       \
 		while (cond) {                                                                             \
-			Token op_token = token;                                                                \
+			const Token op_token = token;                                                          \
 			next_fn(false);                                                                        \
 			emit(toktype_to_op(op_token.type), op_token);                                          \
 		}                                                                                          \
@@ -87,7 +87,7 @@ void Compiler::toplevel() {
 	if (has_error) recover();
 	if (eof()) return;
 
-	const auto tt = peek.type;
+	const TT tt = peek.type;
 
 	switch (tt) {
 	case TT::Const:
@@ -132,7 +132,7 @@ void Compiler::block_stmt() {
 void Compiler::if_stmt() {
 	advance(); // consume 'if'
 	expr();	   // parse condition.
-	std::size_t jmp = emit_jump(Op::pop_jmp_if_false);
+	const std::size_t jmp = emit_jump(Op::pop_jmp_if_false);
 	toplevel();
 
 	if (match(TT::Else)) {
@@ -150,7 +150,7 @@ void Compiler::fn_decl() {
 	advance(); // consume 'fn' token.
 	expect(TT::Id, "expected function name");
 
-	Token name_token = token;
+	const Token name_token = token;
 	String* fname = &m_vm->make<String>(name_token.raw_cstr(m_source), name_token.length());
 
 	func_expr(fname);
@@ -174,13 +174,13 @@ void Compiler::func_expr(const String* fname) {
 	compiler.expect(TT::RParen, "Expected ')' after function parameters.");
 
 	Prototype* proto = compiler.compile_func();
-	u8 idx = emit_value(SNAP_OBJECT_VAL(proto));
+	const u8 idx = emit_value(SNAP_OBJECT_VAL(proto));
 
 	emit_bytes(Op::make_func, static_cast<Op>(idx), token);
 	emit(static_cast<Op>(proto->m_num_upvals), token);
 
 	for (int i = 0; i < compiler.m_symtable.num_upvals; ++i) {
-		CompilerUpval& upval = compiler.m_symtable.m_upvals[i];
+		const CompilerUpval& upval = compiler.m_symtable.m_upvals[i];
 		emit(upval.is_local ? static_cast<Op>(1) : static_cast<Op>(0));
 		emit(static_cast<Op>(upval.index));
 	}
@@ -219,7 +219,7 @@ void Compiler::expr(bool can_assign) {
 void Compiler::logic_or(bool can_assign) {
 	logic_and(can_assign);
 	if (match(TT::Or)) {
-		std::size_t jump = emit_jump(Op::jmp_if_true_or_pop);
+		const std::size_t jump = emit_jump(Op::jmp_if_true_or_pop);
 		logic_or(false);
 		patch_jump(jump);
 	}
@@ -281,7 +281,7 @@ void Compiler::suffix_expr(bool can_assign) {
 		case TT::Dot: {
 			advance();
 			expect(TT::Id, "Expected field name.");
-			u8 index = emit_id_string(token);
+			const u8 index = emit_id_string(token);
 			if (can_assign && match(TT::Eq)) {
 				expr();
 				emit(Op::table_set_fast, static_cast<Op>(index));
@@ -323,7 +323,7 @@ void Compiler::primary(bool can_assign) {
 	if (isLiteral(peek.type)) {
 		literal();
 	} else if (match(TT::Fn)) {
-		constexpr const char* name = "<anonymous>";
+		static constexpr const char* name = "<anonymous>";
 		const String* fname = &m_vm->make<String>(name, 11);
 		if (check(TT::LParen)) return func_expr(fname);
 		// Names of lambda expressions are simply ignored
@@ -337,8 +337,8 @@ void Compiler::primary(bool can_assign) {
 	} else {
 		const std::string raw = peek.raw(*m_source);
 		const char fmt[] = "Unexpected '%s'.";
-		std::size_t bufsize = strlen(fmt) + raw.length() - 1;
-		std::unique_ptr<char[]> buf{new char[bufsize]};
+		const std::size_t bufsize = strlen(fmt) + raw.length() - 1;
+		const std::unique_ptr<char[]> buf{new char[bufsize]};
 		sprintf(buf.get(), fmt, raw.c_str());
 		error_at(buf.get(), peek.location.line);
 	}
@@ -391,7 +391,7 @@ void Compiler::variable(bool can_assign) {
 		is_const = (index == -1) ? false : m_symtable.m_upvals[index].is_const;
 	}
 
-	if (can_assign && match(TT::Eq)) {
+	if (can_assign and is_assign_tok(peek.type)) {
 		if (is_const) {
 			std::string message{"Cannot assign to variable '"};
 			message = message + prev.raw(*m_source) + "' which is marked 'const'.";
@@ -399,11 +399,30 @@ void Compiler::variable(bool can_assign) {
 			has_error = false; // don't send the compiler into error recovery mode.
 		}
 
-		expr(); // compile assignment RHS
+		/// compile the RHS of the assignment, and 
+		/// any necessary arithmetic ops if its a
+		/// compound assignment operator. So by the 
+		/// time we are setting the value, the RHS
+		/// is sitting ready on top of the stack. 
+		var_assign(get_op, index);
 		emit_bytes(set_op, static_cast<Op>(index), token);
 	} else {
 		emit_bytes(get_op, static_cast<Op>(index), token);
 	}
+}
+
+void Compiler::var_assign(Op get_op, u32 idx_or_name_str) {
+	if (peek.type == TT::Eq) {
+		advance();
+		expr();
+		return;
+	}
+
+	advance();
+	const TT ttype = token.type;
+	emit(get_op, Op(idx_or_name_str));
+	expr();
+	emit(toktype_to_op(ttype));
 }
 
 void Compiler::literal() {
@@ -609,13 +628,18 @@ inline void Compiler::emit(Op a, Op b) {
 	emit(b, token);
 }
 
-Op Compiler::toktype_to_op(TT toktype) {
+Op Compiler::toktype_to_op(TT toktype) const {
 	switch (toktype) {
-	case TT::Plus: return Op::add;
-	case TT::Minus: return Op::sub;
-	case TT::Div: return Op::div;
-	case TT::Mult: return Op::mult;
-	case TT::Mod: return Op::mod;
+	case TT::Plus:
+	case TT::PlusEq: return Op::add;
+	case TT::Minus:
+	case TT::MinusEq: return Op::sub;
+	case TT::Div:
+	case TT::DivEq: return Op::div;
+	case TT::Mult:
+	case TT::MultEq: return Op::mult;
+	case TT::Mod:
+	case TT::ModEq: return Op::mod;
 	case TT::EqEq: return Op::eq;
 	case TT::BangEq: return Op::neq;
 	case TT::Concat: return Op::concat;
@@ -628,6 +652,18 @@ Op Compiler::toktype_to_op(TT toktype) {
 	case TT::GtEq: return Op::gte;
 	case TT::LtEq: return Op::lte;
 	default: return Op::op_count;
+	}
+}
+
+bool Compiler::is_assign_tok(TT type) const {
+	switch (type) {
+	case TT::Eq:
+	case TT::ModEq:
+	case TT::MultEq:
+	case TT::DivEq:
+	case TT::PlusEq:
+	case TT::MinusEq: return true;
+	default: return false;
 	}
 }
 

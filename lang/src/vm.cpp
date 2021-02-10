@@ -121,7 +121,7 @@ ExitCode VM::run(bool run_till_end) {
 				SNAP_SET_NUM(b, SNAP_AS_NUM(b) / SNAP_AS_NUM(a));
 				pop();
 			} else {
-				binop_error("/", b, a);
+				return binop_error("/", b, a);
 			}
 			break;
 		}
@@ -133,7 +133,7 @@ ExitCode VM::run(bool run_till_end) {
 			if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {
 				SNAP_SET_NUM(b, fmod(SNAP_AS_NUM(b), SNAP_AS_NUM(a)));
 			} else {
-				binop_error("%", b, a);
+				return binop_error("%", b, a);
 			}
 
 			pop();

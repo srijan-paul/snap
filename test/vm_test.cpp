@@ -111,6 +111,8 @@ static void expr_tests() {
 		return a == b and c..d == 'aabb'
 	)",
 				SNAP_BOOL_VAL(true));
+
+	test_file("compound-assign.snp", SNAP_NUM_VAL(8), "Compound assignment operators.");
 }
 
 static void stmt_tests() {
