@@ -184,7 +184,7 @@ class Compiler {
 	void table();
 
 	/// @brief Compiles a variable assignment RHS, assumes the
-	/// the very next token is an assignment token.
+	/// the very next token is an assignment or compound assign token.
 	/// Note that this does not emit `set` instructions for the
 	/// actual assignment, rather consumes the assignment RHS
 	/// and accounts for any compound assignment operators.
@@ -192,6 +192,18 @@ class Compiler {
 	/// @param idx_or_name_str The index where to load the variable from, if it's a local
 	///                        else the index in the constant pool for the global's name.
 	void var_assign(Opcode get_op, u32 idx_or_name_str);
+
+	/// @brief Compiles a table field assignment RHS assuming the very
+	/// next token is an assignment or compound assignment token.
+	/// Emits the appropriate bytecode that leaves the value on top of the 
+	/// stack, but does not emit the actual 'set' opcode.
+	/// @param get_op In case it's a compound assign like `+=`, we need to fetch
+	/// 			 the value of that field in the table before assigning to it.
+	///				 `get_op` can be one of `table_get_fast_keep` or `table_get_keep`.
+	/// @param idx In case we are assigning to a table field indexed by the dot (.) operator
+	/// 			 then we the `get_op` needs to use the position of that fieldn's name in the 
+	///				 constant pool as an operand too.
+	void table_assign(Opcode get_op, int idx);
 
 	void enter_block();
 	// Exit the current scope, popping all local

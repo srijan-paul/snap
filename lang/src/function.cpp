@@ -25,7 +25,7 @@ const char* Function::name_cstr() const {
 }
 
 Function::~Function() {
-	for (int i = 0; i < m_num_upvals; ++i) {
+	for (u32 i = 0; i < m_num_upvals; ++i) {
 		delete m_upvals[i];
 	}
 }

@@ -215,6 +215,7 @@ void table_test() {
 
 	test_file("table-1.snp", SNAP_NUM_VAL(3), "returning tables from a closure.");
 	test_file("table-2.snp", SNAP_NUM_VAL(6), "Accessing table fields");
+	test_file("table-3.snp", SNAP_NUM_VAL(11), "Accessing table fields");
 }
 
 void vm_test() {

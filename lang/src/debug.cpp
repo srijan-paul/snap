@@ -11,8 +11,9 @@ using Op = Opcode;
 
 static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)> op_strs = {
 	"load_const",
-	"index_fast",
-	"table_set_fast",
+	"table_get",
+	"table_set",
+	"table_get_no_pop",
 	
 	"set_var",
 	"get_var",
@@ -43,9 +44,10 @@ static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)>
 	"load_nil",
 	"close_upval",
 	"return_val",
-	"table_set",
-	"table_set_safe",
+	"index_set",
+	"table_add_field",
 	"index",
+	"index_no_pop",
 	"new_table",
 	
 	"jmp",

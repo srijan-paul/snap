@@ -49,7 +49,7 @@ VM::VM(const std::string* src) : m_source{src} {
 		if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {                                                   \
 			push(SNAP_BOOL_VAL(SNAP_AS_NUM(a) op SNAP_AS_NUM(b)));                                 \
 		} else {                                                                                   \
-			return binop_error(#op, b, a);                                                                \
+			return binop_error(#op, b, a);                                                         \
 		}                                                                                          \
 	} while (false);
 
@@ -62,7 +62,7 @@ VM::VM(const std::string* src) : m_source{src} {
 			SNAP_SET_NUM(b, SNAP_AS_NUM(b) op SNAP_AS_NUM(a));                                     \
 			pop();                                                                                 \
 		} else {                                                                                   \
-			return binop_error(#op, b, a);                                                                \
+			return binop_error(#op, b, a);                                                         \
 		}                                                                                          \
 	} while (false);
 
@@ -266,19 +266,16 @@ ExitCode VM::run(bool run_till_end) {
 			break;
 		}
 
-		case Op::table_set_safe: {
+		case Op::table_add_field: {
 			Value value = pop();
 			Value key = pop();
-
-			if (SNAP_GET_TT(key) == VT::Nil) {
-				return runtime_error("Table key cannot be nil.");
-			}
 
 			SNAP_AS_TABLE(PEEK(1))->set(key, value);
 			break;
 		}
 
-		case Op::table_set: {
+		// table[key] = value
+		case Op::index_set: {
 			Value value = pop();
 			Value key = pop();
 
@@ -288,33 +285,69 @@ ExitCode VM::run(bool run_till_end) {
 					return runtime_error("Table key cannot be nil.");
 				}
 				SNAP_AS_TABLE(tvalue)->set(key, value);
+				sp[-1] = value; // assignment returns it's RHS.
 			} else {
-				return runtime_error("Attempt to index a %s value", SNAP_TYPE_CSTR(tvalue));
+				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(tvalue));
 			}
 			break;
 		}
 
-		case Op::table_set_fast: {
+		// table.key = value
+		case Op::table_set: {
 			const Value& key = READ_VALUE();
 			Value value = pop();
 			Value& tvalue = PEEK(1);
 			if (SNAP_IS_TABLE(tvalue)) {
 				SNAP_AS_TABLE(tvalue)->set(key, value);
+				sp[-1] = value; // assignment returns it's RHS
 			} else {
-				return runtime_error("Attempt to index a %s value", SNAP_TYPE_CSTR(tvalue));
+				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(tvalue));
 			}
 			break;
 		}
 
-		case Op::index_fast: {
+		// table.key
+		case Op::table_get: {
 			// TOS = as_table(TOS)->get(READ_VAL())
-			sp[-1] = SNAP_AS_TABLE(PEEK(1))->get(READ_VALUE());
+			if (SNAP_IS_TABLE(PEEK(1))) {
+				sp[-1] = SNAP_AS_TABLE(PEEK(1))->get(READ_VALUE());
+			} else {
+				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(PEEK(1)));
+			}
+			break;
+		}
+		// table.key
+		case Op::table_get_no_pop: {
+			// push((TOS)->get(READ_VAL()))
+			if (SNAP_IS_TABLE(PEEK(1))) {
+				push(SNAP_AS_TABLE(PEEK(1))->get(READ_VALUE()));
+			} else {
+				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(PEEK(1)));
+			}
+			break;
+		}
+		// table_or_array[key]
+		case Op::index: {
+			Value key = pop();
+			if (SNAP_IS_TABLE(PEEK(1))) {
+				if (SNAP_GET_TT(key) == VT::Nil) return runtime_error("Table key cannot be nil.");
+				sp[-1] = SNAP_AS_TABLE(PEEK(1))->get(key);
+			} else {
+				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(PEEK(1)));
+			}
 			break;
 		}
 
-		case Op::index: {
-			Value key = pop();
-			sp[-1] = SNAP_AS_TABLE(PEEK(1))->get(key);
+		// table_or_array[key]
+		case Op::index_no_pop: {
+			Value& vtable = PEEK(2);
+			const Value& key = PEEK(1);
+			if (SNAP_IS_TABLE(vtable)) {
+				if (SNAP_GET_TT(key) == VT::Nil) return runtime_error("Table key cannot be nil.");
+				push(SNAP_AS_TABLE(vtable)->get(key));
+			} else {
+				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(vtable));
+			}
 			break;
 		}
 
@@ -547,7 +580,7 @@ ExitCode VM::runtime_error(const char* fstring...) const {
 	return ExitCode::RuntimeError;
 }
 
-void default_error_fn(const VM& vm, const char* message) {
+void default_error_fn([[maybe_unused]] const VM& vm, const char* message) {
 	fprintf(stderr, "%s", message);
 	fputc('\n', stderr);
 }

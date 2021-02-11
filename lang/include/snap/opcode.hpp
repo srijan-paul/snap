@@ -12,11 +12,16 @@ enum class Opcode : u8 {
 	load_const,
 	// reads the next opcode as an index
 	// then attempts to get `constant_pool[index]`
-	// field of TOS.
-	index_fast,
+	// field of TOS. It assumes that the constant_pool[index]
+	// is a string value and hence doesn't perform any runtime
+	// checks.
+	table_get,
 	// Uses the next opcode as an index to load a string `field`
 	// and sets PEEK(1)[field] = TOS
-	table_set_fast,
+	table_set,
+	// Same as `table_get`, but doesn't pop
+	// the table off the stack.
+	table_get_no_pop,
 
 	// opcodes with one operand
 	set_var,
@@ -52,17 +57,25 @@ enum class Opcode : u8 {
 	/// Set a table's key to some value.
 	/// Table, Key and Value are expected
 	/// to be in this order: [<table>, <key>, <value>]
-	table_set,
-	/// same as table_set, but here the value at stack depth
+	index_set,
+	/// same as index_set, but here the value at stack depth
 	/// 3 is guaranteed to be a table, hence no runtime check
-	/// is required.
-	table_set_safe,
+	/// is required. The table isn't popped off the stack.
+	/// This instruction is used solely during the construction
+	/// of a table.
+	table_add_field,
 
 	// assuming TOS as the field
 	// and PEEK(1) as the table/array,
 	// push field TOS of table PEEK(1)
-	// onto the stack, popping TOS.
+	// onto the stack, popping TOS and TOS1.
+	// `key = pop(); TOS = TOS[key]`
 	index,
+	// same as `table_get`, but doesn't
+	// pop the table or the key, instead pushes
+	// the value on top. So we're left with the stack
+	// looking like [table, key, table[key]]
+	index_no_pop,
 
 	// creates a new table and pushes it on top of the
 	// stack.
@@ -82,7 +95,7 @@ constexpr auto Op_0_operands_start = Opcode::pop;
 constexpr auto Op_0_operands_end = Opcode::new_table;
 
 constexpr auto Op_const_start = Opcode::load_const;
-constexpr auto Op_const_end = Opcode::index_fast;
+constexpr auto Op_const_end = Opcode::table_get_no_pop;
 
 /// numerically lowest opcode that takes one operand
 constexpr auto Op_1_operands_start = Opcode::set_var;

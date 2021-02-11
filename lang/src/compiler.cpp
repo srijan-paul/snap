@@ -270,8 +270,10 @@ void Compiler::suffix_expr(bool can_assign) {
 			advance();
 			expr();
 			expect(TT::RSqBrace, "Expected ']' to close index expression.");
-			if (can_assign and match(TT::Eq)) {
-
+			if (can_assign and is_assign_tok(peek.type)) {
+				table_assign(Op::index_no_pop, -1);
+				emit(Op::index_set);
+				return;
 			} else {
 				emit(Op::index);
 			}
@@ -282,17 +284,34 @@ void Compiler::suffix_expr(bool can_assign) {
 			advance();
 			expect(TT::Id, "Expected field name.");
 			const u8 index = emit_id_string(token);
-			if (can_assign && match(TT::Eq)) {
-				expr();
-				emit(Op::table_set_fast, static_cast<Op>(index));
+
+			if (can_assign and is_assign_tok(peek.type)) {
+				table_assign(Op::table_get_no_pop, index);
+				emit(Op::table_set, Op(index));
+				return;
 			} else {
-				emit(Op::index_fast, static_cast<Op>(index));
+				emit(Op::table_get, static_cast<Op>(index));
 			}
 			break;
 		}
 		default: return;
 		}
 	}
+}
+
+void Compiler::table_assign(Op get_op, int idx) {
+	advance();
+	const TT ttype = token.type;
+
+	if (ttype == TT::Eq) {
+		expr();
+		return;
+	}
+
+	emit(get_op);
+	if (idx > 0) emit(Op(idx));
+	expr();
+	emit(toktype_to_op(ttype));
 }
 
 void Compiler::call_args() {
@@ -361,7 +380,7 @@ void Compiler::table() {
 
 		expect(TT::Colon, "Expected ':' after table key.");
 		expr(false);
-		emit(Op::table_set_safe);
+		emit(Op::table_add_field);
 
 		if (check(TT::RCurlBrace)) break;
 	} while (!eof() and match(TT::Comma));
@@ -399,11 +418,11 @@ void Compiler::variable(bool can_assign) {
 			has_error = false; // don't send the compiler into error recovery mode.
 		}
 
-		/// compile the RHS of the assignment, and 
+		/// compile the RHS of the assignment, and
 		/// any necessary arithmetic ops if its a
-		/// compound assignment operator. So by the 
+		/// compound assignment operator. So by the
 		/// time we are setting the value, the RHS
-		/// is sitting ready on top of the stack. 
+		/// is sitting ready on top of the stack.
 		var_assign(get_op, index);
 		emit_bytes(set_op, static_cast<Op>(index), token);
 	} else {
@@ -412,14 +431,13 @@ void Compiler::variable(bool can_assign) {
 }
 
 void Compiler::var_assign(Op get_op, u32 idx_or_name_str) {
-	if (peek.type == TT::Eq) {
-		advance();
+	advance();
+	const TT ttype = token.type;
+	if (ttype == TT::Eq) {
 		expr();
 		return;
 	}
 
-	advance();
-	const TT ttype = token.type;
 	emit(get_op, Op(idx_or_name_str));
 	expr();
 	emit(toktype_to_op(ttype));
@@ -656,15 +674,7 @@ Op Compiler::toktype_to_op(TT toktype) const {
 }
 
 bool Compiler::is_assign_tok(TT type) const {
-	switch (type) {
-	case TT::Eq:
-	case TT::ModEq:
-	case TT::MultEq:
-	case TT::DivEq:
-	case TT::PlusEq:
-	case TT::MinusEq: return true;
-	default: return false;
-	}
+	return (type == TT::Eq or (type >= TT::ModEq and type <= TT::PlusEq));
 }
 
 int Compiler::new_variable(const Token& varname, bool is_const) {

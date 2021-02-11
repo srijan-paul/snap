@@ -1,3 +1,5 @@
-let a = 1
-a += 20
-return a
+
+	fn Node(a, b) {
+			return  { data: a, next: b }
+		}
+		const head = Node(10, Node(20))
