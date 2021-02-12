@@ -216,6 +216,10 @@ void table_test() {
 	test_file("table-1.snp", SNAP_NUM_VAL(3), "returning tables from a closure.");
 	test_file("table-2.snp", SNAP_NUM_VAL(6), "Accessing table fields");
 	test_file("table-3.snp", SNAP_NUM_VAL(11), "Accessing table fields");
+	test_file("table-4.snp", SNAP_NUM_VAL(10), "Computed member assignment and access.");
+	test_file("table-5.snp", SNAP_NUM_VAL(10),
+			  "Computed member access and dot member access are equivalent for string keys.");
+	test_file("table-6.snp", SNAP_NUM_VAL(10), "Compound assignment to computed members");
 }
 
 void vm_test() {

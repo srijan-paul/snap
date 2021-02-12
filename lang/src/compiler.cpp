@@ -369,7 +369,7 @@ void Compiler::table() {
 	emit(Opcode::new_table);
 	do {
 		if (match(TT::LSqBrace)) {
-			expr(false);
+			expr();
 			expect(TT::RSqBrace, "Expected ']' near table key.");
 		} else {
 			expect(TT::Id, "Expected identifier as table key.");
@@ -499,7 +499,17 @@ void Compiler::patch_jump(std::size_t index) {
 	if (jump_dist > UINT16_MAX) {
 		error_at("Too much code to jump over.", token.location.line);
 	}
+	// If we use a single Opcode for the jump offset, then we're only allowed
+	// to jump over 255 instructions, which is unfortunately a very small number.
+	// To counter this, jumps are broken down into two Ops, the first Op contains the
+	// first byte and the second Op contains the second byte. The bytes are then stitched
+	// together to form a short int, thus allowing us to jump over UINT16_MAX bytes of code
+	// (65535 instructions) at best.
 
+	// For example, if we want to jump over 25000 opcodes, that means our jump offset
+	// is `0x61A8`. The first byte, `0x61` goes in the first opcode, and the second
+	// byte, `0xA8` goes in the second opcode. At runtime, the VM reads both of these,
+	// and joins them together using some bit operators.
 	THIS_BLOCK.code[index] = static_cast<Op>((jump_dist >> 8) & 0xff);
 	THIS_BLOCK.code[index + 1] = static_cast<Op>(jump_dist & 0xff);
 }

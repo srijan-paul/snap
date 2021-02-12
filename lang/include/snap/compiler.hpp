@@ -214,7 +214,7 @@ class Compiler {
 	// that encode the jump location. Returns the index
 	// of the first half of the jump offset.
 	std::size_t emit_jump(Opcode op);
-	// Patches the jump instruction wjhose offset opererand is at index `index`,
+	// Patches the jump instruction whose offset operand is at index `index`,
 	// encoding the address of the most recently emitted opcode.
 	void patch_jump(std::size_t index);
 
