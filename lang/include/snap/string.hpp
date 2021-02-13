@@ -23,6 +23,7 @@ class String : public Obj {
 
 	s32 hash();
 	const char* c_str() const;
+	char at(number index) const;
 	static String* concatenate(const String* a, const String* b);
 	~String();
 };

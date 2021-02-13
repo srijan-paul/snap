@@ -64,6 +64,11 @@ const char* String::c_str() const {
 	return m_chars;
 }
 
+char String::at(number index) const {
+	if (index < 0 or index > m_length) return '\0';
+	return m_chars[std::size_t(index)];
+}
+
 String::~String() {
 	delete[] m_chars;
 }

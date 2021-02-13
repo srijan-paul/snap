@@ -376,6 +376,12 @@ void Compiler::table() {
 			String* key_string = &m_vm->make<String>(token.raw(*m_source).c_str(), token.length());
 			const int key_idx = emit_value(key_string);
 			emit_bytes(Op::load_const, static_cast<Op>(key_idx), token);
+			if (check(TT::LParen)) {
+				func_expr(key_string);
+				emit(Op::table_add_field);
+				if (check(TT::RCurlBrace)) break;
+				continue;
+			}
 		}
 
 		expect(TT::Colon, "Expected ':' after table key.");
