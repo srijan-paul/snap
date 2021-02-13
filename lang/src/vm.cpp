@@ -3,7 +3,10 @@
 #include <compiler.hpp>
 #include <cstdarg>
 #include <cstdio>
+#include <function.hpp>
 #include <stdio.h>
+#include <string.hpp>
+#include <upvalue.hpp>
 #include <value.hpp>
 #include <vm.hpp>
 
@@ -20,22 +23,21 @@
 #define GET_VAR(index)		  (m_current_frame->base[index])
 #define SET_VAR(index, value) (m_current_frame->base[index] = value)
 
+// PEEK(1) fetches the topmost value in the stack.
 #define PEEK(depth) sp[-depth]
 
 namespace snap {
 
 using Op = Opcode;
 using VT = ValueType;
+using OT = ObjType;
 
 VM::VM(const std::string* src) : m_source{src} {
 }
 
-#define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) and !(SNAP_AS_BOOL(v))) || SNAP_IS_NIL(v))
+#define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) and !(SNAP_AS_BOOL(v))) or SNAP_IS_NIL(v))
 #define IS_VAL_TRUTHY(v) (!IS_VAL_FALSY(v))
 
-#define BINOP_ERROR(op, v1, v2)                                                                    \
-	runtime_error("Cannot use operator '%s' on operands of type '%s' and '%s'.", op,               \
-				  SNAP_TYPE_CSTR(v1), SNAP_TYPE_CSTR(v2))
 #define UNOP_ERROR(op, v)                                                                          \
 	runtime_error("Cannot use operator '%s' on type '%s'.", op, SNAP_TYPE_CSTR(v))
 
@@ -47,7 +49,7 @@ VM::VM(const std::string* src) : m_source{src} {
 		if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {                                                   \
 			push(SNAP_BOOL_VAL(SNAP_AS_NUM(a) op SNAP_AS_NUM(b)));                                 \
 		} else {                                                                                   \
-			binop_error(#op, b, a);                                                                \
+			return binop_error(#op, b, a);                                                         \
 		}                                                                                          \
 	} while (false);
 
@@ -60,7 +62,7 @@ VM::VM(const std::string* src) : m_source{src} {
 			SNAP_SET_NUM(b, SNAP_AS_NUM(b) op SNAP_AS_NUM(a));                                     \
 			pop();                                                                                 \
 		} else {                                                                                   \
-			BINOP_ERROR(#op, b, a);                                                                \
+			return binop_error(#op, b, a);                                                         \
 		}                                                                                          \
 	} while (false);
 
@@ -72,7 +74,7 @@ VM::VM(const std::string* src) : m_source{src} {
 		SNAP_SET_NUM(a, SNAP_CAST_INT(a) op SNAP_CAST_INT(b));                                     \
 		pop();                                                                                     \
 	} else {                                                                                       \
-		BINOP_ERROR(#op, a, b);                                                                    \
+		return binop_error(#op, a, b);                                                             \
 	}
 
 #ifdef SNAP_DEBUG_RUNTIME
@@ -119,7 +121,7 @@ ExitCode VM::run(bool run_till_end) {
 				SNAP_SET_NUM(b, SNAP_AS_NUM(b) / SNAP_AS_NUM(a));
 				pop();
 			} else {
-				BINOP_ERROR("/", b, a);
+				return binop_error("/", b, a);
 			}
 			break;
 		}
@@ -131,7 +133,7 @@ ExitCode VM::run(bool run_till_end) {
 			if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {
 				SNAP_SET_NUM(b, fmod(SNAP_AS_NUM(b), SNAP_AS_NUM(a)));
 			} else {
-				BINOP_ERROR("%", b, a);
+				return binop_error("%", b, a);
 			}
 
 			pop();
@@ -161,14 +163,14 @@ ExitCode VM::run(bool run_till_end) {
 		case Op::eq: {
 			Value a = pop();
 			Value b = pop();
-			push(SNAP_BOOL_VAL(Value::are_equal(a, b)));
+			push(SNAP_BOOL_VAL(a == b));
 			break;
 		}
 
 		case Op::neq: {
 			Value a = pop();
 			Value b = pop();
-			push(SNAP_BOOL_VAL(!Value::are_equal(a, b)));
+			push(SNAP_BOOL_VAL(a != b));
 			break;
 		}
 
@@ -229,13 +231,13 @@ ExitCode VM::run(bool run_till_end) {
 
 		case Op::set_upval: {
 			u8 idx = NEXT_BYTE();
-			*m_current_frame->func->upvals[idx]->value = peek(0);
+			*m_current_frame->func->m_upvals[idx]->value = peek(0);
 			break;
 		}
 
 		case Op::get_upval: {
 			u8 idx = NEXT_BYTE();
-			push(*m_current_frame->func->upvals[idx]->value);
+			push(*m_current_frame->func->m_upvals[idx]->value);
 			break;
 		}
 
@@ -259,9 +261,98 @@ ExitCode VM::run(bool run_till_end) {
 			break;
 		}
 
+		case Op::new_table: {
+			push(SNAP_OBJECT_VAL(&make<Table>()));
+			break;
+		}
+
+		case Op::table_add_field: {
+			Value value = pop();
+			Value key = pop();
+
+			SNAP_AS_TABLE(PEEK(1))->set(key, value);
+			break;
+		}
+
+		// table[key] = value
+		case Op::index_set: {
+			Value value = pop();
+			Value key = pop();
+
+			Value& tvalue = PEEK(1);
+			if (SNAP_IS_TABLE(tvalue)) {
+				if (SNAP_GET_TT(key) == VT::Nil) {
+					return runtime_error("Table key cannot be nil.");
+				}
+				SNAP_AS_TABLE(tvalue)->set(key, value);
+				sp[-1] = value; // assignment returns it's RHS.
+			} else {
+				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(tvalue));
+			}
+			break;
+		}
+
+		// table.key = value
+		case Op::table_set: {
+			const Value& key = READ_VALUE();
+			Value value = pop();
+			Value& tvalue = PEEK(1);
+			if (SNAP_IS_TABLE(tvalue)) {
+				SNAP_AS_TABLE(tvalue)->set(key, value);
+				sp[-1] = value; // assignment returns it's RHS
+			} else {
+				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(tvalue));
+			}
+			break;
+		}
+
+		// table.key
+		case Op::table_get: {
+			// TOS = as_table(TOS)->get(READ_VAL())
+			if (SNAP_IS_TABLE(PEEK(1))) {
+				sp[-1] = SNAP_AS_TABLE(PEEK(1))->get(READ_VALUE());
+			} else {
+				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(PEEK(1)));
+			}
+			break;
+		}
+		// table.key
+		case Op::table_get_no_pop: {
+			// push((TOS)->get(READ_VAL()))
+			if (SNAP_IS_TABLE(PEEK(1))) {
+				push(SNAP_AS_TABLE(PEEK(1))->get(READ_VALUE()));
+			} else {
+				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(PEEK(1)));
+			}
+			break;
+		}
+		// table_or_array[key]
+		case Op::index: {
+			Value key = pop();
+			if (SNAP_IS_TABLE(PEEK(1))) {
+				if (SNAP_GET_TT(key) == VT::Nil) return runtime_error("Table key cannot be nil.");
+				sp[-1] = SNAP_AS_TABLE(PEEK(1))->get(key);
+			} else {
+				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(PEEK(1)));
+			}
+			break;
+		}
+
+		// table_or_array[key]
+		case Op::index_no_pop: {
+			Value& vtable = PEEK(2);
+			const Value& key = PEEK(1);
+			if (SNAP_IS_TABLE(vtable)) {
+				if (SNAP_GET_TT(key) == VT::Nil) return runtime_error("Table key cannot be nil.");
+				push(SNAP_AS_TABLE(vtable)->get(key));
+			} else {
+				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(vtable));
+			}
+			break;
+		}
+
 		case Op::pop_jmp_if_false: {
-			Value& value = PEEK(1);
-			ip += IS_VAL_FALSY(value) ? FETCH_SHORT() : 2;
+			ip += IS_VAL_FALSY(PEEK(1)) ? FETCH_SHORT() : 2;
 			pop();
 			break;
 		}
@@ -288,7 +379,7 @@ ExitCode VM::run(bool run_till_end) {
 			}
 
 			m_current_frame = &m_frames[m_frame_count - 1];
-			m_current_block = &m_current_frame->func->proto->m_block;
+			m_current_block = &m_current_frame->func->m_proto->m_block;
 			ip = m_current_frame->ip;
 
 			break;
@@ -307,9 +398,9 @@ ExitCode VM::run(bool run_till_end) {
 				u8 index = NEXT_BYTE();
 
 				if (is_local) {
-					func->upvals[i] = (capture_upvalue(m_current_frame->base + index));
+					func->m_upvals[i] = (capture_upvalue(m_current_frame->base + index));
 				} else {
-					func->upvals[i] = (m_current_frame->func->upvals[index]);
+					func->m_upvals[i] = (m_current_frame->func->m_upvals[index]);
 				}
 			}
 
@@ -358,7 +449,7 @@ bool VM::init() {
 	callfunc(func, 0);
 
 #ifdef SNAP_DEBUG_DISASSEMBLY
-	disassemble_block(func->proto->name->chars, *m_current_block);
+	disassemble_block(func->name()->c_str(), *m_current_block);
 	printf("\n");
 #endif
 
@@ -405,15 +496,14 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 }
 
 void VM::close_upvalues_upto(Value* last) {
-	Upvalue* current = m_open_upvals;
 
-	while (current != nullptr and current->value >= last) {
-
+	while (m_open_upvals != nullptr and m_open_upvals->value >= last) {
+		Upvalue* current = m_open_upvals;
 		// these two lines are the last rites of an
 		// upvalue, closing it.
 		current->closed = *current->value;
 		current->value = &current->closed;
-		current = current->next_upval;
+		m_open_upvals = current->next_upval;
 	}
 }
 
@@ -433,7 +523,7 @@ bool VM::call(Value value, u8 argc) {
 }
 
 bool VM::callfunc(Function* func, int argc) {
-	int extra = argc - func->proto->num_params;
+	int extra = argc - func->m_proto->m_num_params;
 
 	// extra arguments are ignored and
 	// arguments that aren't provded are replaced with nil.
@@ -456,7 +546,7 @@ bool VM::callfunc(Function* func, int argc) {
 	m_current_frame->func = func;
 	ip = m_current_frame->ip = 0;
 	m_current_frame->base = sp - argc - 1;
-	m_current_block = &func->proto->m_block;
+	m_current_block = &func->m_proto->m_block;
 	return true;
 }
 
@@ -490,7 +580,7 @@ ExitCode VM::runtime_error(const char* fstring...) const {
 	return ExitCode::RuntimeError;
 }
 
-void default_error_fn(const VM& vm, const char* message) {
+void default_error_fn([[maybe_unused]] const VM& vm, const char* message) {
 	fprintf(stderr, "%s", message);
 	fputc('\n', stderr);
 }

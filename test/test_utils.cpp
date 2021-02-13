@@ -6,30 +6,73 @@
 using namespace snap;
 using TT = snap::TokenType;
 
+// clang-format off
 void print_ttype(snap::TokenType type) {
 	std::string type_strs[] = {
 
-		"Integer",	"Float",	  "String",		"True",		 "False",
+		"Integer",	
+		"Float",
+		"String",
+		"True",
+		"False",
+		"Id",		
+		"Error",	  
+		"Eof",
 
-		"Id",		"Error",	  "Eof",
+		"Plus",		
+		"Concat",	  
+		"Minus",		
+		"Mult",		 
+		"Div",
+		"Mod",
+		"Exp",
+		"Eq",
+	  "Bang",
+	  "Dot",
+	  "Len",
 
-		"Plus",		"PlusEq",	  "Concat",		"Minus",	 "MinusEq", "Mult", "MultEq", "Div",
-		"DivEq",	"Mod",		  "ModEq",		"Exp",		 "Eq",		"Bang", "Dot",	  "Len",
+		"DivEq",	 
+		"ModEq",	 
+		"MultEq",	 
+		"MinusEq", 
+		"PlusEq",
 
-		"Gt",		"Lt",		  "GtEq",		"LtEq",
+		"Gt",
+	  "Lt",
+	  "GtEq",
+	  "LtEq",
 
-		"And",		"Or",		  "EqEq",		"BangEq",
+		"And",
+	  "Or",
+	  "EqEq",
+	  "BangEq",
 
-		"BitAnd",	"BitOr",	  "BitLShift",	"BitRShift",
+		"BitAnd",
+	  "BitOr",
+	  "BitLShift",
+	  "BitRShift",
 
-		"Semi",		"Colon",	  "Comma",		"LParen",
+		"Semi",
+	  "Colon",
+	  "Comma",
+	  "LParen",
 
-		"RParen",	"LCurlBrace", "RCurlBrace",
+		"RParen",
+	  "LCurlBrace",
+	  "RCurlBrace",
 
-		"LSqBrace", "RSqBrace",
+		"LSqBrace",
+	  "RSqBrace",
 
-		"Let",		"Const",	  "If",			"Else",		 "Nil",		"Fn",	"Return"};
-
+		"Let",
+	  "Const",
+	  "If",
+	  "Else",
+	  "Nil",
+	  "Fn",
+	  "Return",
+	};
+	// clang-format on
 	const std::string& str = type_strs[static_cast<size_t>(type)];
 	std::printf("%-10s", str.c_str());
 }

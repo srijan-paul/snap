@@ -1,9 +1,7 @@
 #pragma once
-#include "block.hpp"
-#include "opcode.hpp"
+#include "function.hpp"
 #include "scanner.hpp"
 #include "token.hpp"
-#include "value.hpp"
 #include <array>
 
 namespace snap {
@@ -69,9 +67,6 @@ struct SymbolTable {
 class Compiler {
   public:
 	VM* m_vm;
-	Prototype* m_proto;
-	Compiler* m_parent = nullptr;
-
 	static constexpr u8 MaxLocalVars = UINT8_MAX;
 	static constexpr u8 MaxUpValues = UINT8_MAX;
 	static constexpr u8 MaxFuncParams = UINT8_MAX;
@@ -90,11 +85,9 @@ class Compiler {
 
 	~Compiler();
 
-	// Compile a top level script
+	/// @brief Compile a top level script
+	/// @return a function prototype containing the bytecode for the script.
 	Prototype* compile();
-
-	// Compile a function's body (if this is a child compiler).
-	Prototype* compile_func();
 
 	/// @brief If this compiler is compiling a function body, then
 	/// reserve a stack slot for the parameter, and add the parameter
@@ -102,6 +95,9 @@ class Compiler {
 	void add_param(const Token& token);
 
   private:
+	Prototype* m_proto;
+	Compiler* m_parent = nullptr;
+
 	const std::string* m_source;
 	bool has_error = false;
 	Scanner* m_scanner;
@@ -143,6 +139,9 @@ class Compiler {
 	void error_at(const char* message, u32 line);
 	void error(const char* fmt...);
 
+	// Compile a function's body (if this is a child compiler).
+	Prototype* compile_func();
+
 	// keep eating tokens until a token
 	// that may indicate the end of a block is
 	// found.
@@ -159,7 +158,7 @@ class Compiler {
 	void fn_decl();
 	void ret_stmt();
 
-	void expr();
+	void expr(bool can_assign = true);
 
 	void logic_or(bool can_assign);	 // ||
 	void logic_and(bool can_assign); // &&
@@ -171,16 +170,40 @@ class Compiler {
 	void comparison(bool can_assign); // > >= < <=
 	void b_shift(bool can_assign);	  // >> <<
 
-	void sum(bool can_assign);		// + - ..
-	void mult(bool can_assign);		// * / %
-	void unary(bool can_assign);	// - + ! not
-	void index(bool can_assign);	// [] .
-	void call(bool can_assign);		// ()
+	void sum(bool can_assign);		   // + - ..
+	void mult(bool can_assign);		   // * / %
+	void unary(bool can_assign);	   // - + ! not
+	void atomic(bool can_assign);	   // (ID|'(' EXPR ')' ) SUFFIX*
+	void suffix_expr(bool can_assign); // [EXPR] | .ID | (ARGS)
+	void call_args();
 	void grouping(bool can_assign); // (expr)
 	void primary(bool can_assign);	// literal | id
 	void variable(bool can_assign);
 	void literal();
 	void func_expr(const String* fname);
+	void table();
+
+	/// @brief Compiles a variable assignment RHS, assumes the
+	/// the very next token is an assignment or compound assign token.
+	/// Note that this does not emit `set` instructions for the
+	/// actual assignment, rather consumes the assignment RHS
+	/// and accounts for any compound assignment operators.
+	/// @param get_op The `get` opcode to use, in case it's a compound assignment.
+	/// @param idx_or_name_str The index where to load the variable from, if it's a local
+	///                        else the index in the constant pool for the global's name.
+	void var_assign(Opcode get_op, u32 idx_or_name_str);
+
+	/// @brief Compiles a table field assignment RHS assuming the very
+	/// next token is an assignment or compound assignment token.
+	/// Emits the appropriate bytecode that leaves the value on top of the 
+	/// stack, but does not emit the actual 'set' opcode.
+	/// @param get_op In case it's a compound assign like `+=`, we need to fetch
+	/// 			 the value of that field in the table before assigning to it.
+	///				 `get_op` can be one of `table_get_fast_keep` or `table_get_keep`.
+	/// @param idx In case we are assigning to a table field indexed by the dot (.) operator
+	/// 			 then we the `get_op` needs to use the position of that fieldn's name in the 
+	///				 constant pool as an operand too.
+	void table_assign(Opcode get_op, int idx);
 
 	void enter_block();
 	// Exit the current scope, popping all local
@@ -191,7 +214,7 @@ class Compiler {
 	// that encode the jump location. Returns the index
 	// of the first half of the jump offset.
 	std::size_t emit_jump(Opcode op);
-	// Patches the jump instruction wjhose offset opererand is at index `index`,
+	// Patches the jump instruction whose offset operand is at index `index`,
 	// encoding the address of the most recently emitted opcode.
 	void patch_jump(std::size_t index);
 
@@ -218,13 +241,18 @@ class Compiler {
 	inline void emit(Opcode op, const Token& token);
 	void emit_bytes(Opcode a, Opcode b, u32 line);
 	void emit_bytes(Opcode a, Opcode b, const Token& token);
+	void emit(Opcode a, Opcode b);
 	size_t emit_value(Value value);
-	size_t emit_string(const Token& token);
+	u32 emit_string(const Token& token);
+	u32 emit_id_string(const Token& token);
 
 	/// returns the corresponding bytecode
 	/// from a token. e.g- TokenType::Add
 	/// corresponds to Opcode::add.
-	Opcode toktype_to_op(TokenType type);
+	Opcode toktype_to_op(TokenType type) const;
+	/// returns true if 'type' is an
+	/// assignment or compound  assignment operator.
+	bool is_assign_tok(TokenType ttype) const;
 };
 
 } // namespace snap

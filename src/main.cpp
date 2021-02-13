@@ -1,19 +1,30 @@
 #include "debug.hpp"
 #include "scanner.hpp"
 #include "value.hpp"
+#include <cassert>
+#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <vm.hpp>
 
 using namespace snap;
 
 int main() {
-	std::string code = R"(
-		return 10;
-	)";
 
-	VM vm{&code};
-	vm.interpret();
+	// Temporarily we use this entry point to run
+	// a file main.snp, so we can use that as a
+	// 'scratchpad' of sorts to test some code.
+	const char* filepath = "../src/main.snp";
 
+	std::ifstream file(filepath);
+
+	if (file) {
+		std::ostringstream stream;
+		stream << file.rdbuf();
+		std::string code(stream.str());
+		VM vm{&code};
+		vm.interpret();
+	};
 	std::cout << "Snap programming language."
 			  << "\n";
 	return 0;

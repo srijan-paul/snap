@@ -1,4 +1,5 @@
 #include "debug.hpp"
+#include "table.hpp"
 #include "token.hpp"
 #include "value.hpp"
 #include <compiler.hpp>
@@ -16,7 +17,7 @@
 	void name(bool can_assign) {                                                                   \
 		next_fn(can_assign);                                                                       \
 		while (cond) {                                                                             \
-			Token op_token = token;                                                                \
+			const Token op_token = token;                                                          \
 			next_fn(false);                                                                        \
 			emit(toktype_to_op(op_token.type), op_token);                                          \
 		}                                                                                          \
@@ -40,7 +41,7 @@ Compiler::Compiler(VM* vm, Compiler* parent, const String* name) : m_vm{vm}, m_p
 	m_scanner = m_parent->m_scanner;
 	m_proto = &m_vm->make<Prototype>(name);
 
-	m_symtable.add(name->chars, name->length, false);
+	m_symtable.add(name->c_str(), name->m_length, false);
 
 	m_source = parent->m_source;
 	vm->m_compiler = this;
@@ -61,7 +62,7 @@ Prototype* Compiler::compile() {
 		toplevel();
 	}
 
-	m_proto->num_upvals = m_symtable.num_upvals;
+	m_proto->m_num_upvals = m_symtable.num_upvals;
 	emit_bytes(Op::load_nil, Op::return_val, token.location.line);
 	return m_proto;
 }
@@ -70,7 +71,7 @@ Prototype* Compiler::compile_func() {
 	test(TT::LCurlBrace, "Expected '{' before function body.");
 
 	block_stmt();
-	m_proto->num_upvals = m_symtable.num_upvals;
+	m_proto->m_num_upvals = m_symtable.num_upvals;
 	emit(Op::load_nil);
 	emit(Op::return_val);
 	m_vm->m_compiler = m_parent;
@@ -86,7 +87,7 @@ void Compiler::toplevel() {
 	if (has_error) recover();
 	if (eof()) return;
 
-	const auto tt = peek.type;
+	const TT tt = peek.type;
 
 	switch (tt) {
 	case TT::Const:
@@ -121,7 +122,7 @@ void Compiler::declarator(bool is_const) {
 void Compiler::block_stmt() {
 	advance(); // eat the opening '{'
 	enter_block();
-	while (!(eof() || check(TT::RCurlBrace))) {
+	while (!(eof() or check(TT::RCurlBrace))) {
 		toplevel();
 	}
 	expect(TT::RCurlBrace, "Expected '}' to close block.");
@@ -131,7 +132,7 @@ void Compiler::block_stmt() {
 void Compiler::if_stmt() {
 	advance(); // consume 'if'
 	expr();	   // parse condition.
-	std::size_t jmp = emit_jump(Op::pop_jmp_if_false);
+	const std::size_t jmp = emit_jump(Op::pop_jmp_if_false);
 	toplevel();
 
 	if (match(TT::Else)) {
@@ -149,7 +150,7 @@ void Compiler::fn_decl() {
 	advance(); // consume 'fn' token.
 	expect(TT::Id, "expected function name");
 
-	Token name_token = token;
+	const Token name_token = token;
 	String* fname = &m_vm->make<String>(name_token.raw_cstr(m_source), name_token.length());
 
 	func_expr(fname);
@@ -173,19 +174,19 @@ void Compiler::func_expr(const String* fname) {
 	compiler.expect(TT::RParen, "Expected ')' after function parameters.");
 
 	Prototype* proto = compiler.compile_func();
-	u8 idx = emit_value(SNAP_OBJECT_VAL(proto));
+	const u8 idx = emit_value(SNAP_OBJECT_VAL(proto));
 
 	emit_bytes(Op::make_func, static_cast<Op>(idx), token);
-	emit(static_cast<Op>(proto->num_upvals), token);
+	emit(static_cast<Op>(proto->m_num_upvals), token);
 
 	for (int i = 0; i < compiler.m_symtable.num_upvals; ++i) {
-		CompilerUpval& upval = compiler.m_symtable.m_upvals[i];
+		const CompilerUpval& upval = compiler.m_symtable.m_upvals[i];
 		emit(upval.is_local ? static_cast<Op>(1) : static_cast<Op>(0));
 		emit(static_cast<Op>(upval.index));
 	}
 
 #ifdef SNAP_DEBUG_DISASSEMBLY
-	disassemble_block(proto->name->chars, proto->m_block);
+	disassemble_block(proto->name_cstr(), proto->m_block);
 #endif
 
 	prev = compiler.prev;
@@ -195,8 +196,8 @@ void Compiler::func_expr(const String* fname) {
 
 void Compiler::ret_stmt() {
 	advance(); // eat the return keyword.
-	if (isLiteral(peek.type) || check(TT::Id) || check(TT::Bang) || check(TT::Minus) ||
-		check(TT::LParen) || check(TT::Fn)) {
+	if (isLiteral(peek.type) or check(TT::Id) or check(TT::Bang) or check(TT::Minus) or
+		check(TT::LParen) or check(TT::Fn) or check(TT::LCurlBrace)) {
 		expr();
 	} else {
 		emit(Op::load_nil);
@@ -211,14 +212,14 @@ void Compiler::expr_stmt() {
 	match(TT::Semi);
 }
 
-void Compiler::expr() {
-	logic_or(true);
+void Compiler::expr(bool can_assign) {
+	logic_or(can_assign);
 }
 
 void Compiler::logic_or(bool can_assign) {
 	logic_and(can_assign);
 	if (match(TT::Or)) {
-		std::size_t jump = emit_jump(Op::jmp_if_true_or_pop);
+		const std::size_t jump = emit_jump(Op::jmp_if_true_or_pop);
 		logic_or(false);
 		patch_jump(jump);
 	}
@@ -235,18 +236,18 @@ void Compiler::logic_and(bool can_assign) {
 
 DEFINE_PARSE_FN(Compiler::bit_or, match(TT::BitOr), bit_and)
 DEFINE_PARSE_FN(Compiler::bit_and, match(TT::BitAnd), equality)
-DEFINE_PARSE_FN(Compiler::equality, match(TT::EqEq) || match(TT::BangEq), comparison)
+DEFINE_PARSE_FN(Compiler::equality, match(TT::EqEq) or match(TT::BangEq), comparison)
 DEFINE_PARSE_FN(Compiler::comparison,
-				match(TT::Gt) || match(TT::Lt) || match(TT::GtEq) || match(TT::LtEq), b_shift)
-DEFINE_PARSE_FN(Compiler::b_shift, match(TT::BitLShift) || match(TT::BitRShift), sum)
-DEFINE_PARSE_FN(Compiler::sum, (match(TT::Plus) || match(TT::Minus) || match(TT::Concat)), mult)
-DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) || match(TT::Mod) || match(TT::Div)), unary)
+				match(TT::Gt) or match(TT::Lt) or match(TT::GtEq) or match(TT::LtEq), b_shift)
+DEFINE_PARSE_FN(Compiler::b_shift, match(TT::BitLShift) or match(TT::BitRShift), sum)
+DEFINE_PARSE_FN(Compiler::sum, (match(TT::Plus) or match(TT::Minus) or match(TT::Concat)), mult)
+DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) or match(TT::Mod) or match(TT::Div)), unary)
 
 void Compiler::unary(bool can_assign) {
-	if (check(TT::Bang) || check(TT::Minus)) {
+	if (check(TT::Bang) or check(TT::Minus)) {
 		advance();
 		const Token op_token = token;
-		call(false);
+		atomic(false);
 		switch (op_token.type) {
 		case TT::Bang: emit(Op::lnot, op_token); break;
 		case TT::Minus: emit(Op::negate, op_token); break;
@@ -254,25 +255,78 @@ void Compiler::unary(bool can_assign) {
 		}
 		return;
 	}
-	call(can_assign);
+	atomic(can_assign);
 }
 
-void Compiler::call(bool can_assign) {
+void Compiler::atomic(bool can_assign) {
 	grouping(can_assign);
+	suffix_expr(can_assign);
+}
 
-	while (!eof() and match(TT::LParen)) {
-		u8 argc = 0;
-
-		if (!check(TT::RParen)) {
-			do {
-				argc++;
-				expr(); // push the arguments on the stack,
-			} while (match(TT::Comma));
+void Compiler::suffix_expr(bool can_assign) {
+	while (true) {
+		switch (peek.type) {
+		case TT::LSqBrace: {
+			advance();
+			expr();
+			expect(TT::RSqBrace, "Expected ']' to close index expression.");
+			if (can_assign and is_assign_tok(peek.type)) {
+				table_assign(Op::index_no_pop, -1);
+				emit(Op::index_set);
+				return;
+			} else {
+				emit(Op::index);
+			}
+			break;
 		}
+		case TT::LParen: call_args(); break;
+		case TT::Dot: {
+			advance();
+			expect(TT::Id, "Expected field name.");
+			const u8 index = emit_id_string(token);
 
-		expect(TT::RParen, "Expected ')' after call.");
-		emit_bytes(Op::call_func, static_cast<Op>(argc), token.location.line);
+			if (can_assign and is_assign_tok(peek.type)) {
+				table_assign(Op::table_get_no_pop, index);
+				emit(Op::table_set, Op(index));
+				return;
+			} else {
+				emit(Op::table_get, static_cast<Op>(index));
+			}
+			break;
+		}
+		default: return;
+		}
 	}
+}
+
+void Compiler::table_assign(Op get_op, int idx) {
+	advance();
+	const TT ttype = token.type;
+
+	if (ttype == TT::Eq) {
+		expr();
+		return;
+	}
+
+	emit(get_op);
+	if (idx > 0) emit(Op(idx));
+	expr();
+	emit(toktype_to_op(ttype));
+}
+
+void Compiler::call_args() {
+	advance(); // eat opening '('
+	u8 argc = 0;
+
+	if (!check(TT::RParen)) {
+		do {
+			argc++;
+			expr(); // push the arguments on the stack,
+		} while (match(TT::Comma));
+	}
+
+	expect(TT::RParen, "Expected ')' after call.");
+	emit(Op::call_func, static_cast<Op>(argc));
 }
 
 void Compiler::grouping(bool can_assign) {
@@ -288,7 +342,7 @@ void Compiler::primary(bool can_assign) {
 	if (isLiteral(peek.type)) {
 		literal();
 	} else if (match(TT::Fn)) {
-		constexpr const char* name = "<anonymous>";
+		static constexpr const char* name = "<anonymous>";
 		const String* fname = &m_vm->make<String>(name, 11);
 		if (check(TT::LParen)) return func_expr(fname);
 		// Names of lambda expressions are simply ignored
@@ -297,14 +351,52 @@ void Compiler::primary(bool can_assign) {
 		return func_expr(fname);
 	} else if (check(TT::Id)) {
 		variable(can_assign);
+	} else if (match(TT::LCurlBrace)) {
+		table();
 	} else {
 		const std::string raw = peek.raw(*m_source);
 		const char fmt[] = "Unexpected '%s'.";
-		std::size_t bufsize = strlen(fmt) + raw.length() - 1;
-		std::unique_ptr<char[]> buf{new char[bufsize]};
+		const std::size_t bufsize = strlen(fmt) + raw.length() - 1;
+		const std::unique_ptr<char[]> buf{new char[bufsize]};
 		sprintf(buf.get(), fmt, raw.c_str());
 		error_at(buf.get(), peek.location.line);
 	}
+}
+
+/// @brief compiles a table, assuming the opening '{' has been
+/// consumed.
+void Compiler::table() {
+	emit(Opcode::new_table);
+	do {
+		if (match(TT::LSqBrace)) {
+			expr();
+			expect(TT::RSqBrace, "Expected ']' near table key.");
+		} else {
+			expect(TT::Id, "Expected identifier as table key.");
+			String* key_string = &m_vm->make<String>(token.raw(*m_source).c_str(), token.length());
+			const int key_idx = emit_value(key_string);
+			emit_bytes(Op::load_const, static_cast<Op>(key_idx), token);
+			if (check(TT::LParen)) {
+				func_expr(key_string);
+				emit(Op::table_add_field);
+				if (check(TT::RCurlBrace)) break;
+				continue;
+			}
+		}
+
+		expect(TT::Colon, "Expected ':' after table key.");
+		expr(false);
+		emit(Op::table_add_field);
+
+		if (check(TT::RCurlBrace)) break;
+	} while (!eof() and match(TT::Comma));
+
+	if (eof()) {
+		error("Reached end of file while compiling.");
+		return;
+	}
+
+	expect(TT::RCurlBrace, "Expected '}' to close table, or ',' to separate entry.");
 }
 
 void Compiler::variable(bool can_assign) {
@@ -324,7 +416,7 @@ void Compiler::variable(bool can_assign) {
 		is_const = (index == -1) ? false : m_symtable.m_upvals[index].is_const;
 	}
 
-	if (can_assign && match(TT::Eq)) {
+	if (can_assign and is_assign_tok(peek.type)) {
 		if (is_const) {
 			std::string message{"Cannot assign to variable '"};
 			message = message + prev.raw(*m_source) + "' which is marked 'const'.";
@@ -332,11 +424,29 @@ void Compiler::variable(bool can_assign) {
 			has_error = false; // don't send the compiler into error recovery mode.
 		}
 
-		expr(); // compile assignment RHS
+		/// compile the RHS of the assignment, and
+		/// any necessary arithmetic ops if its a
+		/// compound assignment operator. So by the
+		/// time we are setting the value, the RHS
+		/// is sitting ready on top of the stack.
+		var_assign(get_op, index);
 		emit_bytes(set_op, static_cast<Op>(index), token);
 	} else {
 		emit_bytes(get_op, static_cast<Op>(index), token);
 	}
+}
+
+void Compiler::var_assign(Op get_op, u32 idx_or_name_str) {
+	advance();
+	const TT ttype = token.type;
+	if (ttype == TT::Eq) {
+		expr();
+		return;
+	}
+
+	emit(get_op, Op(idx_or_name_str));
+	expr();
+	emit(toktype_to_op(ttype));
 }
 
 void Compiler::literal() {
@@ -349,18 +459,18 @@ void Compiler::literal() {
 	case TT::True: index = emit_value(SNAP_BOOL_VAL(true)); break;
 	case TT::False: index = emit_value(SNAP_BOOL_VAL(false)); break;
 	case TT::Nil: index = emit_value(SNAP_NIL_VAL); break;
-	default:;
+	default:; // impossible
 	}
 
 	if (index >= Compiler::MaxLocalVars) {
 		error_at_token("Too many literal constants in one function.", token);
 	}
 
-	emit_bytes(Op::load_const, static_cast<Op>(index), token);
+	emit(Op::load_const, static_cast<Op>(index));
 }
 
 void Compiler::recover() {
-	while (!(eof() || match(TT::Semi) || match(TT::LCurlBrace) || match(TT::LSqBrace))) {
+	while (!(eof() or match(TT::Semi) or match(TT::LCurlBrace) or match(TT::LSqBrace))) {
 		advance();
 	}
 }
@@ -395,15 +505,25 @@ void Compiler::patch_jump(std::size_t index) {
 	if (jump_dist > UINT16_MAX) {
 		error_at("Too much code to jump over.", token.location.line);
 	}
+	// If we use a single Opcode for the jump offset, then we're only allowed
+	// to jump over 255 instructions, which is unfortunately a very small number.
+	// To counter this, jumps are broken down into two Ops, the first Op contains the
+	// first byte and the second Op contains the second byte. The bytes are then stitched
+	// together to form a short int, thus allowing us to jump over UINT16_MAX bytes of code
+	// (65535 instructions) at best.
 
+	// For example, if we want to jump over 25000 opcodes, that means our jump offset
+	// is `0x61A8`. The first byte, `0x61` goes in the first opcode, and the second
+	// byte, `0xA8` goes in the second opcode. At runtime, the VM reads both of these,
+	// and joins them together using some bit operators.
 	THIS_BLOCK.code[index] = static_cast<Op>((jump_dist >> 8) & 0xff);
 	THIS_BLOCK.code[index + 1] = static_cast<Op>(jump_dist & 0xff);
 }
 
 void Compiler::add_param(const Token& token) {
 	new_variable(token);
-	m_proto->num_params++;
-	if (m_proto->num_params > MaxFuncParams) {
+	m_proto->m_num_params++;
+	if (m_proto->m_num_params > MaxFuncParams) {
 		error_at_token("Too many function parameters.", token);
 	}
 }
@@ -463,11 +583,16 @@ void Compiler::error(const char* fmt...) {
 	va_end(args);
 }
 
-size_t Compiler::emit_string(const Token& token) {
-	size_t length = token.length() - 2; // minus the quotes
+u32 Compiler::emit_string(const Token& token) {
+	u32 length = token.length() - 2; // minus the quotes
 	// +1 to skip the openening quote.
 	String& string = m_vm->make<String>(token.raw_cstr(m_source) + 1, length);
 	return emit_value(SNAP_OBJECT_VAL(&string));
+}
+
+u32 Compiler::emit_id_string(const Token& token) {
+	String* s = &m_vm->make<String>(token.raw(*m_source).c_str(), token.length());
+	return emit_value(SNAP_OBJECT_VAL(s));
 }
 
 int Compiler::find_local_var(const Token& name_token) {
@@ -532,13 +657,23 @@ inline void Compiler::emit_bytes(Op a, Op b, u32 line) {
 	emit(b, line);
 }
 
-Op Compiler::toktype_to_op(TT toktype) {
+inline void Compiler::emit(Op a, Op b) {
+	emit(a, token);
+	emit(b, token);
+}
+
+Op Compiler::toktype_to_op(TT toktype) const {
 	switch (toktype) {
-	case TT::Plus: return Op::add;
-	case TT::Minus: return Op::sub;
-	case TT::Div: return Op::div;
-	case TT::Mult: return Op::mult;
-	case TT::Mod: return Op::mod;
+	case TT::Plus:
+	case TT::PlusEq: return Op::add;
+	case TT::Minus:
+	case TT::MinusEq: return Op::sub;
+	case TT::Div:
+	case TT::DivEq: return Op::div;
+	case TT::Mult:
+	case TT::MultEq: return Op::mult;
+	case TT::Mod:
+	case TT::ModEq: return Op::mod;
 	case TT::EqEq: return Op::eq;
 	case TT::BangEq: return Op::neq;
 	case TT::Concat: return Op::concat;
@@ -552,6 +687,10 @@ Op Compiler::toktype_to_op(TT toktype) {
 	case TT::LtEq: return Op::lte;
 	default: return Op::op_count;
 	}
+}
+
+bool Compiler::is_assign_tok(TT type) const {
+	return (type == TT::Eq or (type >= TT::ModEq and type <= TT::PlusEq));
 }
 
 int Compiler::new_variable(const Token& varname, bool is_const) {

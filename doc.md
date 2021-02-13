@@ -13,16 +13,14 @@ Snap supports the following operators, from highest to lowest precedence:
 | ()       | Call                          | Left-to-right |
 | []       | Computed Member access        |               |
 | .        | Member access                 |               |
-| ++       | Post-increment                |               |
-| --       | Post-decrement                |               |
 +----------+-------------------------------+---------------+
-| ++       | Pre-increment                 | Right-to-left |
-| --       | Pre-decrement                 |               |
 | +-       | Unary Plus/Minus              |               |
 | !~       | Not, Binary Not               |               |
 | typeof   | Type of                       |               |
 | #        | Length                        |               |
 +----------+-------------------------------+---------------+
+| **       | Exponent                      | Left-to-right |
++__________+_______________________________+_______________+
 | * / %    | Mult / Div / Mod              | Left-to-right |
 +----------+-------------------------------+---------------+
 | + -      | Add / Sub                     | Left-to-right |

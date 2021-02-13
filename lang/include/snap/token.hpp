@@ -17,22 +17,29 @@ enum class TokenType {
 	Eof,
 
 	// Operators
-	Plus,	 // +
-	PlusEq,	 // +=
-	Concat,	 // ..
-	Minus,	 // -
-	MinusEq, // -=
-	Mult,	 // *
-	MultEq,	 // *=
-	Div,	 // /
-	DivEq,	 // /=
-	Mod,	 // %
+	Plus,	// +
+	Concat, // ..
+	Minus,	// -
+	Mult,	// *
+	Div,	// /
+	Mod,	// %
+	Exp,	// **
+	Eq,		// =
+	Bang,	// !
+	Dot,	// .
+	Len,	// #
+
+	// NOTE: It is important that these compound
+	// assignment enums are stay in this order.
+	// Any new compound assignment operator should be
+	// added between `ModEq` and `PlusEq`. This is to make
+	// sure that `Compiler::is_assign_tok` works as intended.
+	// Refer to `compiler.cpp`.
 	ModEq,	 // %=
-	Exp,	 // **
-	Eq,		 // =
-	Bang,	 // !
-	Dot,	 // .
-	Len,	 // #
+	DivEq,	 // /=
+	MultEq,	 // *=
+	MinusEq, // -=
+	PlusEq,	 // +=
 
 	// compare
 

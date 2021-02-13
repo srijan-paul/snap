@@ -1,0 +1,16 @@
+const clock = import('clock')
+
+fn fib(n) {
+  if n <= 1 return 1
+  return fib(n - 1) + fib(n - 2)
+}
+
+fn fib_test() {
+  const start = clock.now()
+  for i = 1, 100 
+    for i = 1, 20 
+      fib(i)
+  return clock.now() - start 
+}
+
+print("Fibonacci snap: (ms) ", fib_test())

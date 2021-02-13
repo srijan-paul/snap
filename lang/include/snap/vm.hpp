@@ -1,10 +1,6 @@
 #pragma once
-#include "block.hpp"
-#include "common.hpp"
 #include "compiler.hpp"
-#include "opcode.hpp"
-#include "value.hpp"
-#include "vm.hpp"
+#include "table.hpp"
 #include <cstdarg>
 #include <cstddef>
 #include <functional>
@@ -18,7 +14,7 @@ using ErrorFn = std::function<void(const VM& vm, const char* fstring)>;
 using AllocateFn = std::function<void*(VM& vm, size_t old_size, size_t new_size)>;
 
 inline void default_print_fn([[maybe_unused]] const VM& vm, String* string) {
-	printf("%s\n", string->chars);
+	printf("%s\n", string->c_str());
 }
 
 void default_error_fn(const VM& vm, const char* message);
@@ -31,7 +27,7 @@ struct CallFrame {
 	// slot usable by the CallFrame. All local variables
 	// are represented as a stack offset from this
 	// base.
-	StackId base;
+	Value* base;
 };
 
 class VM {
@@ -54,6 +50,8 @@ class VM {
 	static constexpr std::size_t MaxCallStack = 128;
 	Value m_stack[StackMaxSize];
 	// points to the next free slot where a value can go
+
+	using StackId = Value*;
 	StackId sp = m_stack;
 
 	ExitCode interpret();
@@ -67,7 +65,7 @@ class VM {
 	/// message as a c string.
 	ErrorFn log_error = default_error_fn;
 
-	inline Value peek(u8 depth = 0) {
+	inline Value peek(u8 depth = 0) const {
 		return *(sp - 1 - depth);
 	}
 
@@ -97,12 +95,12 @@ class VM {
 	ExitCode run(bool run_till_end = true);
 	const Block* block();
 
-  /// @brief makes an object of type [T], 
+	/// @brief makes an object of type [T],
 	/// registers it with the VM and return a reference to
 	/// the newly created object.
-	/// The object is registered simply by attaching 
+	/// The object is registered simply by attaching
 	/// it to the head of the VM's object linked list.
-	template<typename T, typename... Args>
+	template <typename T, typename... Args>
 	T& make(Args&&... args) {
 		T* object = new T(std::forward<Args>(args)...);
 		object->next = m_gc_objects;
@@ -120,7 +118,7 @@ class VM {
 	std::size_t ip = 0;
 
 	// the VM maintains it's personal linked list of objects
-	// for garbage collection. GC is achieved by walking over 
+	// for garbage collection. GC is achieved by walking over
 	// this list, and removing all objects that have no other
 	// references anywhere else in the VM
 	Obj* m_gc_objects = nullptr;
@@ -128,7 +126,7 @@ class VM {
 
 	// VM's personal list of all open upvalues.
 	// This is a sorted linked list, the head
-	// contains the upvalue pointing to the 
+	// contains the upvalue pointing to the
 	// highest value on the stack.
 	Upvalue* m_open_upvals = nullptr;
 
@@ -145,7 +143,7 @@ class VM {
 	/// inside an Upvalue object and add it to the
 	/// VM's currently open Upvalue list in the right
 	/// position (if it isn't already there).
-	/// @param slot A `Value*` referencing a valueinside the VM's 
+	/// @param slot A `Value*` referencing a valueinside the VM's
 	///             value stack.
 	Upvalue* capture_upvalue(Value* slot);
 	// close all the upvalues that are present between the
@@ -161,7 +159,7 @@ class VM {
 
 	/// @brief Throws a runtime error by calling the `log_error` and
 	/// then shutting down the VM by returning an ExitCode::RuntimeError
-	/// @param fstring the format string, followed by format args. 
+	/// @param fstring the format string, followed by format args.
 	///        Similar to `printf`.
 	ExitCode runtime_error(const char* fstring...) const;
 };

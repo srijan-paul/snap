@@ -1,0 +1,10 @@
+let t = {
+  a: 1,
+  b: 2,
+  c: 3
+}
+
+t.a += 2
+t.c = t.b *= 2
+
+return t.a + t.b + t.c

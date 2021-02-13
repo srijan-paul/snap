@@ -1,24 +1,56 @@
 #include "assert.hpp"
 #include "test_utils.hpp"
 #include "value.hpp"
+#include <fstream>
+#include <memory>
+#include <sstream>
 #include <stdlib.h>
 
 using namespace snap;
 
-void assert_val_eq(Value& expected, Value actual) {
-	if (!Value::are_equal(expected, actual)) {
-		fprintf(stderr, "Expected value to be: ");
+void assert_val_eq(Value& expected, Value actual, const char* message = "Test failed! ") {
+	if (expected != actual) {
+		fprintf(stderr, "%s: ", message);
+		fprintf(stderr, "Expected value to be ");
 		print_value(expected);
-		fprintf(stderr, " But got:  ");
+		fprintf(stderr, " But got  ");
 		print_value(actual);
 		abort();
 	}
 }
 
-static void test_return(const std::string&& code, Value expected) {
+static void test_return(const std::string&& code, Value expected,
+						const char* message = "Test failed!") {
 	VM vm{&code};
 	vm.interpret();
-	assert_val_eq(expected, vm.return_value);
+	assert_val_eq(expected, vm.return_value, message);
+}
+
+/// Given the name of a test file to run, checks the value returned by that file's evaluation.
+/// @param filename name of the file, must be inside 'test/test_programs/'.
+/// @param expected Expected return value once the file is interpreted.
+/// @param message Message to be displayed on failure.
+static void test_file(const char* filename, Value expected, const char* message = "Failure") {
+
+	// Currently files can only be read relative to the path of the binary (which is
+	// in `bin/vm_test`).
+	// So to read the file just from it's name, we append the file beginning of the
+	// file path to it.
+	static const char* path_prefix = "../test/test_programs/";
+	std::string filepath{path_prefix};
+	filepath += filename;
+
+	std::ifstream file(filepath);
+
+	if (file) {
+		std::ostringstream stream;
+		stream << file.rdbuf();
+		test_return(stream.str(), expected, message);
+		return;
+	}
+
+	fprintf(stderr, "Could not open file '%s'", filepath.c_str());
+	abort();
 }
 
 /// Runs the next `op_count` instructions in the `code` string in a VM.
@@ -67,6 +99,20 @@ static void expr_tests() {
 	// test precedence
 
 	test_code("let a = 5 > 2 && 3 > -10", 8, SNAP_BOOL_VAL(true));
+
+	// test string equality
+	test_return("return 'abc' == 'abc'", SNAP_BOOL_VAL(true));
+	test_return(R"(
+		const a = 'abcde'
+		const b = "abcde"
+		const c = 'aa'
+		const d = 'bb'
+
+		return a == b and c..d == 'aabb'
+	)",
+				SNAP_BOOL_VAL(true));
+
+	test_file("compound-assign.snp", SNAP_NUM_VAL(8), "Compound assignment operators.");
 }
 
 static void stmt_tests() {
@@ -142,6 +188,39 @@ void fn_tests() {
 		return add10(-10)
 	)",
 				SNAP_NUM_VAL(0));
+
+	test_file("llnode-cl.snp", SNAP_NUM_VAL(20), "Linked list closure test");
+}
+
+void table_test() {
+	test_return(R"(
+		fn Node(a, b) {
+			return  { data: a, next: b }
+		}
+		const head = Node(10, Node(20))
+		return head.next.data
+	)",
+				SNAP_NUM_VAL(20), "Linked lists as tables test");
+
+	// setting table field names.
+	test_return(R"(
+		const t = {
+			k : 7 
+		}
+		let a = t.k
+		t.k = 3
+		return t.k +  a
+	)",
+				SNAP_NUM_VAL(10));
+
+	test_file("table-1.snp", SNAP_NUM_VAL(3), "returning tables from a closure.");
+	test_file("table-2.snp", SNAP_NUM_VAL(6), "Accessing table fields");
+	test_file("table-3.snp", SNAP_NUM_VAL(11), "Accessing table fields");
+	test_file("table-4.snp", SNAP_NUM_VAL(10), "Computed member assignment and access.");
+	test_file("table-5.snp", SNAP_NUM_VAL(10),
+			  "Computed member access and dot member access are equivalent for string keys.");
+	test_file("table-6.snp", SNAP_NUM_VAL(25), "Compound assignment to computed members");
+	test_file("table-7.snp", SNAP_NUM_VAL(10), "Syntactic sugar for table methods");
 }
 
 void vm_test() {
@@ -180,6 +259,7 @@ int main() {
 	expr_tests();
 	stmt_tests();
 	fn_tests();
+	table_test();
 	vm_test();
 	return 0;
 }

@@ -1,0 +1,7 @@
+const t = {
+  foo() {
+    return 1 + 2
+  }
+}
+
+return t.foo()

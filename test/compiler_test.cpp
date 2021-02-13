@@ -2,7 +2,6 @@
 #include <debug.hpp>
 #include <opcode.hpp>
 
-
 using namespace snap;
 using Op = snap::Opcode;
 
@@ -33,6 +32,20 @@ static void compiler_test() {
 	// variable access
 	print_disassembly("let a = 1;"
 					  "let b = a + 1;");
+
+	print_disassembly("let s = 'this is a string'");
+
+	print_disassembly(R"(
+		let a = {
+			key: "value"
+		}
+	)");
+
+	print_disassembly(R"(
+		const tbl = {
+			[123 + 4]: "abc" .. "def"
+		}
+	)");
 
 	std::printf("--- / Compiler test ---\n");
 }

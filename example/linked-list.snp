@@ -1,0 +1,11 @@
+class LLNode {
+  init(data, next) {
+   @data = data
+   @next = next
+  }
+}
+
+const head = LLNode(10, LLNode(20, LLNode(30)))
+print(head.data, head.next.data, head.next.next.data)
+
+return LLNode
