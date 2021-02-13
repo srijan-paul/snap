@@ -144,7 +144,7 @@ The snap lexer resides in the `src/syntax/scanner.hpp` file, A simple hand writt
 token whenever the method `next_token()` is called.
 The Lexer is called from within the Compiler, but can also be instantiated and used stand-alone for testing purposes.
 
-### Compiling (AST -> Bytecode)
+### Compiling (Tokens -> Bytecode)
 
 The Compiler compiles tokens to Bytecode following the Snap Bytecode Instruction format (`lang/include/opcode.hpp`).
 Every instruction is 1 byte long. The compiler returns a function containing all the bytecode from the script, which is 
