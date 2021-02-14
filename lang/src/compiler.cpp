@@ -9,9 +9,11 @@
 #include <iterator>
 #include <string>
 #include <vm.hpp>
+#include "str_format.hpp"
 
 #define TOK2NUM(t) SNAP_NUM_VAL(std::stod(t.raw(*m_source)))
 #define THIS_BLOCK (m_proto->m_block)
+#define ERROR(...) error(kt::format_str(__VA_ARGS__))
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
 	void name(bool can_assign) {                                                                   \
@@ -163,11 +165,17 @@ void Compiler::func_expr(const String* fname) {
 
 	compiler.expect(TT::LParen, "Expected '(' before function parameters.");
 
+	int param_count = 0;
 	if (!compiler.check(TT::RParen)) {
 		do {
 			compiler.expect(TT::Id, "Expected parameter name.");
 			compiler.add_param(compiler.token);
+			++param_count;
 		} while (compiler.match(TT::Comma));
+	}
+
+	if (param_count > 255) {
+		compiler.error_at_token("Function cannot have more than 255 parameters", compiler.token);
 	}
 
 	compiler.expect(TT::RParen, "Expected ')' after function parameters.");
@@ -464,9 +472,6 @@ void Compiler::literal() {
 	default:; // impossible
 	}
 
-	if (index >= Compiler::MaxLocalVars) {
-		error_at_token("Too many literal constants in one function.", token);
-	}
 
 	emit(Op::load_const, static_cast<Op>(index));
 }
@@ -561,29 +566,16 @@ void Compiler::test(TT expected, const char* errmsg) {
 	}
 }
 
-void Compiler::error_at(const char* fmt, u32 line) {
-	error("[line %d]: %s", line, fmt);
+void Compiler::error_at(const char* message, u32 line) {
+	ERROR("[line {}]: {}", line, message);
 }
 
 void Compiler::error_at_token(const char* message, const Token& token) {
-	error("[line %d]: near '%s': %s", token.location.line, token.raw(*m_source).c_str(), message);
+	ERROR("[line {}]: near '{}': {}", token.location.line, token.raw(*m_source).c_str(), message);
 }
 
-void Compiler::error(const char* fmt...) {
-	has_error = true;
-
-	va_list args;
-	va_start(args, fmt);
-
-	std::size_t bufsize = vsnprintf(nullptr, 0, fmt, args) + 1;
-
-	std::unique_ptr<char[]> buf{new char[bufsize]};
-
-	vsnprintf(buf.get(), bufsize, fmt, args);
-	// m_vm->on_error(*m_vm, std::strinbuf.get());
-	std::cout << buf.get();
-
-	va_end(args);
+void Compiler::error(std::string&& message) {
+	m_vm->on_error(*m_vm, message);
 }
 
 u32 Compiler::emit_string(const Token& token) {
@@ -637,8 +629,12 @@ int Compiler::find_upvalue(const Token& token) {
 	return -1;
 }
 
-inline size_t Compiler::emit_value(Value v) {
-	return THIS_BLOCK.add_value(v);
+std::size_t Compiler::emit_value(Value v) {
+	std::size_t index = THIS_BLOCK.add_value(v);
+	if (index >= Compiler::MaxLocalVars) {
+		error_at_token("Too many constants in one function.", token);
+	}
+	return index;
 }
 
 inline void Compiler::emit(Op op) {

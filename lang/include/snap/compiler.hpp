@@ -131,7 +131,7 @@ class Compiler {
 
 	void error_at_token(const char* message, const Token& token);
 	void error_at(const char* message, u32 line);
-	void error(const char* fmt...);
+	void error(std::string&& message);
 
 	// Compile a function's body (if this is a child compiler).
 	Prototype* compile_func();
@@ -235,7 +235,7 @@ class Compiler {
 	void emit_bytes(Opcode a, Opcode b, u32 line);
 	void emit_bytes(Opcode a, Opcode b, const Token& token);
 	void emit(Opcode a, Opcode b);
-	size_t emit_value(Value value);
+	std::size_t emit_value(Value value);
 	u32 emit_string(const Token& token);
 	u32 emit_id_string(const Token& token);
 
