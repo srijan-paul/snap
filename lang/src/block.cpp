@@ -10,8 +10,9 @@ size_t Block::add_instruction(Opcode i, u32 line) {
 	return code.size() - 1;
 }
 
-size_t Block::add_num(u8 i) {
+size_t Block::add_num(u8 i, u32 line) {
 	code.emplace_back(static_cast<Opcode>(i));
+	lines.emplace_back(line);
 	return code.size() - 1;
 }
 

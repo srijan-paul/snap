@@ -10,14 +10,14 @@ namespace snap {
 enum class ExitCode : u8 { Success, CompileError, RuntimeError };
 
 using PrintFn = std::function<void(const VM& vm, String* string)>;
-using ErrorFn = std::function<void(const VM& vm, const char* fstring)>;
+using ErrorFn = std::function<void(const VM& vm, std::string& err_message)>;
 using AllocateFn = std::function<void*(VM& vm, size_t old_size, size_t new_size)>;
 
 inline void default_print_fn([[maybe_unused]] const VM& vm, String* string) {
 	printf("%s\n", string->c_str());
 }
 
-void default_error_fn(const VM& vm, const char* message);
+void default_error_fn(const VM& vm, std::string& err_msg);
 
 struct CallFrame {
 	Function* func;
@@ -63,7 +63,7 @@ class VM {
 	/// The function called when there is a compile or runtime error
 	/// in the VM. It takes a reference to the VM, and the error
 	/// message as a c string.
-	ErrorFn log_error = default_error_fn;
+	ErrorFn on_error = default_error_fn;
 
 	inline Value peek(u8 depth = 0) const {
 		return *(sp - 1 - depth);
@@ -157,11 +157,11 @@ class VM {
 	/// @param b The right operand
 	ExitCode binop_error(const char* opstr, Value& a, Value& b);
 
-	/// @brief Throws a runtime error by calling the `log_error` and
-	/// then shutting down the VM by returning an ExitCode::RuntimeError
-	/// @param fstring the format string, followed by format args.
-	///        Similar to `printf`.
-	ExitCode runtime_error(const char* fstring...) const;
+	/// @brief Throws a runtime error by producing a stack trace, then
+	/// calling the `on_error` and shutting down the VM by returning an
+	/// ExitCode::RuntimeError
+	/// @param message The error message.
+	ExitCode runtime_error(std::string&& message) const;
 };
 
 } // namespace snap

@@ -25,6 +25,13 @@ struct Obj {
 
 enum class ValueType { Number, Bool, Object, Nil };
 
+// Without NaN tagging, values are represented
+// as structs weighing 16 bytes. 1 word for the 
+// type tag and one for the union representing the
+// possible states. This is a bit wasteful but 
+// not that bad.
+// TODO: Implement optional NaN tagging when a macro
+// SNAP_NAN_TAGGING is defined.
 struct Value {
 	ValueType tag;
 	union {
@@ -74,14 +81,19 @@ struct Value {
 	inline bool is_string() const {
 		return (tag == ValueType::Object && as_object()->tag == ObjType::string);
 	}
-
-	std::string name_str() const;
-	const char* name_cstr() const;
-	const char* type_name() const;
 };
 
 bool operator==(const Value& a, const Value& b);
 bool operator!=(const Value& a, const Value& b);
+
+// It might seem redundant to represent
+// these procedures as free functions instead
+// of methods, but once we have NaN tagging
+// we want these methods to work the same. 
+std::string value_to_string(Value v);
+const char* value_type_name(Value v);
+const char* value_type_name(Value v);
+void print_value(Value v);
 
 #define SNAP_SET_NUM(v, i)	  ((v).as.num = i)
 #define SNAP_SET_BOOL(v, b)	  ((v).as.boolean = b)
@@ -111,9 +123,8 @@ bool operator!=(const Value& a, const Value& b);
 
 #define SNAP_SET_TT(v, tt) ((v).tag = tt)
 #define SNAP_GET_TT(v)	   ((v).tag)
-#define SNAP_TYPE_CSTR(v)  ((v).type_name())
+#define SNAP_TYPE_CSTR(v)  (value_type_name(v))
 
 #define SNAP_CAST_INT(v) ((s64)((v).as.num))
 
-void print_value(Value v);
 } // namespace snap

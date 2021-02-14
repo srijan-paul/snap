@@ -8,7 +8,7 @@ namespace snap {
 using TT = TokenType;
 
 Token Scanner::make_token(TT type) const {
-	return Token{type, Location{{start, current - start}, line_pos.line, line_pos.column}};
+	return Token{type, Location{{start, current - start}, line_pos.line}};
 }
 
 Token Scanner::token_if_match(char c, TT then, TT other) {
@@ -117,7 +117,7 @@ Token Scanner::number() {
 Token Scanner::make_string(char quote) {
 	while (!(eof() or check(quote))) next();
 	if (eof()) {
-		// TODO: error
+		return make_token(TT::Error);
 	} else {
 		next(); // eat the closing quote.
 	}
