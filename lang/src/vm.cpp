@@ -29,6 +29,7 @@
 
 // PEEK(1) fetches the topmost value in the stack.
 #define PEEK(depth) sp[-depth]
+#define POP() *(--sp)
 
 namespace snap {
 
@@ -178,12 +179,9 @@ ExitCode VM::run(bool run_till_end) {
 		}
 
 		case Op::negate: {
-			Value& a = PEEK(1);
-			if (SNAP_IS_NUM(a)) {
-				SNAP_SET_NUM(a, -SNAP_AS_NUM(a));
-			} else {
-				UNOP_ERROR("-", a);
-			}
+			Value& operand = PEEK(1);
+			if (SNAP_IS_NUM(operand)) SNAP_SET_NUM(operand, -SNAP_AS_NUM(operand));
+			else UNOP_ERROR("-", operand);
 			break;
 		}
 
@@ -234,7 +232,7 @@ ExitCode VM::run(bool run_till_end) {
 
 		case Op::set_upval: {
 			u8 idx = NEXT_BYTE();
-			*m_current_frame->func->m_upvals[idx]->value = peek(0);
+			*m_current_frame->func->m_upvals[idx]->value = PEEK(1);
 			break;
 		}
 

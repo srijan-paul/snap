@@ -17,27 +17,27 @@ s32 Obj::hash() {
 }
 
 void print_value(Value v) {
-	std::printf("%s", v.name_str().c_str());
+	std::printf("%s", value_to_string(v).c_str());
 }
 
-std::string Value::name_str() const {
-	switch (tag) {
-	case VT::Number: return std::to_string(as_num());
-	case VT::Bool: return as_bool() ? "true" : "false";
+std::string value_to_string(Value v) {
+	switch (v.tag) {
+	case VT::Number: return std::to_string(SNAP_AS_NUM(v));
+	case VT::Bool: return SNAP_AS_BOOL(v) ? "true" : "false";
 	case VT::Nil: return "nil";
 	case VT::Object: {
-		const Obj* obj = as_object();
+		const Obj* obj = SNAP_AS_OBJECT(v);
 
 		switch (obj->tag) {
-		case OT::string: return SNAP_AS_CSTRING(*this);
+		case OT::string: return SNAP_AS_CSTRING(v);
 		case OT::func:
 			return std::string("[fn ") + static_cast<const Function*>(obj)->name_cstr() + "]";
 		case OT::proto:
 			return std::string("[prototype ") + static_cast<const Prototype*>(obj)->name_cstr() +
 				   "]";
-		case OT::upvalue: return static_cast<const Upvalue*>(obj)->value->name_str();
+		case OT::upvalue: return value_to_string(static_cast<const Upvalue*>(obj)->value);
 		case OT::table: {
-			Table* tbl = SNAP_AS_TABLE(*this);
+			Table* tbl = SNAP_AS_TABLE(v);
 			return "[table " + std::to_string((size_t)tbl) + "]";
 		}
 
@@ -48,13 +48,13 @@ std::string Value::name_str() const {
 	}
 }
 
-const char* Value::type_name() const {
-	switch (tag) {
+const char* value_type_name(Value v) {
+	switch (v.tag) {
 	case VT::Number: return "number";
 	case VT::Bool: return "boolean";
 	case VT::Object: {
-		const Obj* obj = as_object();
-		if (is_string()) return "string";
+		const Obj* obj = SNAP_AS_OBJECT(v);
+		if (SNAP_IS_STRING(v)) return "string";
 		if (obj->tag == OT::func) return "function";
 		return "object";
 	}

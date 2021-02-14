@@ -7,7 +7,7 @@
 namespace snap {
 using Op = Opcode;
 
-#define PRINT_VAL(v) (printf("%s", ((v).name_str().c_str())))
+#define PRINT_VAL(v) (printf("%s", (value_to_string(v).c_str())))
 
 static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)> op_strs = {
 	"load_const",
