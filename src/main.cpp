@@ -24,7 +24,11 @@ int main() {
 		std::string code(stream.str());
 		VM vm{&code};
 		vm.interpret();
+		std::cout << "Vm returned: ";
+		print_value(vm.return_value);
+		std::cout << std::endl;
 	};
+
 	std::cout << "Snap programming language."
 			  << "\n";
 	return 0;

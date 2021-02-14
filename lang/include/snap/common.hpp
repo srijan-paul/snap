@@ -22,8 +22,8 @@ class Compiler;
 // bits to encode the type information.
 // #define SNAP_NAN_TAGGING 1
 
-#define SNAP_DEBUG_RUNTIME 1
-#define SNAP_DEBUG_DISASSEMBLY 1
+// #define SNAP_DEBUG_RUNTIME 1
+// #define SNAP_DEBUG_DISASSEMBLY 1
 
 #define SNAP_STRESS_GC 1
 #define SNAP_LOG_GC	   1

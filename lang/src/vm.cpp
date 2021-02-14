@@ -1,3 +1,4 @@
+#include "str_format.hpp"
 #include <cmath>
 #include <common.hpp>
 #include <compiler.hpp>
@@ -13,6 +14,9 @@
 #if defined(SNAP_DEBUG_RUNTIME) || defined(SNAP_DEBUG_DISASSEMBLY)
 #include <debug.hpp>
 #endif
+
+#define ERROR(...)	   runtime_error(kt::format_str(__VA_ARGS__))
+#define CURRENT_LINE() (m_current_block->lines[ip - 1])
 
 #define FETCH()		(m_current_block->code[ip++])
 #define NEXT_BYTE() (static_cast<u8>(m_current_block->code[ip++]))
@@ -38,8 +42,7 @@ VM::VM(const std::string* src) : m_source{src} {
 #define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) and !(SNAP_AS_BOOL(v))) or SNAP_IS_NIL(v))
 #define IS_VAL_TRUTHY(v) (!IS_VAL_FALSY(v))
 
-#define UNOP_ERROR(op, v)                                                                          \
-	runtime_error("Cannot use operator '%s' on type '%s'.", op, SNAP_TYPE_CSTR(v))
+#define UNOP_ERROR(op, v) ERROR("Cannot use operator '{}' on type '{}'.", op, SNAP_TYPE_CSTR(v))
 
 #define CMP_OP(op)                                                                                 \
 	do {                                                                                           \
@@ -282,12 +285,12 @@ ExitCode VM::run(bool run_till_end) {
 			Value& tvalue = PEEK(1);
 			if (SNAP_IS_TABLE(tvalue)) {
 				if (SNAP_GET_TT(key) == VT::Nil) {
-					return runtime_error("Table key cannot be nil.");
+					return ERROR("Table key cannot be nil.");
 				}
 				SNAP_AS_TABLE(tvalue)->set(key, value);
 				sp[-1] = value; // assignment returns it's RHS.
 			} else {
-				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(tvalue));
+				return ERROR("Attempt to index a {} value.", SNAP_TYPE_CSTR(tvalue));
 			}
 			break;
 		}
@@ -301,7 +304,7 @@ ExitCode VM::run(bool run_till_end) {
 				SNAP_AS_TABLE(tvalue)->set(key, value);
 				sp[-1] = value; // assignment returns it's RHS
 			} else {
-				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(tvalue));
+				return ERROR("Attempt to index a {} value.", SNAP_TYPE_CSTR(tvalue));
 			}
 			break;
 		}
@@ -312,7 +315,7 @@ ExitCode VM::run(bool run_till_end) {
 			if (SNAP_IS_TABLE(PEEK(1))) {
 				sp[-1] = SNAP_AS_TABLE(PEEK(1))->get(READ_VALUE());
 			} else {
-				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(PEEK(1)));
+				return ERROR("Attempt to index a {} value.", SNAP_TYPE_CSTR(PEEK(1)));
 			}
 			break;
 		}
@@ -322,7 +325,7 @@ ExitCode VM::run(bool run_till_end) {
 			if (SNAP_IS_TABLE(PEEK(1))) {
 				push(SNAP_AS_TABLE(PEEK(1))->get(READ_VALUE()));
 			} else {
-				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(PEEK(1)));
+				return ERROR("Attempt to index a {} value.", SNAP_TYPE_CSTR(PEEK(1)));
 			}
 			break;
 		}
@@ -333,7 +336,7 @@ ExitCode VM::run(bool run_till_end) {
 				if (SNAP_GET_TT(key) == VT::Nil) return runtime_error("Table key cannot be nil.");
 				sp[-1] = SNAP_AS_TABLE(PEEK(1))->get(key);
 			} else {
-				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(PEEK(1)));
+				return ERROR("Attempt to index a {} value.", SNAP_TYPE_CSTR(PEEK(1)));
 			}
 			break;
 		}
@@ -346,7 +349,7 @@ ExitCode VM::run(bool run_till_end) {
 				if (SNAP_GET_TT(key) == VT::Nil) return runtime_error("Table key cannot be nil.");
 				push(SNAP_AS_TABLE(vtable)->get(key));
 			} else {
-				return runtime_error("Attempt to index a %s value.", SNAP_TYPE_CSTR(vtable));
+				return ERROR("Attempt to index a {} value.", SNAP_TYPE_CSTR(vtable));
 			}
 			break;
 		}
@@ -512,11 +515,11 @@ bool VM::call(Value value, u8 argc) {
 	case VT::Object: {
 		switch (SNAP_AS_OBJECT(value)->tag) {
 		case OT::func: return callfunc(SNAP_AS_FUNCTION(value), argc);
-		default: runtime_error("Attempt to call a %s value.", SNAP_TYPE_CSTR(value)); return false;
+		default: ERROR("Attempt to call a {} value.", SNAP_TYPE_CSTR(value)); return false;
 		}
 		break;
 	}
-	default: runtime_error("Attempt to call a %s value.", SNAP_TYPE_CSTR(value));
+	default: ERROR("Attempt to call a {} value.", SNAP_TYPE_CSTR(value));
 	}
 
 	return false;
@@ -541,11 +544,16 @@ bool VM::callfunc(Function* func, int argc) {
 		}
 	}
 
+	// Save the current instruction pointer
+	// in the call frame so we can resume
+	// execution when the function returns.
 	m_current_frame->ip = ip;
+	// prepare the next call frame
 	m_current_frame = &m_frames[m_frame_count++];
 	m_current_frame->func = func;
-	ip = m_current_frame->ip = 0;
 	m_current_frame->base = sp - argc - 1;
+	// start from the first op code
+	ip = 0;
 	m_current_block = &func->m_proto->m_block;
 	return true;
 }
@@ -563,25 +571,33 @@ const Block* VM::block() {
 //  --- Error reporting ---
 
 ExitCode VM::binop_error(const char* opstr, Value& a, Value& b) {
-	return runtime_error("Cannot use operator '%s' on operands of type '%s' and '%s'.", opstr,
-						 SNAP_TYPE_CSTR(a), SNAP_TYPE_CSTR(b));
+	return ERROR("Cannot use operator '{}' on operands of type '{}' and '{}'.", opstr,
+				 SNAP_TYPE_CSTR(a), SNAP_TYPE_CSTR(b));
 }
 
-ExitCode VM::runtime_error(const char* fstring...) const {
-	va_list args;
-	va_start(args, fstring);
+ExitCode VM::runtime_error(std::string&& message) const {
+	std::string error_str = kt::format_str("[line {}]: {}\n", CURRENT_LINE(), message);
 
-	std::size_t bufsize = vsnprintf(nullptr, 0, fstring, args) + 1;
-	std::unique_ptr<char> buf{new char[bufsize]};
-	vsnprintf(buf.get(), bufsize, fstring, args);
+	error_str += "stack trace:\n";
+	for (int i = m_frame_count - 1; i >= 0; --i) {
+		const CallFrame& frame = m_frames[i];
+		const Function& func = *frame.func;
+		int line = func.m_proto->m_block.lines[frame.ip];
+		if (i == 0) {
+			error_str += kt::format_str("\t[line {}] in {}", line, func.name_cstr());
+		} else {
+			error_str += kt::format_str("\t[line {}] in function {}.\n", line, func.name_cstr());
+		}
+	}
 
-	default_error_fn(*this, buf.get());
-	va_end(args);
+	on_error(*this, error_str);
 	return ExitCode::RuntimeError;
 }
 
-void default_error_fn([[maybe_unused]] const VM& vm, const char* message) {
-	fprintf(stderr, "%s", message);
+// The default behavior on an error is to simply
+// print it to the stderr.
+void default_error_fn([[maybe_unused]] const VM& vm, std::string& err_msg) {
+	fprintf(stderr, "%s", err_msg.c_str());
 	fputc('\n', stderr);
 }
 

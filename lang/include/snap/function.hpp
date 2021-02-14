@@ -6,7 +6,7 @@ namespace snap {
 
 // A protoype is the body of a function
 // that contains the bytecode.
-struct Prototype : Obj {
+struct Prototype final : Obj {
 	const String* m_name;
 	u32 m_num_params = 0;
 	u32 m_num_upvals = 0;
@@ -19,8 +19,8 @@ struct Prototype : Obj {
 	const char* name_cstr() const;
 };
 
-// The "Closure"
-struct Function : Obj {
+// The Closure object 
+struct Function final : Obj {
 	Prototype* m_proto;
 	std::vector<Upvalue*> m_upvals;
 	u32 m_num_upvals = 0;

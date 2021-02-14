@@ -62,8 +62,8 @@ Prototype* Compiler::compile() {
 		toplevel();
 	}
 
-	m_proto->m_num_upvals = m_symtable.num_upvals;
-	emit_bytes(Op::load_nil, Op::return_val, token.location.line);
+	emit(Op::load_nil, Op::return_val);
+	m_proto->m_num_upvals = m_symtable.m_num_upvals;
 	return m_proto;
 }
 
@@ -71,9 +71,8 @@ Prototype* Compiler::compile_func() {
 	test(TT::LCurlBrace, "Expected '{' before function body.");
 
 	block_stmt();
-	m_proto->m_num_upvals = m_symtable.num_upvals;
-	emit(Op::load_nil);
-	emit(Op::return_val);
+	emit(Op::load_nil, Op::return_val);
+	m_proto->m_num_upvals = m_symtable.m_num_upvals;
 	m_vm->m_compiler = m_parent;
 	return m_proto;
 }
@@ -179,8 +178,8 @@ void Compiler::func_expr(const String* fname) {
 	emit_bytes(Op::make_func, static_cast<Op>(idx), token);
 	emit(static_cast<Op>(proto->m_num_upvals), token);
 
-	for (int i = 0; i < compiler.m_symtable.num_upvals; ++i) {
-		const CompilerUpval& upval = compiler.m_symtable.m_upvals[i];
+	for (int i = 0; i < compiler.m_symtable.m_num_upvals; ++i) {
+		const UpvalDesc& upval = compiler.m_symtable.m_upvals[i];
 		emit(upval.is_local ? static_cast<Op>(1) : static_cast<Op>(0));
 		emit(static_cast<Op>(upval.index));
 	}
@@ -196,6 +195,9 @@ void Compiler::func_expr(const String* fname) {
 
 void Compiler::ret_stmt() {
 	advance(); // eat the return keyword.
+	// If the next token marks the start of an expression, then
+	// compile this statement as `return EXPR`, else it's just a `return`.
+	// where a `nil` after the return is implicit.
 	if (isLiteral(peek.type) or check(TT::Id) or check(TT::Bang) or check(TT::Minus) or
 		check(TT::LParen) or check(TT::Fn) or check(TT::LCurlBrace)) {
 		expr();
@@ -480,13 +482,13 @@ void Compiler::enter_block() {
 }
 
 void Compiler::exit_block() {
-	for (int i = m_symtable.num_symbols - 1; i >= 0; i--) {
-		const Symbol& var = m_symtable.m_symbols[i];
+	for (int i = m_symtable.m_num_symbols - 1; i >= 0; i--) {
+		const LocalVar& var = m_symtable.m_symbols[i];
 
 		if (var.depth != m_symtable.m_scope_depth) break;
 
 		emit(var.is_captured ? Op::close_upval : Op::pop);
-		m_symtable.num_symbols--;
+		--m_symtable.m_num_symbols;
 	}
 
 	m_symtable.m_scope_depth--;
@@ -578,7 +580,8 @@ void Compiler::error(const char* fmt...) {
 	std::unique_ptr<char[]> buf{new char[bufsize]};
 
 	vsnprintf(buf.get(), bufsize, fmt, args);
-	m_vm->log_error(*m_vm, buf.get());
+	// m_vm->on_error(*m_vm, std::strinbuf.get());
+	std::cout << buf.get();
 
 	va_end(args);
 }
@@ -612,9 +615,9 @@ int Compiler::find_upvalue(const Token& token) {
 	// If found the local var, then add it to the upvalues list.
 	// and mark the upvalue is "local".
 	if (index != -1) {
-		Symbol& symbol = m_parent->m_symtable.m_symbols[index];
-		symbol.is_captured = true;
-		return m_symtable.add_upvalue(index, true, symbol.is_const);
+		LocalVar& local = m_parent->m_symtable.m_symbols[index];
+		local.is_captured = true;
+		return m_symtable.add_upvalue(index, true, local.is_const);
 	}
 
 	// If not found within the parent compiler's local vars
@@ -625,9 +628,12 @@ int Compiler::find_upvalue(const Token& token) {
 	// upvalues list and return it.
 	if (index != -1) {
 		// is not local since we found it in an enclosing compiler.
-		return m_symtable.add_upvalue(index, false, m_parent->m_symtable.m_upvals[index].is_const);
+		const UpvalDesc& upval = m_parent->m_symtable.m_upvals[index];
+		return m_symtable.add_upvalue(index, false, upval.is_const);
 	}
 
+	// No local variable in any of the enclosing scopes was found with the same
+	// name.
 	return -1;
 }
 
@@ -706,11 +712,11 @@ int Compiler::new_variable(const Token& varname, bool is_const) {
 	return m_symtable.add(name, length, is_const);
 }
 
-// -- Symbol Table --
+// -- LocalVar Table --
 
 int SymbolTable::add(const char* name, u32 length, bool is_const = false) {
-	m_symbols[num_symbols++] = Symbol(name, length, m_scope_depth, is_const);
-	return num_symbols - 1;
+	m_symbols[m_num_symbols] = LocalVar{name, length, u8(m_scope_depth), is_const};
+	return m_num_symbols++;
 }
 
 static bool names_equal(const char* a, int len_a, const char* b, int len_b) {
@@ -721,41 +727,37 @@ static bool names_equal(const char* a, int len_a, const char* b, int len_b) {
 int SymbolTable::find(const char* name, int length) const {
 	// start looking from the innermost scope, and work our way
 	// upwards.
-	for (int i = num_symbols - 1; i >= 0; i--) {
-		const Symbol& symbol = m_symbols[i];
+	for (int i = m_num_symbols - 1; i >= 0; i--) {
+		const LocalVar& symbol = m_symbols[i];
 		if (names_equal(name, length, symbol.name, symbol.length)) return i;
 	}
 	return -1;
 }
 
 int SymbolTable::find_in_current_scope(const char* name, int length) const {
-	for (int i = num_symbols - 1; i >= 0; i--) {
-		const Symbol& symbol = m_symbols[i];
+	for (int i = m_num_symbols - 1; i >= 0; i--) {
+		const LocalVar& symbol = m_symbols[i];
 		if (symbol.depth < m_scope_depth) return -1; // we've reached an outer scope
 		if (names_equal(name, length, symbol.name, symbol.length)) return i;
 	}
 	return -1;
 }
 
-Symbol* SymbolTable::find_by_slot(const u8 index) {
+LocalVar* SymbolTable::find_by_slot(const u8 index) {
 	return &m_symbols[index];
 }
 
-int SymbolTable::add_upvalue(u8 index, bool is_local, bool is_const) {
-	// If the upvalue has already been cached, then return the stored value.
-	for (int i = 0; i < num_upvals; ++i) {
-		CompilerUpval& upval = m_upvals[i];
+int SymbolTable::add_upvalue(int index, bool is_local, bool is_const) {
+	// If the upvalue has already been captured, then return the stored value.
+	for (int i = 0; i < m_num_upvals; ++i) {
+		UpvalDesc& upval = m_upvals[i];
 		if (upval.index == index and upval.is_local == is_local) {
 			return i;
 		}
 	}
 
-	CompilerUpval& upval = m_upvals[num_upvals];
-
-	upval.index = index;
-	upval.is_local = is_local;
-	upval.is_const = is_const;
-	return num_upvals++;
+	m_upvals[m_num_upvals] = UpvalDesc{index, is_const, is_local};
+	return m_num_upvals++;
 }
 
 } // namespace snap

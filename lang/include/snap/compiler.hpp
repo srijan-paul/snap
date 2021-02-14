@@ -6,50 +6,44 @@
 
 namespace snap {
 
-struct Symbol {
-	/// the distance of the local's value from the base of it's function's stack
-	/// at runtime.
-	u8 slot = 0;
-
-	/// whether or not this local
-	/// variable has been initialized with a value.
-	bool is_initialized = false;
-
-	/// pointer to the local variable's name in the source code.
+struct LocalVar {
+	/// Pointer to the local variable's name in the source code.
+	/// This points to some place inside the source string and therefore
+	/// accessing this field only makes sense as long as the source
+	/// string has not been freed.
 	const char* name = nullptr;
-	/// length of the variable name.
+	/// Length of the variable name.
 	u32 length = 0;
-	/// the level of nesting at which this local variable
-	/// is present.
+	/// The level of nesting at which this local variable
+	/// is present. Needed at compile time only.
 	u8 depth = 0;
 
-	/// this field is true when the variable is
+	/// This field is true when the variable is
 	/// initialized with a `const` qualifier. Making this
-	/// Local variable immutable.
+	/// Local variable immutable. Needed at compile time
+	/// only.
 	bool is_const = false;
 
-	// true if this local variable has been captured by nested closure
-	// as an upvalue.
+	// `true` if this local variable has been captured by nested closure
+	// as an upvalue. Needed at compile time only.
 	bool is_captured = false;
 
-	Symbol(){};
-	Symbol(const char* varname, u32 name_len, u8 scope_depth = 0, bool isconst = false)
+	explicit LocalVar() noexcept {};
+	LocalVar(const char* varname, u32 name_len, u8 scope_depth = 0, bool isconst = false)
 		: name{varname}, length{name_len}, depth{scope_depth}, is_const{isconst} {};
 };
 
-struct CompilerUpval {
+struct UpvalDesc {
 	int index = -1;
 	bool is_const = false;
 	bool is_local = false;
 };
-
 struct SymbolTable {
-	int num_symbols = 0;
 	u32 m_scope_depth = 0;
-	std::array<Symbol, UINT8_MAX + 1> m_symbols;
-
-	int num_upvals = 0;
-	std::array<CompilerUpval, UINT8_MAX + 1> m_upvals;
+	int m_num_symbols = 0;
+	int m_num_upvals = 0;
+	std::array<LocalVar, UINT8_MAX + 1> m_symbols;
+	std::array<UpvalDesc, UINT8_MAX + 1> m_upvals;
 
 	// Recursively search the nested scopes going outward,
 	// looking for a variable with the name `name`.
@@ -59,9 +53,9 @@ struct SymbolTable {
 
 	// add an upvalue to the `m_upvals` array, if it exists already
 	// then don't add a copy, instead return the index.
-	int add_upvalue(u8 index, bool is_local, bool is_const);
+	int add_upvalue(int index, bool is_local, bool is_const);
 	// takes in the index of a local variable and returns it's Symbol info.
-	Symbol* find_by_slot(const u8 offset);
+	LocalVar* find_by_slot(const u8 offset);
 };
 
 class Compiler {
@@ -143,25 +137,24 @@ class Compiler {
 	Prototype* compile_func();
 
 	// keep eating tokens until a token
-	// that may indicate the end of a block is
-	// found.
+	// that may indicate the end of a block or statement
+	// is found.
 	void recover();
 
 	void toplevel();
-	void stmt();
 
-	void var_decl();
-	void declarator(bool is_const);
-	void block_stmt(); // {stmt*}
-	void if_stmt();
-	void expr_stmt();
-	void fn_decl();
-	void ret_stmt();
+	void var_decl();				// (let|const) DECL+
+	void declarator(bool is_const); // ID (= EXPR)?
+	void block_stmt();				// {stmt*}
+	void if_stmt();					// if EXPR STMT (else STMT)?
+	void expr_stmt();				// FUNCALL | ASSIGN
+	void fn_decl();					// fn (ID|SUFFIXED_EXPR) BLOCK
+	void ret_stmt();				// return EXPR?
 
 	void expr(bool can_assign = true);
 
-	void logic_or(bool can_assign);	 // ||
-	void logic_and(bool can_assign); // &&
+	void logic_or(bool can_assign);	 // || or
+	void logic_and(bool can_assign); // && and
 
 	void bit_or(bool can_assign);  // |
 	void bit_and(bool can_assign); // &
@@ -170,17 +163,17 @@ class Compiler {
 	void comparison(bool can_assign); // > >= < <=
 	void b_shift(bool can_assign);	  // >> <<
 
-	void sum(bool can_assign);		   // + - ..
-	void mult(bool can_assign);		   // * / %
-	void unary(bool can_assign);	   // - + ! not
-	void atomic(bool can_assign);	   // (ID|'(' EXPR ')' ) SUFFIX*
-	void suffix_expr(bool can_assign); // [EXPR] | .ID | (ARGS)
-	void call_args();
-	void grouping(bool can_assign); // (expr)
-	void primary(bool can_assign);	// literal | id
-	void variable(bool can_assign);
-	void literal();
-	void func_expr(const String* fname);
+	void sum(bool can_assign);			 // + - ..
+	void mult(bool can_assign);			 // * / %
+	void unary(bool can_assign);		 // - + ! not
+	void atomic(bool can_assign);		 // (ID|'(' EXPR ')' ) SUFFIX*
+	void suffix_expr(bool can_assign);	 // '['EXPR']' | '.'ID | '('ARGS')'
+	void call_args();					 // EXPR (',' EXPR)*
+	void grouping(bool can_assign);		 // '('expr')'
+	void primary(bool can_assign);		 // LITERAL | ID
+	void variable(bool can_assign);		 // ID
+	void literal();						 // NUM | STR | BOOL | nil
+	void func_expr(const String* fname); // fn NAME? BLOCK
 	void table();
 
 	/// @brief Compiles a variable assignment RHS, assumes the
@@ -195,13 +188,13 @@ class Compiler {
 
 	/// @brief Compiles a table field assignment RHS assuming the very
 	/// next token is an assignment or compound assignment token.
-	/// Emits the appropriate bytecode that leaves the value on top of the 
+	/// Emits the appropriate bytecode that leaves the value on top of the
 	/// stack, but does not emit the actual 'set' opcode.
 	/// @param get_op In case it's a compound assign like `+=`, we need to fetch
 	/// 			 the value of that field in the table before assigning to it.
 	///				 `get_op` can be one of `table_get_fast_keep` or `table_get_keep`.
 	/// @param idx In case we are assigning to a table field indexed by the dot (.) operator
-	/// 			 then we the `get_op` needs to use the position of that fieldn's name in the 
+	/// 			 then we the `get_op` needs to use the position of that fieldn's name in the
 	///				 constant pool as an operand too.
 	void table_assign(Opcode get_op, int idx);
 
@@ -245,6 +238,11 @@ class Compiler {
 	size_t emit_value(Value value);
 	u32 emit_string(const Token& token);
 	u32 emit_id_string(const Token& token);
+
+	// wraps up the compiler by loading all the
+	// necessary runtime and debug information into
+	// the prototype.
+	void end_compiler();
 
 	/// returns the corresponding bytecode
 	/// from a token. e.g- TokenType::Add

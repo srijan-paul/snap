@@ -94,7 +94,6 @@ struct SourcePosition {
 struct Location {
 	SourcePosition source_pos;
 	u32 line = 1;
-	u32 column = 0;
 };
 
 struct Token {

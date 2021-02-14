@@ -51,7 +51,7 @@ std::string Value::name_str() const {
 const char* Value::type_name() const {
 	switch (tag) {
 	case VT::Number: return "number";
-	case VT::Bool: return "bool";
+	case VT::Bool: return "boolean";
 	case VT::Object: {
 		const Obj* obj = as_object();
 		if (is_string()) return "string";
