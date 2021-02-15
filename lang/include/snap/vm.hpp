@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <functional>
 #include <iostream>
+#include <unordered_set>
 
 namespace snap {
 enum class ExitCode : u8 { Success, CompileError, RuntimeError };
@@ -108,6 +109,16 @@ class VM {
 		return *object;
 	}
 
+	/// @brief makes an interned string and returns a
+	/// reference to it.
+	template <typename... Args>
+	String& string(Args&&... args) {
+		String* string = new String(std::forward<Args>(args)...);
+		string->next = m_gc_objects;
+		m_gc_objects = string;
+		return *string;
+	}
+
   private:
 	const std::string* m_source;
 
@@ -138,6 +149,11 @@ class VM {
 	// current block from which the opcodes
 	// are being read. This always `m_current_frame->func->block`
 	Block* m_current_block = nullptr;
+
+	// Snap interns all strings. So if two separate
+	// string values are identical, then they point
+	// to the same object in heap. To deduplicate
+	// strings, we use an unordered_map.
 
 	/// Wrap a value present at stack slot [slot]
 	/// inside an Upvalue object and add it to the

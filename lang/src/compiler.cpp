@@ -33,7 +33,7 @@ using TT = TokenType;
 Compiler::Compiler(VM* vm, const std::string* src) : m_vm{vm}, m_source{src} {
 	m_scanner = new Scanner{src};
 	advance(); // set `peek` to the first token in the token stream.
-	String* fname = &vm->make<String>("<script>", 8);
+	String* fname = &vm->string("<script>", 8);
 	// reserve the first slot for this toplevel function.
 	m_symtable.add("<script>", 8, true);
 	m_proto = &vm->make<Prototype>(fname);
@@ -152,7 +152,7 @@ void Compiler::fn_decl() {
 	expect(TT::Id, "expected function name");
 
 	const Token name_token = token;
-	String* fname = &m_vm->make<String>(name_token.raw_cstr(m_source), name_token.length());
+	String* fname = &m_vm->string(name_token.raw_cstr(m_source), name_token.length());
 
 	func_expr(fname);
 	new_variable(name_token);
@@ -353,7 +353,7 @@ void Compiler::primary(bool can_assign) {
 		literal();
 	} else if (match(TT::Fn)) {
 		static constexpr const char* name = "<anonymous>";
-		const String* fname = &m_vm->make<String>(name, 11);
+		const String* fname = &m_vm->string(name, 11);
 		if (check(TT::LParen)) return func_expr(fname);
 		// Names of lambda expressions are simply ignored
 		// Unless found in a statement context.
@@ -383,7 +383,7 @@ void Compiler::table() {
 			expect(TT::RSqBrace, "Expected ']' near table key.");
 		} else {
 			expect(TT::Id, "Expected identifier as table key.");
-			String* key_string = &m_vm->make<String>(token.raw(*m_source).c_str(), token.length());
+			String* key_string = &m_vm->string(token.raw(*m_source).c_str(), token.length());
 			const int key_idx = emit_value(key_string);
 			emit_bytes(Op::load_const, static_cast<Op>(key_idx), token);
 			if (check(TT::LParen)) {
@@ -581,12 +581,12 @@ void Compiler::error(std::string&& message) {
 u32 Compiler::emit_string(const Token& token) {
 	u32 length = token.length() - 2; // minus the quotes
 	// +1 to skip the openening quote.
-	String& string = m_vm->make<String>(token.raw_cstr(m_source) + 1, length);
+	String& string = m_vm->string(token.raw_cstr(m_source) + 1, length);
 	return emit_value(SNAP_OBJECT_VAL(&string));
 }
 
 u32 Compiler::emit_id_string(const Token& token) {
-	String* s = &m_vm->make<String>(token.raw(*m_source).c_str(), token.length());
+	String* s = &m_vm->string(token.raw(*m_source).c_str(), token.length());
 	return emit_value(SNAP_OBJECT_VAL(s));
 }
 

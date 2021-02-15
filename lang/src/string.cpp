@@ -1,9 +1,14 @@
-#include "value.hpp"
+#include <algorithm>
 #include <cstring>
 #include <string.hpp>
 
+namespace snap {
+
 // this hash function is from: https://craftinginterpreters.com/hash-tables.html
-static uint32_t fnv1a(const char* key, int len) {
+std::size_t hash_cstring(const char* key, int len) {
+	// hash upto 32 characters max.
+	len = std::min(len, 32);
+
 	uint32_t hash = 2166136261u;
 
 	for (int i = 0; i < len; i++) {
@@ -14,15 +19,13 @@ static uint32_t fnv1a(const char* key, int len) {
 	return hash;
 }
 
-namespace snap {
-
 using OT = ObjType;
 
 String::String(const char* chrs, std::size_t len) : Obj(ObjType::string), m_length{len} {
 	char* buf = new char[len + 1];
 	std::memcpy(buf, chrs, len);
 	buf[len] = '\0';
-	m_hash = fnv1a(buf, m_length);
+	m_hash = hash_cstring(buf, m_length);
 	m_chars = buf;
 }
 
@@ -32,16 +35,16 @@ String::String(const String* left, const String* right)
 	buf[m_length] = '\0';
 	std::memcpy(buf, left->m_chars, left->m_length);
 	std::memcpy(buf + left->m_length, right->m_chars, right->m_length);
-	m_hash = fnv1a(buf, m_length);
+	m_hash = hash_cstring(buf, m_length);
 	m_chars = buf;
 }
 
 String::String(char* chrs) : Obj(ObjType::string), m_chars{chrs}, m_length{strlen(chrs)} {
-	m_hash = fnv1a(chrs, m_length);
+	m_hash = hash_cstring(chrs, m_length);
 }
 
 s32 String::hash() {
-	m_hash = fnv1a(m_chars, m_length);
+	m_hash = hash_cstring(m_chars, m_length);
 	return m_hash;
 }
 

@@ -23,12 +23,12 @@ struct Obj {
 	virtual ~Obj() = default;
 };
 
-enum class ValueType { Number, Bool, Object, Nil };
+enum class ValueType { Number, Bool, Object, Nil, Empty };
 
 // Without NaN tagging, values are represented
-// as structs weighing 16 bytes. 1 word for the 
+// as structs weighing 16 bytes. 1 word for the
 // type tag and one for the union representing the
-// possible states. This is a bit wasteful but 
+// possible states. This is a bit wasteful but
 // not that bad.
 // TODO: Implement optional NaN tagging when a macro
 // SNAP_NAN_TAGGING is defined.
@@ -89,7 +89,7 @@ bool operator!=(const Value& a, const Value& b);
 // It might seem redundant to represent
 // these procedures as free functions instead
 // of methods, but once we have NaN tagging
-// we want these methods to work the same. 
+// we want these methods to work the same.
 std::string value_to_string(Value v);
 const char* value_type_name(Value v);
 const char* value_type_name(Value v);
@@ -108,6 +108,7 @@ void print_value(Value v);
 #define SNAP_IS_NUM(v)	  ((v).tag == snap::ValueType::Number)
 #define SNAP_IS_BOOL(v)	  ((v).tag == snap::ValueType::Bool)
 #define SNAP_IS_NIL(v)	  ((v).tag == snap::ValueType::Nil)
+#define SNAP_IS_EMPTY(v)  ((v).tag == snap::ValueType::Empty)
 #define SNAP_IS_OBJECT(v) ((v).tag == snap::ValueType::Object)
 #define SNAP_IS_STRING(v) (SNAP_IS_OBJECT(v) and SNAP_AS_OBJECT(v)->tag == snap::ObjType::string)
 #define SNAP_IS_TABLE(v)  (SNAP_IS_OBJECT(v) and SNAP_AS_OBJECT(v)->tag == snap::ObjType::table)

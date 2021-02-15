@@ -5,9 +5,11 @@
 namespace snap {
 
 /// Strings in snap are heap allocated, and contain 3 important fields:
-/// `chars`  -> Pointer to the C string on the heap (null terminated).
-/// `length` -> Length of the string.
-/// `hash` ->  Unlike other objects, a string's hash is computed by walking over it's characters.
+/// `m_chars`  -> Pointer to the C string on the heap (null terminated).
+/// `m_length` -> Length of the string.
+/// `m_hash`   -> Unlike other objects, a string's hash is computed by walking over it's
+/// 						  characters. This is done to make sure that strings with the same
+///               characters end up with the same hash.
 class String : public Obj {
 	const char* m_chars = nullptr;
 
@@ -28,6 +30,7 @@ class String : public Obj {
 	~String();
 };
 
+std::size_t hash_cstring(const char* chars, int len);
 bool operator==(const String& a, const String& b);
 
 } // namespace snap

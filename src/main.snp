@@ -1,14 +1,9 @@
-fn compose(f, g) {
-  return fn (x) { return f(g(x)) }
+const t = {
+  abc: 1,
+  foo: 'bar'
 }
 
-fn square(x) {
-  return x * x
-}
+const foo = t.foo
+t['foo'] = 'foo'
 
-fn add1(x) {
-  return x + 1
-}
-
-const f = compose(square, add1)
-return f(10)
+return foo .. t.foo
