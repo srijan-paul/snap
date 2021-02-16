@@ -482,7 +482,6 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 	// slot we wanted to capture, but the current node is deeper.
 	// Meaning `slot` points to a new value that hasn't been captured before.
 	// So we add it between `prev` and `current`.
-
 	Upvalue* upval = &make<Upvalue>(slot);
 	upval->next_upval = current;
 
@@ -497,7 +496,6 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 }
 
 void VM::close_upvalues_upto(Value* last) {
-
 	while (m_open_upvals != nullptr and m_open_upvals->value >= last) {
 		Upvalue* current = m_open_upvals;
 		// these two lines are the last rites of an

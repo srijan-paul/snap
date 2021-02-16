@@ -30,15 +30,19 @@ class Table final : public Obj {
 	/// in the table before deletion.
 	bool remove(Value key);
 
-	/// @brief set table[key] = value.
+	/// @brief Set table[key] = value.
 	/// @return true if a new entry was created, otherwise
 	/// return false.
 	bool set(Value key, Value value);
 
-	/// @brief Takes a string C string on the heap. If
-	/// a snap::String exists with the same characters,
-	/// then returns a pointer to it, otherwise returns
-	/// `nullptr`.
+	/// @return The number of key-value pairs that 
+	/// are active in this table.
+	u64 size() const;
+
+	/// @brief Takes a string C string on the heap. checks if
+	/// a snap::String exists with the same characters.
+	/// @return A pointer to the string object, if found
+	/// inside the table, else nullptr.
 	String* find_string(const char* chars, std::size_t length);
 
 	/// An Entry represents a key-value pair
@@ -62,13 +66,17 @@ class Table final : public Obj {
 
   private:
 	Entry* m_entries = new Entry[DefaultCapacity];
-	/// @brief total number of entries.
+	/// @brief Total number of entries.
 	/// This includes all tombstones (values that have been
 	/// removed from the table).
 	u64 m_num_entries = 0;
+	/// @brief The total number of tombstones in the table.
+	/// A tombstone is an entry that was inserted at some 
+	/// point but was then removed by calling `Table::remove`.
+	u64 m_num_tombstones = 0;
 	u64 m_cap = DefaultCapacity;
 
-	/// @brief the metatable for this table.
+	/// @brief The metatable for this table.
 	/// If a property is not found in this table
 	/// then a lookup is done on the meta table.
 	Table* m_meta_table = nullptr;
@@ -83,6 +91,9 @@ class Table final : public Obj {
 	/// @brief Using a key and it's hash, returns the slot in the
 	/// entries array where the key should be inserted.
 	template <typename Th, typename Rt>
+	// The reason this is a template and not a member function is 
+	// because we might need const and non-const overloads, and repeating
+	// code for that isn't the coolest thing to do.
 	Rt& search_entry(const Th* this_, const Value& key, std::size_t hash) {
 		std::size_t mask = this_->m_cap - 1;
 		std::size_t index = hash & mask;

@@ -43,6 +43,10 @@ String::String(char* chrs) : Obj(ObjType::string), m_chars{chrs}, m_length{strle
 	m_hash = hash_cstring(chrs, m_length);
 }
 
+String::~String() {
+	delete[] m_chars;
+}
+
 s32 String::hash() {
 	m_hash = hash_cstring(m_chars, m_length);
 	return m_hash;
@@ -70,10 +74,6 @@ const char* String::c_str() const {
 char String::at(number index) const {
 	if (index < 0 or index > m_length) return '\0';
 	return m_chars[std::size_t(index)];
-}
-
-String::~String() {
-	delete[] m_chars;
 }
 
 } // namespace snap

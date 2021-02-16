@@ -88,8 +88,9 @@ bool operator!=(const Value& a, const Value& b);
 
 // It might seem redundant to represent
 // these procedures as free functions instead
-// of methods, but once we have NaN tagging
-// we want these methods to work the same.
+// of methods, but once we have NaN tagging, we 
+// would still like to have the same procedure
+// signatures. 
 std::string value_to_string(Value v);
 const char* value_type_name(Value v);
 const char* value_type_name(Value v);
@@ -99,10 +100,10 @@ void print_value(Value v);
 #define SNAP_SET_BOOL(v, b)	  ((v).as.boolean = b)
 #define SNAP_SET_OBJECT(v, o) ((v).as.object = o)
 
-#define SNAP_NUM_VAL(n)		 (snap::Value(static_cast<number>(n)))
+#define SNAP_NUM_VAL(n)		 (snap::Value(static_cast<snap::number>(n)))
 #define SNAP_BOOL_VAL(b)	 (snap::Value(static_cast<bool>(b)))
-#define SNAP_CONST_OBJECT(o) (snap::Value(static_cast<const Obj*>(o)))
-#define SNAP_OBJECT_VAL(o)	 (snap::Value(static_cast<Obj*>(o)))
+#define SNAP_CONST_OBJECT(o) (snap::Value(static_cast<const snap::Obj*>(o)))
+#define SNAP_OBJECT_VAL(o)	 (snap::Value(static_cast<snap::Obj*>(o)))
 #define SNAP_NIL_VAL		 (snap::Value())
 
 #define SNAP_IS_NUM(v)	  ((v).tag == snap::ValueType::Number)

@@ -154,7 +154,7 @@ class VM {
 	// string values are identical, then they point
 	// to the same object in heap. To deduplicate
 	// strings, we use a table.
-	Table interned_string;
+	Table interned_strings;
 
 	/// Wrap a value present at stack slot [slot]
 	/// inside an Upvalue object and add it to the

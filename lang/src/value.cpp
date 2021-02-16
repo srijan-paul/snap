@@ -12,7 +12,7 @@ using VT = ValueType;
 using OT = ObjType;
 
 s32 Obj::hash() {
-	m_hash = (std::size_t)(this);
+	m_hash = (u64)(this);
 	return m_hash;
 }
 
@@ -21,10 +21,11 @@ void print_value(Value v) {
 }
 
 std::string value_to_string(Value v) {
-	switch (v.tag) {
+	switch (SNAP_GET_TT(v)) {
 	case VT::Number: return std::to_string(SNAP_AS_NUM(v));
 	case VT::Bool: return SNAP_AS_BOOL(v) ? "true" : "false";
 	case VT::Nil: return "nil";
+	case VT::Empty: return "undefined";
 	case VT::Object: {
 		const Obj* obj = SNAP_AS_OBJECT(v);
 
@@ -49,7 +50,7 @@ std::string value_to_string(Value v) {
 }
 
 const char* value_type_name(Value v) {
-	switch (v.tag) {
+	switch (SNAP_GET_TT(v)) {
 	case VT::Number: return "number";
 	case VT::Bool: return "boolean";
 	case VT::Object: {
@@ -59,6 +60,7 @@ const char* value_type_name(Value v) {
 		return "object";
 	}
 	case VT::Nil: return "nil";
+	case VT::Empty: return "empty";
 	default: return "unknown";
 	}
 }
@@ -79,7 +81,7 @@ bool operator==(const Value& a, const Value& b) {
 		}
 		return oa == ob;
 	}
-	default: return false;
+	default: return true;
 	}
 }
 

@@ -28,7 +28,7 @@ inline void xassert(bool condition, std::string&& message) {
 #define VAL_NUM_EQ(v, i) SNAP_AS_NUM(v) && SNAP_AS_NUM(v) == i
 
 #define EXPECT_VAL_EQ(a, b)                                                                        \
-	ASSERT_BODY(snap::Value::are_equal(a, b), {                                                    \
+	ASSERT_BODY(a == b, {                                                                          \
 		std::printf("Expected values to be equal: ");                                              \
 		print_value(a);                                                                            \
 		std::printf("\t");                                                                         \
@@ -37,6 +37,14 @@ inline void xassert(bool condition, std::string&& message) {
 
 #define EXPECT_STR_EQ(s1, s2)                                                                      \
 	strlen(s1) == strlen(s2) && (std::memcmp(SNAP_AS_CSTRING(s1), s2, strlen(s1)) == 0)
+
+#define EXPECT(cond, message)                                                                      \
+	do {                                                                                           \
+		if (!(cond)) {                                                                             \
+			std::cout << message << std::endl;                                                     \
+			abort();                                                                               \
+		}                                                                                          \
+	} while (false)
 
 #define EXPECT_VAL_STREQ(value, str)                                                               \
 	ASSERT_LOG(value.is_string() && EXPECT_STR_EQ(SNAP_AS_CSTRING(value), str),                    \

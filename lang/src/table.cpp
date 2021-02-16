@@ -21,19 +21,25 @@ Table::~Table() {
 
 void Table::ensure_capacity() {
 	if (m_num_entries < m_cap * LoadFactor) return;
-	std::size_t old_cap = m_cap;
+	u64 old_cap = m_cap;
 	m_cap *= GrowthFactor;
 	Entry* old_entries = m_entries;
 	m_entries = new Entry[m_cap];
 
-	for (std::size_t i = 0; i < old_cap; ++i) {
+	for (u64 i = 0; i < old_cap; ++i) {
 		Entry& entry = old_entries[i];
-		// We don't reinsert tombstones or entries that were 
+		// We don't re-insert tombstones or entries that were
 		// never occupied in the first place.
 		if (IS_ENTRY_FREE(entry) or SNAP_IS_EMPTY(entry.key)) continue;
 		Entry& new_entry = TABLE_GET_SLOT(entry.key, entry.hash);
 		new_entry = std::move(entry);
 	}
+
+	// We only copied over the actual entries, and
+	// left behind all the tombstones. So we change
+	// these two member variables to reflect that.
+	m_num_entries -= m_num_tombstones;
+	m_num_tombstones = 0;
 
 	delete[] old_entries;
 }
@@ -53,7 +59,13 @@ Value Table::get(Value key) const {
 }
 
 bool Table::set(Value key, Value value) {
-	assert(SNAP_GET_TT(key) != VT::Nil);
+	assert(!SNAP_IS_NIL(key));
+
+	// If the value is nil, then the key is 
+	// simply removed with a tombstone in the 
+	// table.
+	if (SNAP_IS_NIL(value)) return remove(key);
+
 	ensure_capacity();
 	u64 hash = hash_value(key);
 	u64 mask = m_cap - 1;
@@ -133,7 +145,12 @@ bool Table::remove(Value key) {
 	if (IS_ENTRY_FREE(entry) or SNAP_IS_EMPTY(entry.key)) return false;
 
 	TABLE_PLACE_TOMBSTONE(entry);
+	++m_num_tombstones;
 	return true;
+}
+
+u64 Table::size() const {
+	return m_num_entries - m_num_tombstones;
 }
 
 String* Table::find_string(const char* chars, u64 length) {
@@ -181,6 +198,10 @@ u64 Table::hash_object(Obj* object) const {
 		if (object->m_hash == -1) return object->hash();
 		return object->m_hash;
 	}
+}
+
+bool operator==(const Table::Entry& a, const Table::Entry& b) {
+	return a.hash == b.hash and a.key == b.key;
 }
 
 } // namespace snap

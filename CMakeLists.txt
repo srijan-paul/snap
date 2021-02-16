@@ -38,6 +38,7 @@ endfunction()
 PREPARE_TEST(scanner_test ScannerTests "scanner_test.cpp")
 PREPARE_TEST(compiler_test CompilerTests "compiler_test.cpp")
 PREPARE_TEST(vm_test VMTest "vm_test.cpp")
+PREPARE_TEST(table_test TableTest "table_test.cpp")
 
 # benchmarks
 set(BENCHMARK_SUITE "benchmark")
