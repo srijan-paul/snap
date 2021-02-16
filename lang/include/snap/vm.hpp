@@ -153,7 +153,8 @@ class VM {
 	// Snap interns all strings. So if two separate
 	// string values are identical, then they point
 	// to the same object in heap. To deduplicate
-	// strings, we use an unordered_map.
+	// strings, we use a table.
+	Table interned_string;
 
 	/// Wrap a value present at stack slot [slot]
 	/// inside an Upvalue object and add it to the

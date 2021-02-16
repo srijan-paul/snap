@@ -17,8 +17,8 @@ class Table final : public Obj {
 
 	/// IMPORTANT: `Default` Capacity must always be a
 	/// power of two, since we are using the `&` trick
-	/// to calculate mod.
-	static constexpr std::size_t DefaultCapacity = 8;
+	/// to calculatefast mod.
+	static constexpr std::size_t DefaultCapacity = 16;
 	static constexpr u8 GrowthFactor = 2;
 	static constexpr float LoadFactor = 0.85;
 
@@ -26,7 +26,9 @@ class Table final : public Obj {
 	Value get(Value key) const;
 
 	/// @brief Removes a key from the Hashtable.
-	Value remove(Value key);
+	/// and returns true if [key] really did exist
+	/// in the table before deletion.
+	bool remove(Value key);
 
 	/// @brief set table[key] = value.
 	/// @return true if a new entry was created, otherwise
@@ -38,8 +40,6 @@ class Table final : public Obj {
 	/// then returns a pointer to it, otherwise returns
 	/// `nullptr`.
 	String* find_string(const char* chars, std::size_t length);
-
-	Value& operator[](std::size_t index);
 
 	/// An Entry represents a key-value pair
 	/// in the hashtable, both the key and the
@@ -57,44 +57,59 @@ class Table final : public Obj {
 		// The desired slot is the very first
 		// slot we land on. For a value X,
 		// it's desired slot is `hash(X) % m_cap`
-		u32 probe_distance;
+		u32 probe_distance = 0;
 	};
 
   private:
 	Entry* m_entries = new Entry[DefaultCapacity];
-	std::size_t m_num_entries = 0;
-	std::size_t m_cap = DefaultCapacity;
+	/// @brief total number of entries.
+	/// This includes all tombstones (values that have been
+	/// removed from the table).
+	u64 m_num_entries = 0;
+	u64 m_cap = DefaultCapacity;
 
 	/// @brief the metatable for this table.
 	/// If a property is not found in this table
 	/// then a lookup is done on the meta table.
 	Table* m_meta_table = nullptr;
 
-	std::size_t hash_value(Value value) const;
-	std::size_t hash_object(Obj* object) const;
+	u64 hash_value(Value value) const;
+	u64 hash_object(Obj* object) const;
 
 	/// @brief If the hashtable is [LoadFactor]th full
 	/// then grows the entries buffer.
 	void ensure_capacity();
 
+	/// @brief Using a key and it's hash, returns the slot in the
+	/// entries array where the key should be inserted.
 	template <typename Th, typename Rt>
 	Rt& search_entry(const Th* this_, const Value& key, std::size_t hash) {
 		std::size_t mask = this_->m_cap - 1;
 		std::size_t index = hash & mask;
 
+		// We store the value of the first tombstone.
+		// If we are unable to find any entry with the
+		// same key as the one we're looking for then
+		// we return the first tombstone instead.
+		Entry* first_tombstone = nullptr;
 		while (true) {
 			Entry& entry = this_->m_entries[index];
-			if (entry.key == key or entry.hash == 0) return entry;
+			// If we hit an entry with the same key as the current location,
+			// then we return that. If we hit a tombstone, and it's the first tombstone
+			// we came across, then store that slot.
+			// If no slot with that key is found, then we must be looking for a slot to insert a new
+			// element into the hash table, so we return the tombstone as a slot for insertion.
+			if (SNAP_IS_EMPTY(entry.key) and first_tombstone == nullptr) {
+				first_tombstone = &entry;
+			} else if ((entry.hash == hash and entry.key == key)) {
+				return entry;
+			} else if (SNAP_IS_NIL(entry.key)) {
+				return first_tombstone ? *first_tombstone : entry;
+			}
+
 			index = (index + 1) & mask;
 		}
-
-		return this_->m_entries[0];
 	}
-
-	/// @brief Finds an entry in the hastable
-	/// Where `key` should be mapped to.
-	Entry& find(Value key);
-	const Entry& find(Value value) const;
 };
 
 bool operator==(const Table::Entry& a, const Table::Entry& b);

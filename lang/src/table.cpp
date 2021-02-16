@@ -10,7 +10,7 @@ using OT = ObjType;
 
 #define TABLE_GET_SLOT(k, h)	   search_entry<Table, Entry>(this, k, h)
 #define TABLE_GET_SLOT_CONST(k, h) search_entry<const Table, const Entry>(this, k, h)
-#define TABLE_HASH(k)			   (hash_value(k))
+#define TABLE_PLACE_TOMBSTONE(e)   (SNAP_SET_TT(e.key, VT::Empty), e.value = SNAP_NIL_VAL)
 
 // check if an entry is unoccupied.
 #define IS_ENTRY_FREE(e) (SNAP_IS_NIL(e.key))
@@ -28,7 +28,9 @@ void Table::ensure_capacity() {
 
 	for (std::size_t i = 0; i < old_cap; ++i) {
 		Entry& entry = old_entries[i];
-		if (IS_ENTRY_FREE(entry)) continue;
+		// We don't reinsert tombstones or entries that were 
+		// never occupied in the first place.
+		if (IS_ENTRY_FREE(entry) or SNAP_IS_EMPTY(entry.key)) continue;
 		Entry& new_entry = TABLE_GET_SLOT(entry.key, entry.hash);
 		new_entry = std::move(entry);
 	}
@@ -38,7 +40,7 @@ void Table::ensure_capacity() {
 
 Value Table::get(Value key) const {
 	u64 mask = m_cap - 1;
-	u64 hash = TABLE_HASH(key);
+	u64 hash = hash_value(key);
 	u64 index = hash & mask;
 
 	while (true) {
@@ -47,13 +49,13 @@ Value Table::get(Value key) const {
 		index = (index + 1) & mask;
 	}
 
-	return SNAP_NIL_VAL;
+	return m_meta_table == nullptr ? SNAP_NIL_VAL : m_meta_table->get(key);
 }
 
 bool Table::set(Value key, Value value) {
 	assert(SNAP_GET_TT(key) != VT::Nil);
 	ensure_capacity();
-	u64 hash = TABLE_HASH(key);
+	u64 hash = hash_value(key);
 	u64 mask = m_cap - 1;
 
 	u64 index = hash & mask;
@@ -80,6 +82,10 @@ bool Table::set(Value key, Value value) {
 			// Only increment number of entries
 			// if the slot was free.
 			if (is_free) ++m_num_entries;
+			// Even if it was a tombstone,
+			// we still inserted a new key
+			// into the hashtable, so we
+			// return true.
 			return true;
 		}
 
@@ -89,7 +95,7 @@ bool Table::set(Value key, Value value) {
 		if (entry.key == key) {
 			entry.value = std::move(value);
 			entry.probe_distance = dist;
-			return true;
+			return false;
 		}
 
 		// if we found an entry that isn't what
@@ -107,6 +113,26 @@ bool Table::set(Value key, Value value) {
 		++dist;
 	}
 
+	return true;
+}
+
+bool Table::remove(Value key) {
+	if (m_num_entries == 0) return false;
+
+	// Find the slot where this key would go.
+	// If the key exists in the table, then the
+	// corresponding entry containing the key-value
+	// pair is returned, otherwise we get the slot
+	// where the key would have been placed, if it
+	// did exist in the table.
+	Entry& entry = TABLE_GET_SLOT(key, hash_value(key));
+
+	// This entry was never occupied by a key-value
+	// pair in the first place, then no deletion is
+	// neccessary;
+	if (IS_ENTRY_FREE(entry) or SNAP_IS_EMPTY(entry.key)) return false;
+
+	TABLE_PLACE_TOMBSTONE(entry);
 	return true;
 }
 
