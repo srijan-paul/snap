@@ -155,9 +155,10 @@ size_t Table::size() const {
 	return m_num_entries - m_num_tombstones;
 }
 
-String* Table::find_string(const char* chars, size_t length) {
+String* Table::find_string(const char* chars, size_t length, size_t hash) {
 	assert(chars != nullptr);
-	size_t hash = hash_cstring(chars, length);
+	assert(hash == hash_cstring(chars, length));
+
 	size_t mask = m_cap - 1;
 	size_t index = hash & mask;
 

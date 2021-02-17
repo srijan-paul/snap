@@ -29,7 +29,7 @@
 
 // PEEK(1) fetches the topmost value in the stack.
 #define PEEK(depth) sp[-depth]
-#define POP() *(--sp)
+#define POP()		*(--sp)
 
 namespace snap {
 
@@ -180,8 +180,10 @@ ExitCode VM::run(bool run_till_end) {
 
 		case Op::negate: {
 			Value& operand = PEEK(1);
-			if (SNAP_IS_NUM(operand)) SNAP_SET_NUM(operand, -SNAP_AS_NUM(operand));
-			else UNOP_ERROR("-", operand);
+			if (SNAP_IS_NUM(operand))
+				SNAP_SET_NUM(operand, -SNAP_AS_NUM(operand));
+			else
+				UNOP_ERROR("-", operand);
 			break;
 		}
 
@@ -255,8 +257,25 @@ ExitCode VM::run(bool run_till_end) {
 			if (!(SNAP_IS_STRING(a) and SNAP_IS_STRING(b))) {
 				return binop_error("..", a, b);
 			} else {
-				String* s = &make<String>(SNAP_AS_STRING(a), SNAP_AS_STRING(b));
-				SNAP_SET_OBJECT(a, s);
+				auto left = SNAP_AS_STRING(a);
+				auto right = SNAP_AS_STRING(b);
+				size_t length = left->m_length + right->m_length;
+
+				char* buf = new char[length + 1];
+				buf[length] = '\0';
+
+				std::memcpy(buf, left->c_str(), left->m_length);
+				std::memcpy(buf + left->m_length, right->c_str(), right->m_length);
+
+				size_t hash = hash_cstring(buf, length);
+				String* interned = interned_strings.find_string(buf, length, hash);
+
+				if (interned == nullptr) {
+					SNAP_SET_OBJECT(a, new String(buf));
+				} else {
+					delete[] buf;
+					SNAP_SET_OBJECT(a, interned);
+				}
 			}
 			pop();
 			break;

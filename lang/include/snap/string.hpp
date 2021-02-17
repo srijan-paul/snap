@@ -14,13 +14,29 @@ class String : public Obj {
 	const char* m_chars = nullptr;
 
   public:
+	/// @brief The length of the string, does not include the
+	/// null terminator. The length pf "abc" is 3.
 	const size_t m_length;
+
+	/// @brief The string's hash value. This is computed by calling
+	/// `hash_cstring(cstr, length)`.
 	size_t m_hash;
+
 	/// @param len length of the string.
 	String(const char* chrs, size_t len);
-	// creates a string that owns the characters `chrs`.
+
+	/// @brief creates a string by copying over the characters
+	/// `chrs` and length `len`. Instead of computing the hash,
+	/// this uses a precomputed hash value of `hash`.
+	/// IMPORTANT: It is the caller's responsibilty to ensure
+	/// that `hash` is the correct hash of the this string,
+	/// having the same value has `hash_cstring(chrs, len)`.
+	String(const char* chrs, size_t len, size_t hash);
+
+	/// @brief Creates a string that owns the characters `chrs`.
 	/// @param chrs pointer to the character buffer. Must be null terminated.
 	String(char* chrs);
+
 	/// @brief concatenates [left] and [right] into a string
 	String(const String* left, const String* right);
 

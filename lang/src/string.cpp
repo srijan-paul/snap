@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cassert>
 #include <cstring>
 #include <string.hpp>
 
@@ -26,6 +27,16 @@ String::String(const char* chrs, std::size_t len) : Obj(ObjType::string), m_leng
 	std::memcpy(buf, chrs, len);
 	buf[len] = '\0';
 	m_hash = hash_cstring(buf, m_length);
+	m_chars = buf;
+}
+
+String::String(const char* chrs, size_t len, size_t hash) : Obj{OT::string}, m_length{len} {
+	assert(hash == hash_cstring(chrs, len));
+
+	char* buf = new char[len + 1];
+	std::memcpy(buf, chrs, len);
+	buf[len] = '\0';
+	m_hash = hash;
 	m_chars = buf;
 }
 

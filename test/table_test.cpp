@@ -14,7 +14,7 @@ using shared_str_ptr = std::shared_ptr<snap::String>;
 
 bool table_has_cstring(snap::Table& t, const char* cs) {
 	const size_t len = strlen(cs);
-	snap::String* s = t.find_string(cs, len);
+	snap::String* s = t.find_string(cs, len, snap::hash_cstring(cs, len));
 	if (s == nullptr) return false;
 	return true;
 }
@@ -85,7 +85,7 @@ void strkey_test() {
 }
 
 snap::String* make_string(snap::Table& intern_table, const char* cs, int len) {
-	snap::String* interned = intern_table.find_string(cs, len);
+	snap::String* interned = intern_table.find_string(cs, len, snap::hash_cstring(cs, len));
 	if (interned == nullptr) {
 		auto* s = new snap::String(cs, len);
 		intern_table.set(SNAP_OBJECT_VAL(s), BOOL(true));
@@ -102,7 +102,8 @@ void intern_test() {
 		   "Table::size() - is 1 when there is one string entry in the Intern table. (got: "
 			   << t.size() << ")");
 
-	EXPECT(t.find_string(s1, strlen(s1)) != nullptr, "Table::find_string test.");
+	int s1len = strlen(s1);
+	EXPECT(t.find_string(s1, strlen(s1), snap::hash_cstring(s1, s1len)) != nullptr, "Table::find_string test.");
 
 	snap::String* s_ = make_string(t, s1, strlen(s1));
 	EXPECT(s_ == s, "String comparison can be done using pointers when interned (got "

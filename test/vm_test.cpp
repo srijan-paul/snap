@@ -1,6 +1,7 @@
 #include "assert.hpp"
 #include "test_utils.hpp"
 #include "value.hpp"
+#include "vm.hpp"
 #include <fstream>
 #include <memory>
 #include <sstream>
@@ -26,12 +27,7 @@ static void test_return(const std::string&& code, Value expected,
 	assert_val_eq(expected, vm.return_value, message);
 }
 
-/// Given the name of a test file to run, checks the value returned by that file's evaluation.
-/// @param filename name of the file, must be inside 'test/test_programs/'.
-/// @param expected Expected return value once the file is interpreted.
-/// @param message Message to be displayed on failure.
-static void test_file(const char* filename, Value expected, const char* message = "Failure") {
-
+static std::string load_file(const char* filename) {
 	// Currently files can only be read relative to the path of the binary (which is
 	// in `bin/vm_test`).
 	// So to read the file just from it's name, we append the file beginning of the
@@ -45,12 +41,20 @@ static void test_file(const char* filename, Value expected, const char* message 
 	if (file) {
 		std::ostringstream stream;
 		stream << file.rdbuf();
-		test_return(stream.str(), expected, message);
-		return;
+		return stream.str();
 	}
 
 	fprintf(stderr, "Could not open file '%s'", filepath.c_str());
 	abort();
+}
+
+/// Given the name of a test file to run, checks the value returned by that file's evaluation.
+/// @param filename name of the file, must be inside 'test/test_programs/'.
+/// @param expected Expected return value once the file is interpreted.
+/// @param message Message to be displayed on failure.
+static void test_file(const char* filename, Value expected, const char* message = "Failure") {
+	test_return(load_file(filename), expected, message);
+	return;
 }
 
 /// Runs the next `op_count` instructions in the `code` string in a VM.
@@ -65,6 +69,33 @@ static void test_code(const std::string&& code, int op_count, Value expected_val
 		vm.init();
 		vm.step(op_count);
 		assert_val_eq(expected_value, vm.peek());
+	}
+}
+
+/// @brief Runs `filename` and asserts the return value as a cstring, comparing
+/// it with `expected`.
+static void test_string_return(const char* filename, const char* expected,
+							   const char* message = "Failed") {
+	std::string code{load_file(filename)};
+	VM vm{&code};
+
+	if (vm.interpret() != ExitCode::Success) {
+		std::cout << message << "\n";
+		abort();
+	}
+
+	if (!SNAP_IS_STRING(vm.return_value)) {
+		std::cout << "[ Failed ]" << message << "Expected string but got ";
+		print_value(vm.return_value);
+		std::cout << "\n";
+		abort();
+	}
+
+	if (std::memcmp(SNAP_AS_CSTRING(vm.return_value), expected, strlen(expected)) != 0) {
+		std::cout << message << "[ STRINGS NOT EQUAL ] \n";
+		std::cout << "Expected: '" << expected << "'.\n";
+		std::cout << "Got: '" << SNAP_AS_CSTRING(vm.return_value) << "'\n";
+		abort();
 	}
 }
 
@@ -223,6 +254,10 @@ void table_test() {
 	test_file("table-7.snp", SNAP_NUM_VAL(10), "Syntactic sugar for table methods");
 }
 
+void string_test() {
+	test_string_return("string-concat.snp", "this is a string", "Chained string concatenation");
+}
+
 void vm_test() {
 	std::printf("--- VM Tests ---\n");
 
@@ -261,5 +296,6 @@ int main() {
 	fn_tests();
 	table_test();
 	vm_test();
+	string_test();
 	return 0;
 }

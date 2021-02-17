@@ -1,6 +1,7 @@
 #pragma once
 #include "compiler.hpp"
 #include "table.hpp"
+#include <cassert>
 #include <cstdarg>
 #include <cstddef>
 #include <functional>
@@ -104,18 +105,28 @@ class VM {
 	template <typename T, typename... Args>
 	T& make(Args&&... args) {
 		T* object = new T(std::forward<Args>(args)...);
-		object->next = m_gc_objects;
-		m_gc_objects = object;
+		register_object(object);
 		return *object;
+	}
+
+	inline void register_object(Obj* o) {
+		assert(o != nullptr);
+		o->next = m_gc_objects;
+		m_gc_objects = o;
 	}
 
 	/// @brief makes an interned string and returns a
 	/// reference to it.
-	template <typename... Args>
-	String& string(Args&&... args) {
-		String* string = new String(std::forward<Args>(args)...);
-		string->next = m_gc_objects;
-		m_gc_objects = string;
+	String& string(const char* chars, size_t length) {
+		size_t hash = hash_cstring(chars, length);
+
+		// If an identical string has already been created, then
+		// return a reference to the existing string instead.
+		String* interned = interned_strings.find_string(chars, length, hash);
+		if (interned != nullptr) return *interned;
+
+		String* string = new String(chars, length, hash);
+		register_object(string);
 		return *string;
 	}
 

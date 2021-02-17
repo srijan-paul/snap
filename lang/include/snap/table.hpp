@@ -43,7 +43,7 @@ class Table final : public Obj {
 	/// a snap::String exists with the same characters.
 	/// @return A pointer to the string object, if found
 	/// inside the table, else nullptr.
-	String* find_string(const char* chars, size_t length);
+	String* find_string(const char* chars, size_t length, size_t hash);
 
 	/// An Entry represents a key-value pair
 	/// in the hashtable, both the key and the
