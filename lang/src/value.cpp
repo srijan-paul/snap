@@ -11,11 +11,6 @@ namespace snap {
 using VT = ValueType;
 using OT = ObjType;
 
-s32 Obj::hash() {
-	m_hash = (u64)(this);
-	return m_hash;
-}
-
 void print_value(Value v) {
 	std::printf("%s", value_to_string(v).c_str());
 }

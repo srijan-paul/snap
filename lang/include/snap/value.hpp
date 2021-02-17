@@ -14,11 +14,8 @@ struct Obj {
 
 	// pointer to the next object in the VM's GC linked list.
 	Obj* next = nullptr;
-	s32 m_hash = -1;
 	bool marked = false;
 	Obj(ObjType tt) : tag{tt} {};
-
-	s32 hash();
 
 	virtual ~Obj() = default;
 };
@@ -88,9 +85,9 @@ bool operator!=(const Value& a, const Value& b);
 
 // It might seem redundant to represent
 // these procedures as free functions instead
-// of methods, but once we have NaN tagging, we 
+// of methods, but once we have NaN tagging, we
 // would still like to have the same procedure
-// signatures. 
+// signatures.
 std::string value_to_string(Value v);
 const char* value_type_name(Value v);
 const char* value_type_name(Value v);

@@ -18,7 +18,7 @@ class Table final : public Obj {
 	/// IMPORTANT: `Default` Capacity must always be a
 	/// power of two, since we are using the `&` trick
 	/// to calculatefast mod.
-	static constexpr std::size_t DefaultCapacity = 16;
+	static constexpr size_t DefaultCapacity = 16;
 	static constexpr u8 GrowthFactor = 2;
 	static constexpr float LoadFactor = 0.85;
 
@@ -35,15 +35,15 @@ class Table final : public Obj {
 	/// return false.
 	bool set(Value key, Value value);
 
-	/// @return The number of key-value pairs that 
+	/// @return The number of key-value pairs that
 	/// are active in this table.
-	u64 size() const;
+	size_t size() const;
 
 	/// @brief Takes a string C string on the heap. checks if
 	/// a snap::String exists with the same characters.
 	/// @return A pointer to the string object, if found
 	/// inside the table, else nullptr.
-	String* find_string(const char* chars, std::size_t length);
+	String* find_string(const char* chars, size_t length);
 
 	/// An Entry represents a key-value pair
 	/// in the hashtable, both the key and the
@@ -55,13 +55,13 @@ class Table final : public Obj {
 	struct Entry {
 		Value key;
 		Value value;
-		u64 hash = 0;
+		size_t hash = 0;
 		// Distance of this entry from
 		// it's desired slot in the hashtable.
 		// The desired slot is the very first
 		// slot we land on. For a value X,
 		// it's desired slot is `hash(X) % m_cap`
-		u32 probe_distance = 0;
+		size_t probe_distance = 0;
 	};
 
   private:
@@ -69,20 +69,20 @@ class Table final : public Obj {
 	/// @brief Total number of entries.
 	/// This includes all tombstones (values that have been
 	/// removed from the table).
-	u64 m_num_entries = 0;
+	size_t m_num_entries = 0;
 	/// @brief The total number of tombstones in the table.
-	/// A tombstone is an entry that was inserted at some 
+	/// A tombstone is an entry that was inserted at some
 	/// point but was then removed by calling `Table::remove`.
-	u64 m_num_tombstones = 0;
-	u64 m_cap = DefaultCapacity;
+	size_t m_num_tombstones = 0;
+	size_t m_cap = DefaultCapacity;
 
 	/// @brief The metatable for this table.
 	/// If a property is not found in this table
 	/// then a lookup is done on the meta table.
 	Table* m_meta_table = nullptr;
 
-	u64 hash_value(Value value) const;
-	u64 hash_object(Obj* object) const;
+	size_t hash_value(Value value) const;
+	size_t hash_object(Obj* object) const;
 
 	/// @brief If the hashtable is [LoadFactor]th full
 	/// then grows the entries buffer.
@@ -91,12 +91,12 @@ class Table final : public Obj {
 	/// @brief Using a key and it's hash, returns the slot in the
 	/// entries array where the key should be inserted.
 	template <typename Th, typename Rt>
-	// The reason this is a template and not a member function is 
+	// The reason this is a template and not a member function is
 	// because we might need const and non-const overloads, and repeating
 	// code for that isn't the coolest thing to do.
-	Rt& search_entry(const Th* this_, const Value& key, std::size_t hash) {
-		std::size_t mask = this_->m_cap - 1;
-		std::size_t index = hash & mask;
+	Rt& search_entry(const Th* this_, const Value& key, size_t hash) {
+		size_t mask = this_->m_cap - 1;
+		size_t index = hash & mask;
 
 		// We store the value of the first tombstone.
 		// If we are unable to find any entry with the

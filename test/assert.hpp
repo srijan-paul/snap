@@ -41,7 +41,7 @@ inline void xassert(bool condition, std::string&& message) {
 #define EXPECT(cond, message)                                                                      \
 	do {                                                                                           \
 		if (!(cond)) {                                                                             \
-			std::cout << message << std::endl;                                                     \
+			std::cout << "[FAILED] " << message << std::endl;                                      \
 			abort();                                                                               \
 		}                                                                                          \
 	} while (false)

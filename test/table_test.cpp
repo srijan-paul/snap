@@ -7,8 +7,10 @@
 #define NUM		 SNAP_NUM_VAL
 #define NIL		 SNAP_NIL_VAL
 #define STR(...) (new snap::String(__VA_ARGS__))
+#define BOOL(t)	 SNAP_BOOL_VAL(t)
 
-using string_ptr = std::unique_ptr<snap::String>;
+using unique_str_ptr = std::unique_ptr<snap::String>;
+using shared_str_ptr = std::shared_ptr<snap::String>;
 
 bool table_has_cstring(snap::Table& t, const char* cs) {
 	const size_t len = strlen(cs);
@@ -26,7 +28,7 @@ void run_test() {
 	table.remove(NUM(1));
 	EXPECT(table.get(NUM(1)) == NIL, "Removing keys sets them to nil.");
 
-	string_ptr s(STR("hello", 5));
+	unique_str_ptr s(STR("hello", 5));
 	table.set(s.get(), NUM(1));
 	EXPECT(table_has_cstring(table, "hello"), "Table::find_string works as expected.");
 }
@@ -70,12 +72,46 @@ void strkey_test() {
 	const char* sk = "this is a random key.";
 	const char* sv = "this is a random value.";
 
-	string_ptr key(STR(sk, strlen(sk)));
-	string_ptr value(STR(sv, strlen(sv)));
+	unique_str_ptr key(STR(sk, strlen(sk)));
+	unique_str_ptr value(STR(sv, strlen(sv)));
 
 	t.set(SNAP_OBJECT_VAL(key.get()), SNAP_OBJECT_VAL(value.get()));
 	EXPECT(t.get(SNAP_OBJECT_VAL(key.get())) == SNAP_OBJECT_VAL(value.get()),
 		   "Key-value pairs where both key and value are strings");
+
+	unique_str_ptr key2(STR(sk, strlen(sk)));
+	EXPECT(t.get(SNAP_OBJECT_VAL(key2.get())) == SNAP_OBJECT_VAL(value.get()),
+		   "Strings don't have reference equality when not interned.");
+}
+
+snap::String* make_string(snap::Table& intern_table, const char* cs, int len) {
+	snap::String* interned = intern_table.find_string(cs, len);
+	if (interned == nullptr) {
+		auto* s = new snap::String(cs, len);
+		intern_table.set(SNAP_OBJECT_VAL(s), BOOL(true));
+		return s;
+	}
+	return interned;
+}
+
+void intern_test() {
+	snap::Table t;
+	const char* s1 = "a short string.";
+	snap::String* s = make_string(t, s1, strlen(s1));
+	EXPECT(t.size() == 1,
+		   "Table::size() - is 1 when there is one string entry in the Intern table. (got: "
+			   << t.size() << ")");
+
+	EXPECT(t.find_string(s1, strlen(s1)) != nullptr, "Table::find_string test.");
+
+	snap::String* s_ = make_string(t, s1, strlen(s1));
+	EXPECT(s_ == s, "String comparison can be done using pointers when interned (got "
+						<< std::hex << s_ << " != " << s << ").");
+
+	// If this test passes, then s and s_ refer to the same string in memory,
+	// in which case, deleting via any one pointer is sufficient, if the test
+	// doesn't pass then we abort anyway.
+	delete s;
 }
 
 int main() {
@@ -83,6 +119,9 @@ int main() {
 	resize_test();
 	removal_test();
 	strkey_test();
+	intern_test();
+
+	std::cout << "[All Table Tests Passed]\n";
 
 	return 0;
 }

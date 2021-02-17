@@ -15,18 +15,20 @@ using OT = ObjType;
 // check if an entry is unoccupied.
 #define IS_ENTRY_FREE(e) (SNAP_IS_NIL(e.key))
 
+#define HASH_OBJ(o) ((size_t)(o)&UINT64_MAX)
+
 Table::~Table() {
 	delete[] m_entries;
 }
 
 void Table::ensure_capacity() {
 	if (m_num_entries < m_cap * LoadFactor) return;
-	u64 old_cap = m_cap;
+	size_t old_cap = m_cap;
 	m_cap *= GrowthFactor;
 	Entry* old_entries = m_entries;
 	m_entries = new Entry[m_cap];
 
-	for (u64 i = 0; i < old_cap; ++i) {
+	for (size_t i = 0; i < old_cap; ++i) {
 		Entry& entry = old_entries[i];
 		// We don't re-insert tombstones or entries that were
 		// never occupied in the first place.
@@ -45,9 +47,9 @@ void Table::ensure_capacity() {
 }
 
 Value Table::get(Value key) const {
-	u64 mask = m_cap - 1;
-	u64 hash = hash_value(key);
-	u64 index = hash & mask;
+	size_t mask = m_cap - 1;
+	size_t hash = hash_value(key);
+	size_t index = hash & mask;
 
 	while (true) {
 		Entry& entry = m_entries[index];
@@ -61,16 +63,16 @@ Value Table::get(Value key) const {
 bool Table::set(Value key, Value value) {
 	assert(!SNAP_IS_NIL(key));
 
-	// If the value is nil, then the key is 
-	// simply removed with a tombstone in the 
+	// If the value is nil, then the key is
+	// simply removed with a tombstone in the
 	// table.
 	if (SNAP_IS_NIL(value)) return remove(key);
 
 	ensure_capacity();
-	u64 hash = hash_value(key);
-	u64 mask = m_cap - 1;
+	size_t hash = hash_value(key);
+	size_t mask = m_cap - 1;
 
-	u64 index = hash & mask;
+	size_t index = hash & mask;
 	// The probe distance that we have covered so far.
 	// Initially we are at our "desired" slot, where
 	// our entry would ideally sit. So the probe distance is
@@ -149,15 +151,15 @@ bool Table::remove(Value key) {
 	return true;
 }
 
-u64 Table::size() const {
+size_t Table::size() const {
 	return m_num_entries - m_num_tombstones;
 }
 
-String* Table::find_string(const char* chars, u64 length) {
+String* Table::find_string(const char* chars, size_t length) {
 	assert(chars != nullptr);
-	u64 hash = hash_cstring(chars, length);
-	u64 mask = m_cap - 1;
-	u64 index = hash & mask;
+	size_t hash = hash_cstring(chars, length);
+	size_t mask = m_cap - 1;
+	size_t index = hash & mask;
 
 	while (true) {
 		Entry& entry = m_entries[index];
@@ -172,7 +174,7 @@ String* Table::find_string(const char* chars, u64 length) {
 
 		// we have hit an empty slot, meaning there
 		// is no such string in the hashtable.
-		if (entry.hash == 0) return nullptr;
+		if (IS_ENTRY_FREE(entry)) return nullptr;
 
 		index = (index + 1) & mask;
 	}
@@ -180,23 +182,21 @@ String* Table::find_string(const char* chars, u64 length) {
 	return nullptr;
 }
 
-u64 Table::hash_value(Value key) const {
+size_t Table::hash_value(Value key) const {
 	assert(SNAP_GET_TT(key) != VT::Nil);
 	switch (SNAP_GET_TT(key)) {
 	case VT::Bool: return SNAP_AS_BOOL(key) ? 7 : 15;
-	case VT::Number: return std::size_t(SNAP_AS_NUM(key)); // TODO: use a proper numeric hash
+	case VT::Number: return size_t(SNAP_AS_NUM(key)); // TODO: use a proper numeric hash
 	case VT::Object: return hash_object(SNAP_AS_OBJECT(key));
 	default: return -1; // impossible.
 	}
 }
 
-u64 Table::hash_object(Obj* object) const {
+size_t Table::hash_object(Obj* object) const {
 	switch (object->tag) {
 	case OT::string: return static_cast<String*>(object)->m_hash;
 	case OT::upvalue: return hash_value(*static_cast<Upvalue*>(object)->value);
-	default:
-		if (object->m_hash == -1) return object->hash();
-		return object->m_hash;
+	default: return HASH_OBJ(object);
 	}
 }
 

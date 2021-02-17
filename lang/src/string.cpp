@@ -5,11 +5,11 @@
 namespace snap {
 
 // this hash function is from: https://craftinginterpreters.com/hash-tables.html
-std::size_t hash_cstring(const char* key, int len) {
+u32 hash_cstring(const char* key, int len) {
 	// hash upto 32 characters max.
 	len = std::min(len, 32);
 
-	uint32_t hash = 2166136261u;
+	u32 hash = 2166136261u;
 
 	for (int i = 0; i < len; i++) {
 		hash ^= key[i];
@@ -45,11 +45,6 @@ String::String(char* chrs) : Obj(ObjType::string), m_chars{chrs}, m_length{strle
 
 String::~String() {
 	delete[] m_chars;
-}
-
-s32 String::hash() {
-	m_hash = hash_cstring(m_chars, m_length);
-	return m_hash;
 }
 
 String* String::concatenate(const String* left, const String* right) {
