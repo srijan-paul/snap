@@ -80,7 +80,7 @@ void strkey_test() {
 		   "Key-value pairs where both key and value are strings");
 
 	unique_str_ptr key2(STR(sk, strlen(sk)));
-	EXPECT(t.get(SNAP_OBJECT_VAL(key2.get())) == SNAP_OBJECT_VAL(value.get()),
+	EXPECT(t.get(SNAP_OBJECT_VAL(key2.get())) != SNAP_OBJECT_VAL(value.get()),
 		   "Strings don't have reference equality when not interned.");
 }
 

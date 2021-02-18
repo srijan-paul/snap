@@ -24,7 +24,7 @@ int main() {
 		std::string code(stream.str());
 		VM vm{&code};
 		vm.interpret();
-		std::cout << "Vm returned: ";
+		std::cout << "VM returned: ";
 		print_value(vm.return_value);
 		std::cout << std::endl;
 	};

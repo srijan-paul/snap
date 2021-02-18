@@ -117,18 +117,7 @@ class VM {
 
 	/// @brief makes an interned string and returns a
 	/// reference to it.
-	String& string(const char* chars, size_t length) {
-		size_t hash = hash_cstring(chars, length);
-
-		// If an identical string has already been created, then
-		// return a reference to the existing string instead.
-		String* interned = interned_strings.find_string(chars, length, hash);
-		if (interned != nullptr) return *interned;
-
-		String* string = new String(chars, length, hash);
-		register_object(string);
-		return *string;
-	}
+	String& string(const char* chars, size_t length);
 
   private:
 	const std::string* m_source;
@@ -189,7 +178,7 @@ class VM {
 	/// calling the `on_error` and shutting down the VM by returning an
 	/// ExitCode::RuntimeError
 	/// @param message The error message.
-	ExitCode runtime_error(std::string&& message) const;
+	ExitCode runtime_error(std::string&& message);
 };
 
 } // namespace snap

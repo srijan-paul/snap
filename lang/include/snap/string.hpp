@@ -4,6 +4,7 @@
 
 namespace snap {
 
+u32 hash_cstring(const char* chars, int len);
 /// Strings in snap are heap allocated, and contain 3 important fields:
 /// `m_chars`  -> Pointer to the C string on the heap (null terminated).
 /// `m_length` -> Length of the string.
@@ -33,9 +34,26 @@ class String : public Obj {
 	/// having the same value has `hash_cstring(chrs, len)`.
 	String(const char* chrs, size_t len, size_t hash);
 
+	// clang-format off
 	/// @brief Creates a string that owns the characters `chrs`.
 	/// @param chrs pointer to the character buffer. Must be null terminated.
-	String(char* chrs);
+	String(char* chrs)
+		: Obj(ObjType::string),
+		m_chars{chrs},
+		m_length{strlen(chrs)},
+		m_hash{hash_cstring(chrs, m_length)} 
+	{};
+
+	/// @brief creates a string that owns the (heap allocated) characters `chrs`.
+	/// @param chrs Null terminated character buffer on the heap.
+	/// @param hash The hash for this cstring.
+	String(char* chrs, size_t hash)
+		: Obj{ObjType::string},
+		  m_chars{chrs},
+			m_length{strlen(chrs)},
+			m_hash{hash} {};
+
+	// clang-format on
 
 	/// @brief concatenates [left] and [right] into a string
 	String(const String* left, const String* right);
@@ -46,7 +64,5 @@ class String : public Obj {
 	~String();
 };
 
-u32 hash_cstring(const char* chars, int len);
 bool operator==(const String& a, const String& b);
-
 } // namespace snap

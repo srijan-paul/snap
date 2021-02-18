@@ -144,6 +144,8 @@ static void expr_tests() {
 				SNAP_BOOL_VAL(true));
 
 	test_file("compound-assign.snp", SNAP_NUM_VAL(8), "Compound assignment operators.");
+
+	std::cout << "[Expression tests passed]" << std::endl;
 }
 
 static void stmt_tests() {
@@ -252,15 +254,18 @@ void table_test() {
 			  "Computed member access and dot member access are equivalent for string keys.");
 	test_file("table-6.snp", SNAP_NUM_VAL(25), "Compound assignment to computed members");
 	test_file("table-7.snp", SNAP_NUM_VAL(10), "Syntactic sugar for table methods");
+	test_file("keys.snp", SNAP_NUM_VAL(6), "Subscript operator in table key with interned strings.");
+
+	std::cout << "[Table tests passed]" << std::endl;
 }
 
 void string_test() {
 	test_string_return("string-concat.snp", "this is a string", "Chained string concatenation");
+	test_string_return("string.snp", "snap = good", "String cocatenation in blocks");
+	std::cout << "[String tests passed]" << std::endl;
 }
 
 void vm_test() {
-	std::printf("--- VM Tests ---\n");
-
 	const std::string var_test = "let a = 1; let b = a + 2; a = 10;";
 	VM vm2{&var_test};
 	vm2.init();
@@ -287,7 +292,7 @@ void vm_test() {
 				   << "'abcdef' "
 				   << "Got: '" << SNAP_AS_CSTRING(s) << "'");
 
-	std::printf("--- /VM tests ---\n");
+	std::printf("[VM Tests passed]\n");
 }
 
 int main() {

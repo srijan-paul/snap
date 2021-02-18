@@ -50,10 +50,6 @@ String::String(const String* left, const String* right)
 	m_chars = buf;
 }
 
-String::String(char* chrs) : Obj(ObjType::string), m_chars{chrs}, m_length{strlen(chrs)} {
-	m_hash = hash_cstring(chrs, m_length);
-}
-
 String::~String() {
 	delete[] m_chars;
 }

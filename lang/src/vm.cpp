@@ -252,7 +252,7 @@ ExitCode VM::run(bool run_till_end) {
 
 		case Op::concat: {
 			Value& a = PEEK(2);
-			Value& b = PEEK(1);
+			Value b = pop(); 
 
 			if (!(SNAP_IS_STRING(a) and SNAP_IS_STRING(b))) {
 				return binop_error("..", a, b);
@@ -271,13 +271,13 @@ ExitCode VM::run(bool run_till_end) {
 				String* interned = interned_strings.find_string(buf, length, hash);
 
 				if (interned == nullptr) {
-					SNAP_SET_OBJECT(a, new String(buf));
+					SNAP_SET_OBJECT(a, &make<String>(buf, hash));
+					interned_strings.set(a, SNAP_BOOL_VAL(true));
 				} else {
 					delete[] buf;
 					SNAP_SET_OBJECT(a, interned);
 				}
 			}
-			pop();
 			break;
 		}
 
@@ -573,6 +573,20 @@ bool VM::callfunc(Function* func, int argc) {
 	return true;
 }
 
+String& VM::string(const char* chars, size_t length) {
+	size_t hash = hash_cstring(chars, length);
+
+	// If an identical string has already been created, then
+	// return a reference to the existing string instead.
+	String* interned = interned_strings.find_string(chars, length, hash);
+	if (interned != nullptr) return *interned;
+
+	String* string  = &make<String>(chars, length, hash);
+	interned_strings.set(SNAP_OBJECT_VAL(string), SNAP_BOOL_VAL(true));
+
+	return *string;
+}
+
 // 	-- Garbage collection --
 
 void VM::collect_garbage() {
@@ -590,7 +604,7 @@ ExitCode VM::binop_error(const char* opstr, Value& a, Value& b) {
 				 SNAP_TYPE_CSTR(a), SNAP_TYPE_CSTR(b));
 }
 
-ExitCode VM::runtime_error(std::string&& message) const {
+ExitCode VM::runtime_error(std::string&& message) {
 	std::string error_str = kt::format_str("[line {}]: {}\n", CURRENT_LINE(), message);
 
 	error_str += "stack trace:\n";

@@ -69,11 +69,6 @@ bool operator==(const Value& a, const Value& b) {
 		const Obj* oa = a.as_object();
 		const Obj* ob = b.as_object();
 		if (oa->tag != ob->tag) return false;
-		if (oa->tag == OT::string) {
-			const String& sa = *static_cast<const String*>(oa);
-			const String& sb = *static_cast<const String*>(ob);
-			return sa == sb;
-		}
 		return oa == ob;
 	}
 	default: return true;
