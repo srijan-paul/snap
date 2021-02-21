@@ -160,7 +160,7 @@ class VM {
 	/// inside an Upvalue object and add it to the
 	/// VM's currently open Upvalue list in the right
 	/// position (if it isn't already there).
-	/// @param slot A `Value*` referencing a valueinside the VM's
+	/// @param slot A `Value*` pointing to a value inside the VM's
 	///             value stack.
 	Upvalue* capture_upvalue(Value* slot);
 	// close all the upvalues that are present between the
@@ -169,7 +169,7 @@ class VM {
 	void close_upvalues_upto(Value* last);
 
 	/// @brief Throw an error caused by a binary operator's bad operand types.
-	/// @param opstr a `C string representing the binary operator. (eg - "+")
+	/// @param opstr a C string representing the binary operator. (eg - "+")
 	/// @param a The left operand
 	/// @param b The right operand
 	ExitCode binop_error(const char* opstr, Value& a, Value& b);
