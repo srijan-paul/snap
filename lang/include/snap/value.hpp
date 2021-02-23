@@ -99,7 +99,6 @@ void print_value(Value v);
 
 #define SNAP_NUM_VAL(n)		 (snap::Value(static_cast<snap::number>(n)))
 #define SNAP_BOOL_VAL(b)	 (snap::Value(static_cast<bool>(b)))
-#define SNAP_CONST_OBJECT(o) (snap::Value(static_cast<const snap::Obj*>(o)))
 #define SNAP_OBJECT_VAL(o)	 (snap::Value(static_cast<snap::Obj*>(o)))
 #define SNAP_NIL_VAL		 (snap::Value())
 
