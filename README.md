@@ -37,7 +37,7 @@ Snap is a dynamically typed, interpreted and fast scriptling language inspired b
 
 Snap aims to pick up after the Lua programming language, by adding popularly desired features on top of it,
 whilst providing similar speed and minimalism as Lua.
-The several complaints that people have about Lua that Snap intends to address are:
+Some quirks about Lua that Snap changes are:
 
 - Variables are global by default
 - Long keywords like `local` and the use of `do .. end` to designate blocks instead of `{}` makes it unlikeable to
@@ -50,7 +50,7 @@ The several complaints that people have about Lua that Snap intends to address a
   - `switch` statements.
 - Arrays starting at 1.
 
-Snap aims to keep most of what Lua provides, but address the aforementioned complaints and offer the following QoL feautures:
+Snap aims to keep most of what Lua provides, but address the aforementioned issues and offer the following QoL feautures:
 
 - A Familiar syntax for programmers migrating from Javascript and C
 - An easy to integrate C++ API for easy embedding in applications
