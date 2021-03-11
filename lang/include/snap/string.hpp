@@ -11,7 +11,7 @@ u32 hash_cstring(const char* chars, int len);
 /// `m_hash`   -> Unlike other objects, a string's hash is computed by walking over it's
 /// 						  characters. This is done to make sure that strings with the same
 ///               characters end up with the same hash.
-class String : public Obj {
+class String final : public Obj {
 	const char* m_chars = nullptr;
 
   public:

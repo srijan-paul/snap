@@ -14,7 +14,7 @@ using OT = ObjType;
 
 // check if an entry is unoccupied.
 #define IS_ENTRY_FREE(e) (SNAP_IS_NIL(e.key))
-
+#define IS_ENTRY_DEAD(e) (SNAP_IS_EMPTY(e.key))
 #define HASH_OBJ(o) ((size_t)(o)&UINT64_MAX)
 
 Table::~Table() {
@@ -86,7 +86,7 @@ bool Table::set(Value key, Value value) {
 		// tombstone in the entries buffer, use that
 		// slot for insertion.
 		const bool is_free = IS_ENTRY_FREE(entry);
-		const bool is_tombstone = SNAP_IS_EMPTY(entry.key);
+		const bool is_tombstone = IS_ENTRY_DEAD(entry);
 
 		if (is_free or is_tombstone) {
 			entry.key = std::move(key);
@@ -144,7 +144,7 @@ bool Table::remove(Value key) {
 	// This entry was never occupied by a key-value
 	// pair in the first place, then no deletion is
 	// neccessary;
-	if (IS_ENTRY_FREE(entry) or SNAP_IS_EMPTY(entry.key)) return false;
+	if (IS_ENTRY_FREE(entry) or IS_ENTRY_DEAD(entry)) return false;
 
 	TABLE_PLACE_TOMBSTONE(entry);
 	++m_num_tombstones;
@@ -196,7 +196,7 @@ size_t Table::hash_value(Value key) const {
 size_t Table::hash_object(Obj* object) const {
 	switch (object->tag) {
 	case OT::string: return static_cast<String*>(object)->m_hash;
-	case OT::upvalue: return hash_value(*static_cast<Upvalue*>(object)->value);
+	case OT::upvalue: return hash_value(*static_cast<Upvalue*>(object)->m_value);
 	default: return HASH_OBJ(object);
 	}
 }

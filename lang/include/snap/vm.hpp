@@ -1,19 +1,19 @@
 #pragma once
 #include "compiler.hpp"
 #include "table.hpp"
+#include "value.hpp"
 #include <cassert>
 #include <cstdarg>
 #include <cstddef>
 #include <functional>
 #include <iostream>
-#include <unordered_set>
+#include <set>
 
 namespace snap {
 enum class ExitCode : u8 { Success, CompileError, RuntimeError };
 
 using PrintFn = std::function<void(const VM& vm, String* string)>;
 using ErrorFn = std::function<void(const VM& vm, std::string& err_message)>;
-using AllocateFn = std::function<void*(VM& vm, size_t old_size, size_t new_size)>;
 
 inline void default_print_fn([[maybe_unused]] const VM& vm, String* string) {
 	printf("%s\n", string->c_str());
@@ -23,13 +23,39 @@ void default_error_fn(const VM& vm, std::string& err_msg);
 
 struct CallFrame {
 	Function* func;
-	std::size_t ip;
+	size_t ip;
 	// the base of the Callframe in the VM's
 	// value stack. This denotes the first
 	// slot usable by the CallFrame. All local variables
 	// are represented as a stack offset from this
 	// base.
 	Value* base;
+};
+
+struct GC {
+	// the VM maintains it's personal linked list of objects
+	// for garbage collection. GC is achieved by walking over
+	// this list, and removing all objects that have no other
+	// references anywhere else in the VM
+	Obj* m_objects = nullptr;
+	std::vector<Obj*> m_gray_objects;
+
+	// An extra set of GC roots. This are ptrs to
+	// objects marked safe from Garbage Collection.
+	std::set<Obj*> m_extra_roots;
+
+	/// @brief If `v` is an object, then marks it as 'alive', preventing
+	/// it from being garbage collected.
+	void mark(Value v);
+	/// @brief marks an object as 'alive', turning it gray.
+	void mark(Obj* o);
+
+	/// @brief trace all references in the gray stack.
+	void trace();
+
+	/// @brief protects `o` from being garbage collected.
+	void protect(Obj* o);
+	void unprotect(Obj* o);
 };
 
 class VM {
@@ -48,8 +74,8 @@ class VM {
 	// the end of it's lifespan.
 	Value return_value = SNAP_NIL_VAL;
 
-	static constexpr std::size_t StackMaxSize = 256;
-	static constexpr std::size_t MaxCallStack = 128;
+	static constexpr size_t StackMaxSize = 256;
+	static constexpr size_t MaxCallStack = 128;
 	Value m_stack[StackMaxSize];
 	// points to the next free slot where a value can go
 
@@ -93,7 +119,6 @@ class VM {
 	bool call(Value value, u8 argc);
 	bool callfunc(Function* func, int argc);
 
-	void collect_garbage();
 	ExitCode run(bool run_till_end = true);
 	const Block* block();
 
@@ -111,13 +136,28 @@ class VM {
 
 	inline void register_object(Obj* o) {
 		assert(o != nullptr);
-		o->next = m_gc_objects;
-		m_gc_objects = o;
+		o->next = m_gc.m_objects;
+		m_gc.m_objects = o;
 	}
 
-	/// @brief makes an interned string and returns a
+	/// @brief Makes an interned string and returns a
 	/// reference to it.
 	String& string(const char* chars, size_t length);
+
+	/// @brief Triggers a garbage collection cycle, does a
+	/// mark-trace-sweep.
+	void collect_garbage();
+
+	/// @brief Marks the object safe from garbage collection
+	/// until `VM::gc_unprotect` is called on the object.
+	void gc_protect(Obj* o);
+
+	/// @brief If the object was previously marked safe from GC,
+	/// then removes the guard, making it garbage collectable again.
+	void gc_unprotect(Obj* o);
+
+	/// @brief returns the number of objects present in `gc.m_objects.`
+	size_t num_objects();
 
   private:
 	const std::string* m_source;
@@ -126,14 +166,24 @@ class VM {
 	// It stores the index of the next instruction
 	// to be executed. An "instruction" here is an Opcode
 	// inside the current function's `m_block`.
-	std::size_t ip = 0;
+	size_t ip = 0;
 
-	// the VM maintains it's personal linked list of objects
-	// for garbage collection. GC is achieved by walking over
-	// this list, and removing all objects that have no other
-	// references anywhere else in the VM
-	Obj* m_gc_objects = nullptr;
-	std::vector<Obj*> m_gray_objects;
+	/// GARAGE COLLECTION ///
+
+	GC m_gc;
+
+	/// @brief triggers the 'mark' phase of garbage collection.
+	/// All known roots are marked as 'alive' and turned gray.
+	void mark();
+
+	/// @brief traces all the 'gray' (untraced) objects in the object
+	/// graph, traversing through their references and marking any previously
+	/// unreached object as 'alive'.
+	void trace();
+
+	/// @brief Triggers the 'sweep' phase, traversing the entire
+	/// object graph and freeing any object that isn't marked alive.
+	void sweep();
 
 	// VM's personal list of all open upvalues.
 	// This is a sorted linked list, the head

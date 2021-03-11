@@ -234,13 +234,13 @@ ExitCode VM::run(bool run_till_end) {
 
 		case Op::set_upval: {
 			u8 idx = NEXT_BYTE();
-			*m_current_frame->func->m_upvals[idx]->value = PEEK(1);
+			*m_current_frame->func->m_upvals[idx]->m_value = PEEK(1);
 			break;
 		}
 
 		case Op::get_upval: {
 			u8 idx = NEXT_BYTE();
-			push(*m_current_frame->func->m_upvals[idx]->value);
+			push(*m_current_frame->func->m_upvals[idx]->m_value);
 			break;
 		}
 
@@ -252,7 +252,7 @@ ExitCode VM::run(bool run_till_end) {
 
 		case Op::concat: {
 			Value& a = PEEK(2);
-			Value b = pop(); 
+			Value b = pop();
 
 			if (!(SNAP_IS_STRING(a) and SNAP_IS_STRING(b))) {
 				return binop_error("..", a, b);
@@ -462,9 +462,19 @@ bool VM::init() {
 	m_compiler = &compiler;
 
 	Prototype* proto = m_compiler->compile();
-	push(SNAP_OBJECT_VAL(proto));
+
+	// There are no reachable references to `proto`
+	// when we allocate `func`. Since allocating a func
+	// can trigger a garbage collection cycle, we protect
+	// the proto.
+	gc_protect(proto);
 	Function* func = &make<Function>(proto);
-	pop();
+
+	// Once the function has been made, proto can
+	// be reached via `func->m_proto`, so we can
+	// unprotect it.
+	gc_unprotect(proto);
+
 	push(SNAP_OBJECT_VAL(func));
 	callfunc(func, 0);
 
@@ -487,7 +497,7 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 	// keep going until we reach a slot whose
 	// depth is lower than what we've been looking
 	// for, or until we reach the end of the list.
-	while (current != nullptr and current->value < slot) {
+	while (current != nullptr and current->m_value < slot) {
 		prev = current;
 		current = current->next_upval;
 	}
@@ -495,7 +505,7 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 	// We've found an upvalue that was
 	// already capturing a value at this stack
 	// slot, so we reuse the existing upvalue
-	if (current != nullptr and current->value == slot) return current;
+	if (current != nullptr and current->m_value == slot) return current;
 
 	// We've reached a node in the list where the previous node is above the
 	// slot we wanted to capture, but the current node is deeper.
@@ -515,12 +525,12 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 }
 
 void VM::close_upvalues_upto(Value* last) {
-	while (m_open_upvals != nullptr and m_open_upvals->value >= last) {
+	while (m_open_upvals != nullptr and m_open_upvals->m_value >= last) {
 		Upvalue* current = m_open_upvals;
 		// these two lines are the last rites of an
 		// upvalue, closing it.
-		current->closed = *current->value;
-		current->value = &current->closed;
+		current->closed = *current->m_value;
+		current->m_value = &current->closed;
 		m_open_upvals = current->next_upval;
 	}
 }
@@ -581,7 +591,7 @@ String& VM::string(const char* chars, size_t length) {
 	String* interned = interned_strings.find_string(chars, length, hash);
 	if (interned != nullptr) return *interned;
 
-	String* string  = &make<String>(chars, length, hash);
+	String* string = &make<String>(chars, length, hash);
 	interned_strings.set(SNAP_OBJECT_VAL(string), SNAP_BOOL_VAL(true));
 
 	return *string;
@@ -589,8 +599,73 @@ String& VM::string(const char* chars, size_t length) {
 
 // 	-- Garbage collection --
 
+void VM::gc_protect(Obj* o) {
+	m_gc.m_extra_roots.insert(o);
+}
+
+void VM::gc_unprotect(Obj* o) {
+	m_gc.m_extra_roots.erase(o);
+}
+
+void GC::protect(Obj* o) {
+	m_extra_roots.insert(o);
+}
+
+void GC::unprotect(Obj* o) {
+	m_extra_roots.erase(o);
+}
+
 void VM::collect_garbage() {
-	// TODO
+	mark();
+	// trace();
+	// sweep();
+}
+
+void GC::mark(Value v) {
+	if (SNAP_IS_OBJECT(v)) {
+		mark(SNAP_AS_OBJECT(v));
+	}
+}
+
+void GC::mark(Obj* o) {
+	if (o == nullptr or o->marked) return;
+	o->marked = true;
+	m_gray_objects.emplace_back(o);
+}
+
+void GC::trace() {
+
+}
+
+void VM::mark() {
+	// The following roots are known atm ->
+	// 1. The VM's value stack.
+	// 2. Every Closure in the call stack.
+	// 3. The open upvalue chain.
+	// 4. Compiler roots, if the compiler is active.
+	// 5. The table of global variables.
+	// 6. The 'extra_roots' set.
+	for (Value* v = m_stack; v < sp; ++v) {
+		m_gc.mark(v);
+	}
+
+	for (CallFrame* frame = m_frames; frame < m_current_frame; ++frame) {
+		m_gc.mark(frame->func);
+	}
+
+	for (Upvalue* uv = m_open_upvals; uv != nullptr; uv = uv->next_upval) {
+		m_gc.mark(uv);
+	}
+
+	for (Obj* o : m_gc.m_extra_roots) {
+		m_gc.mark(o);
+	}
+}
+
+void VM::trace() {
+}
+
+void VM::sweep() {
 }
 
 const Block* VM::block() {

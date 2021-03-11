@@ -31,7 +31,7 @@ std::string value_to_string(Value v) {
 		case OT::proto:
 			return std::string("[prototype ") + static_cast<const Prototype*>(obj)->name_cstr() +
 				   "]";
-		case OT::upvalue: return value_to_string(static_cast<const Upvalue*>(obj)->value);
+		case OT::upvalue: return value_to_string(static_cast<const Upvalue*>(obj)->m_value);
 		case OT::table: {
 			Table* tbl = SNAP_AS_TABLE(v);
 			return "[table " + std::to_string((size_t)tbl) + "]";

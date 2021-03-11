@@ -1,4 +1,3 @@
-#include <value.hpp>
 #include <function.hpp>
 
 namespace snap {
@@ -30,4 +29,4 @@ Function::~Function() {
 	}
 }
 
-}
+} // namespace snap

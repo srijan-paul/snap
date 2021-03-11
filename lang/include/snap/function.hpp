@@ -17,9 +17,10 @@ struct Prototype final : Obj {
 
 	const String* name() const;
 	const char* name_cstr() const;
+	// ~Prototype();
 };
 
-// The Closure object 
+// The Closure object
 struct Function final : Obj {
 	Prototype* m_proto;
 	std::vector<Upvalue*> m_upvals;
