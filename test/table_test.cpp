@@ -84,7 +84,7 @@ void strkey_test() {
 		   "Strings don't have reference equality when not interned.");
 }
 
-snap::String* make_string(snap::Table& intern_table, const char* cs, int len) {
+snap::String* make_interned_string(snap::Table& intern_table, const char* cs, int len) {
 	snap::String* interned = intern_table.find_string(cs, len, snap::hash_cstring(cs, len));
 	if (interned == nullptr) {
 		auto* s = new snap::String(cs, len);
@@ -97,7 +97,7 @@ snap::String* make_string(snap::Table& intern_table, const char* cs, int len) {
 void intern_test() {
 	snap::Table t;
 	const char* s1 = "a short string.";
-	snap::String* s = make_string(t, s1, strlen(s1));
+	snap::String* s = make_interned_string(t, s1, strlen(s1));
 	EXPECT(t.size() == 1,
 		   "Table::size() - is 1 when there is one string entry in the Intern table. (got: "
 			   << t.size() << ")");
@@ -105,7 +105,7 @@ void intern_test() {
 	int s1len = strlen(s1);
 	EXPECT(t.find_string(s1, strlen(s1), snap::hash_cstring(s1, s1len)) != nullptr, "Table::find_string test.");
 
-	snap::String* s_ = make_string(t, s1, strlen(s1));
+	snap::String* s_ = make_interned_string(t, s1, strlen(s1));
 	EXPECT(s_ == s, "String comparison can be done using pointers when interned (got "
 						<< std::hex << s_ << " != " << s << ").");
 

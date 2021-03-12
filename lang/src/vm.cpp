@@ -234,13 +234,13 @@ ExitCode VM::run(bool run_till_end) {
 
 		case Op::set_upval: {
 			u8 idx = NEXT_BYTE();
-			*m_current_frame->func->m_upvals[idx]->m_value = PEEK(1);
+			*m_current_frame->func->get_upval(idx)->m_value = PEEK(1);
 			break;
 		}
 
 		case Op::get_upval: {
 			u8 idx = NEXT_BYTE();
-			push(*m_current_frame->func->m_upvals[idx]->m_value);
+			push(*m_current_frame->func->get_upval(idx)->m_value);
 			break;
 		}
 
@@ -399,7 +399,7 @@ ExitCode VM::run(bool run_till_end) {
 			}
 
 			m_current_frame = &m_frames[m_frame_count - 1];
-			m_current_block = &m_current_frame->func->m_proto->m_block;
+			m_current_block = &m_current_frame->func->m_proto->block();
 			ip = m_current_frame->ip;
 
 			break;
@@ -418,9 +418,9 @@ ExitCode VM::run(bool run_till_end) {
 				u8 index = NEXT_BYTE();
 
 				if (is_local) {
-					func->m_upvals[i] = (capture_upvalue(m_current_frame->base + index));
+					func->set_upval(i, (capture_upvalue(m_current_frame->base + index)));
 				} else {
-					func->m_upvals[i] = (m_current_frame->func->m_upvals[index]);
+					func->set_upval(i, (m_current_frame->func->get_upval(index)));
 				}
 			}
 
@@ -551,7 +551,7 @@ bool VM::call(Value value, u8 argc) {
 }
 
 bool VM::callfunc(Function* func, int argc) {
-	int extra = argc - func->m_proto->m_num_params;
+	int extra = argc - func->m_proto->param_count();
 
 	// extra arguments are ignored and
 	// arguments that aren't provded are replaced with nil.
@@ -579,7 +579,7 @@ bool VM::callfunc(Function* func, int argc) {
 	m_current_frame->base = sp - argc - 1;
 	// start from the first op code
 	ip = 0;
-	m_current_block = &func->m_proto->m_block;
+	m_current_block = &func->m_proto->block();
 	return true;
 }
 
@@ -634,7 +634,6 @@ void GC::mark(Obj* o) {
 }
 
 void GC::trace() {
-
 }
 
 void VM::mark() {
@@ -686,7 +685,7 @@ ExitCode VM::runtime_error(std::string&& message) {
 	for (int i = m_frame_count - 1; i >= 0; --i) {
 		const CallFrame& frame = m_frames[i];
 		const Function& func = *frame.func;
-		int line = func.m_proto->m_block.lines[frame.ip];
+		int line = func.m_proto->block().lines[frame.ip];
 		if (i == 0) {
 			error_str += kt::format_str("\t[line {}] in {}", line, func.name_cstr());
 		} else {

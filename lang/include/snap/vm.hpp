@@ -198,7 +198,7 @@ class VM {
 
 	// current block from which the opcodes
 	// are being read. This always `m_current_frame->func->block`
-	Block* m_current_block = nullptr;
+	const Block* m_current_block = nullptr;
 
 	// Snap interns all strings. So if two separate
 	// string values are identical, then they point

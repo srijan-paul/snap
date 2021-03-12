@@ -12,7 +12,7 @@
 #include "str_format.hpp"
 
 #define TOK2NUM(t) SNAP_NUM_VAL(std::stod(t.raw(*m_source)))
-#define THIS_BLOCK (m_proto->m_block)
+#define THIS_BLOCK (m_proto->block())
 #define ERROR(...) error(kt::format_str(__VA_ARGS__))
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
@@ -529,13 +529,13 @@ void Compiler::patch_jump(std::size_t index) {
 
 void Compiler::add_param(const Token& token) {
 	new_variable(token);
-	m_proto->m_num_params++;
-	if (m_proto->m_num_params > MaxFuncParams) {
+	u32 num_params = m_proto->add_param();
+	if (num_params > MaxFuncParams) {
 		error_at_token("Too many function parameters.", token);
 	}
 }
 
-// helper functions:
+// Helper functions:
 
 void Compiler::advance() {
 	prev = token;
