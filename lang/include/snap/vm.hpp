@@ -97,13 +97,6 @@ class VM {
 		return *(sp - 1 - depth);
 	}
 
-	/// executes the next `count` instructions in the bytecode stream.
-	/// by default, count is 1.
-	/// @param count number of instructions to excecute. 1 by default.
-	inline void step(size_t count = 1) {
-		while (count--) run(false);
-	}
-
 	/// pushes a value onto the VM's stack.
 	/// @param value The Value to push onto the stack.
 	inline void push(Value value) {
@@ -143,6 +136,7 @@ class VM {
 	/// @brief Makes an interned string and returns a
 	/// reference to it.
 	String& string(const char* chars, size_t length);
+
 
 	/// @brief Triggers a garbage collection cycle, does a
 	/// mark-trace-sweep.

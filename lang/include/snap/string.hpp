@@ -16,7 +16,7 @@ class String final : public Obj {
 
   public:
 	/// @brief The length of the string, does not include the
-	/// null terminator. The length pf "abc" is 3.
+	/// null terminator. The length of "abc" is 3.
 	const size_t m_length;
 
 	/// @brief The string's hash value. This is computed by calling

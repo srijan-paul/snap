@@ -14,7 +14,7 @@ void assert_val_eq(Value& expected, Value actual, const char* message = "Test fa
 		fprintf(stderr, "%s: ", message);
 		fprintf(stderr, "Expected value to be ");
 		print_value(expected);
-		fprintf(stderr, " But got  ");
+		fprintf(stderr, " But got ");
 		print_value(actual);
 		abort();
 	}
@@ -57,21 +57,6 @@ static void test_file(const char* filename, Value expected, const char* message 
 	return;
 }
 
-/// Runs the next `op_count` instructions in the `code` string in a VM.
-/// Then asserts that the value on top of the stack is equal to `expected_value`.
-/// If `op_count` is -1 then interprets the entire bytecode and checks the return value.
-static void test_code(const std::string&& code, int op_count, Value expected_value) {
-	VM vm{&code};
-	if (op_count == -1) {
-		vm.interpret();
-		assert_val_eq(expected_value, vm.return_value);
-	} else {
-		vm.init();
-		vm.step(op_count);
-		assert_val_eq(expected_value, vm.peek());
-	}
-}
-
 /// @brief Runs `filename` and asserts the return value as a cstring, comparing
 /// it with `expected`.
 static void test_string_return(const char* filename, const char* expected,
@@ -100,36 +85,36 @@ static void test_string_return(const char* filename, const char* expected,
 }
 
 static void expr_tests() {
-	test_code("5 / 2", 3, SNAP_NUM_VAL(2.5));
-	test_code("5 % 2", 3, SNAP_NUM_VAL(1.0));
-	test_code("5 + 2", 3, SNAP_NUM_VAL(7.0));
-	test_code("5 - 2", 3, SNAP_NUM_VAL(3.0));
-	test_code("3 * 5", 3, SNAP_NUM_VAL(15.0));
+	test_return("return 5 / 2", SNAP_NUM_VAL(2.5));
+	test_return("return 5 % 2", SNAP_NUM_VAL(1.0));
+	test_return("return 5 + 2", SNAP_NUM_VAL(7.0));
+	test_return("return 5 - 2", SNAP_NUM_VAL(3.0));
+	test_return("return 3 * 5", SNAP_NUM_VAL(15.0));
 
-	test_code("3 < 5", 3, SNAP_BOOL_VAL(true));
-	test_code("3 > 5", 3, SNAP_BOOL_VAL(false));
-	test_code("3 <= 3", 3, SNAP_BOOL_VAL(true));
-	test_code("4 >= 4", 3, SNAP_BOOL_VAL(true));
+	test_return("return 3 < 5", SNAP_BOOL_VAL(true));
+	test_return("return 3 > 5", SNAP_BOOL_VAL(false));
+	test_return("return 3 <= 3", SNAP_BOOL_VAL(true));
+	test_return("return 4 >= 4", SNAP_BOOL_VAL(true));
 
-	test_code("10 - 5 - 2", 5, SNAP_NUM_VAL(3.0));
-	test_code("let a = 10 && 5 && 2", 5, SNAP_NUM_VAL(2));
-	test_code("let a = 10 || 5 || 2", 2, SNAP_NUM_VAL(10));
-	test_code("10 - 5 - 2", 5, SNAP_NUM_VAL(3.0));
+	test_return("return 10 - 5 - 2", SNAP_NUM_VAL(3.0));
+	test_return("return 10 && 5 && 2", SNAP_NUM_VAL(2));
+	test_return("return 10 || 5 || 2", SNAP_NUM_VAL(10));
+	test_return("return 10 - 5 - 2", SNAP_NUM_VAL(3.0));
 
-	test_code(R"(
+	test_return(R"(
 		let a = 1
 		let b = 3
 		a = b = 5
-		let c = a + b
+		return a + b
 	)",
-			  8, 5.0);
+				SNAP_NUM_VAL(10.0), "Chained assignments to local variables");
 
-	test_code("4 | 9", 3, SNAP_NUM_VAL(13));
-	test_code("9 & 7", 3, SNAP_NUM_VAL(1));
+	test_return("return 9 & 7", SNAP_NUM_VAL(1));
+	test_return("return 4 | 9", SNAP_NUM_VAL(13));
 
 	// test precedence
 
-	test_code("let a = 5 > 2 && 3 > -10", 8, SNAP_BOOL_VAL(true));
+	test_return("return 5 > 2 && 3 > -10", SNAP_BOOL_VAL(true));
 
 	// test string equality
 	test_return("return 'abc' == 'abc'", SNAP_BOOL_VAL(true));
@@ -143,21 +128,23 @@ static void expr_tests() {
 	)",
 				SNAP_BOOL_VAL(true));
 
-	test_file("compound-assign.snp", SNAP_NUM_VAL(8), "Compound assignment operators.");
+	test_file("compound-assign.snp", SNAP_NUM_VAL(8), "Compound assignment operators");
 
-	std::cout << "[Expression tests passed]" << std::endl;
+	std::cout << "[Expression tests passed]\n";
 }
 
 static void stmt_tests() {
-	test_code(R"(
+	test_return(R"(
 		let a = 1;
 		let b = 2;
 		if a < b {
 			b = 5
-		})",
-			  6, SNAP_NUM_VAL(2));
+		}
+		return b
+		)",
+				SNAP_NUM_VAL(5), "If statement without else branch");
 
-	test_code(R"(
+	test_return(R"(
 		let a = 3;
 		let b = 3;
 		if a < b {
@@ -167,9 +154,10 @@ static void stmt_tests() {
 		} else {
 			b = 7
 		}
-		return 7
-	)",
-			  -1, SNAP_NUM_VAL(7));
+		return b)",
+				SNAP_NUM_VAL(7), "If statement with else-if branch");
+
+	std::cout << "Statement tests passed\n";
 }
 
 void fn_tests() {
@@ -182,7 +170,7 @@ void fn_tests() {
 		}
 		return adder(10)(20)
 	)",
-				SNAP_NUM_VAL(30));
+				SNAP_NUM_VAL(30), "chained calls with parameters");
 
 	test_return(R"(
 		fn x() {
@@ -199,7 +187,7 @@ void fn_tests() {
 		}
 		return x()()()
 	)",
-				SNAP_NUM_VAL(6));
+				SNAP_NUM_VAL(6), "Closures and chained function calls");
 
 	test_return(R"(
 		fn fib(n) {
@@ -208,7 +196,7 @@ void fn_tests() {
 		}
 		return fib(10)
 	)",
-				SNAP_NUM_VAL(89));
+				SNAP_NUM_VAL(89), "Recursive fiboacci");
 
 	test_return(R"(
 		fn make_adder(x) {
@@ -220,7 +208,7 @@ void fn_tests() {
 		const add10 = make_adder(10)
 		return add10(-10)
 	)",
-				SNAP_NUM_VAL(0));
+				SNAP_NUM_VAL(0), "make_adder closure");
 
 	test_file("llnode-cl.snp", SNAP_NUM_VAL(20), "Linked list closure test");
 }
@@ -244,55 +232,26 @@ void table_test() {
 		t.k = 3
 		return t.k +  a
 	)",
-				SNAP_NUM_VAL(10));
+				SNAP_NUM_VAL(10), "setting table field names");
 
-	test_file("table-1.snp", SNAP_NUM_VAL(3), "returning tables from a closure.");
+	test_file("table-1.snp", SNAP_NUM_VAL(3), "returning tables from a closure");
 	test_file("table-2.snp", SNAP_NUM_VAL(6), "Accessing table fields");
 	test_file("table-3.snp", SNAP_NUM_VAL(11), "Accessing table fields");
-	test_file("table-4.snp", SNAP_NUM_VAL(10), "Computed member assignment and access.");
+	test_file("table-4.snp", SNAP_NUM_VAL(10), "Computed member assignment and access");
 	test_file("table-5.snp", SNAP_NUM_VAL(10),
-			  "Computed member access and dot member access are equivalent for string keys.");
+			  "Computed member access and dot member access are equivalent for string keys");
 	test_file("table-6.snp", SNAP_NUM_VAL(25), "Compound assignment to computed members");
 	test_file("table-7.snp", SNAP_NUM_VAL(10), "Syntactic sugar for table methods");
-	test_file("keys.snp", SNAP_NUM_VAL(6), "Subscript operator in table key with interned strings.");
+	test_file("keys.snp", SNAP_NUM_VAL(6),
+			  "Subscript operator in table key with interned strings");
 
-	std::cout << "[Table tests passed]" << std::endl;
+	std::cout << "[Table tests passed]\n";
 }
 
 void string_test() {
 	test_string_return("string-concat.snp", "this is a string", "Chained string concatenation");
 	test_string_return("string.snp", "snap = good", "String cocatenation in blocks");
-	std::cout << "[String tests passed]" << std::endl;
-}
-
-void vm_test() {
-	const std::string var_test = "let a = 1; let b = a + 2; a = 10;";
-	VM vm2{&var_test};
-	vm2.init();
-	vm2.step(4);
-	ASSERT_LOG(SNAP_IS_NUM(vm2.peek()) && SNAP_AS_NUM(vm2.peek()) == 3,
-			   "Expected variable 'b' to have value '3'.");
-	vm2.step(3);
-	auto a = vm2.peek(1);
-	ASSERT_LOG(VAL_NUM_EQ(a, 10), "Expected variable 'a' to have value '10'.");
-
-	const std::string string_test = "let s1 = \"abcd\"; let s2 = 'ef'; let s3 = s1 .. s2;";
-	VM vm3{&string_test};
-	vm3.init();
-	vm3.step();
-	Value s = vm3.peek();
-	ASSERT_LOG(s.is_string() && std::memcmp(SNAP_AS_CSTRING(s), "abcd", 5) == 0,
-			   "Mismatched string value. Expected: "
-				   << "'abcd' "
-				   << "Got: '" << SNAP_AS_CSTRING(s) << "'");
-	vm3.step(4);
-	s = vm3.peek();
-	ASSERT_LOG(s.is_string() && std::memcmp(SNAP_AS_CSTRING(s), "abcdef", 5) == 0,
-			   "Mismatched string value. Expected: "
-				   << "'abcdef' "
-				   << "Got: '" << SNAP_AS_CSTRING(s) << "'");
-
-	std::printf("[VM Tests passed]\n");
+	std::cout << "[String tests passed]\n"; 
 }
 
 int main() {
@@ -300,7 +259,6 @@ int main() {
 	stmt_tests();
 	fn_tests();
 	table_test();
-	vm_test();
 	string_test();
 	return 0;
 }

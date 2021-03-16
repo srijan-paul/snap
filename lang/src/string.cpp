@@ -74,7 +74,7 @@ const char* String::c_str() const {
 }
 
 char String::at(number index) const {
-	if (index < 0 or index > m_length) return '\0';
+	assert(index > 0 and index < m_length);
 	return m_chars[std::size_t(index)];
 }
 

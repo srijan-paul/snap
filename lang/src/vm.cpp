@@ -94,7 +94,7 @@ void print_stack(Value* stack, size_t sp) {
 
 ExitCode VM::run(bool run_till_end) {
 
-	do {
+	while (true) {
 		const Op op = FETCH();
 #ifdef SNAP_DEBUG_RUNTIME
 		disassemble_instr(*m_current_block, op, ip - 1);
@@ -336,6 +336,7 @@ ExitCode VM::run(bool run_till_end) {
 			}
 			break;
 		}
+
 		// table.key
 		case Op::table_get_no_pop: {
 			// push((TOS)->get(READ_VAL()))
@@ -346,6 +347,7 @@ ExitCode VM::run(bool run_till_end) {
 			}
 			break;
 		}
+
 		// table_or_array[key]
 		case Op::index: {
 			Value key = pop();
@@ -404,6 +406,7 @@ ExitCode VM::run(bool run_till_end) {
 
 			break;
 		}
+
 		case Op::make_func: {
 			Prototype* proto = static_cast<Prototype*>(SNAP_AS_OBJECT(READ_VALUE()));
 			Function* func = &make<Function>(proto);
@@ -426,6 +429,7 @@ ExitCode VM::run(bool run_till_end) {
 
 			break;
 		}
+
 		default: {
 			std::cout << "not implemented " << int(op) << " yet" << std::endl;
 			return ExitCode::RuntimeError;
@@ -435,7 +439,7 @@ ExitCode VM::run(bool run_till_end) {
 		print_stack(m_stack, sp - m_stack);
 		printf("\n");
 #endif
-	} while (run_till_end);
+	}
 
 	return ExitCode::Success;
 }

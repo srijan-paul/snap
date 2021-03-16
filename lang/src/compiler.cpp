@@ -174,7 +174,7 @@ void Compiler::func_expr(const String* fname) {
 		} while (compiler.match(TT::Comma));
 	}
 
-	if (param_count > 255) {
+	if (param_count > MaxFuncParams) {
 		compiler.error_at_token("Function cannot have more than 255 parameters", compiler.token);
 	}
 
@@ -431,10 +431,10 @@ void Compiler::variable(bool can_assign) {
 			std::string message{"Cannot assign to variable '"};
 			message = message + prev.raw(*m_source) + "' which is marked 'const'.";
 			error_at_token(message.c_str(), token);
-			has_error = false; // don't send the compiler into error recovery mode.
+			has_error = false; // Don't send the compiler into error recovery mode.
 		}
 
-		/// compile the RHS of the assignment, and
+		/// Compile the RHS of the assignment, and
 		/// any necessary arithmetic ops if its a
 		/// compound assignment operator. So by the
 		/// time we are setting the value, the RHS
@@ -469,7 +469,7 @@ void Compiler::literal() {
 	case TT::True: index = emit_value(SNAP_BOOL_VAL(true)); break;
 	case TT::False: index = emit_value(SNAP_BOOL_VAL(false)); break;
 	case TT::Nil: index = emit_value(SNAP_NIL_VAL); break;
-	default:; // impossible
+	default:; // Impossible
 	}
 
 
@@ -483,7 +483,7 @@ void Compiler::recover() {
 }
 
 void Compiler::enter_block() {
-	m_symtable.m_scope_depth++;
+	++m_symtable.m_scope_depth;
 }
 
 void Compiler::exit_block() {
@@ -496,7 +496,7 @@ void Compiler::exit_block() {
 		--m_symtable.m_num_symbols;
 	}
 
-	m_symtable.m_scope_depth--;
+	--m_symtable.m_scope_depth;
 }
 
 std::size_t Compiler::emit_jump(Opcode op) {
@@ -512,7 +512,8 @@ void Compiler::patch_jump(std::size_t index) {
 	if (jump_dist > UINT16_MAX) {
 		error_at("Too much code to jump over.", token.location.line);
 	}
-	// If we use a single Opcode for the jump offset, then we're only allowed
+
+	// If we use a single opcode for the jump offset, then we're only allowed
 	// to jump over 255 instructions, which is unfortunately a very small number.
 	// To counter this, jumps are broken down into two Ops, the first Op contains the
 	// first byte and the second Op contains the second byte. The bytes are then stitched
@@ -590,7 +591,7 @@ u32 Compiler::emit_id_string(const Token& token) {
 	return emit_value(SNAP_OBJECT_VAL(s));
 }
 
-int Compiler::find_local_var(const Token& name_token) {
+int Compiler::find_local_var(const Token& name_token) const {
 	const char* name = name_token.raw_cstr(m_source);
 	int length = name_token.length();
 	const int idx = m_symtable.find(name, length);
@@ -722,7 +723,7 @@ static bool names_equal(const char* a, int len_a, const char* b, int len_b) {
 
 int SymbolTable::find(const char* name, int length) const {
 	// start looking from the innermost scope, and work our way
-	// upwards.
+	// outwards.
 	for (int i = m_num_symbols - 1; i >= 0; i--) {
 		const LocalVar& symbol = m_symbols[i];
 		if (names_equal(name, length, symbol.name, symbol.length)) return i;
@@ -739,7 +740,7 @@ int SymbolTable::find_in_current_scope(const char* name, int length) const {
 	return -1;
 }
 
-LocalVar* SymbolTable::find_by_slot(const u8 index) {
+const LocalVar* SymbolTable::find_by_slot(const u8 index) const {
 	return &m_symbols[index];
 }
 

@@ -55,12 +55,11 @@ struct SymbolTable {
 	// then don't add a copy, instead return the index.
 	int add_upvalue(int index, bool is_local, bool is_const);
 	// takes in the index of a local variable and returns it's Symbol info.
-	LocalVar* find_by_slot(const u8 offset);
+	const LocalVar* find_by_slot(const u8 offset) const;
 };
 
 class Compiler {
   public:
-	VM* m_vm;
 	static constexpr u8 MaxLocalVars = UINT8_MAX;
 	static constexpr u8 MaxUpValues = UINT8_MAX;
 	static constexpr u8 MaxFuncParams = UINT8_MAX;
@@ -89,11 +88,16 @@ class Compiler {
 	void add_param(const Token& token);
 
   private:
+	VM* m_vm;
 	Prototype* m_proto;
 	Compiler* m_parent = nullptr;
 
 	const std::string* m_source;
 	bool has_error = false;
+	/// The scanner object that this compiler
+	/// draws tokens from. This is a pointer
+	/// because the nested child compilers will
+	/// want to draw tokens from the same scanner.
 	Scanner* m_scanner;
 
 	Token token; // current token under analysis.
@@ -218,7 +222,7 @@ class Compiler {
 	/// the current scope, moving outward.
 	/// If found, return it's stack slot.
 	/// Else return -1.
-	int find_local_var(const Token& name);
+	int find_local_var(const Token& name) const;
 
 	// Find an upvalue by it's name token.
 	// Starts looking in the current symboltable's upvalue

@@ -168,6 +168,6 @@ void Scanner::skip_whitespace() {
 		default: return;
 		}
 	}
-} // namespace snap
+}
 
 } // namespace snap
