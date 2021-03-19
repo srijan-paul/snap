@@ -26,8 +26,8 @@ String::String(const char* chrs, std::size_t len) : Obj(ObjType::string), m_leng
 	char* buf = new char[len + 1];
 	std::memcpy(buf, chrs, len);
 	buf[len] = '\0';
-	m_hash = hash_cstring(buf, m_length);
-	m_chars = buf;
+	m_hash	 = hash_cstring(buf, m_length);
+	m_chars	 = buf;
 }
 
 String::String(const char* chrs, size_t len, size_t hash) : Obj{OT::string}, m_length{len} {
@@ -36,18 +36,8 @@ String::String(const char* chrs, size_t len, size_t hash) : Obj{OT::string}, m_l
 	char* buf = new char[len + 1];
 	std::memcpy(buf, chrs, len);
 	buf[len] = '\0';
-	m_hash = hash;
-	m_chars = buf;
-}
-
-String::String(const String* left, const String* right)
-	: Obj(ObjType::string), m_length(left->m_length + right->m_length) {
-	char* buf = new char[m_length + 1];
-	buf[m_length] = '\0';
-	std::memcpy(buf, left->m_chars, left->m_length);
-	std::memcpy(buf + left->m_length, right->m_chars, right->m_length);
-	m_hash = hash_cstring(buf, m_length);
-	m_chars = buf;
+	m_hash	 = hash;
+	m_chars	 = buf;
 }
 
 String::~String() {
@@ -57,7 +47,7 @@ String::~String() {
 String* String::concatenate(const String* left, const String* right) {
 	std::size_t length = left->m_length + right->m_length;
 
-	char* buf = new char[length + 1];
+	char* buf	= new char[length + 1];
 	buf[length] = '\0';
 	std::memcpy(buf, left->m_chars, left->m_length);
 	std::memcpy(buf + left->m_length, right->m_chars, right->m_length);
@@ -65,8 +55,9 @@ String* String::concatenate(const String* left, const String* right) {
 }
 
 bool operator==(const String& a, const String& b) {
-	if (a.m_length != b.m_length or a.m_hash != b.m_hash) return false;
-	return std::memcmp(a.c_str(), b.c_str(), a.m_length) == 0;
+	size_t alen = a.len(), blen = b.len();
+	if (alen != blen or alen != blen) return false;
+	return std::memcmp(a.c_str(), b.c_str(), alen) == 0;
 }
 
 const char* String::c_str() const {
@@ -76,6 +67,18 @@ const char* String::c_str() const {
 char String::at(number index) const {
 	assert(index > 0 and index < m_length);
 	return m_chars[std::size_t(index)];
+}
+
+char String::operator[](size_t index) const {
+	return at(index);
+}
+
+size_t String::hash() const {
+	return m_hash;
+}
+
+size_t String::len() const {
+	return m_length;
 }
 
 } // namespace snap

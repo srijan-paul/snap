@@ -43,7 +43,7 @@ Compiler::Compiler(VM* vm, Compiler* parent, const String* name) : m_vm{vm}, m_p
 	m_scanner = m_parent->m_scanner;
 	m_proto = &m_vm->make<Prototype>(name);
 
-	m_symtable.add(name->c_str(), name->m_length, false);
+	m_symtable.add(name->c_str(), name->len(), false);
 
 	m_source = parent->m_source;
 	vm->m_compiler = this;

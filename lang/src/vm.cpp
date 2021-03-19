@@ -233,7 +233,7 @@ ExitCode VM::run(bool run_till_end) {
 		}
 
 		case Op::set_upval: {
-			u8 idx = NEXT_BYTE();
+			u8 idx											= NEXT_BYTE();
 			*m_current_frame->func->get_upval(idx)->m_value = PEEK(1);
 			break;
 		}
@@ -252,22 +252,22 @@ ExitCode VM::run(bool run_till_end) {
 
 		case Op::concat: {
 			Value& a = PEEK(2);
-			Value b = pop();
+			Value b	 = pop();
 
 			if (!(SNAP_IS_STRING(a) and SNAP_IS_STRING(b))) {
 				return binop_error("..", a, b);
 			} else {
-				auto left = SNAP_AS_STRING(a);
-				auto right = SNAP_AS_STRING(b);
-				size_t length = left->m_length + right->m_length;
+				auto left	  = SNAP_AS_STRING(a);
+				auto right	  = SNAP_AS_STRING(b);
+				size_t length = left->len() + right->len();
 
-				char* buf = new char[length + 1];
+				char* buf	= new char[length + 1];
 				buf[length] = '\0';
 
-				std::memcpy(buf, left->c_str(), left->m_length);
-				std::memcpy(buf + left->m_length, right->c_str(), right->m_length);
+				std::memcpy(buf, left->c_str(), left->len());
+				std::memcpy(buf + left->len(), right->c_str(), right->len());
 
-				size_t hash = hash_cstring(buf, length);
+				size_t hash		 = hash_cstring(buf, length);
 				String* interned = interned_strings.find_string(buf, length, hash);
 
 				if (interned == nullptr) {
@@ -288,7 +288,7 @@ ExitCode VM::run(bool run_till_end) {
 
 		case Op::table_add_field: {
 			Value value = pop();
-			Value key = pop();
+			Value key	= pop();
 
 			SNAP_AS_TABLE(PEEK(1))->set(key, value);
 			break;
@@ -297,7 +297,7 @@ ExitCode VM::run(bool run_till_end) {
 		// table[key] = value
 		case Op::index_set: {
 			Value value = pop();
-			Value key = pop();
+			Value key	= pop();
 
 			Value& tvalue = PEEK(1);
 			if (SNAP_IS_TABLE(tvalue)) {
@@ -315,8 +315,8 @@ ExitCode VM::run(bool run_till_end) {
 		// table.key = value
 		case Op::table_set: {
 			const Value& key = READ_VALUE();
-			Value value = pop();
-			Value& tvalue = PEEK(1);
+			Value value		 = pop();
+			Value& tvalue	 = PEEK(1);
 			if (SNAP_IS_TABLE(tvalue)) {
 				SNAP_AS_TABLE(tvalue)->set(key, value);
 				sp[-1] = value; // assignment returns it's RHS
@@ -362,7 +362,7 @@ ExitCode VM::run(bool run_till_end) {
 
 		// table_or_array[key]
 		case Op::index_no_pop: {
-			Value& vtable = PEEK(2);
+			Value& vtable	 = PEEK(2);
 			const Value& key = PEEK(1);
 			if (SNAP_IS_TABLE(vtable)) {
 				if (SNAP_GET_TT(key) == VT::Nil) return runtime_error("Table key cannot be nil.");
@@ -380,7 +380,7 @@ ExitCode VM::run(bool run_till_end) {
 		}
 
 		case Op::call_func: {
-			u8 argc = NEXT_BYTE();
+			u8 argc		= NEXT_BYTE();
 			Value value = PEEK(argc - 1);
 			if (!call(value, argc)) return ExitCode::RuntimeError;
 			break;
@@ -402,14 +402,14 @@ ExitCode VM::run(bool run_till_end) {
 
 			m_current_frame = &m_frames[m_frame_count - 1];
 			m_current_block = &m_current_frame->func->m_proto->block();
-			ip = m_current_frame->ip;
+			ip				= m_current_frame->ip;
 
 			break;
 		}
 
 		case Op::make_func: {
 			Prototype* proto = static_cast<Prototype*>(SNAP_AS_OBJECT(READ_VALUE()));
-			Function* func = &make<Function>(proto);
+			Function* func	 = &make<Function>(proto);
 
 			push(SNAP_OBJECT_VAL(func));
 
@@ -418,7 +418,7 @@ ExitCode VM::run(bool run_till_end) {
 
 			for (u8 i = 0; i < num_upvals; ++i) {
 				bool is_local = NEXT_BYTE();
-				u8 index = NEXT_BYTE();
+				u8 index	  = NEXT_BYTE();
 
 				if (is_local) {
 					func->set_upval(i, (capture_upvalue(m_current_frame->base + index)));
@@ -496,13 +496,13 @@ using OT = ObjType;
 Upvalue* VM::capture_upvalue(Value* slot) {
 	// start at the head of the linked list
 	Upvalue* current = m_open_upvals;
-	Upvalue* prev = nullptr;
+	Upvalue* prev	 = nullptr;
 
 	// keep going until we reach a slot whose
 	// depth is lower than what we've been looking
 	// for, or until we reach the end of the list.
 	while (current != nullptr and current->m_value < slot) {
-		prev = current;
+		prev	= current;
 		current = current->next_upval;
 	}
 
@@ -515,7 +515,7 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 	// slot we wanted to capture, but the current node is deeper.
 	// Meaning `slot` points to a new value that hasn't been captured before.
 	// So we add it between `prev` and `current`.
-	Upvalue* upval = &make<Upvalue>(slot);
+	Upvalue* upval	  = &make<Upvalue>(slot);
 	upval->next_upval = current;
 
 	// prev is null when there are no upvalues.
@@ -533,9 +533,9 @@ void VM::close_upvalues_upto(Value* last) {
 		Upvalue* current = m_open_upvals;
 		// these two lines are the last rites of an
 		// upvalue, closing it.
-		current->closed = *current->m_value;
+		current->closed	 = *current->m_value;
 		current->m_value = &current->closed;
-		m_open_upvals = current->next_upval;
+		m_open_upvals	 = current->next_upval;
 	}
 }
 
@@ -578,11 +578,11 @@ bool VM::callfunc(Function* func, int argc) {
 	// execution when the function returns.
 	m_current_frame->ip = ip;
 	// prepare the next call frame
-	m_current_frame = &m_frames[m_frame_count++];
+	m_current_frame		  = &m_frames[m_frame_count++];
 	m_current_frame->func = func;
 	m_current_frame->base = sp - argc - 1;
 	// start from the first op code
-	ip = 0;
+	ip				= 0;
 	m_current_block = &func->m_proto->block();
 	return true;
 }
@@ -634,7 +634,7 @@ void GC::mark(Value v) {
 void GC::mark(Obj* o) {
 	if (o == nullptr or o->marked) return;
 	o->marked = true;
-	m_gray_objects.emplace_back(o);
+	m_gray_objects.push_back(o);
 }
 
 void GC::trace() {
@@ -688,8 +688,8 @@ ExitCode VM::runtime_error(std::string&& message) {
 	error_str += "stack trace:\n";
 	for (int i = m_frame_count - 1; i >= 0; --i) {
 		const CallFrame& frame = m_frames[i];
-		const Function& func = *frame.func;
-		int line = func.m_proto->block().lines[frame.ip];
+		const Function& func   = *frame.func;
+		int line			   = func.m_proto->block().lines[frame.ip];
 		if (i == 0) {
 			error_str += kt::format_str("\t[line {}] in {}", line, func.name_cstr());
 		} else {
@@ -704,8 +704,7 @@ ExitCode VM::runtime_error(std::string&& message) {
 // The default behavior on an error is to simply
 // print it to the stderr.
 void default_error_fn([[maybe_unused]] const VM& vm, std::string& err_msg) {
-	fprintf(stderr, "%s", err_msg.c_str());
-	fputc('\n', stderr);
+	fprintf(stderr, "%s\n", err_msg.c_str());
 }
 
 // TODO: FIX THIS MESS

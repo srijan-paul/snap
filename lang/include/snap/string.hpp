@@ -12,17 +12,7 @@ u32 hash_cstring(const char* chars, int len);
 /// 						  characters. This is done to make sure that strings with the same
 ///               characters end up with the same hash.
 class String final : public Obj {
-	const char* m_chars = nullptr;
-
   public:
-	/// @brief The length of the string, does not include the
-	/// null terminator. The length of "abc" is 3.
-	const size_t m_length;
-
-	/// @brief The string's hash value. This is computed by calling
-	/// `hash_cstring(cstr, length)`.
-	size_t m_hash;
-
 	/// @param len length of the string.
 	String(const char* chrs, size_t len);
 
@@ -55,13 +45,20 @@ class String final : public Obj {
 
 	// clang-format on
 
-	/// @brief concatenates [left] and [right] into a string
-	String(const String* left, const String* right);
-
 	const char* c_str() const;
 	char at(number index) const;
+	size_t len() const;
+	size_t hash() const;
+	char operator[](size_t index) const;
 	static String* concatenate(const String* a, const String* b);
 	~String();
+
+  private:
+	const char* m_chars = nullptr;
+	const size_t m_length;
+	/// @brief The string's hash value. This is computed by calling
+	/// `hash_cstring(cstr, length)`.
+	size_t m_hash;
 };
 
 bool operator==(const String& a, const String& b);

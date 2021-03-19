@@ -40,7 +40,7 @@ struct GC {
 	Obj* m_objects = nullptr;
 	std::vector<Obj*> m_gray_objects;
 
-	// An extra set of GC roots. This are ptrs to
+	// An extra set of GC roots. These are ptrs to
 	// objects marked safe from Garbage Collection.
 	std::set<Obj*> m_extra_roots;
 

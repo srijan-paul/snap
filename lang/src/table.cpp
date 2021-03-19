@@ -169,7 +169,7 @@ String* Table::find_string(const char* chars, size_t length, size_t hash) const 
 			Value& k = entry.key;
 			if (SNAP_IS_STRING(k)) {
 				String* s = SNAP_AS_STRING(k);
-				if (s->m_length == length and std::memcmp(s->c_str(), chars, length) == 0) return s;
+				if (s->len() == length and std::memcmp(s->c_str(), chars, length) == 0) return s;
 			}
 		}
 
@@ -195,7 +195,7 @@ size_t Table::hash_value(Value key) const {
 
 size_t Table::hash_object(Obj* object) const {
 	switch (object->tag) {
-	case OT::string: return static_cast<String*>(object)->m_hash;
+	case OT::string: return static_cast<String*>(object)->hash();
 	case OT::upvalue: return hash_value(*static_cast<Upvalue*>(object)->m_value);
 	default: return HASH_OBJ(object);
 	}
