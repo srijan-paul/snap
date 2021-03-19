@@ -28,10 +28,10 @@ class String final : public Obj {
 	/// @brief Creates a string that owns the characters `chrs`.
 	/// @param chrs pointer to the character buffer. Must be null terminated.
 	String(char* chrs)
-		: Obj(ObjType::string),
-		m_chars{chrs},
-		m_length{strlen(chrs)},
-		m_hash{hash_cstring(chrs, m_length)} 
+	: Obj(ObjType::string),
+			m_chars{chrs},
+			m_length{strlen(chrs)},
+			m_hash{hash_cstring(chrs, m_length)} 
 	{};
 
 	/// @brief creates a string that owns the (heap allocated) characters `chrs`.
