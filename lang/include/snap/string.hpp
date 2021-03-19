@@ -39,9 +39,10 @@ class String final : public Obj {
 	/// @param hash The hash for this cstring.
 	String(char* chrs, size_t hash)
 		: Obj{ObjType::string},
-		  m_chars{chrs},
+			m_chars{chrs},
 			m_length{strlen(chrs)},
-			m_hash{hash} {};
+			m_hash{hash}
+	{};
 
 	// clang-format on
 

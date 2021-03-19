@@ -55,6 +55,7 @@ String* String::concatenate(const String* left, const String* right) {
 }
 
 bool operator==(const String& a, const String& b) {
+	if (&a == &b) return true;
 	size_t alen = a.len(), blen = b.len();
 	if (alen != blen or alen != blen) return false;
 	return std::memcmp(a.c_str(), b.c_str(), alen) == 0;
