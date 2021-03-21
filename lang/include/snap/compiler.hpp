@@ -38,6 +38,7 @@ struct UpvalDesc {
 	bool is_const = false;
 	bool is_local = false;
 };
+
 struct SymbolTable {
 	u32 m_scope_depth = 0;
 	int m_num_symbols = 0;

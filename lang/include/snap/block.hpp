@@ -1,5 +1,6 @@
 #pragma once
 #include "common.hpp"
+#include "forward.hpp"
 #include "opcode.hpp"
 
 #include <vector>

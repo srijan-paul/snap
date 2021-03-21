@@ -92,7 +92,7 @@ void print_stack(Value* stack, size_t sp) {
 }
 #endif
 
-ExitCode VM::run(bool run_till_end) {
+ExitCode VM::run() {
 
 	while (true) {
 		const Op op = FETCH();

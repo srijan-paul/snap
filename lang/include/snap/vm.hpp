@@ -59,6 +59,8 @@ struct GC {
 };
 
 class VM {
+	friend class GC;
+
   public:
 	VM(const std::string* src);
 	~VM();
@@ -112,7 +114,7 @@ class VM {
 	bool call(Value value, u8 argc);
 	bool callfunc(Function* func, int argc);
 
-	ExitCode run(bool run_till_end = true);
+	ExitCode run();
 	const Block* block();
 
 	/// @brief makes an object of type [T],

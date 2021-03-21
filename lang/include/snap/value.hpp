@@ -1,23 +1,36 @@
 #pragma once
 #include "block.hpp"
+#include "forward.hpp"
 #include "token.hpp"
 #include <string>
+
 
 namespace snap {
 
 enum class ObjType : u8 { string, proto, func, upvalue, table };
 
-// Objects always live on the heap. A value which is an object contains a a pointer
-// to this data on the heap. The `tag` specifies what kind of object this is.
-struct Obj {
+/// Objects always live on the heap. A value which is an object contains a a pointer
+/// to this data on the heap. The `tag` specifies what kind of object this is.
+class Obj {
+	// The VM and the Garbage Collector
+	// need access to the mark bit and the
+	// next pointer. So we'll declare them
+	// as friend classes.
+	friend class VM;
+	friend class GC;
+
+  public:
 	const ObjType tag;
 
-	// pointer to the next object in the VM's GC linked list.
-	Obj* next = nullptr;
-	bool marked = false;
 	Obj(ObjType tt) : tag{tt} {};
-
 	virtual ~Obj() = default;
+
+  private:
+	/// @brief pointer to the next object in the VM's GC linked list.
+	Obj* next	= nullptr;
+	/// @brief Whether this object has been 'marked' as alive in the most
+	/// currently active garbage collection cycle (if any).
+	bool marked = false;
 };
 
 enum class ValueType { Number, Bool, Object, Nil, Empty };
@@ -97,10 +110,10 @@ void print_value(Value v);
 #define SNAP_SET_BOOL(v, b)	  ((v).as.boolean = b)
 #define SNAP_SET_OBJECT(v, o) ((v).as.object = o)
 
-#define SNAP_NUM_VAL(n)		 (snap::Value(static_cast<snap::number>(n)))
-#define SNAP_BOOL_VAL(b)	 (snap::Value(static_cast<bool>(b)))
-#define SNAP_OBJECT_VAL(o)	 (snap::Value(static_cast<snap::Obj*>(o)))
-#define SNAP_NIL_VAL		 (snap::Value())
+#define SNAP_NUM_VAL(n)	   (snap::Value(static_cast<snap::number>(n)))
+#define SNAP_BOOL_VAL(b)   (snap::Value(static_cast<bool>(b)))
+#define SNAP_OBJECT_VAL(o) (snap::Value(static_cast<snap::Obj*>(o)))
+#define SNAP_NIL_VAL	   (snap::Value())
 
 #define SNAP_IS_NUM(v)	  ((v).tag == snap::ValueType::Number)
 #define SNAP_IS_BOOL(v)	  ((v).tag == snap::ValueType::Bool)
@@ -119,9 +132,10 @@ void print_value(Value v);
 #define SNAP_AS_CSTRING(v)	((SNAP_AS_STRING(v))->c_str())
 #define SNAP_AS_TABLE(v)	(static_cast<Table*>(SNAP_AS_OBJECT(v)))
 
-#define SNAP_SET_TT(v, tt) ((v).tag = tt)
-#define SNAP_GET_TT(v)	   ((v).tag)
-#define SNAP_TYPE_CSTR(v)  (value_type_name(v))
+#define SNAP_SET_TT(v, tt)	 ((v).tag = tt)
+#define SNAP_GET_TT(v)		 ((v).tag)
+#define SNAP_CHECK_TT(v, tt) ((v).tag == tt)
+#define SNAP_TYPE_CSTR(v)	 (value_type_name(v))
 
 #define SNAP_CAST_INT(v) ((s64)((v).as.num))
 
