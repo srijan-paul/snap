@@ -1,4 +1,5 @@
 #include "debug.hpp"
+#include "str_format.hpp"
 #include "table.hpp"
 #include "token.hpp"
 #include "value.hpp"
@@ -9,7 +10,6 @@
 #include <iterator>
 #include <string>
 #include <vm.hpp>
-#include "str_format.hpp"
 
 #define TOK2NUM(t) SNAP_NUM_VAL(std::stod(t.raw(*m_source)))
 #define THIS_BLOCK (m_proto->block())
@@ -41,16 +41,16 @@ Compiler::Compiler(VM* vm, const std::string* src) : m_vm{vm}, m_source{src} {
 
 Compiler::Compiler(VM* vm, Compiler* parent, const String* name) : m_vm{vm}, m_parent{parent} {
 	m_scanner = m_parent->m_scanner;
-	m_proto = &m_vm->make<Prototype>(name);
+	m_proto	  = &m_vm->make<Prototype>(name);
 
 	m_symtable.add(name->c_str(), name->len(), false);
 
-	m_source = parent->m_source;
+	m_source	   = parent->m_source;
 	vm->m_compiler = this;
 
-	prev = parent->prev;
+	prev  = parent->prev;
 	token = parent->token;
-	peek = parent->peek;
+	peek  = parent->peek;
 }
 
 Compiler::~Compiler() {
@@ -75,7 +75,7 @@ Prototype* Compiler::compile_func() {
 	block_stmt();
 	emit(Op::load_nil, Op::return_val);
 	m_proto->m_num_upvals = m_symtable.m_num_upvals;
-	m_vm->m_compiler = m_parent;
+	m_vm->m_compiler	  = m_parent;
 	return m_proto;
 }
 
@@ -152,7 +152,7 @@ void Compiler::fn_decl() {
 	expect(TT::Id, "expected function name");
 
 	const Token name_token = token;
-	String* fname = &m_vm->string(name_token.raw_cstr(m_source), name_token.length());
+	String* fname		   = &m_vm->string(name_token.raw_cstr(m_source), name_token.length());
 
 	func_expr(fname);
 	new_variable(name_token);
@@ -181,7 +181,7 @@ void Compiler::func_expr(const String* fname) {
 	compiler.expect(TT::RParen, "Expected ')' after function parameters.");
 
 	Prototype* proto = compiler.compile_func();
-	const u8 idx = emit_value(SNAP_OBJECT_VAL(proto));
+	const u8 idx	 = emit_value(SNAP_OBJECT_VAL(proto));
 
 	emit_bytes(Op::make_func, static_cast<Op>(idx), token);
 	emit(static_cast<Op>(proto->m_num_upvals), token);
@@ -196,9 +196,9 @@ void Compiler::func_expr(const String* fname) {
 	disassemble_block(proto->name_cstr(), proto->m_block);
 #endif
 
-	prev = compiler.prev;
+	prev  = compiler.prev;
 	token = compiler.token;
-	peek = compiler.peek;
+	peek  = compiler.peek;
 }
 
 void Compiler::ret_stmt() {
@@ -353,7 +353,7 @@ void Compiler::primary(bool can_assign) {
 		literal();
 	} else if (match(TT::Fn)) {
 		static constexpr const char* name = "<anonymous>";
-		const String* fname = &m_vm->string(name, 11);
+		const String* fname				  = &m_vm->string(name, 11);
 		if (check(TT::LParen)) return func_expr(fname);
 		// Names of lambda expressions are simply ignored
 		// Unless found in a statement context.
@@ -364,8 +364,8 @@ void Compiler::primary(bool can_assign) {
 	} else if (match(TT::LCurlBrace)) {
 		table();
 	} else {
-		const std::string raw = peek.raw(*m_source);
-		const char fmt[] = "Unexpected '%s'.";
+		const std::string raw	  = peek.raw(*m_source);
+		const char fmt[]		  = "Unexpected '%s'.";
 		const std::size_t bufsize = strlen(fmt) + raw.length() - 1;
 		const std::unique_ptr<char[]> buf{new char[bufsize]};
 		sprintf(buf.get(), fmt, raw.c_str());
@@ -377,6 +377,9 @@ void Compiler::primary(bool can_assign) {
 /// consumed.
 void Compiler::table() {
 	emit(Opcode::new_table);
+
+	if (match(TT::RCurlBrace)) return;
+
 	do {
 		if (match(TT::LSqBrace)) {
 			expr();
@@ -384,7 +387,7 @@ void Compiler::table() {
 		} else {
 			expect(TT::Id, "Expected identifier as table key.");
 			String* key_string = &m_vm->string(token.raw(*m_source).c_str(), token.length());
-			const int key_idx = emit_value(key_string);
+			const int key_idx		 = emit_value(key_string);
 			emit_bytes(Op::load_const, static_cast<Op>(key_idx), token);
 			if (check(TT::LParen)) {
 				func_expr(key_string);
@@ -414,15 +417,15 @@ void Compiler::variable(bool can_assign) {
 
 	Op get_op = Op::get_var, set_op = Op::set_var;
 
-	int index = find_local_var(token);
+	int index	  = find_local_var(token);
 	bool is_const = (index == -1) ? false : m_symtable.find_by_slot(index)->is_const;
 
 	// if no local variable with that name was found then look for an
 	// upvalue.
 	if (index == -1) {
-		index = find_upvalue(token);
-		get_op = Opcode::get_upval;
-		set_op = Opcode::set_upval;
+		index	 = find_upvalue(token);
+		get_op	 = Opcode::get_upval;
+		set_op	 = Opcode::set_upval;
 		is_const = (index == -1) ? false : m_symtable.m_upvals[index].is_const;
 	}
 
@@ -461,7 +464,7 @@ void Compiler::var_assign(Op get_op, u32 idx_or_name_str) {
 
 void Compiler::literal() {
 	advance();
-	std::size_t index;
+	std::size_t index = 0;
 	switch (token.type) {
 	case TT::Integer:
 	case TT::Float: index = emit_value(TOK2NUM(token)); break;
@@ -471,7 +474,6 @@ void Compiler::literal() {
 	case TT::Nil: index = emit_value(SNAP_NIL_VAL); break;
 	default:; // Impossible
 	}
-
 
 	emit(Op::load_const, static_cast<Op>(index));
 }
@@ -524,7 +526,7 @@ void Compiler::patch_jump(std::size_t index) {
 	// is `0x61A8`. The first byte, `0x61` goes in the first opcode, and the second
 	// byte, `0xA8` goes in the second opcode. At runtime, the VM reads both of these,
 	// and joins them together using some bit operators.
-	THIS_BLOCK.code[index] = static_cast<Op>((jump_dist >> 8) & 0xff);
+	THIS_BLOCK.code[index]	   = static_cast<Op>((jump_dist >> 8) & 0xff);
 	THIS_BLOCK.code[index + 1] = static_cast<Op>(jump_dist & 0xff);
 }
 
@@ -539,9 +541,9 @@ void Compiler::add_param(const Token& token) {
 // Helper functions:
 
 void Compiler::advance() {
-	prev = token;
+	prev  = token;
 	token = peek;
-	peek = m_scanner->next_token();
+	peek  = m_scanner->next_token();
 }
 
 bool Compiler::match(TT expected) {
@@ -593,8 +595,8 @@ u32 Compiler::emit_id_string(const Token& token) {
 
 int Compiler::find_local_var(const Token& name_token) const {
 	const char* name = name_token.raw_cstr(m_source);
-	int length = name_token.length();
-	const int idx = m_symtable.find(name, length);
+	int length		 = name_token.length();
+	const int idx	 = m_symtable.find(name, length);
 	return idx;
 }
 
@@ -608,7 +610,7 @@ int Compiler::find_upvalue(const Token& token) {
 	// If found the local var, then add it to the upvalues list.
 	// and mark the upvalue is "local".
 	if (index != -1) {
-		LocalVar& local = m_parent->m_symtable.m_symbols[index];
+		LocalVar& local	  = m_parent->m_symtable.m_symbols[index];
 		local.is_captured = true;
 		return m_symtable.add_upvalue(index, true, local.is_const);
 	}

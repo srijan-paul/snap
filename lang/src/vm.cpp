@@ -409,19 +409,17 @@ ExitCode VM::run() {
 
 		case Op::make_func: {
 			Prototype* proto = static_cast<Prototype*>(SNAP_AS_OBJECT(READ_VALUE()));
-			Function* func	 = &make<Function>(proto);
+			u32 num_upvals = NEXT_BYTE();
+			Function* func	 = &make<Function>(proto, num_upvals);
 
 			push(SNAP_OBJECT_VAL(func));
-
-			u8 num_upvals = NEXT_BYTE();
-			func->set_num_upvals(num_upvals);
 
 			for (u8 i = 0; i < num_upvals; ++i) {
 				bool is_local = NEXT_BYTE();
 				u8 index	  = NEXT_BYTE();
 
 				if (is_local) {
-					func->set_upval(i, (capture_upvalue(m_current_frame->base + index)));
+					func->set_upval(i, capture_upvalue(m_current_frame->base + index));
 				} else {
 					func->set_upval(i, (m_current_frame->func->get_upval(index)));
 				}
@@ -472,7 +470,7 @@ bool VM::init() {
 	// can trigger a garbage collection cycle, we protect
 	// the proto.
 	gc_protect(proto);
-	Function* func = &make<Function>(proto);
+	Function* func = &make<Function>(proto, 0);
 
 	// Once the function has been made, proto can
 	// be reached via `func->m_proto`, so we can

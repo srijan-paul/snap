@@ -22,36 +22,36 @@ void block_test() {
 static void compiler_test() {
 	std::printf("--- Compiler test ---\n");
 
-	// expressions
+	// // expressions
 	print_disassembly("let a = 1 + 2 - 3 * 4");
 
-	// variable declaration
+	// // variable declaration
 	print_disassembly("let a = 1");
 	print_disassembly("let a = 1, b = 2 * 2");
 
-	// variable access
+	// // variable access
 	print_disassembly("let a = 1;"
 					  "let b = a + 1;");
 
 	print_disassembly("let s = 'this is a string'");
 
 	print_disassembly(R"(
-		let a = {
-			key: "value"
-		}
+		let T = {a : 1} 
 	)");
 
-	print_disassembly(R"(
-		const tbl = {
-			[123 + 4]: "abc" .. "def"
-		}
-	)");
+	// print_disassembly(R"(
+	// 	const tbl = {
+	// 		[123 + 4]: "abc" .. "def"
+	// 	}
+	// )");
 
 	std::printf("--- / Compiler test ---\n");
 }
 
 int main() {
-	block_test();
-	compiler_test();
+	// block_test();
+	print_disassembly(R"(
+		const t = { a: 1} 
+	)");
 	return 0;
 }

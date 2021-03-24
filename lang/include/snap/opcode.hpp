@@ -63,8 +63,7 @@ enum class Opcode : u8 {
 
 	/// Operands: NumUpvals, ... (varargs)
 	/// Gets a function object from the
-	/// constant pool and pushes it onto
-	/// the stack.
+	/// constant pool and pushes it onto the stack.
 	/// This Opcode is special in that it takes a
 	/// variable number of arguments, the first parameter (N)
 	/// specifies the number of upvalues that this function
@@ -78,30 +77,28 @@ enum class Opcode : u8 {
 	make_func,
 
 	/// Operands : NumArgs
-	/// Stack Effect: -NumArgs (Pops everything upto the function off the stack and pushes the return
-	/// value)
+	/// Stack Effect: -NumArgs
+	/// (Pops everything upto the function off the
+	/// stack and pushes the return value)
 	/// Calls the function object a stack depth
 	/// NumArgs + 1, taking everything above from
 	call_func,
 
 	// opcodes with no operands
 
-	// Operands: 0
-	// Pops a value off the stack and discards it.
+	/// Stack Effect: -1
+	/// Pops a value off the stack and discards it.
 	pop,
 
-	// Operands: 0
-	// Stack Effect: -1
-	// Pops off two values from the stack, and pushes
-	// the sum back on.
+	/// Stack Effect: -1
+	/// Pops off two values from the stack, and pushes
+	/// the sum back on.
 	add,
 
-	/// Operands: 0
 	/// Stack Effect: -1
 	/// TOS = string.concat(TOS1..TOS)
 	concat,
 
-	/// Operands: 0
 	/// Stack Effect: -1
 	/// TOS = TOS1 - TOS
 	sub,
@@ -180,14 +177,18 @@ enum class Opcode : u8 {
 	/// Popping it off the call stack.
 	return_val,
 
+	/// Stack Effect: 1
+	/// Creates a new table and pushes it on top of the
+	/// stack.
+	new_table,
+
 	/// Stack Effect: -2
 	/// Set a table's key to some value.
 	/// Table, Key and Value are expected
 	/// to be in this order: [<table>, <key>, <value>]
 	index_set,
 
-	/// Operands: FieldIdx
-	/// Stack Effect: 1
+	/// Stack Effect: -2
 	/// same as index_set, but here the value at stack depth
 	/// 3 is guaranteed to be a table, hence no runtime check
 	/// is required. The table isn't popped off the stack.
@@ -200,20 +201,15 @@ enum class Opcode : u8 {
 	/// and PEEK(1) as the table/array,
 	/// push field TOS of table PEEK(1)
 	/// onto the stack, popping TOS and TOS1.
-	/// `key = pop(); TOS = TOS[key]`
+	/// `key = pop(); TOS = TOS[key]`.
 	index,
 
 	/// Stack Effect: 1
 	/// same as `index`, but doesn't
 	/// pop the table or the key, instead pushes
 	/// the value on top. So we're left with the stack
-	/// looking like [table, key, table[key]]
+	/// looking like [table, key, table[key]].
 	index_no_pop,
-
-	/// Stack Effect: 1
-	/// Creates a new table and pushes it on top of the
-	/// stack.
-	new_table,
 
 	// opcodes with 2 operands
 
@@ -247,10 +243,10 @@ enum class Opcode : u8 {
 /// numerically lowest opcode that takes no operands
 constexpr auto Op_0_operands_start = Opcode::pop;
 /// numerically highest opcode that takes no operands
-constexpr auto Op_0_operands_end = Opcode::new_table;
+constexpr auto Op_0_operands_end = Opcode::index_no_pop;
 
 constexpr auto Op_const_start = Opcode::load_const;
-constexpr auto Op_const_end = Opcode::table_get_no_pop;
+constexpr auto Op_const_end	  = Opcode::table_get_no_pop;
 
 /// numerically lowest opcode that takes one operand
 constexpr auto Op_1_operands_start = Opcode::set_var;
@@ -258,6 +254,6 @@ constexpr auto Op_1_operands_start = Opcode::set_var;
 constexpr auto Op_1_operands_end = Opcode::call_func;
 
 constexpr auto Op_2_operands_start = Opcode::jmp;
-constexpr auto Op_2_operands_end = Opcode::pop_jmp_if_false;
+constexpr auto Op_2_operands_end   = Opcode::pop_jmp_if_false;
 
 } // namespace snap

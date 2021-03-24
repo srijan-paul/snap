@@ -41,10 +41,8 @@ class Function final : public Obj {
   public:
 	const Prototype* const m_proto;
 
-	Function(String* name) : Obj(ObjType::func), m_proto{new Prototype(name)} {};
-	Function(Prototype* proto_) : Obj(ObjType::func), m_proto{proto_} {};
+	Function(const Prototype* proto, u32 upval_count);
 
-	void set_num_upvals(u32 count);
 	const String* name() const;
 	const char* name_cstr() const;
 
@@ -59,7 +57,6 @@ class Function final : public Obj {
 
   private:
 	std::vector<Upvalue*> m_upvals;
-	u32 m_num_upvals = 0;
 };
 
 } // namespace snap

@@ -215,6 +215,13 @@ void fn_tests() {
 
 void table_test() {
 	test_return(R"(
+	const T = 	{
+		a: 1, b : 2
+	} 
+	return T.a
+	)", SNAP_NUM_VAL(1), " Indexing tables with '.' operator");
+
+	test_return(R"(
 		fn Node(a, b) {
 			return  { data: a, next: b }
 		}
@@ -226,7 +233,7 @@ void table_test() {
 	// setting table field names.
 	test_return(R"(
 		const t = {
-			k : 7 
+			k : 7
 		}
 		let a = t.k
 		t.k = 3
@@ -251,7 +258,7 @@ void table_test() {
 void string_test() {
 	test_string_return("string-concat.snp", "this is a string", "Chained string concatenation");
 	test_string_return("string.snp", "snap = good", "String cocatenation in blocks");
-	std::cout << "[String tests passed]\n"; 
+	std::cout << "[String tests passed]\n";
 }
 
 int main() {

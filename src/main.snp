@@ -1,10 +1,2 @@
-const a = 'snap'
-
-let c = ''
-{
-  const b = a
-  const a = ' = good'
-  c = c..b..a
-}
-
-return c
+const T = {a: 1, b: 2}
+return T.a

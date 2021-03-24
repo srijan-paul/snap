@@ -32,7 +32,8 @@ struct CallFrame {
 	Value* base;
 };
 
-struct GC {
+class GC {
+  public:
 	// the VM maintains it's personal linked list of objects
 	// for garbage collection. GC is achieved by walking over
 	// this list, and removing all objects that have no other
@@ -82,7 +83,7 @@ class VM {
 	// points to the next free slot where a value can go
 
 	using StackId = Value*;
-	StackId sp = m_stack;
+	StackId sp	  = m_stack;
 
 	ExitCode interpret();
 
@@ -131,14 +132,13 @@ class VM {
 
 	inline void register_object(Obj* o) {
 		assert(o != nullptr);
-		o->next = m_gc.m_objects;
+		o->next		   = m_gc.m_objects;
 		m_gc.m_objects = o;
 	}
 
 	/// @brief Makes an interned string and returns a
 	/// reference to it.
 	String& string(const char* chars, size_t length);
-
 
 	/// @brief Triggers a garbage collection cycle, does a
 	/// mark-trace-sweep.

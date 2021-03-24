@@ -5,9 +5,22 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <vm.hpp>
+#include <windows.h>
 
 using namespace snap;
+
+std::string GetExeFileName() {
+	char buffer[MAX_PATH];
+	GetModuleFileName(NULL, buffer, MAX_PATH);
+	return std::string(buffer);
+}
+
+std::string GetExePath() {
+	std::string f = GetExeFileName();
+	return f.substr(0, f.find_last_of("\\/"));
+}
 
 int main() {
 
@@ -15,19 +28,20 @@ int main() {
 	// a file main.snp, so we can use that as a
 	// 'scratchpad' of sorts to test some code.
 	const char* filepath = "../src/main.snp";
+	std::cout << GetExePath() << '\n';
 
 	std::ifstream file(filepath);
 
-	if (file) {
-		std::ostringstream stream;
-		stream << file.rdbuf();
-		std::string code(stream.str());
-		VM vm{&code};
-		vm.interpret();
-		std::cout << "VM returned: ";
-		print_value(vm.return_value);
-		std::cout << std::endl;
-	};
+	assert(file.good() && "File doesn't exist");
+
+	std::ostringstream stream;
+	stream << file.rdbuf();
+	std::string code(stream.str());
+	VM vm{&code};
+	vm.interpret();
+	std::cout << "VM returned: ";
+	print_value(vm.return_value);
+	std::cout << std::endl;
 
 	std::cout << "Snap programming language."
 			  << "\n";

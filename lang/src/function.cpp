@@ -1,5 +1,7 @@
 #include "upvalue.hpp"
+#include "value.hpp"
 #include <function.hpp>
+#include <iostream>
 
 namespace snap {
 
@@ -27,16 +29,16 @@ u32 Prototype::param_count() const {
 	return m_num_params;
 }
 
+Function::Function(const Prototype* proto, u32 upval_count): Obj(ObjType::func), m_proto{proto} {
+	m_upvals.resize(upval_count);
+}
+
 Upvalue* Function::get_upval(u32 idx) {
 	return m_upvals[idx];
 }
 
-void Function::set_num_upvals(u32 count) {
-	m_num_upvals = count;
-	m_upvals.reserve(count);
-}
-
 void Function::set_upval(u32 idx, Upvalue* uv) {
+	SNAP_ASSERT(idx < m_upvals.size(), "Invalid upvalue index.");
 	m_upvals[idx] = uv;
 }
 
