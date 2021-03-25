@@ -136,6 +136,7 @@ std::size_t disassemble_instr(const Block& block, Op op, std::size_t offset) {
 }
 
 void disassemble_block(const char* name, const Block& block) {
+	printf("<%s>", name);
 	for (std::size_t i = 0; i < block.code.size();) {
 		i += disassemble_instr(block, block.code[i], i);
 	}

@@ -49,9 +49,7 @@ static void compiler_test() {
 }
 
 int main() {
-	// block_test();
-	print_disassembly(R"(
-		const t = { a: 1} 
-	)");
+	block_test();
+	compiler_test();
 	return 0;
 }

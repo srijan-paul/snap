@@ -1,5 +1,6 @@
 #pragma once
 #include "compiler.hpp"
+#include "gc.hpp"
 #include "table.hpp"
 #include "value.hpp"
 #include <cassert>
@@ -32,41 +33,13 @@ struct CallFrame {
 	Value* base;
 };
 
-class GC {
-  public:
-	// the VM maintains it's personal linked list of objects
-	// for garbage collection. GC is achieved by walking over
-	// this list, and removing all objects that have no other
-	// references anywhere else in the VM
-	Obj* m_objects = nullptr;
-	std::vector<Obj*> m_gray_objects;
-
-	// An extra set of GC roots. These are ptrs to
-	// objects marked safe from Garbage Collection.
-	std::set<Obj*> m_extra_roots;
-
-	/// @brief If `v` is an object, then marks it as 'alive', preventing
-	/// it from being garbage collected.
-	void mark(Value v);
-	/// @brief marks an object as 'alive', turning it gray.
-	void mark(Obj* o);
-
-	/// @brief trace all references in the gray stack.
-	void trace();
-
-	/// @brief protects `o` from being garbage collected.
-	void protect(Obj* o);
-	void unprotect(Obj* o);
-};
-
 class VM {
-	friend class GC;
+	friend GC;
+	friend Compiler;
 
   public:
-	VM(const std::string* src);
-	~VM();
-
-	Compiler* m_compiler;
+	SNAP_NO_COPY(VM);
+	SNAP_NO_MOVE(VM);
 
 	// The value returned by the VM at the
 	// end of it's execution. Nil by default.
@@ -79,12 +52,9 @@ class VM {
 
 	static constexpr size_t StackMaxSize = 256;
 	static constexpr size_t MaxCallStack = 128;
-	Value m_stack[StackMaxSize];
-	// points to the next free slot where a value can go
 
-	using StackId = Value*;
-	StackId sp	  = m_stack;
-
+	VM(const std::string* src);
+	~VM();
 	ExitCode interpret();
 
 	/// the function that snap uses to print stuff onto the console.
@@ -131,7 +101,7 @@ class VM {
 	}
 
 	inline void register_object(Obj* o) {
-		assert(o != nullptr);
+		SNAP_ASSERT(o != nullptr, "Attempt to register NULL object.");
 		o->next		   = m_gc.m_objects;
 		m_gc.m_objects = o;
 	}
@@ -152,11 +122,19 @@ class VM {
 	/// then removes the guard, making it garbage collectable again.
 	void gc_unprotect(Obj* o);
 
-	/// @brief returns the number of objects present in `gc.m_objects.`
+	/// @brief returns the number of objects present in `m_gc.m_objects.`
 	size_t num_objects();
 
   private:
 	const std::string* m_source;
+	Compiler* m_compiler;
+
+	Value m_stack[StackMaxSize];
+	using StackId = Value*;
+
+	// The stack pointer pointing to the next free slot
+	// in the stack.
+	StackId sp = m_stack;
 
 	// The instruction pointer.
 	// It stores the index of the next instruction
@@ -167,19 +145,6 @@ class VM {
 	/// GARAGE COLLECTION ///
 
 	GC m_gc;
-
-	/// @brief triggers the 'mark' phase of garbage collection.
-	/// All known roots are marked as 'alive' and turned gray.
-	void mark();
-
-	/// @brief traces all the 'gray' (untraced) objects in the object
-	/// graph, traversing through their references and marking any previously
-	/// unreached object as 'alive'.
-	void trace();
-
-	/// @brief Triggers the 'sweep' phase, traversing the entire
-	/// object graph and freeing any object that isn't marked alive.
-	void sweep();
 
 	// VM's personal list of all open upvalues.
 	// This is a sorted linked list, the head
@@ -224,7 +189,7 @@ class VM {
 	/// calling the `on_error` and shutting down the VM by returning an
 	/// ExitCode::RuntimeError
 	/// @param message The error message.
-	ExitCode runtime_error(std::string&& message);
+	ExitCode runtime_error(std::string const& message);
 };
 
 } // namespace snap

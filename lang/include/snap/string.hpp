@@ -12,23 +12,13 @@ u32 hash_cstring(const char* chars, int len);
 /// 						  characters. This is done to make sure that strings with the same
 ///               characters end up with the same hash.
 class String final : public Obj {
-	friend class VM;
+	friend VM;
+
+	SNAP_NO_DEFAULT_CONSTRUCT(String);
 
   public:
 	/// @param len length of the string.
 	String(const char* chrs, size_t len);
-
-	// clang-format off
-	/// @brief Creates a string that owns the characters `chrs`.
-	/// @param chrs pointer to the character buffer. Must be null terminated.
-	String(char* chrs)
-	: Obj(ObjType::string),
-			m_chars{chrs},
-			m_length{strlen(chrs)},
-			m_hash{hash_cstring(chrs, m_length)} 
-	{};
-
-	// clang-format on
 
 	const char* c_str() const;
 	char at(number index) const;
@@ -52,6 +42,12 @@ class String final : public Obj {
 	/// @param hash The hash for this cstring.
 	String(char* chrs, size_t hash)
 		: Obj{ObjType::string}, m_chars{chrs}, m_length{strlen(chrs)}, m_hash{hash} {};
+
+	/// @brief Creates a string that owns the characters `chrs`.
+	/// @param chrs pointer to the character buffer. Must be null terminated.
+	String(char* chrs)
+		: Obj(ObjType::string), m_chars{chrs}, m_length{strlen(chrs)}, m_hash{hash_cstring(
+																		   chrs, m_length)} {};
 
 	const char* m_chars = nullptr;
 	const size_t m_length;

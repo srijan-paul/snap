@@ -7,6 +7,10 @@
 namespace snap {
 
 class Scanner {
+	SNAP_NO_COPY(Scanner);
+	SNAP_NO_MOVE(Scanner);
+	SNAP_NO_DEFAULT_CONSTRUCT(Scanner);
+
   public:
 	Scanner(const std::string* src) : source{src} {};
 	Token next_token();
@@ -16,8 +20,8 @@ class Scanner {
 	struct {
 		uint32_t line;
 		uint32_t column;
-	} line_pos = {1, 1};
-	uint32_t start = 0;
+	} line_pos		 = {1, 1};
+	uint32_t start	 = 0;
 	uint32_t current = 0;
 
 	void skip_whitespace();

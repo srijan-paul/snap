@@ -37,7 +37,7 @@ using Op = Opcode;
 using VT = ValueType;
 using OT = ObjType;
 
-VM::VM(const std::string* src) : m_source{src} {
+VM::VM(const std::string* src) : m_source{src}, m_gc(*this) {
 }
 
 #define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) and !(SNAP_AS_BOOL(v))) or SNAP_IS_NIL(v))
@@ -409,7 +409,7 @@ ExitCode VM::run() {
 
 		case Op::make_func: {
 			Prototype* proto = static_cast<Prototype*>(SNAP_AS_OBJECT(READ_VALUE()));
-			u32 num_upvals = NEXT_BYTE();
+			u32 num_upvals	 = NEXT_BYTE();
 			Function* func	 = &make<Function>(proto, num_upvals);
 
 			push(SNAP_OBJECT_VAL(func));
@@ -618,55 +618,9 @@ void GC::unprotect(Obj* o) {
 }
 
 void VM::collect_garbage() {
-	mark();
+	m_gc.mark();
 	// trace();
 	// sweep();
-}
-
-void GC::mark(Value v) {
-	if (SNAP_IS_OBJECT(v)) {
-		mark(SNAP_AS_OBJECT(v));
-	}
-}
-
-void GC::mark(Obj* o) {
-	if (o == nullptr or o->marked) return;
-	o->marked = true;
-	m_gray_objects.push_back(o);
-}
-
-void GC::trace() {
-}
-
-void VM::mark() {
-	// The following roots are known atm ->
-	// 1. The VM's value stack.
-	// 2. Every Closure in the call stack.
-	// 3. The open upvalue chain.
-	// 4. Compiler roots, if the compiler is active.
-	// 5. The table of global variables.
-	// 6. The 'extra_roots' set.
-	for (Value* v = m_stack; v < sp; ++v) {
-		m_gc.mark(v);
-	}
-
-	for (CallFrame* frame = m_frames; frame < m_current_frame; ++frame) {
-		m_gc.mark(frame->func);
-	}
-
-	for (Upvalue* uv = m_open_upvals; uv != nullptr; uv = uv->next_upval) {
-		m_gc.mark(uv);
-	}
-
-	for (Obj* o : m_gc.m_extra_roots) {
-		m_gc.mark(o);
-	}
-}
-
-void VM::trace() {
-}
-
-void VM::sweep() {
 }
 
 const Block* VM::block() {
@@ -680,7 +634,7 @@ ExitCode VM::binop_error(const char* opstr, Value& a, Value& b) {
 				 SNAP_TYPE_CSTR(a), SNAP_TYPE_CSTR(b));
 }
 
-ExitCode VM::runtime_error(std::string&& message) {
+ExitCode VM::runtime_error(std::string const& message) {
 	std::string error_str = kt::format_str("[line {}]: {}\n", CURRENT_LINE(), message);
 
 	error_str += "stack trace:\n";

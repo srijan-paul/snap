@@ -65,6 +65,9 @@ class Compiler {
 	static constexpr u8 MaxUpValues = UINT8_MAX;
 	static constexpr u8 MaxFuncParams = UINT8_MAX;
 
+	SNAP_NO_COPY(Compiler);
+	SNAP_NO_MOVE(Compiler);
+
 	// Creates a fresh new compiler that will
 	// parse the toplevel script `src`.
 	Compiler(VM* vm, const std::string* src);

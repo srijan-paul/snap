@@ -9,15 +9,15 @@ namespace snap {
 
 enum class ObjType : u8 { string, proto, func, upvalue, table };
 
-/// Objects always live on the heap. A value which is an object contains a a pointer
+/// Objects always live on the heap. A value which is an object contains a pointer
 /// to this data on the heap. The `tag` specifies what kind of object this is.
 class Obj {
 	// The VM and the Garbage Collector
 	// need access to the mark bit and the
 	// next pointer. So we'll declare them
 	// as friend classes.
-	friend class VM;
-	friend class GC;
+	friend VM;
+	friend GC;
 
   public:
 	const ObjType tag;
