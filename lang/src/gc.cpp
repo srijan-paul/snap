@@ -9,11 +9,19 @@ void GC::mark(Value v) {
 
 void GC::mark(Obj* o) {
 	if (o == nullptr or o->marked) return;
+#ifdef SNAP_LOG_GC
+	printf("marked: %p [%s] \n", (void*)o, value_to_string(SNAP_OBJECT_VAL(o)).c_str());
+#endif
 	o->marked = true;
-  m_gray_objects.push_back(o);
+	m_gray_objects.push_back(o);
 }
 
 void GC::mark() {
+
+#ifdef SNAP_LOG_GC
+	printf("-- GC CYCLE START --\n\n");
+#endif
+
 	// The following roots are known atm ->
 	// 1. The VM's value stack.
 	// 2. Every Closure in the call stack.
@@ -22,7 +30,7 @@ void GC::mark() {
 	// 5. The table of global variables.
 	// 6. The 'extra_roots' set.
 	for (Value* v = m_vm->m_stack; v < m_vm->sp; ++v) {
-		mark(v);
+		mark(*v);
 	}
 
 	for (CallFrame* frame = m_vm->m_frames; frame < m_vm->m_current_frame; ++frame) {
@@ -39,9 +47,24 @@ void GC::mark() {
 }
 
 void GC::trace() {
+
+	// #ifdef SNAP_LOG_GC
+	// 	printf("-- Trace --\n");
+	// #endif
 }
 
 void GC::sweep() {
+	// #ifdef SNAP_LOG_GC
+	// 	printf("-- Sweep --\n");
+	// #endif
+
+	for (Obj* o = m_objects; o != nullptr; o = o->next) {
+		if (o->marked) o->marked = false;
+	}
+
+#ifdef SNAP_LOG_GC
+	printf("-- GC CYCLE END --\n\n");
+#endif
 }
 
 } // namespace snap

@@ -1,2 +1,10 @@
-const T = {a: 1, b: 2}
-return T.a
+const O = { x: 0, y: 0 }
+
+fn Point(_x, _y) {
+  return { x: _x, y: _y }
+}
+
+const p = Point(2, 3)
+const p2 = Point(5, 4)
+
+return p.x

@@ -619,8 +619,8 @@ void GC::unprotect(Obj* o) {
 
 void VM::collect_garbage() {
 	m_gc.mark();
-	// trace();
-	// sweep();
+	m_gc.trace();
+	m_gc.sweep();
 }
 
 const Block* VM::block() {

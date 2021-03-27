@@ -102,6 +102,11 @@ class VM {
 
 	inline void register_object(Obj* o) {
 		SNAP_ASSERT(o != nullptr, "Attempt to register NULL object.");
+
+#ifdef SNAP_STRESS_GC
+	collect_garbage();
+#endif
+
 		o->next		   = m_gc.m_objects;
 		m_gc.m_objects = o;
 	}
