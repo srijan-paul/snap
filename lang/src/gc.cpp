@@ -13,13 +13,14 @@ void GC::mark(Obj* o) {
 	printf("marked: %p [%s] \n", (void*)o, value_to_string(SNAP_OBJECT_VAL(o)).c_str());
 #endif
 	o->marked = true;
-	m_gray_objects.push_back(o);
+	m_gray_objects.push(o);
 }
 
 void GC::mark() {
 
 #ifdef SNAP_LOG_GC
 	printf("-- GC CYCLE START --\n\n");
+	printf("-- Mark --\n");
 #endif
 
 	// The following roots are known atm ->
@@ -47,10 +48,21 @@ void GC::mark() {
 }
 
 void GC::trace() {
+#ifdef SNAP_LOG_GC
+	printf("-- Trace --\n");
+#endif
 
-	// #ifdef SNAP_LOG_GC
-	// 	printf("-- Trace --\n");
-	// #endif
+	while (!m_gray_objects.empty()) {
+		Obj* gray_obj = m_gray_objects.top();
+		m_gray_objects.pop();
+
+#ifdef SNAP_LOG_GC
+		printf("Tracing: %p [%s] \n", (void*)gray_obj,
+			   value_to_string(SNAP_OBJECT_VAL(gray_obj)).c_str());
+#endif
+
+		gray_obj->trace(*this);
+	}
 }
 
 void GC::sweep() {

@@ -81,4 +81,8 @@ size_t String::len() const {
 	return m_length;
 }
 
+void String::trace(GC& gc) {
+
+}
+
 } // namespace snap

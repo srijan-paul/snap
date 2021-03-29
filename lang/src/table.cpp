@@ -1,5 +1,6 @@
 #include "value.hpp"
 #include <cassert>
+#include <gc.hpp>
 #include <table.hpp>
 #include <upvalue.hpp>
 
@@ -15,7 +16,7 @@ using OT = ObjType;
 // check if an entry is unoccupied.
 #define IS_ENTRY_FREE(e) (SNAP_IS_NIL(e.key))
 #define IS_ENTRY_DEAD(e) (SNAP_IS_EMPTY(e.key))
-#define HASH_OBJ(o) ((size_t)(o)&UINT64_MAX)
+#define HASH_OBJ(o)		 ((size_t)(o)&UINT64_MAX)
 
 Table::~Table() {
 	delete[] m_entries;
@@ -26,7 +27,7 @@ void Table::ensure_capacity() {
 	size_t old_cap = m_cap;
 	m_cap *= GrowthFactor;
 	Entry* old_entries = m_entries;
-	m_entries = new Entry[m_cap];
+	m_entries		   = new Entry[m_cap];
 
 	for (size_t i = 0; i < old_cap; ++i) {
 		Entry& entry = old_entries[i];
@@ -34,7 +35,7 @@ void Table::ensure_capacity() {
 		// never occupied in the first place.
 		if (IS_ENTRY_FREE(entry) or SNAP_IS_EMPTY(entry.key)) continue;
 		Entry& new_entry = TABLE_GET_SLOT(entry.key, entry.hash);
-		new_entry = std::move(entry);
+		new_entry		 = std::move(entry);
 	}
 
 	// We only copied over the actual entries, and
@@ -47,8 +48,8 @@ void Table::ensure_capacity() {
 }
 
 Value Table::get(Value key) const {
-	size_t mask = m_cap - 1;
-	size_t hash = hash_value(key);
+	size_t mask	 = m_cap - 1;
+	size_t hash	 = hash_value(key);
 	size_t index = hash & mask;
 
 	while (true) {
@@ -85,14 +86,14 @@ bool Table::set(Value key, Value value) {
 		// If we found an unitialized spot or a
 		// tombstone in the entries buffer, use that
 		// slot for insertion.
-		const bool is_free = IS_ENTRY_FREE(entry);
+		const bool is_free		= IS_ENTRY_FREE(entry);
 		const bool is_tombstone = IS_ENTRY_DEAD(entry);
 
 		if (is_free or is_tombstone) {
-			entry.key = std::move(key);
-			entry.value = std::move(value);
+			entry.key			 = std::move(key);
+			entry.value			 = std::move(value);
 			entry.probe_distance = dist;
-			entry.hash = hash;
+			entry.hash			 = hash;
 			// Only increment number of entries
 			// if the slot was free.
 			if (is_free) ++m_num_entries;
@@ -107,7 +108,7 @@ bool Table::set(Value key, Value value) {
 		// same key as the current key we're trying to set,
 		// then change the value in that entry.
 		if (entry.key == key) {
-			entry.value = std::move(value);
+			entry.value			 = std::move(value);
 			entry.probe_distance = dist;
 			return false;
 		}
@@ -159,7 +160,7 @@ String* Table::find_string(const char* chars, size_t length, size_t hash) const 
 	assert(chars != nullptr);
 	assert(hash == hash_cstring(chars, length));
 
-	size_t mask = m_cap - 1;
+	size_t mask	 = m_cap - 1;
 	size_t index = hash & mask;
 
 	while (true) {
@@ -198,6 +199,15 @@ size_t Table::hash_object(Obj* object) const {
 	case OT::string: return static_cast<String*>(object)->hash();
 	case OT::upvalue: return hash_value(*static_cast<Upvalue*>(object)->m_value);
 	default: return HASH_OBJ(object);
+	}
+}
+
+void Table::trace(GC& gc) {
+	for (u32 i = 0; i < m_cap; ++i) {
+		Entry& e = m_entries[i];
+		if (IS_ENTRY_FREE(e) or IS_ENTRY_DEAD(e)) continue;
+		gc.mark(e.key);
+		gc.mark(e.value);
 	}
 }
 

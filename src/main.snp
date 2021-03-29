@@ -1,10 +1,13 @@
-const O = { x: 0, y: 0 }
-
-fn Point(_x, _y) {
-  return { x: _x, y: _y }
+const DJSwain = {
+  address: { 
+    city: "BLS",
+    zip: 756002
+  },
+  age: 2
 }
 
-const p = Point(2, 3)
-const p2 = Point(5, 4)
+fn twice(x) {
+  return x * 2
+}
 
-return p.x
+return twice(DJSwain.age)

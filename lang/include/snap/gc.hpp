@@ -3,6 +3,7 @@
 #include "forward.hpp"
 #include "value.hpp"
 #include <set>
+#include <stack>
 
 namespace snap {
 
@@ -20,6 +21,13 @@ class GC {
 	/// marking all objects and coloring them gray.
 	void mark();
 
+	/// @brief If `v` is an object, then marks it as 'alive', preventing
+	/// it from being garbage collected.
+	void mark(Value v);
+
+	/// @brief marks an object as 'alive', turning it gray.
+	void mark(Obj* o);
+
 	/// @brief Trace all references in the gray stack.
 	void trace();
 
@@ -31,6 +39,10 @@ class GC {
 	void protect(Obj* o);
 	void unprotect(Obj* o);
 
+	/// @brief Colors an object 'gray'. Marking it as alive, and adding it
+	/// to the gray stack.
+	void darken(Obj* o);
+
   private:
 	// The VM that calls this GC.
 	VM* const m_vm;
@@ -39,18 +51,12 @@ class GC {
 	// list of objects this list, and removing all objects
 	// that have no other references anywhere else in the VM.
 	Obj* m_objects = nullptr;
-	std::vector<Obj*> m_gray_objects;
+	std::stack<Obj*> m_gray_objects;
 
 	/// An extra set of GC roots. These are ptrs to
 	/// objects marked safe from Garbage Collection.
 	std::set<Obj*> m_extra_roots;
 
-	/// @brief If `v` is an object, then marks it as 'alive', preventing
-	/// it from being garbage collected.
-	void mark(Value v);
-
-	/// @brief marks an object as 'alive', turning it gray.
-	void mark(Obj* o);
 };
 
 } // namespace snap

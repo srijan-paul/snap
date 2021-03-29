@@ -122,6 +122,8 @@ class Table final : public Obj {
 			index = (index + 1) & mask;
 		}
 	}
+
+	virtual void trace(GC& gc) override;
 };
 
 bool operator==(const Table::Entry& a, const Table::Entry& b);

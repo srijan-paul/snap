@@ -28,6 +28,8 @@ class Prototype final : public Obj {
   private:
 	u32 m_num_params = 0;
 	Block m_block;
+
+	void trace(GC& gc) override;
 };
 
 /// @brief The Closure object.
@@ -57,6 +59,8 @@ class Function final : public Obj {
 
   private:
 	std::vector<Upvalue*> m_upvals;
+
+	void trace(GC &gc) override;
 };
 
 } // namespace snap

@@ -49,6 +49,9 @@ class String final : public Obj {
 		: Obj(ObjType::string), m_chars{chrs}, m_length{strlen(chrs)}, m_hash{hash_cstring(
 																		   chrs, m_length)} {};
 
+
+	virtual void trace(GC& gc) override;
+
 	const char* m_chars = nullptr;
 	const size_t m_length;
 	/// @brief The string's hash value. This is computed by calling

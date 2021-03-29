@@ -31,6 +31,11 @@ class Obj {
 	/// @brief Whether this object has been 'marked' as alive in the most
 	/// currently active garbage collection cycle (if any).
 	bool marked = false;
+
+	/// @brief Traces all the references that this object
+	/// contains to other values. Is overriden by deriving
+	/// class.
+	virtual void trace(GC& gc) = 0;
 };
 
 enum class ValueType { Number, Bool, Object, Nil, Empty };

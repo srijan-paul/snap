@@ -249,6 +249,8 @@ void table_test() {
 			  "Computed member access and dot member access are equivalent for string keys");
 	test_file("table-6.snp", SNAP_NUM_VAL(25), "Compound assignment to computed members");
 	test_file("table-7.snp", SNAP_NUM_VAL(10), "Syntactic sugar for table methods");
+	test_file("table-8.snp", SNAP_NUM_VAL(1), "Empty tables.");
+	test_file("table-9.snp", SNAP_NUM_VAL(30), "Chained dot and subscript operators.");
 	test_file("keys.snp", SNAP_NUM_VAL(6),
 			  "Subscript operator in table key with interned strings");
 

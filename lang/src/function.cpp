@@ -29,6 +29,11 @@ u32 Prototype::param_count() const {
 	return m_num_params;
 }
 
+void Prototype::trace(GC& gc) {
+}
+
+/// Function ///
+
 Function::Function(const Prototype* proto, u32 upval_count): Obj(ObjType::func), m_proto{proto} {
 	m_upvals.resize(upval_count);
 }
@@ -48,6 +53,10 @@ const String* Function::name() const {
 
 const char* Function::name_cstr() const {
 	return m_proto->name_cstr();
+}
+
+void Function::trace(GC& gc) {
+
 }
 
 } // namespace snap
