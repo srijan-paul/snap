@@ -13,4 +13,10 @@ class Compiler;
 class VM;
 class GC;
 
+class Obj;
+class String;
+class Function;
+class Table;
+class Prototype;
+
 } // namespace snap

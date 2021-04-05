@@ -10,7 +10,7 @@ AlignConsecutiveMacros: true
 AlignEscapedNewlines: Right
 AlignOperands: true
 AlignTrailingComments: true
-AlignConsecutiveAssignments: true
+AlignConsecutiveAssignments: false 
 AllowShortFunctionsOnASingleLine: None
 AllowShortLoopsOnASingleLine: true
 BreakBeforeBraces: Attach

@@ -104,7 +104,11 @@ class VM {
 		SNAP_ASSERT(o != nullptr, "Attempt to register NULL object.");
 
 #ifdef SNAP_STRESS_GC
-	collect_garbage();
+#ifdef SNAP_LOG_GC
+		printf("< GC cycle invoked while attempting to allocate %s >\n",
+			   value_to_string(SNAP_OBJECT_VAL(o)).c_str());
+#endif
+		collect_garbage();
 #endif
 
 		o->next		   = m_gc.m_objects;
@@ -132,7 +136,7 @@ class VM {
 
   private:
 	const std::string* m_source;
-	Compiler* m_compiler;
+	Compiler* m_compiler = nullptr;
 
 	Value m_stack[StackMaxSize];
 	using StackId = Value*;

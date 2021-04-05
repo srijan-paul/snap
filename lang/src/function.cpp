@@ -1,7 +1,8 @@
-#include "upvalue.hpp"
-#include "value.hpp"
 #include <function.hpp>
+#include <gc.hpp>
 #include <iostream>
+#include <upvalue.hpp>
+#include <value.hpp>
 
 namespace snap {
 
@@ -30,11 +31,15 @@ u32 Prototype::param_count() const {
 }
 
 void Prototype::trace(GC& gc) {
+	gc.mark_object(m_name);
+	for (Value val : m_block.constant_pool) {
+		gc.mark_value(val);
+	}
 }
 
 /// Function ///
 
-Function::Function(const Prototype* proto, u32 upval_count): Obj(ObjType::func), m_proto{proto} {
+Function::Function(Prototype* proto, u32 upval_count) : Obj(ObjType::func), m_proto{proto} {
 	m_upvals.resize(upval_count);
 }
 
@@ -56,7 +61,10 @@ const char* Function::name_cstr() const {
 }
 
 void Function::trace(GC& gc) {
-
+	for (Upvalue* upval : m_upvals) {
+		gc.mark_object(upval);
+	}
+	gc.mark_object(m_proto);
 }
 
 } // namespace snap

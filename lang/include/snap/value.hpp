@@ -18,6 +18,7 @@ class Obj {
 	// as friend classes.
 	friend VM;
 	friend GC;
+	friend Table;
 
   public:
 	const ObjType tag;
@@ -25,7 +26,7 @@ class Obj {
 	Obj(ObjType tt) : tag{tt} {};
 	virtual ~Obj() = default;
 
-  private:
+  protected:
 	/// @brief pointer to the next object in the VM's GC linked list.
 	Obj* next	= nullptr;
 	/// @brief Whether this object has been 'marked' as alive in the most

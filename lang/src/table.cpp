@@ -11,7 +11,8 @@ using OT = ObjType;
 
 #define TABLE_GET_SLOT(k, h)	   search_entry<Table, Entry>(this, k, h)
 #define TABLE_GET_SLOT_CONST(k, h) search_entry<const Table, const Entry>(this, k, h)
-#define TABLE_PLACE_TOMBSTONE(e)   (SNAP_SET_TT(e.key, VT::Empty), e.value = SNAP_NIL_VAL)
+#define TABLE_PLACE_TOMBSTONE(e)                                                                   \
+	(SNAP_SET_TT(e.key, VT::Empty), e.value = SNAP_NIL_VAL, ++m_num_tombstones)
 
 // check if an entry is unoccupied.
 #define IS_ENTRY_FREE(e) (SNAP_IS_NIL(e.key))
@@ -27,7 +28,7 @@ void Table::ensure_capacity() {
 	size_t old_cap = m_cap;
 	m_cap *= GrowthFactor;
 	Entry* old_entries = m_entries;
-	m_entries		   = new Entry[m_cap];
+	m_entries = new Entry[m_cap];
 
 	for (size_t i = 0; i < old_cap; ++i) {
 		Entry& entry = old_entries[i];
@@ -35,7 +36,7 @@ void Table::ensure_capacity() {
 		// never occupied in the first place.
 		if (IS_ENTRY_FREE(entry) or SNAP_IS_EMPTY(entry.key)) continue;
 		Entry& new_entry = TABLE_GET_SLOT(entry.key, entry.hash);
-		new_entry		 = std::move(entry);
+		new_entry = std::move(entry);
 	}
 
 	// We only copied over the actual entries, and
@@ -48,8 +49,8 @@ void Table::ensure_capacity() {
 }
 
 Value Table::get(Value key) const {
-	size_t mask	 = m_cap - 1;
-	size_t hash	 = hash_value(key);
+	size_t mask = m_cap - 1;
+	size_t hash = hash_value(key);
 	size_t index = hash & mask;
 
 	while (true) {
@@ -86,14 +87,14 @@ bool Table::set(Value key, Value value) {
 		// If we found an unitialized spot or a
 		// tombstone in the entries buffer, use that
 		// slot for insertion.
-		const bool is_free		= IS_ENTRY_FREE(entry);
+		const bool is_free = IS_ENTRY_FREE(entry);
 		const bool is_tombstone = IS_ENTRY_DEAD(entry);
 
 		if (is_free or is_tombstone) {
-			entry.key			 = std::move(key);
-			entry.value			 = std::move(value);
+			entry.key = std::move(key);
+			entry.value = std::move(value);
 			entry.probe_distance = dist;
-			entry.hash			 = hash;
+			entry.hash = hash;
 			// Only increment number of entries
 			// if the slot was free.
 			if (is_free) ++m_num_entries;
@@ -108,7 +109,7 @@ bool Table::set(Value key, Value value) {
 		// same key as the current key we're trying to set,
 		// then change the value in that entry.
 		if (entry.key == key) {
-			entry.value			 = std::move(value);
+			entry.value = std::move(value);
 			entry.probe_distance = dist;
 			return false;
 		}
@@ -148,7 +149,6 @@ bool Table::remove(Value key) {
 	if (IS_ENTRY_FREE(entry) or IS_ENTRY_DEAD(entry)) return false;
 
 	TABLE_PLACE_TOMBSTONE(entry);
-	++m_num_tombstones;
 	return true;
 }
 
@@ -160,7 +160,7 @@ String* Table::find_string(const char* chars, size_t length, size_t hash) const 
 	assert(chars != nullptr);
 	assert(hash == hash_cstring(chars, length));
 
-	size_t mask	 = m_cap - 1;
+	size_t mask = m_cap - 1;
 	size_t index = hash & mask;
 
 	while (true) {
@@ -206,8 +206,18 @@ void Table::trace(GC& gc) {
 	for (u32 i = 0; i < m_cap; ++i) {
 		Entry& e = m_entries[i];
 		if (IS_ENTRY_FREE(e) or IS_ENTRY_DEAD(e)) continue;
-		gc.mark(e.key);
-		gc.mark(e.value);
+		gc.mark_value(e.key);
+		gc.mark_value(e.value);
+	}
+}
+
+void Table::delete_white_string_keys(GC& gc) {
+	for (int i = 0; i < m_cap; ++i) {
+		Entry& entry = m_entries[i];
+		if (IS_ENTRY_DEAD(entry) or IS_ENTRY_FREE(entry)) continue;
+		if (SNAP_IS_STRING(entry.key) and !SNAP_AS_STRING(entry.key)->marked) {
+			TABLE_PLACE_TOMBSTONE(entry);
+		}
 	}
 }
 

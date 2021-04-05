@@ -34,7 +34,7 @@ struct LocalVar {
 };
 
 struct UpvalDesc {
-	int index = -1;
+	int index	  = -1;
 	bool is_const = false;
 	bool is_local = false;
 };
@@ -42,7 +42,7 @@ struct UpvalDesc {
 struct SymbolTable {
 	u32 m_scope_depth = 0;
 	int m_num_symbols = 0;
-	int m_num_upvals = 0;
+	int m_num_upvals  = 0;
 	std::array<LocalVar, UINT8_MAX + 1> m_symbols;
 	std::array<UpvalDesc, UINT8_MAX + 1> m_upvals;
 
@@ -60,9 +60,11 @@ struct SymbolTable {
 };
 
 class Compiler {
+	friend GC;
+
   public:
-	static constexpr u8 MaxLocalVars = UINT8_MAX;
-	static constexpr u8 MaxUpValues = UINT8_MAX;
+	static constexpr u8 MaxLocalVars  = UINT8_MAX;
+	static constexpr u8 MaxUpValues	  = UINT8_MAX;
 	static constexpr u8 MaxFuncParams = UINT8_MAX;
 
 	SNAP_NO_COPY(Compiler);
@@ -78,7 +80,7 @@ class Compiler {
 	/// the everything up to the functions body.
 	/// @param parent The parent compiler that created this compiler. Used for looking up upvalues.
 	/// @param fname name of the function that this compiler is commpiling into.
-	Compiler(VM* vm, Compiler* parent, const String* fname);
+	Compiler(VM* vm, Compiler* parent, String* fname);
 
 	~Compiler();
 
@@ -94,7 +96,7 @@ class Compiler {
   private:
 	VM* m_vm;
 	Prototype* m_proto;
-	Compiler* m_parent = nullptr;
+	Compiler* const m_parent = nullptr;
 
 	const std::string* m_source;
 	bool has_error = false;
@@ -181,7 +183,7 @@ class Compiler {
 	void primary(bool can_assign);		 // LITERAL | ID
 	void variable(bool can_assign);		 // ID
 	void literal();						 // NUM | STR | BOOL | nil
-	void func_expr(const String* fname); // fn NAME? BLOCK
+	void func_expr(String* fname); // fn NAME? BLOCK
 	void table();
 
 	/// @brief Compiles a variable assignment RHS, assumes the

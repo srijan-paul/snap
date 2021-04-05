@@ -23,10 +23,14 @@ class GC {
 
 	/// @brief If `v` is an object, then marks it as 'alive', preventing
 	/// it from being garbage collected.
-	void mark(Value v);
+	void mark_value(Value v);
 
 	/// @brief marks an object as 'alive', turning it gray.
-	void mark(Obj* o);
+	void mark_object(Obj* o);
+
+	/// Marks all the roots reachable from
+	/// the compiler chain.
+	void mark_compiler_roots();
 
 	/// @brief Trace all references in the gray stack.
 	void trace();
@@ -38,10 +42,6 @@ class GC {
 	/// @brief protects `o` from being garbage collected.
 	void protect(Obj* o);
 	void unprotect(Obj* o);
-
-	/// @brief Colors an object 'gray'. Marking it as alive, and adding it
-	/// to the gray stack.
-	void darken(Obj* o);
 
   private:
 	// The VM that calls this GC.
@@ -56,7 +56,6 @@ class GC {
 	/// An extra set of GC roots. These are ptrs to
 	/// objects marked safe from Garbage Collection.
 	std::set<Obj*> m_extra_roots;
-
 };
 
 } // namespace snap

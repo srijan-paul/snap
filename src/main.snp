@@ -1,13 +1,6 @@
-const DJSwain = {
-  address: { 
-    city: "BLS",
-    zip: 756002
-  },
-  age: 2
-}
+const a = 'a',
+      b = 'b',
+      c = 'c',
+      d = 'd'
 
-fn twice(x) {
-  return x * 2
-}
-
-return twice(DJSwain.age)
+return a..b..c..d

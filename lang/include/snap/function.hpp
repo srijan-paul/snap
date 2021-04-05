@@ -8,10 +8,9 @@ namespace snap {
 // that contains the bytecode.
 class Prototype final : public Obj {
   public:
-	const String* m_name;
 	u32 m_num_upvals = 0;
-	Prototype(const String* funcname) : Obj{ObjType::proto}, m_name{funcname} {};
-	Prototype(const String* funcname, u32 param_count)
+	Prototype(String* funcname) : Obj{ObjType::proto}, m_name{funcname} {};
+	Prototype(String* funcname, u32 param_count)
 		: Obj{ObjType::proto}, m_name{funcname}, m_num_params{param_count} {};
 
 	const String* name() const;
@@ -26,6 +25,7 @@ class Prototype final : public Obj {
 	virtual ~Prototype(){};
 
   private:
+	String* const m_name;
 	u32 m_num_params = 0;
 	Block m_block;
 
@@ -41,9 +41,9 @@ class Prototype final : public Obj {
 /// scopes.
 class Function final : public Obj {
   public:
-	const Prototype* const m_proto;
+	Prototype* const m_proto;
 
-	Function(const Prototype* proto, u32 upval_count);
+	Function(Prototype* proto, u32 upval_count);
 
 	const String* name() const;
 	const char* name_cstr() const;
@@ -60,7 +60,7 @@ class Function final : public Obj {
   private:
 	std::vector<Upvalue*> m_upvals;
 
-	void trace(GC &gc) override;
+	void trace(GC& gc) override;
 };
 
 } // namespace snap

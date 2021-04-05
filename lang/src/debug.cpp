@@ -65,7 +65,7 @@ static void print_line(const Block& block, std::size_t index) {
 
 static std::size_t constant_instr(const Block& block, Op op, std::size_t index) {
 	const auto const_index = (u8)(block.code[index + 1]);
-	const Value v		   = block.constant_pool[const_index];
+	const Value v = block.constant_pool[const_index];
 	std::printf("%04d	%-4zu  %-22s (%d) ", block.lines[index], index, op2s(op), const_index);
 	PRINT_VAL(v);
 	printf("\n");
@@ -79,7 +79,7 @@ static std::size_t simple_instr(const Block& block, Op op, std::size_t index) {
 }
 
 static std::size_t instr_single_operand(const Block& block, std::size_t index) {
-	Op op	   = block.code[index];
+	Op op = block.code[index];
 	Op operand = block.code[index + 1];
 
 	print_line(block, index);
@@ -136,8 +136,8 @@ std::size_t disassemble_instr(const Block& block, Op op, std::size_t offset) {
 }
 
 void disassemble_block(const char* name, const Block& block) {
-	printf("<%s>", name);
-	for (std::size_t i = 0; i < block.code.size();) {
+	printf("<%s>\n", name);
+	for (size_t i = 0; i < block.code.size();) {
 		i += disassemble_instr(block, block.code[i], i);
 	}
 }
