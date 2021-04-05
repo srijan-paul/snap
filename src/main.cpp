@@ -11,7 +11,6 @@
 using namespace snap;
 
 int main() {
-
 	// Temporarily we use this entry point to run
 	// a file main.snp, so we can use that as a
 	// 'scratchpad' of sorts to test some code.
@@ -22,8 +21,10 @@ int main() {
 	std::ostringstream stream;
 	stream << file.rdbuf();
 	std::string code(stream.str());
+
 	VM vm{&code};
 	vm.interpret();
+
 	std::cout << "VM returned: ";
 	print_value(vm.return_value);
 	std::cout << std::endl;

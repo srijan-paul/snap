@@ -218,8 +218,9 @@ void table_test() {
 	const T = 	{
 		a: 1, b : 2
 	} 
-	return T.a
-	)", SNAP_NUM_VAL(1), " Indexing tables with '.' operator");
+	return T.a + T.b
+	)",
+				SNAP_NUM_VAL(3), " Indexing tables with '.' operator");
 
 	test_return(R"(
 		fn Node(a, b) {
@@ -251,8 +252,8 @@ void table_test() {
 	test_file("table-7.snp", SNAP_NUM_VAL(10), "Syntactic sugar for table methods");
 	test_file("table-8.snp", SNAP_NUM_VAL(1), "Empty tables.");
 	test_file("table-9.snp", SNAP_NUM_VAL(30), "Chained dot and subscript operators.");
-	test_file("keys.snp", SNAP_NUM_VAL(6),
-			  "Subscript operator in table key with interned strings");
+	test_file("keys.snp", SNAP_NUM_VAL(6), "Subscript operator in table key with interned strings");
+	test_file("point.snp", SNAP_NUM_VAL(50), "Constructor like functions. (point.snp)");
 
 	std::cout << "[Table tests passed]\n";
 }

@@ -260,10 +260,11 @@ ExitCode VM::run() {
 				auto left = SNAP_AS_STRING(a);
 				auto right = SNAP_AS_STRING(b);
 
-				// The second string has been popped 
+				// The second string has been popped
 				// off the stack and might not be reachable.
-				// by the GC.
-			  gc_protect(right);
+				// by the GC. The allocation of the concatenated
+				// string might trigger a GC cycle.
+				gc_protect(right);
 
 				size_t length = left->len() + right->len();
 
@@ -284,7 +285,7 @@ ExitCode VM::run() {
 					SNAP_SET_OBJECT(a, interned);
 				}
 
-			  gc_unprotect(right);
+				gc_unprotect(right);
 			}
 			break;
 		}
@@ -463,7 +464,8 @@ ExitCode VM::run() {
 #undef PEEK
 
 ExitCode VM::interpret() {
-	init();
+	bool ok = init();
+	if (!ok) return ExitCode::CompileError;
 	return run();
 }
 
@@ -472,6 +474,9 @@ bool VM::init() {
 	m_compiler = &compiler;
 
 	Prototype* proto = m_compiler->compile();
+	// If the compilation failed, return false
+	// and signal a compile time error.
+	if (!compiler.ok()) return false;
 
 	// There are no reachable references to `proto`
 	// when we allocate `func`. Since allocating a func
@@ -546,17 +551,14 @@ void VM::close_upvalues_upto(Value* last) {
 }
 
 bool VM::call(Value value, u8 argc) {
-	switch (SNAP_GET_TT(value)) {
-	case VT::Object: {
-		switch (SNAP_AS_OBJECT(value)->tag) {
-		case OT::func: return callfunc(SNAP_AS_FUNCTION(value), argc);
-		default: ERROR("Attempt to call a {} value.", SNAP_TYPE_CSTR(value)); return false;
-		}
-		break;
-	}
-	default: ERROR("Attempt to call a {} value.", SNAP_TYPE_CSTR(value));
-	}
+	if (!SNAP_CHECK_TT(value, VT::Object))
+		ERROR("Attempt to call a {} value.", SNAP_TYPE_CSTR(value));
 
+	switch (SNAP_AS_OBJECT(value)->tag) {
+	case OT::func: return callfunc(SNAP_AS_FUNCTION(value), argc);
+	default: ERROR("Attempt to call a {} value.", SNAP_TYPE_CSTR(value)); return false;
+	}
+	
 	return false;
 }
 
@@ -588,7 +590,7 @@ bool VM::callfunc(Function* func, int argc) {
 	m_current_frame->func = func;
 	m_current_frame->base = sp - argc - 1;
 	// start from the first op code
-	ip = 0;
+	m_current_frame->ip = ip = 0;
 	m_current_block = &func->m_proto->block();
 	return true;
 }
@@ -641,7 +643,12 @@ ExitCode VM::runtime_error(std::string const& message) {
 	for (int i = m_frame_count - 1; i >= 0; --i) {
 		const CallFrame& frame = m_frames[i];
 		const Function& func = *frame.func;
-		int line = func.m_proto->block().lines[frame.ip];
+
+		const Block& block = func.m_proto->block();
+		SNAP_ASSERT(frame.ip >= 0 and frame.ip < block.lines.size(),
+					"IP not in range for std::vector<u32> block.lines.");
+
+		int line = block.lines[frame.ip];
 		if (i == 0) {
 			error_str += kt::format_str("\t[line {}] in {}", line, func.name_cstr());
 		} else {
@@ -659,16 +666,15 @@ void default_error_fn([[maybe_unused]] const VM& vm, std::string& err_msg) {
 	fprintf(stderr, "%s\n", err_msg.c_str());
 }
 
-// TODO: FIX THIS MESS
+/// TODO: The user might need some objects even after the VM
+/// has been destructed. Add support for this.
 VM::~VM() {
-	// if (m_gc_objects == nullptr) return;
-	// for (Obj* object = m_gc_objects; object != nullptr; ) {
-	// 	print_value(SNAP_OBJECT_VAL(object));
-	// 	printf("\n");
-	// 	Obj* temp = object->next;
-	// 	free_object(object);
-	// 	object = temp;
-	// }
+	if (m_gc.m_objects == nullptr) return;
+	for (Obj* object = m_gc.m_objects; object != nullptr;) {
+		Obj* next = object->next;
+		delete object;
+		object = next;
+	}
 }
 
 } // namespace snap

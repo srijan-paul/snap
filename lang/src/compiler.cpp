@@ -13,7 +13,7 @@
 
 #define TOK2NUM(t) SNAP_NUM_VAL(std::stod(t.raw(*m_source)))
 #define THIS_BLOCK (m_proto->block())
-#define ERROR(...) error(kt::format_str(__VA_ARGS__))
+#define ERROR(...) (error(kt::format_str(__VA_ARGS__)))
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
 	void name(bool can_assign) {                                                                   \
@@ -97,7 +97,7 @@ Prototype* Compiler::compile_func() {
 // - expression statement
 // - export statement
 void Compiler::toplevel() {
-	if (has_error) recover();
+	if (panic) recover();
 	if (eof()) return;
 
 	const TT tt = peek.type;
@@ -455,7 +455,7 @@ void Compiler::variable(bool can_assign) {
 			std::string message{"Cannot assign to variable '"};
 			message = message + prev.raw(*m_source) + "' which is marked 'const'.";
 			error_at_token(message.c_str(), token);
-			has_error = false; // Don't send the compiler into error recovery mode.
+			panic = false; // Don't send the compiler into error recovery mode.
 		}
 
 		/// Compile the RHS of the assignment, and
@@ -600,6 +600,11 @@ void Compiler::error_at_token(const char* message, const Token& token) {
 
 void Compiler::error(std::string&& message) {
 	m_vm->on_error(*m_vm, message);
+	has_error = true;
+}
+
+bool Compiler::ok() const {
+	return !has_error;
 }
 
 u32 Compiler::emit_string(const Token& token) {

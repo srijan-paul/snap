@@ -88,10 +88,10 @@ class Compiler {
 	/// @return a function prototype containing the bytecode for the script.
 	Prototype* compile();
 
-	/// @brief If this compiler is compiling a function body, then
-	/// reserve a stack slot for the parameter, and add the parameter
-	/// name to the symbol table.
-	void add_param(const Token& token);
+	/// @brief returns true if the compiler
+	/// has encountered an error while compiling
+	/// the source.
+	bool ok() const;
 
   private:
 	VM* m_vm;
@@ -100,6 +100,11 @@ class Compiler {
 
 	const std::string* m_source;
 	bool has_error = false;
+	// When true, the compiler goes into
+	// error recovery mode, trying to eat all
+	// tokens until some that might denote the
+	// beginning of a statement is encountered.
+	bool panic = false;
 	/// The scanner object that this compiler
 	/// draws tokens from. This is a pointer
 	/// because the nested child compilers will
@@ -221,9 +226,15 @@ class Compiler {
 	// encoding the address of the most recently emitted opcode.
 	void patch_jump(std::size_t index);
 
-	/// create a new variable and add it to the
+	/// @brief create a new variable and add it to the
 	/// current scope in the symbol table.
 	int new_variable(const Token& name, bool is_const = false);
+
+	/// @brief If this compiler is compiling a function body, then
+	/// reserve a stack slot for the parameter, and add the parameter
+	/// name to the symbol table.
+	void add_param(const Token& token);
+
 	/// Look for a variable by it's name token, starting from
 	/// the current scope, moving outward.
 	/// If found, return it's stack slot.
