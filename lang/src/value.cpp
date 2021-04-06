@@ -6,6 +6,8 @@
 #include <value.hpp>
 #include <vm.hpp>
 
+#define CONST_CAST(typ, val) (static_cast<const typ*>(val))
+
 namespace snap {
 
 using VT = ValueType;
@@ -31,7 +33,10 @@ std::string value_to_string(Value v) {
 		case OT::proto:
 			return std::string("[prototype ") + static_cast<const Prototype*>(obj)->name_cstr() +
 				   "]";
-		case OT::upvalue: return value_to_string(static_cast<const Upvalue*>(obj)->m_value);
+		case OT::upvalue: {
+			const Upvalue* upval = static_cast<const Upvalue*>(obj);
+			return value_to_string(*(upval->m_value));
+		}
 		case OT::table: {
 			Table* tbl = SNAP_AS_TABLE(v);
 			return "[table " + std::to_string((size_t)tbl) + "]";

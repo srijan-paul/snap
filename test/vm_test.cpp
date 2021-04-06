@@ -22,8 +22,8 @@ void assert_val_eq(Value& expected, Value actual, const char* message = "Test fa
 
 static void test_return(const std::string&& code, Value expected,
 						const char* message = "Test failed!") {
-	VM vm{&code};
-	vm.interpret();
+	VM vm;
+	vm.runcode(code);
 	assert_val_eq(expected, vm.return_value, message);
 }
 
@@ -62,9 +62,9 @@ static void test_file(const char* filename, Value expected, const char* message 
 static void test_string_return(const char* filename, const char* expected,
 							   const char* message = "Failed") {
 	std::string code{load_file(filename)};
-	VM vm{&code};
+	VM vm;
 
-	if (vm.interpret() != ExitCode::Success) {
+	if (vm.runcode(code) != ExitCode::Success) {
 		std::cout << message << "\n";
 		abort();
 	}

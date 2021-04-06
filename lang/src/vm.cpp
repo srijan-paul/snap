@@ -37,9 +37,6 @@ using Op = Opcode;
 using VT = ValueType;
 using OT = ObjType;
 
-VM::VM(const std::string* src) : m_source{src}, m_gc(*this) {
-}
-
 #define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) and !(SNAP_AS_BOOL(v))) or SNAP_IS_NIL(v))
 #define IS_VAL_TRUTHY(v) (!IS_VAL_FALSY(v))
 
@@ -470,6 +467,11 @@ ExitCode VM::interpret() {
 }
 
 bool VM::init() {
+	if (m_source == nullptr) {
+		ERROR("No code to run.");
+		return false;
+	}
+
 	Compiler compiler{this, m_source};
 	m_compiler = &compiler;
 
@@ -500,6 +502,18 @@ bool VM::init() {
 
 	m_compiler = nullptr;
 	return true;
+}
+
+ExitCode VM::runcode(const std::string& code) {
+	m_source = &code;
+	bool ok = init();
+	if (!ok) return ExitCode::CompileError;
+	return run();
+}
+
+ExitCode VM::runfile(const std::string& filepath) {
+	SNAP_ERROR("Not implemented VM::runfile()");
+	return ExitCode::CompileError;
 }
 
 using OT = ObjType;
@@ -558,7 +572,7 @@ bool VM::call(Value value, u8 argc) {
 	case OT::func: return callfunc(SNAP_AS_FUNCTION(value), argc);
 	default: ERROR("Attempt to call a {} value.", SNAP_TYPE_CSTR(value)); return false;
 	}
-	
+
 	return false;
 }
 

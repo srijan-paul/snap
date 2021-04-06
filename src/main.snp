@@ -1,5 +1,4 @@
-fn add(a, b) {
-  return a..b
-}
-
-return add('1', 2)
+let s = "a" .. "b" .. "c"
+s = nil
+s = "x".."y".."z"
+return s

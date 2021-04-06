@@ -53,7 +53,8 @@ class VM {
 	static constexpr size_t StackMaxSize = 256;
 	static constexpr size_t MaxCallStack = 128;
 
-	VM(const std::string* src);
+	VM(const std::string* src) : m_source{src}, m_gc(*this){};
+	VM(): m_source{nullptr}, m_gc(*this){};
 	~VM();
 	ExitCode interpret();
 
@@ -85,6 +86,8 @@ class VM {
 	bool call(Value value, u8 argc);
 	bool callfunc(Function* func, int argc);
 
+	ExitCode runcode(const std::string& code);
+	ExitCode runfile(const std::string& filepath);
 	ExitCode run();
 	const Block* block();
 
@@ -111,7 +114,7 @@ class VM {
 		collect_garbage();
 #endif
 
-		o->next		   = m_gc.m_objects;
+		o->next = m_gc.m_objects;
 		m_gc.m_objects = o;
 	}
 
