@@ -15,8 +15,6 @@ public:
 	SNAP_NO_COPY(GC);
 	SNAP_NO_MOVE(GC);
 
-	static constexpr u8 GCScaleFactor = 2;
-
 	GC(VM& vm) : m_vm{&vm} {};
 
 	/// @brief Walks over all the entire root set,
@@ -39,7 +37,8 @@ public:
 
 	/// @brief Walks over the list of all known objects,
 	/// freeing any object that isn't marked 'alive'.
-	void sweep();
+	/// @return The number of bytes freed.
+	size_t sweep();
 
 	/// @brief protects `o` from being garbage collected.
 	void protect(Obj* o);

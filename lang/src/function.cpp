@@ -37,6 +37,10 @@ void Prototype::trace(GC& gc) {
 	}
 }
 
+size_t Prototype::size() const {
+	return sizeof(Prototype);
+}
+
 /// Function ///
 
 Function::Function(Prototype* proto, u32 upval_count) : Obj(ObjType::func), m_proto{proto} {
@@ -65,6 +69,10 @@ void Function::trace(GC& gc) {
 		gc.mark_object(upval);
 	}
 	gc.mark_object(m_proto);
+}
+
+size_t Function::size() const {
+	return sizeof(Function);
 }
 
 } // namespace snap

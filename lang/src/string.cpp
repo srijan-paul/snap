@@ -56,7 +56,7 @@ String* String::concatenate(const String* left, const String* right) {
 bool operator==(const String& a, const String& b) {
 	if (&a == &b) return true;
 	size_t alen = a.len(), blen = b.len();
-	if (alen != blen or alen != blen) return false;
+	if (alen != blen or a.hash() != b.hash()) return false;
 	return std::memcmp(a.c_str(), b.c_str(), alen) == 0;
 }
 
@@ -65,8 +65,9 @@ const char* String::c_str() const {
 }
 
 char String::at(number index) const {
-	assert(index > 0 and index < m_length);
-	return m_chars[std::size_t(index)];
+	SNAP_ASSERT(index > 0 and index < m_length, "string index out of range.");
+	SNAP_ASSERT(index == size_t(index), "string index not a whole number.");
+	return m_chars[size_t(index)];
 }
 
 char String::operator[](size_t index) const {
@@ -81,7 +82,10 @@ size_t String::len() const {
 	return m_length;
 }
 
-void String::trace(GC& gc) {
+void String::trace(GC& gc){};
+
+size_t String::size() const {
+	return m_length * sizeof(char) + sizeof(String);
 }
 
 } // namespace snap

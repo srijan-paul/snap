@@ -12,6 +12,7 @@ public:
 
 private:
 	void trace(GC& gc) override;
+	size_t size() const override;
 };
 
 } // namespace snap

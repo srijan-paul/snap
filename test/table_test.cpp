@@ -98,9 +98,9 @@ void intern_test() {
 	snap::Table t;
 	const char* s1 = "a short string.";
 	snap::String* s = make_interned_string(t, s1, strlen(s1));
-	EXPECT(t.size() == 1,
-				 "Table::size() - is 1 when there is one string entry in the Intern table. (got: "
-						 << t.size() << ")");
+	EXPECT(t.length() == 1,
+				 "Table::length() - is 1 when there is one string entry in the Intern table. (got: "
+						 << t.length() << ")");
 
 	int s1len = strlen(s1);
 	EXPECT(t.find_string(s1, strlen(s1), snap::hash_cstring(s1, s1len)) != nullptr,

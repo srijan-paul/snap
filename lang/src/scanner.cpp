@@ -1,7 +1,6 @@
 #include <cctype>
 #include <cstring>
 #include <scanner.hpp>
-#include <string>
 
 namespace snap {
 
@@ -60,9 +59,7 @@ Token Scanner::next_token() {
 	case '\'':
 	case '"': return make_string(c);
 	default:
-		if (isdigit(c)) {
-			return number();
-		}
+		if (isdigit(c)) return number();
 
 		if (isalpha(c) or c == '_') {
 			while (isalnum(peek()) or check('_')) next();
@@ -113,7 +110,7 @@ Token Scanner::number() {
 	return make_token(type);
 }
 
-// TODO: escape characters.
+/// TODO: escape characters.
 Token Scanner::make_string(char quote) {
 	while (!(eof() or check(quote))) next();
 	if (eof()) {

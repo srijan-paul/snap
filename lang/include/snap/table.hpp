@@ -39,13 +39,15 @@ class Table final : public Obj {
 
 	/// @return The number of key-value pairs that
 	/// are active in this table.
-	size_t size() const;
+	size_t length() const;
 
 	/// @brief Takes a string C string on the heap. checks if
 	/// a snap::String exists with the same characters.
 	/// @return A pointer to the string object, if found
 	/// inside the table, else nullptr.
 	String* find_string(const char* chars, size_t length, size_t hash) const;
+
+	virtual size_t size() const override;
 
 	/// An Entry represents a key-value pair
 	/// in the hashtable, both the key and the

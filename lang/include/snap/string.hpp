@@ -26,6 +26,7 @@ public:
 	size_t hash() const;
 	char operator[](size_t index) const;
 	static String* concatenate(const String* a, const String* b);
+	virtual size_t size() const override;
 	~String();
 
 private:

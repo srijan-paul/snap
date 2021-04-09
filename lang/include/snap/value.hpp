@@ -25,7 +25,7 @@ public:
 	Obj(ObjType tt) : tag{tt} {};
 	virtual ~Obj() = default;
 
-protected:
+private:
 	/// @brief pointer to the next object in the VM's GC linked list.
 	Obj* next = nullptr;
 	/// @brief Whether this object has been 'marked' as alive in the most
@@ -36,6 +36,9 @@ protected:
 	/// contains to other values. Is overriden by deriving
 	/// class.
 	virtual void trace(GC& gc) = 0;
+
+	/// @brief returns the size of this object in bytes.
+	virtual size_t size() const = 0;
 };
 
 enum class ValueType { Number, Bool, Object, Nil, Empty };

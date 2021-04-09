@@ -1,14 +1,6 @@
 #include "str_format.hpp"
 #include <cmath>
-#include <common.hpp>
-#include <compiler.hpp>
-#include <cstdarg>
 #include <cstdio>
-#include <function.hpp>
-#include <stdio.h>
-#include <string.hpp>
-#include <upvalue.hpp>
-#include <value.hpp>
 #include <vm.hpp>
 
 #if defined(SNAP_DEBUG_RUNTIME) || defined(SNAP_DEBUG_DISASSEMBLY)
@@ -631,17 +623,21 @@ void VM::gc_unprotect(Obj* o) {
 	m_gc.unprotect(o);
 }
 
-void VM::collect_garbage() {
+size_t VM::collect_garbage() {
 	m_gc.mark();
 	m_gc.trace();
-	m_gc.sweep();
+	return m_gc.sweep();
 }
 
-const Block* VM::block() {
+size_t VM::memory() const {
+	return m_gc.bytes_allocated;
+}
+
+const Block* VM::block() const {
 	return m_current_block;
 }
 
-//  --- Error reporting ---
+// -- Error reporting --
 
 ExitCode VM::binop_error(const char* opstr, Value& a, Value& b) {
 	return ERROR("Cannot use operator '{}' on operands of type '{}' and '{}'.", opstr,

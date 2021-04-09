@@ -22,6 +22,7 @@ public:
 	u32 add_param();
 	u32 param_count() const;
 
+	virtual size_t size() const override;
 	virtual ~Prototype(){};
 
 private:
@@ -55,6 +56,7 @@ public:
 	/// list to the given Upvalue.
 	void set_upval(u32 idx, Upvalue* uv);
 
+	virtual size_t size() const override;
 	virtual ~Function(){};
 
 private:

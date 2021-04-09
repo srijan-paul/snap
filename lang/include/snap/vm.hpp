@@ -89,7 +89,7 @@ public:
 	ExitCode runcode(const std::string& code);
 	ExitCode runfile(const std::string& filepath);
 	ExitCode run();
-	const Block* block();
+	const Block* block() const;
 
 	/// @brief makes an object of type [T],
 	/// registers it with the VM and return a reference to
@@ -103,6 +103,7 @@ public:
 		return *object;
 	}
 
+	/// TODO: Refactor this logic out from vm.hpp to gc.cpp
 	inline void register_object(Obj* o) {
 		SNAP_ASSERT(o != nullptr, "Attempt to register NULL object.");
 
@@ -116,6 +117,7 @@ public:
 
 		o->next = m_gc.m_objects;
 		m_gc.m_objects = o;
+		m_gc.bytes_allocated += o->size();
 	}
 
 	/// @brief Makes an interned string and returns a
@@ -124,7 +126,8 @@ public:
 
 	/// @brief Triggers a garbage collection cycle, does a
 	/// mark-trace-sweep.
-	void collect_garbage();
+	/// @return The number of bytes freed.
+	size_t collect_garbage();
 
 	/// @brief Marks the object safe from garbage collection
 	/// until `VM::gc_unprotect` is called on the object.
@@ -135,12 +138,12 @@ public:
 	void gc_unprotect(Obj* o);
 
 	/// @brief returns the number of objects present in `m_gc.m_objects.`
-	size_t num_objects();
+	size_t num_objects() const;
 
 	/// @brief returns the amount of memory currently allocated by the
 	/// VM. Note that this only includes the memory allocated Garbage collect-able
 	/// objects on the heap and not stack values.
-	size_t memory();
+	size_t memory() const;
 
 private:
 	const std::string* m_source;

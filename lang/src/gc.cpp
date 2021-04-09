@@ -76,7 +76,7 @@ void GC::trace() {
 	}
 }
 
-void GC::sweep() {
+size_t GC::sweep() {
 #ifdef SNAP_LOG_GC
 	printf("-- Sweep --\n");
 #endif
@@ -84,6 +84,8 @@ void GC::sweep() {
 	/// Delete all the interned strings that haven't been reached
 	/// by now.
 	m_vm->interned_strings.delete_white_string_keys(*this);
+
+	size_t bytes_freed = 0;
 
 	// Walk over the [m_objects] linked list
 	// and free any objects that aren't marked
@@ -102,6 +104,7 @@ void GC::sweep() {
 			printf("Freed: %s\n", value_to_string(SNAP_OBJECT_VAL(current)).c_str());
 #endif
 
+			bytes_freed += current->size();
 			delete current;
 			if (prev == nullptr) {
 				m_objects = next;
@@ -112,9 +115,11 @@ void GC::sweep() {
 		}
 	}
 
+	bytes_allocated -= bytes_freed;
 #ifdef SNAP_LOG_GC
-	printf("-- GC CYCLE END --\n\n");
+	printf("-- [GC END] Freed %zu bytes --\n\n", bytes_freed);
 #endif
+	return bytes_freed;
 }
 
 void GC::protect(Obj* o) {

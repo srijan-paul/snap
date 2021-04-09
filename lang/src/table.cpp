@@ -9,7 +9,7 @@ namespace snap {
 using VT = ValueType;
 using OT = ObjType;
 
-#define TABLE_GET_SLOT(k, h)	   search_entry<Table, Entry>(this, k, h)
+#define TABLE_GET_SLOT(k, h)			 search_entry<Table, Entry>(this, k, h)
 #define TABLE_GET_SLOT_CONST(k, h) search_entry<const Table, const Entry>(this, k, h)
 #define TABLE_PLACE_TOMBSTONE(e)                                                                   \
 	(SNAP_SET_TT(e.key, VT::Empty), e.value = SNAP_NIL_VAL, ++m_num_tombstones)
@@ -17,7 +17,7 @@ using OT = ObjType;
 // check if an entry is unoccupied.
 #define IS_ENTRY_FREE(e) (SNAP_IS_NIL(e.key))
 #define IS_ENTRY_DEAD(e) (SNAP_IS_EMPTY(e.key))
-#define HASH_OBJ(o)		 ((size_t)(o)&UINT64_MAX)
+#define HASH_OBJ(o)			 ((size_t)(o)&UINT64_MAX)
 
 Table::~Table() {
 	delete[] m_entries;
@@ -152,7 +152,7 @@ bool Table::remove(Value key) {
 	return true;
 }
 
-size_t Table::size() const {
+size_t Table::length() const {
 	return m_num_entries - m_num_tombstones;
 }
 
@@ -219,6 +219,10 @@ void Table::delete_white_string_keys(GC& gc) {
 			TABLE_PLACE_TOMBSTONE(entry);
 		}
 	}
+}
+
+size_t Table::size() const {
+	return sizeof(Table) + m_cap * sizeof(Value);
 }
 
 bool operator==(const Table::Entry& a, const Table::Entry& b) {
