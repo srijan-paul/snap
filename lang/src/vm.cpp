@@ -74,7 +74,7 @@ using OT = ObjType;
 void print_stack(Value* stack, size_t sp) {
 	printf("(%zu)[ ", sp);
 	for (Value* v = stack; v < stack + sp; v++) {
-		printf("%s", v->name_str().c_str());
+		print_value(*v);
 		printf(" ");
 	}
 	printf("]\n");
@@ -288,7 +288,8 @@ ExitCode VM::run() {
 			Value value = pop();
 			Value key = pop();
 
-			SNAP_AS_TABLE(PEEK(1))->set(key, value);
+			Value vtable = PEEK(1);
+			SNAP_AS_TABLE(vtable)->set(key, value);
 			break;
 		}
 
@@ -328,7 +329,8 @@ ExitCode VM::run() {
 		case Op::table_get: {
 			// TOS = as_table(TOS)->get(READ_VAL())
 			if (SNAP_IS_TABLE(PEEK(1))) {
-				sp[-1] = SNAP_AS_TABLE(PEEK(1))->get(READ_VALUE());
+				Value tvalue = PEEK(1);
+				sp[-1] = SNAP_AS_TABLE(tvalue)->get(READ_VALUE());
 			} else {
 				return ERROR("Attempt to index a {} value.", SNAP_TYPE_CSTR(PEEK(1)));
 			}
@@ -351,7 +353,8 @@ ExitCode VM::run() {
 			Value key = pop();
 			if (SNAP_IS_TABLE(PEEK(1))) {
 				if (SNAP_GET_TT(key) == VT::Nil) return runtime_error("Table key cannot be nil.");
-				sp[-1] = SNAP_AS_TABLE(PEEK(1))->get(key);
+				Value tvalue = PEEK(1);
+				sp[-1] = SNAP_AS_TABLE(tvalue)->get(key);
 			} else {
 				return ERROR("Attempt to index a {} value.", SNAP_TYPE_CSTR(PEEK(1)));
 			}
@@ -406,7 +409,8 @@ ExitCode VM::run() {
 		}
 
 		case Op::make_func: {
-			Prototype* proto = static_cast<Prototype*>(SNAP_AS_OBJECT(READ_VALUE()));
+			Value vfunc = READ_VALUE();
+			Prototype* proto = SNAP_AS_PROTO(vfunc);
 			u32 num_upvals = NEXT_BYTE();
 			Function* func = &make<Function>(proto, num_upvals);
 

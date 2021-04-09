@@ -130,7 +130,7 @@ class Table final : public Obj {
 
 	/// @brief Deletes all the string keys that
 	/// aren't marked as 'alive' by the previous GC cycle.
-	void delete_white_string_keys(GC& gc);
+	void delete_white_string_keys();
 };
 
 bool operator==(const Table::Entry& a, const Table::Entry& b);

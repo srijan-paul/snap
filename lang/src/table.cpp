@@ -1,5 +1,3 @@
-#include "value.hpp"
-#include <cassert>
 #include <gc.hpp>
 #include <table.hpp>
 #include <upvalue.hpp>
@@ -63,7 +61,7 @@ Value Table::get(Value key) const {
 }
 
 bool Table::set(Value key, Value value) {
-	assert(!SNAP_IS_NIL(key));
+	SNAP_ASSERT(!SNAP_IS_NIL(key), "Table key is nil.");
 
 	// If the value is nil, then the key is
 	// simply removed with a tombstone in the
@@ -157,8 +155,8 @@ size_t Table::length() const {
 }
 
 String* Table::find_string(const char* chars, size_t length, size_t hash) const {
-	assert(chars != nullptr);
-	assert(hash == hash_cstring(chars, length));
+	SNAP_ASSERT(chars != nullptr, "key string is null.");
+	SNAP_ASSERT(hash == hash_cstring(chars, length), "Incorrect cstring hash.");
 
 	size_t mask = m_cap - 1;
 	size_t index = hash & mask;
@@ -185,7 +183,7 @@ String* Table::find_string(const char* chars, size_t length, size_t hash) const 
 }
 
 size_t Table::hash_value(Value key) const {
-	assert(SNAP_GET_TT(key) != VT::Nil);
+	SNAP_ASSERT(!SNAP_IS_NIL(key), "Attempt to hash a nil key.");
 	switch (SNAP_GET_TT(key)) {
 	case VT::Bool: return SNAP_AS_BOOL(key) ? 7 : 15;
 	case VT::Number: return size_t(SNAP_AS_NUM(key)); // TODO: use a proper numeric hash
@@ -203,7 +201,7 @@ size_t Table::hash_object(Obj* object) const {
 }
 
 void Table::trace(GC& gc) {
-	for (u32 i = 0; i < m_cap; ++i) {
+	for (size_t i = 0; i < m_cap; ++i) {
 		Entry& e = m_entries[i];
 		if (IS_ENTRY_FREE(e) or IS_ENTRY_DEAD(e)) continue;
 		gc.mark_value(e.key);
@@ -211,7 +209,7 @@ void Table::trace(GC& gc) {
 	}
 }
 
-void Table::delete_white_string_keys(GC& gc) {
+void Table::delete_white_string_keys() {
 	for (int i = 0; i < m_cap; ++i) {
 		Entry& entry = m_entries[i];
 		if (IS_ENTRY_DEAD(entry) or IS_ENTRY_FREE(entry)) continue;

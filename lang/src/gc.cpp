@@ -29,7 +29,7 @@ void GC::mark_compiler_roots() {
 void GC::mark() {
 
 #ifdef SNAP_LOG_GC
-	printf("-- GC CYCLE START --\n\n");
+	printf("-- [GC start] --\n");
 	printf("-- Mark --\n");
 #endif
 
@@ -83,7 +83,7 @@ size_t GC::sweep() {
 
 	/// Delete all the interned strings that haven't been reached
 	/// by now.
-	m_vm->interned_strings.delete_white_string_keys(*this);
+	m_vm->interned_strings.delete_white_string_keys();
 
 	size_t bytes_freed = 0;
 

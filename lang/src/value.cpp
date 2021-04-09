@@ -13,6 +13,10 @@ namespace snap {
 using VT = ValueType;
 using OT = ObjType;
 
+const char* Obj::to_cstring() const {
+	return "[snap object]";
+}
+
 void print_value(Value v) {
 	std::printf("%s", value_to_string(v).c_str());
 }
@@ -41,10 +45,10 @@ std::string value_to_string(Value v) {
 			return "[table " + std::to_string((size_t)tbl) + "]";
 		}
 
-		default: return "<snap object>";
+		default: return "[ snap object ]";
 		}
 	}
-	default: return "<unknown value>";
+	default: SNAP_ERROR("Impossible value tag.");
 	}
 }
 
@@ -60,7 +64,6 @@ const char* value_type_name(Value v) {
 	}
 	case VT::Nil: return "nil";
 	case VT::Empty: return "empty";
-	default: return "unknown";
 	}
 }
 

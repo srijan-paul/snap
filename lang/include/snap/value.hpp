@@ -6,7 +6,13 @@
 
 namespace snap {
 
-enum class ObjType : u8 { string, proto, func, upvalue, table };
+enum class ObjType : u8 {
+	string,
+	proto,
+	func,
+	upvalue,
+	table,
+};
 
 /// Objects always live on the heap. A value which is an object contains a pointer
 /// to this data on the heap. The `tag` specifies what kind of object this is.
@@ -22,10 +28,11 @@ class Obj {
 public:
 	const ObjType tag;
 
-	Obj(ObjType tt) : tag{tt} {};
+	explicit Obj(ObjType tt) noexcept : tag{tt} {};
+	virtual const char* to_cstring() const;
 	virtual ~Obj() = default;
 
-private:
+protected:
 	/// @brief pointer to the next object in the VM's GC linked list.
 	Obj* next = nullptr;
 	/// @brief Whether this object has been 'marked' as alive in the most
@@ -48,17 +55,17 @@ enum class ValueType { Number, Bool, Object, Nil, Empty };
 // type tag and one for the union representing the
 // possible states. This is a bit wasteful but
 // not that bad.
-// TODO: Implement optional NaN tagging when a macro
-// SNAP_NAN_TAGGING is defined.
+/// TODO: Implement optional NaN tagging when a macro
+/// SNAP_NAN_TAGGING is defined.
 struct Value {
 	ValueType tag;
 	union {
-		double num;
+		number num;
 		bool boolean;
 		Obj* object;
 	} as;
 
-	Value(double v) : tag{ValueType::Number} {
+	Value(number v) : tag{ValueType::Number} {
 		as.num = v;
 	}
 
@@ -69,10 +76,12 @@ struct Value {
 	Value() : tag{ValueType::Nil} {};
 
 	Value(Obj* o) : tag{ValueType::Object} {
+		SNAP_ASSERT(o != nullptr, "Unexpected nullptr object");
 		as.object = o;
 	}
 
 	inline number as_num() const {
+		SNAP_ASSERT(is_num(), "Not a number.");
 		return as.num;
 	}
 
@@ -81,6 +90,7 @@ struct Value {
 	}
 
 	inline Obj* as_object() const {
+		SNAP_ASSERT(is_object(), "Not a object.");
 		return as.object;
 	}
 
@@ -93,11 +103,11 @@ struct Value {
 	}
 
 	inline bool is_object() const {
-		return (tag == ValueType::Object);
+		return tag == ValueType::Object;
 	}
 
 	inline bool is_string() const {
-		return (tag == ValueType::Object && as_object()->tag == ObjType::string);
+		return tag == ValueType::Object && as_object()->tag == ObjType::string;
 	}
 };
 
@@ -111,7 +121,6 @@ bool operator!=(const Value& a, const Value& b);
 // signatures.
 std::string value_to_string(Value v);
 const char* value_type_name(Value v);
-const char* value_type_name(Value v);
 void print_value(Value v);
 
 #define SNAP_SET_NUM(v, i)		((v).as.num = i)
@@ -123,6 +132,14 @@ void print_value(Value v);
 #define SNAP_OBJECT_VAL(o) (snap::Value(static_cast<snap::Obj*>(o)))
 #define SNAP_NIL_VAL			 (snap::Value())
 
+#define SNAP_SET_TT(v, tt)		((v).tag = tt)
+#define SNAP_GET_TT(v)				((v).tag)
+#define SNAP_CHECK_TT(v, tt)	((v).tag == tt)
+#define SNAP_ASSERT_TT(v, tt) (SNAP_ASSERT(SNAP_CHECK_TT((v), tt), "Mismatched type tags."))
+#define SNAP_ASSERT_OT(v, ot)                                                                      \
+	(SNAP_ASSERT((SNAP_AS_OBJECT(v)->tag == ot), "Mismatched type tags for objects"))
+#define SNAP_TYPE_CSTR(v) (value_type_name(v))
+
 #define SNAP_IS_NUM(v)		((v).tag == snap::ValueType::Number)
 #define SNAP_IS_BOOL(v)		((v).tag == snap::ValueType::Bool)
 #define SNAP_IS_NIL(v)		((v).tag == snap::ValueType::Nil)
@@ -131,20 +148,20 @@ void print_value(Value v);
 #define SNAP_IS_STRING(v) (SNAP_IS_OBJECT(v) and SNAP_AS_OBJECT(v)->tag == snap::ObjType::string)
 #define SNAP_IS_TABLE(v)	(SNAP_IS_OBJECT(v) and SNAP_AS_OBJECT(v)->tag == snap::ObjType::table)
 
-#define SNAP_AS_NUM(v)			((v).as.num)
-#define SNAP_AS_BOOL(v)			((v).as.boolean)
-#define SNAP_AS_NIL(v)			((v).as.double)
-#define SNAP_AS_OBJECT(v)		((v).as.object)
-#define SNAP_AS_FUNCTION(v) (static_cast<snap::Function*>(SNAP_AS_OBJECT(v)))
-#define SNAP_AS_STRING(v)		(static_cast<snap::String*>(SNAP_AS_OBJECT(v)))
-#define SNAP_AS_CSTRING(v)	((SNAP_AS_STRING(v))->c_str())
-#define SNAP_AS_TABLE(v)		(static_cast<Table*>(SNAP_AS_OBJECT(v)))
+#define SNAP_AS_NUM(v)		(SNAP_ASSERT_TT((v), snap::ValueType::Number), (v).as.num)
+#define SNAP_AS_BOOL(v)		(SNAP_ASSERT_TT((v), snap::ValueType::Bool), (v).as.boolean)
+#define SNAP_AS_NIL(v)		(SNAP_ASSERT_TT((v), snap::ValueType::Nil), (v).as.double)
+#define SNAP_AS_OBJECT(v) (SNAP_ASSERT_TT((v), snap::ValueType::Object), (v).as.object)
+#define SNAP_AS_FUNCTION(v)                                                                        \
+	(SNAP_ASSERT_OT((v), snap::ObjType::func), static_cast<snap::Function*>(SNAP_AS_OBJECT(v)))
+#define SNAP_AS_PROTO(v)                                                                           \
+	(SNAP_ASSERT_OT((v), snap::ObjType::proto), static_cast<snap::Prototype*>(SNAP_AS_OBJECT(v)))
+#define SNAP_AS_STRING(v)                                                                          \
+	(SNAP_ASSERT_OT((v), snap::ObjType::string), static_cast<snap::String*>(SNAP_AS_OBJECT(v)))
+#define SNAP_AS_CSTRING(v) (SNAP_AS_STRING(v)->c_str())
+#define SNAP_AS_TABLE(v)                                                                           \
+	(SNAP_ASSERT_OT((v), snap::ObjType::table), static_cast<Table*>(SNAP_AS_OBJECT(v)))
 
-#define SNAP_SET_TT(v, tt)	 ((v).tag = tt)
-#define SNAP_GET_TT(v)			 ((v).tag)
-#define SNAP_CHECK_TT(v, tt) ((v).tag == tt)
-#define SNAP_TYPE_CSTR(v)		 (value_type_name(v))
-
-#define SNAP_CAST_INT(v) ((s64)((v).as.num))
+#define SNAP_CAST_INT(v) (s64(SNAP_AS_NUM(v)))
 
 } // namespace snap
