@@ -22,8 +22,8 @@ using std::size_t;
 using number = double;
 
 #define SNAP_MODE_DEBUG
-#define SNAP_DEBUG_RUNTIME 1
-#define SNAP_DEBUG_DISASSEMBLY 1
+// #define SNAP_DEBUG_RUNTIME		 1
+// #define SNAP_DEBUG_DISASSEMBLY 1
 
 #ifdef SNAP_MODE_DEBUG
 
@@ -37,8 +37,8 @@ using number = double;
 
 #else
 
-#define SNAP_ASSERT(cond, message) /* empty */
-#define SNAP_ERROR(message)				 /* empty */
+#define SNAP_ASSERT(cond, message) 0
+#define SNAP_ERROR(message)				 0
 
 #endif
 
@@ -46,7 +46,7 @@ using number = double;
 #define SNAP_NO_MOVE(class)							 class(class && other) = delete;
 #define SNAP_NO_DEFAULT_CONSTRUCT(class) class() = delete;
 
-// #define SNAP_STRESS_GC 1
+#define SNAP_STRESS_GC 1
 // #define SNAP_LOG_GC		 1
 
 } // namespace snap

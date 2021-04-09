@@ -137,7 +137,7 @@ void print_value(Value v);
 #define SNAP_CHECK_TT(v, tt)	((v).tag == tt)
 #define SNAP_ASSERT_TT(v, tt) (SNAP_ASSERT(SNAP_CHECK_TT((v), tt), "Mismatched type tags."))
 #define SNAP_ASSERT_OT(v, ot)                                                                      \
-	(SNAP_ASSERT((SNAP_AS_OBJECT(v)->tag == ot), "Mismatched type tags for objects"))
+	(SNAP_ASSERT((SNAP_AS_OBJECT(v)->tag == ot), "Mismatched object types."))
 #define SNAP_TYPE_CSTR(v) (value_type_name(v))
 
 #define SNAP_IS_NUM(v)		((v).tag == snap::ValueType::Number)
@@ -148,19 +148,15 @@ void print_value(Value v);
 #define SNAP_IS_STRING(v) (SNAP_IS_OBJECT(v) and SNAP_AS_OBJECT(v)->tag == snap::ObjType::string)
 #define SNAP_IS_TABLE(v)	(SNAP_IS_OBJECT(v) and SNAP_AS_OBJECT(v)->tag == snap::ObjType::table)
 
-#define SNAP_AS_NUM(v)		(SNAP_ASSERT_TT((v), snap::ValueType::Number), (v).as.num)
-#define SNAP_AS_BOOL(v)		(SNAP_ASSERT_TT((v), snap::ValueType::Bool), (v).as.boolean)
-#define SNAP_AS_NIL(v)		(SNAP_ASSERT_TT((v), snap::ValueType::Nil), (v).as.double)
-#define SNAP_AS_OBJECT(v) (SNAP_ASSERT_TT((v), snap::ValueType::Object), (v).as.object)
-#define SNAP_AS_FUNCTION(v)                                                                        \
-	(SNAP_ASSERT_OT((v), snap::ObjType::func), static_cast<snap::Function*>(SNAP_AS_OBJECT(v)))
-#define SNAP_AS_PROTO(v)                                                                           \
-	(SNAP_ASSERT_OT((v), snap::ObjType::proto), static_cast<snap::Prototype*>(SNAP_AS_OBJECT(v)))
-#define SNAP_AS_STRING(v)                                                                          \
-	(SNAP_ASSERT_OT((v), snap::ObjType::string), static_cast<snap::String*>(SNAP_AS_OBJECT(v)))
-#define SNAP_AS_CSTRING(v) (SNAP_AS_STRING(v)->c_str())
-#define SNAP_AS_TABLE(v)                                                                           \
-	(SNAP_ASSERT_OT((v), snap::ObjType::table), static_cast<Table*>(SNAP_AS_OBJECT(v)))
+#define SNAP_AS_NUM(v)			((v).as.num)
+#define SNAP_AS_BOOL(v)			((v).as.boolean)
+#define SNAP_AS_NIL(v)			((v).as.double)
+#define SNAP_AS_OBJECT(v)		((v).as.object)
+#define SNAP_AS_FUNCTION(v) (static_cast<snap::Function*>(SNAP_AS_OBJECT(v)))
+#define SNAP_AS_PROTO(v)		(static_cast<snap::Prototype*>(SNAP_AS_OBJECT(v)))
+#define SNAP_AS_STRING(v)		(static_cast<snap::String*>(SNAP_AS_OBJECT(v)))
+#define SNAP_AS_CSTRING(v)	(SNAP_AS_STRING(v)->c_str())
+#define SNAP_AS_TABLE(v)		(static_cast<Table*>(SNAP_AS_OBJECT(v)))
 
 #define SNAP_CAST_INT(v) (s64(SNAP_AS_NUM(v)))
 

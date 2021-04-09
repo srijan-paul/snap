@@ -82,7 +82,7 @@ size_t String::len() const {
 	return m_length;
 }
 
-void String::trace(GC& gc){};
+void String::trace([[maybe_unused]] GC& gc){};
 
 size_t String::size() const {
 	return m_length * sizeof(char) + sizeof(String);

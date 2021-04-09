@@ -1,3 +1,4 @@
+#include "value.hpp"
 #include <gc.hpp>
 #include <table.hpp>
 #include <upvalue.hpp>
@@ -47,6 +48,8 @@ void Table::ensure_capacity() {
 }
 
 Value Table::get(Value key) const {
+	if (SNAP_IS_NIL(key)) return SNAP_NIL_VAL;
+
 	size_t mask = m_cap - 1;
 	size_t hash = hash_value(key);
 	size_t index = hash & mask;
@@ -210,7 +213,7 @@ void Table::trace(GC& gc) {
 }
 
 void Table::delete_white_string_keys() {
-	for (int i = 0; i < m_cap; ++i) {
+	for (u32 i = 0; i < m_cap; ++i) {
 		Entry& entry = m_entries[i];
 		if (IS_ENTRY_DEAD(entry) or IS_ENTRY_FREE(entry)) continue;
 		if (SNAP_IS_STRING(entry.key) and !SNAP_AS_STRING(entry.key)->marked) {

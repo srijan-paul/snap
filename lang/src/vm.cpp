@@ -297,12 +297,10 @@ ExitCode VM::run() {
 		case Op::index_set: {
 			Value value = pop();
 			Value key = pop();
+			if (SNAP_IS_NIL(key)) return ERROR("Table key cannot be nil.");
 
 			Value& tvalue = PEEK(1);
 			if (SNAP_IS_TABLE(tvalue)) {
-				if (SNAP_GET_TT(key) == VT::Nil) {
-					return ERROR("Table key cannot be nil.");
-				}
 				SNAP_AS_TABLE(tvalue)->set(key, value);
 				sp[-1] = value; // assignment returns it's RHS.
 			} else {
@@ -314,6 +312,7 @@ ExitCode VM::run() {
 		// table.key = value
 		case Op::table_set: {
 			const Value& key = READ_VALUE();
+			if (SNAP_IS_NIL(key)) return ERROR("Table key cannot be nil.");
 			Value value = pop();
 			Value& tvalue = PEEK(1);
 			if (SNAP_IS_TABLE(tvalue)) {
@@ -340,8 +339,9 @@ ExitCode VM::run() {
 		// table.key
 		case Op::table_get_no_pop: {
 			// push((TOS)->get(READ_VAL()))
-			if (SNAP_IS_TABLE(PEEK(1))) {
-				push(SNAP_AS_TABLE(PEEK(1))->get(READ_VALUE()));
+			Value tval = PEEK(1);
+			if (SNAP_IS_TABLE(tval)) {
+				push(SNAP_AS_TABLE(tval)->get(READ_VALUE()));
 			} else {
 				return ERROR("Attempt to index a {} value.", SNAP_TYPE_CSTR(PEEK(1)));
 			}
@@ -352,7 +352,6 @@ ExitCode VM::run() {
 		case Op::index: {
 			Value key = pop();
 			if (SNAP_IS_TABLE(PEEK(1))) {
-				if (SNAP_GET_TT(key) == VT::Nil) return runtime_error("Table key cannot be nil.");
 				Value tvalue = PEEK(1);
 				sp[-1] = SNAP_AS_TABLE(tvalue)->get(key);
 			} else {
