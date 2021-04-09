@@ -88,15 +88,15 @@ typedef struct {
 } KeywordData;
 
 static constexpr KeywordData keywords[] = {
-	{"false", 5, TT::False}, {"true", 4, TT::True}, {"nil", 3, TT::Nil},	   {"or", 2, TT::Or},
-	{"and", 3, TT::Or},		 {"let", 3, TT::Let},	{"const", 5, TT::Const},   {"if", 2, TT::If},
-	{"else", 4, TT::Else},	 {"fn", 2, TT::Fn},		{"return", 6, TT::Return},
+		{"false", 5, TT::False}, {"true", 4, TT::True}, {"nil", 3, TT::Nil},			 {"or", 2, TT::Or},
+		{"and", 3, TT::Or},			 {"let", 3, TT::Let},		{"const", 5, TT::Const},	 {"if", 2, TT::If},
+		{"else", 4, TT::Else},	 {"fn", 2, TT::Fn},			{"return", 6, TT::Return},
 };
 
 TT Scanner::kw_or_id_type() const {
 	for (auto& kw : keywords) {
 		if (kw.length == (current - start) and
-			std::memcmp(source->c_str() + start, kw.word, kw.length) == 0)
+				std::memcmp(source->c_str() + start, kw.word, kw.length) == 0)
 			return kw.ttype;
 	}
 	return TT::Id;

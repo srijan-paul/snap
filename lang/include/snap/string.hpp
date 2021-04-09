@@ -16,7 +16,7 @@ class String final : public Obj {
 
 	SNAP_NO_DEFAULT_CONSTRUCT(String);
 
-  public:
+public:
 	/// @param len length of the string.
 	String(const char* chrs, size_t len);
 
@@ -28,7 +28,7 @@ class String final : public Obj {
 	static String* concatenate(const String* a, const String* b);
 	~String();
 
-  private:
+private:
 	/// @brief creates a string by copying over the characters
 	/// `chrs` and length `len`. Instead of computing the hash,
 	/// this uses a precomputed hash value of `hash`.
@@ -41,14 +41,13 @@ class String final : public Obj {
 	/// @param chrs Null terminated character buffer on the heap.
 	/// @param hash The hash for this cstring.
 	String(char* chrs, size_t hash)
-		: Obj{ObjType::string}, m_chars{chrs}, m_length{strlen(chrs)}, m_hash{hash} {};
+			: Obj{ObjType::string}, m_chars{chrs}, m_length{strlen(chrs)}, m_hash{hash} {};
 
 	/// @brief Creates a string that owns the characters `chrs`.
 	/// @param chrs pointer to the character buffer. Must be null terminated.
 	String(char* chrs)
-		: Obj(ObjType::string), m_chars{chrs}, m_length{strlen(chrs)}, m_hash{hash_cstring(
-																		   chrs, m_length)} {};
-
+			: Obj(ObjType::string), m_chars{chrs}, m_length{strlen(chrs)}, m_hash{hash_cstring(
+																																				 chrs, m_length)} {};
 
 	virtual void trace(GC& gc) override;
 

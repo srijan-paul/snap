@@ -30,11 +30,11 @@ struct LocalVar {
 
 	explicit LocalVar() noexcept {};
 	LocalVar(const char* varname, u32 name_len, u8 scope_depth = 0, bool isconst = false)
-		: name{varname}, length{name_len}, depth{scope_depth}, is_const{isconst} {};
+			: name{varname}, length{name_len}, depth{scope_depth}, is_const{isconst} {};
 };
 
 struct UpvalDesc {
-	int index	  = -1;
+	int index = -1;
 	bool is_const = false;
 	bool is_local = false;
 };
@@ -42,7 +42,7 @@ struct UpvalDesc {
 struct SymbolTable {
 	u32 m_scope_depth = 0;
 	int m_num_symbols = 0;
-	int m_num_upvals  = 0;
+	int m_num_upvals = 0;
 	std::array<LocalVar, UINT8_MAX + 1> m_symbols;
 	std::array<UpvalDesc, UINT8_MAX + 1> m_upvals;
 
@@ -62,9 +62,9 @@ struct SymbolTable {
 class Compiler {
 	friend GC;
 
-  public:
-	static constexpr u8 MaxLocalVars  = UINT8_MAX;
-	static constexpr u8 MaxUpValues	  = UINT8_MAX;
+public:
+	static constexpr u8 MaxLocalVars = UINT8_MAX;
+	static constexpr u8 MaxUpValues = UINT8_MAX;
 	static constexpr u8 MaxFuncParams = 200;
 
 	SNAP_NO_COPY(Compiler);
@@ -93,7 +93,7 @@ class Compiler {
 	/// the source.
 	bool ok() const;
 
-  private:
+private:
 	VM* m_vm;
 	Prototype* m_proto;
 	Compiler* const m_parent = nullptr;
@@ -128,9 +128,8 @@ class Compiler {
 	}
 
 	inline bool isLiteral(TokenType type) const {
-		return type == TokenType::Integer || type == TokenType::String ||
-			   type == TokenType::Float || type == TokenType::False || type == TokenType::True ||
-			   type == TokenType::Nil;
+		return type == TokenType::Integer || type == TokenType::String || type == TokenType::Float ||
+					 type == TokenType::False || type == TokenType::True || type == TokenType::Nil;
 	}
 
 	/// If the next token is of type `expected` then
@@ -158,37 +157,37 @@ class Compiler {
 
 	void toplevel();
 
-	void var_decl();				// (let|const) DECL+
+	void var_decl();								// (let|const) DECL+
 	void declarator(bool is_const); // ID (= EXPR)?
-	void block_stmt();				// {stmt*}
-	void if_stmt();					// if EXPR STMT (else STMT)?
-	void expr_stmt();				// FUNCALL | ASSIGN
-	void fn_decl();					// fn (ID|SUFFIXED_EXPR) BLOCK
-	void ret_stmt();				// return EXPR?
+	void block_stmt();							// {stmt*}
+	void if_stmt();									// if EXPR STMT (else STMT)?
+	void expr_stmt();								// FUNCALL | ASSIGN
+	void fn_decl();									// fn (ID|SUFFIXED_EXPR) BLOCK
+	void ret_stmt();								// return EXPR?
 
 	void expr(bool can_assign = true);
 
 	void logic_or(bool can_assign);	 // || or
 	void logic_and(bool can_assign); // && and
 
-	void bit_or(bool can_assign);  // |
+	void bit_or(bool can_assign);	 // |
 	void bit_and(bool can_assign); // &
 
-	void equality(bool can_assign);	  // == !=
+	void equality(bool can_assign);		// == !=
 	void comparison(bool can_assign); // > >= < <=
-	void b_shift(bool can_assign);	  // >> <<
+	void b_shift(bool can_assign);		// >> <<
 
-	void sum(bool can_assign);			 // + - ..
-	void mult(bool can_assign);			 // * / %
-	void unary(bool can_assign);		 // - + ! not
-	void atomic(bool can_assign);		 // (ID|'(' EXPR ')' ) SUFFIX*
-	void suffix_expr(bool can_assign);	 // '['EXPR']' | '.'ID | '('ARGS')'
-	void call_args();					 // EXPR (',' EXPR)*
+	void sum(bool can_assign);				 // + - ..
+	void mult(bool can_assign);				 // * / %
+	void unary(bool can_assign);			 // - + ! not
+	void atomic(bool can_assign);			 // (ID|'(' EXPR ')' ) SUFFIX*
+	void suffix_expr(bool can_assign); // '['EXPR']' | '.'ID | '('ARGS')'
+	void call_args();									 // EXPR (',' EXPR)*
 	void grouping(bool can_assign);		 // '('expr')'
 	void primary(bool can_assign);		 // LITERAL | ID
 	void variable(bool can_assign);		 // ID
-	void literal();						 // NUM | STR | BOOL | nil
-	void func_expr(String* fname); // fn NAME? BLOCK
+	void literal();										 // NUM | STR | BOOL | nil
+	void func_expr(String* fname);		 // fn NAME? BLOCK
 	void table();
 
 	/// @brief Compiles a variable assignment RHS, assumes the

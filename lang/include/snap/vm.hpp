@@ -37,7 +37,7 @@ class VM {
 	friend GC;
 	friend Compiler;
 
-  public:
+public:
 	SNAP_NO_COPY(VM);
 	SNAP_NO_MOVE(VM);
 
@@ -54,7 +54,7 @@ class VM {
 	static constexpr size_t MaxCallStack = 128;
 
 	VM(const std::string* src) : m_source{src}, m_gc(*this){};
-	VM(): m_source{nullptr}, m_gc(*this){};
+	VM() : m_source{nullptr}, m_gc(*this){};
 	~VM();
 	ExitCode interpret();
 
@@ -109,7 +109,7 @@ class VM {
 #ifdef SNAP_STRESS_GC
 #ifdef SNAP_LOG_GC
 		printf("< GC cycle invoked while attempting to allocate %s >\n",
-			   value_to_string(SNAP_OBJECT_VAL(o)).c_str());
+					 value_to_string(SNAP_OBJECT_VAL(o)).c_str());
 #endif
 		collect_garbage();
 #endif
@@ -137,7 +137,12 @@ class VM {
 	/// @brief returns the number of objects present in `m_gc.m_objects.`
 	size_t num_objects();
 
-  private:
+	/// @brief returns the amount of memory currently allocated by the
+	/// VM. Note that this only includes the memory allocated Garbage collect-able
+	/// objects on the heap and not stack values.
+	size_t memory();
+
+private:
 	const std::string* m_source;
 	Compiler* m_compiler = nullptr;
 

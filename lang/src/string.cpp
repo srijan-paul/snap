@@ -25,8 +25,8 @@ String::String(const char* chrs, std::size_t len) : Obj(ObjType::string), m_leng
 	char* buf = new char[len + 1];
 	std::memcpy(buf, chrs, len);
 	buf[len] = '\0';
-	m_hash	 = hash_cstring(buf, m_length);
-	m_chars	 = buf;
+	m_hash = hash_cstring(buf, m_length);
+	m_chars = buf;
 }
 
 String::String(const char* chrs, size_t len, size_t hash) : Obj{OT::string}, m_length{len} {
@@ -35,8 +35,8 @@ String::String(const char* chrs, size_t len, size_t hash) : Obj{OT::string}, m_l
 	char* buf = new char[len + 1];
 	std::memcpy(buf, chrs, len);
 	buf[len] = '\0';
-	m_hash	 = hash;
-	m_chars	 = buf;
+	m_hash = hash;
+	m_chars = buf;
 }
 
 String::~String() {
@@ -46,7 +46,7 @@ String::~String() {
 String* String::concatenate(const String* left, const String* right) {
 	std::size_t length = left->m_length + right->m_length;
 
-	char* buf	= new char[length + 1];
+	char* buf = new char[length + 1];
 	buf[length] = '\0';
 	std::memcpy(buf, left->m_chars, left->m_length);
 	std::memcpy(buf + left->m_length, right->m_chars, right->m_length);
@@ -82,7 +82,6 @@ size_t String::len() const {
 }
 
 void String::trace(GC& gc) {
-
 }
 
 } // namespace snap

@@ -31,8 +31,7 @@ std::string value_to_string(Value v) {
 		case OT::func:
 			return std::string("[fn ") + static_cast<const Function*>(obj)->name_cstr() + "]";
 		case OT::proto:
-			return std::string("[prototype ") + static_cast<const Prototype*>(obj)->name_cstr() +
-				   "]";
+			return std::string("[prototype ") + static_cast<const Prototype*>(obj)->name_cstr() + "]";
 		case OT::upvalue: {
 			const Upvalue* upval = static_cast<const Upvalue*>(obj);
 			return value_to_string(*(upval->m_value));

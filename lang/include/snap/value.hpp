@@ -4,7 +4,6 @@
 #include "token.hpp"
 #include <string>
 
-
 namespace snap {
 
 enum class ObjType : u8 { string, proto, func, upvalue, table };
@@ -20,15 +19,15 @@ class Obj {
 	friend GC;
 	friend Table;
 
-  public:
+public:
 	const ObjType tag;
 
 	Obj(ObjType tt) : tag{tt} {};
 	virtual ~Obj() = default;
 
-  protected:
+protected:
 	/// @brief pointer to the next object in the VM's GC linked list.
-	Obj* next	= nullptr;
+	Obj* next = nullptr;
 	/// @brief Whether this object has been 'marked' as alive in the most
 	/// currently active garbage collection cycle (if any).
 	bool marked = false;
@@ -112,36 +111,36 @@ const char* value_type_name(Value v);
 const char* value_type_name(Value v);
 void print_value(Value v);
 
-#define SNAP_SET_NUM(v, i)	  ((v).as.num = i)
-#define SNAP_SET_BOOL(v, b)	  ((v).as.boolean = b)
+#define SNAP_SET_NUM(v, i)		((v).as.num = i)
+#define SNAP_SET_BOOL(v, b)		((v).as.boolean = b)
 #define SNAP_SET_OBJECT(v, o) ((v).as.object = o)
 
-#define SNAP_NUM_VAL(n)	   (snap::Value(static_cast<snap::number>(n)))
-#define SNAP_BOOL_VAL(b)   (snap::Value(static_cast<bool>(b)))
+#define SNAP_NUM_VAL(n)		 (snap::Value(static_cast<snap::number>(n)))
+#define SNAP_BOOL_VAL(b)	 (snap::Value(static_cast<bool>(b)))
 #define SNAP_OBJECT_VAL(o) (snap::Value(static_cast<snap::Obj*>(o)))
-#define SNAP_NIL_VAL	   (snap::Value())
+#define SNAP_NIL_VAL			 (snap::Value())
 
-#define SNAP_IS_NUM(v)	  ((v).tag == snap::ValueType::Number)
-#define SNAP_IS_BOOL(v)	  ((v).tag == snap::ValueType::Bool)
-#define SNAP_IS_NIL(v)	  ((v).tag == snap::ValueType::Nil)
-#define SNAP_IS_EMPTY(v)  ((v).tag == snap::ValueType::Empty)
+#define SNAP_IS_NUM(v)		((v).tag == snap::ValueType::Number)
+#define SNAP_IS_BOOL(v)		((v).tag == snap::ValueType::Bool)
+#define SNAP_IS_NIL(v)		((v).tag == snap::ValueType::Nil)
+#define SNAP_IS_EMPTY(v)	((v).tag == snap::ValueType::Empty)
 #define SNAP_IS_OBJECT(v) ((v).tag == snap::ValueType::Object)
 #define SNAP_IS_STRING(v) (SNAP_IS_OBJECT(v) and SNAP_AS_OBJECT(v)->tag == snap::ObjType::string)
-#define SNAP_IS_TABLE(v)  (SNAP_IS_OBJECT(v) and SNAP_AS_OBJECT(v)->tag == snap::ObjType::table)
+#define SNAP_IS_TABLE(v)	(SNAP_IS_OBJECT(v) and SNAP_AS_OBJECT(v)->tag == snap::ObjType::table)
 
-#define SNAP_AS_NUM(v)		((v).as.num)
-#define SNAP_AS_BOOL(v)		((v).as.boolean)
-#define SNAP_AS_NIL(v)		((v).as.double)
-#define SNAP_AS_OBJECT(v)	((v).as.object)
+#define SNAP_AS_NUM(v)			((v).as.num)
+#define SNAP_AS_BOOL(v)			((v).as.boolean)
+#define SNAP_AS_NIL(v)			((v).as.double)
+#define SNAP_AS_OBJECT(v)		((v).as.object)
 #define SNAP_AS_FUNCTION(v) (static_cast<snap::Function*>(SNAP_AS_OBJECT(v)))
-#define SNAP_AS_STRING(v)	(static_cast<snap::String*>(SNAP_AS_OBJECT(v)))
+#define SNAP_AS_STRING(v)		(static_cast<snap::String*>(SNAP_AS_OBJECT(v)))
 #define SNAP_AS_CSTRING(v)	((SNAP_AS_STRING(v))->c_str())
-#define SNAP_AS_TABLE(v)	(static_cast<Table*>(SNAP_AS_OBJECT(v)))
+#define SNAP_AS_TABLE(v)		(static_cast<Table*>(SNAP_AS_OBJECT(v)))
 
 #define SNAP_SET_TT(v, tt)	 ((v).tag = tt)
-#define SNAP_GET_TT(v)		 ((v).tag)
+#define SNAP_GET_TT(v)			 ((v).tag)
 #define SNAP_CHECK_TT(v, tt) ((v).tag == tt)
-#define SNAP_TYPE_CSTR(v)	 (value_type_name(v))
+#define SNAP_TYPE_CSTR(v)		 (value_type_name(v))
 
 #define SNAP_CAST_INT(v) ((s64)((v).as.num))
 

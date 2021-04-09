@@ -11,17 +11,17 @@ class Scanner {
 	SNAP_NO_MOVE(Scanner);
 	SNAP_NO_DEFAULT_CONSTRUCT(Scanner);
 
-  public:
+public:
 	Scanner(const std::string* src) : source{src} {};
 	Token next_token();
 
-  private:
+private:
 	const std::string* source;
 	struct {
 		uint32_t line;
 		uint32_t column;
-	} line_pos		 = {1, 1};
-	uint32_t start	 = 0;
+	} line_pos = {1, 1};
+	uint32_t start = 0;
 	uint32_t current = 0;
 
 	void skip_whitespace();

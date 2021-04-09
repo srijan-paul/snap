@@ -70,7 +70,7 @@ void GC::trace() {
 
 #ifdef SNAP_LOG_GC
 		printf("Tracing: %p [%s] \n", (void*)gray_obj,
-			   value_to_string(SNAP_OBJECT_VAL(gray_obj)).c_str());
+					 value_to_string(SNAP_OBJECT_VAL(gray_obj)).c_str());
 #endif
 		gray_obj->trace(*this);
 	}
@@ -123,7 +123,7 @@ void GC::protect(Obj* o) {
 
 void GC::unprotect(Obj* o) {
 	SNAP_ASSERT(m_extra_roots.find(o) != m_extra_roots.end(),
-				"Attempt to unprotect an object which hasn't been protected.");
+							"Attempt to unprotect an object which hasn't been protected.");
 	m_extra_roots.erase(o);
 }
 

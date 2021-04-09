@@ -10,10 +10,12 @@ namespace snap {
 class GC {
 	friend VM;
 
-  public:
+public:
 	SNAP_NO_DEFAULT_CONSTRUCT(GC);
 	SNAP_NO_COPY(GC);
 	SNAP_NO_MOVE(GC);
+
+	static constexpr u8 GCScaleFactor = 2;
 
 	GC(VM& vm) : m_vm{&vm} {};
 
@@ -43,9 +45,11 @@ class GC {
 	void protect(Obj* o);
 	void unprotect(Obj* o);
 
-  private:
+private:
 	// The VM that calls this GC.
 	VM* const m_vm;
+	size_t bytes_allocated = 0;
+	size_t next_gc = 1024 * 1024;
 
 	// the Garbage collector maintains it's personal linked
 	// list of objects this list, and removing all objects

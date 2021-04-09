@@ -21,7 +21,7 @@ void assert_val_eq(Value& expected, Value actual, const char* message = "Test fa
 }
 
 static void test_return(const std::string&& code, Value expected,
-						const char* message = "Test failed!") {
+												const char* message = "Test failed!") {
 	VM vm;
 	vm.runcode(code);
 	assert_val_eq(expected, vm.return_value, message);
@@ -60,7 +60,7 @@ static void test_file(const char* filename, Value expected, const char* message 
 /// @brief Runs `filename` and asserts the return value as a cstring, comparing
 /// it with `expected`.
 static void test_string_return(const char* filename, const char* expected,
-							   const char* message = "Failed") {
+															 const char* message = "Failed") {
 	std::string code{load_file(filename)};
 	VM vm;
 
@@ -107,7 +107,7 @@ static void expr_tests() {
 		a = b = 5
 		return a + b
 	)",
-				SNAP_NUM_VAL(10.0), "Chained assignments to local variables");
+							SNAP_NUM_VAL(10.0), "Chained assignments to local variables");
 
 	test_return("return 9 & 7", SNAP_NUM_VAL(1));
 	test_return("return 4 | 9", SNAP_NUM_VAL(13));
@@ -126,7 +126,7 @@ static void expr_tests() {
 
 		return a == b and c..d == 'aabb'
 	)",
-				SNAP_BOOL_VAL(true));
+							SNAP_BOOL_VAL(true));
 
 	test_file("compound-assign.snp", SNAP_NUM_VAL(8), "Compound assignment operators");
 
@@ -142,7 +142,7 @@ static void stmt_tests() {
 		}
 		return b
 		)",
-				SNAP_NUM_VAL(5), "If statement without else branch");
+							SNAP_NUM_VAL(5), "If statement without else branch");
 
 	test_return(R"(
 		let a = 3;
@@ -155,7 +155,7 @@ static void stmt_tests() {
 			b = 7
 		}
 		return b)",
-				SNAP_NUM_VAL(7), "If statement with else-if branch");
+							SNAP_NUM_VAL(7), "If statement with else-if branch");
 
 	std::cout << "Statement tests passed\n";
 }
@@ -170,7 +170,7 @@ void fn_tests() {
 		}
 		return adder(10)(20)
 	)",
-				SNAP_NUM_VAL(30), "chained calls with parameters");
+							SNAP_NUM_VAL(30), "chained calls with parameters");
 
 	test_return(R"(
 		fn x() {
@@ -187,7 +187,7 @@ void fn_tests() {
 		}
 		return x()()()
 	)",
-				SNAP_NUM_VAL(6), "Closures and chained function calls");
+							SNAP_NUM_VAL(6), "Closures and chained function calls");
 
 	test_return(R"(
 		fn fib(n) {
@@ -196,7 +196,7 @@ void fn_tests() {
 		}
 		return fib(10)
 	)",
-				SNAP_NUM_VAL(89), "Recursive fiboacci");
+							SNAP_NUM_VAL(89), "Recursive fiboacci");
 
 	test_return(R"(
 		fn make_adder(x) {
@@ -208,7 +208,7 @@ void fn_tests() {
 		const add10 = make_adder(10)
 		return add10(-10)
 	)",
-				SNAP_NUM_VAL(0), "make_adder closure");
+							SNAP_NUM_VAL(0), "make_adder closure");
 
 	test_file("llnode-cl.snp", SNAP_NUM_VAL(20), "Linked list closure test");
 }
@@ -220,7 +220,7 @@ void table_test() {
 	} 
 	return T.a + T.b
 	)",
-				SNAP_NUM_VAL(3), " Indexing tables with '.' operator");
+							SNAP_NUM_VAL(3), " Indexing tables with '.' operator");
 
 	test_return(R"(
 		fn Node(a, b) {
@@ -229,7 +229,7 @@ void table_test() {
 		const head = Node(10, Node(20))
 		return head.next.data
 	)",
-				SNAP_NUM_VAL(20), "Linked lists as tables test");
+							SNAP_NUM_VAL(20), "Linked lists as tables test");
 
 	// setting table field names.
 	test_return(R"(
@@ -240,14 +240,14 @@ void table_test() {
 		t.k = 3
 		return t.k +  a
 	)",
-				SNAP_NUM_VAL(10), "setting table field names");
+							SNAP_NUM_VAL(10), "setting table field names");
 
 	test_file("table-1.snp", SNAP_NUM_VAL(3), "returning tables from a closure");
 	test_file("table-2.snp", SNAP_NUM_VAL(6), "Accessing table fields");
 	test_file("table-3.snp", SNAP_NUM_VAL(11), "Accessing table fields");
 	test_file("table-4.snp", SNAP_NUM_VAL(10), "Computed member assignment and access");
 	test_file("table-5.snp", SNAP_NUM_VAL(10),
-			  "Computed member access and dot member access are equivalent for string keys");
+						"Computed member access and dot member access are equivalent for string keys");
 	test_file("table-6.snp", SNAP_NUM_VAL(25), "Compound assignment to computed members");
 	test_file("table-7.snp", SNAP_NUM_VAL(10), "Syntactic sugar for table methods");
 	test_file("table-8.snp", SNAP_NUM_VAL(1), "Empty tables.");

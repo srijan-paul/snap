@@ -246,7 +246,7 @@ constexpr auto Op_0_operands_start = Opcode::pop;
 constexpr auto Op_0_operands_end = Opcode::index_no_pop;
 
 constexpr auto Op_const_start = Opcode::load_const;
-constexpr auto Op_const_end	  = Opcode::table_get_no_pop;
+constexpr auto Op_const_end = Opcode::table_get_no_pop;
 
 /// numerically lowest opcode that takes one operand
 constexpr auto Op_1_operands_start = Opcode::set_var;
@@ -254,6 +254,6 @@ constexpr auto Op_1_operands_start = Opcode::set_var;
 constexpr auto Op_1_operands_end = Opcode::call_func;
 
 constexpr auto Op_2_operands_start = Opcode::jmp;
-constexpr auto Op_2_operands_end   = Opcode::pop_jmp_if_false;
+constexpr auto Op_2_operands_end = Opcode::pop_jmp_if_false;
 
 } // namespace snap
