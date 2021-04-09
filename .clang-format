@@ -1,6 +1,6 @@
 BasedOnStyle: LLVM
 IndentWidth: 4
-TabWidth: 4
+TabWidth: 2
 UseTab: Always
 
 ---

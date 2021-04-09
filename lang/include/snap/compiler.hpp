@@ -65,7 +65,7 @@ class Compiler {
   public:
 	static constexpr u8 MaxLocalVars  = UINT8_MAX;
 	static constexpr u8 MaxUpValues	  = UINT8_MAX;
-	static constexpr u8 MaxFuncParams = UINT8_MAX;
+	static constexpr u8 MaxFuncParams = 200;
 
 	SNAP_NO_COPY(Compiler);
 	SNAP_NO_MOVE(Compiler);
