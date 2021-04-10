@@ -730,7 +730,7 @@ int Compiler::new_variable(const Token& varname, bool is_const) {
 
 	// check of a variable with this name already exists in the current scope.
 	if (m_symtable.find_in_current_scope(name, length) != -1) {
-		error_at("Attempt to redeclare existing variable.", varname.location.line);
+		ERROR("Attempt to redeclare existing variable '{}'.", varname.raw(*m_source));
 		return -1;
 	}
 
