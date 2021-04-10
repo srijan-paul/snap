@@ -15,6 +15,8 @@ public:
 	SNAP_NO_COPY(GC);
 	SNAP_NO_MOVE(GC);
 
+	static constexpr size_t InitialGCLimit = 1024 * 1024; 
+
 	GC(VM& vm) : m_vm{&vm} {};
 
 	/// @brief Walks over all the entire root set,
@@ -48,7 +50,9 @@ private:
 	// The VM that calls this GC.
 	VM* const m_vm;
 	size_t bytes_allocated = 0;
-	size_t next_gc = 1024 * 1024;
+	size_t next_gc = InitialGCLimit;
+
+	/// TODO: Tweak and tune the GC threshholds.
 
 	// the Garbage collector maintains it's personal linked
 	// list of objects this list, and removing all objects

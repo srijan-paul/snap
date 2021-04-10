@@ -19,7 +19,7 @@ class Table final : public Obj {
 
 	/// IMPORTANT: `DefaultCapacity` must always be a
 	/// power of two, since we are using the `&` trick
-	/// to calculatefast mod.
+	/// to calculate fast mod.
 	static constexpr size_t DefaultCapacity = 16;
 	static constexpr u8 GrowthFactor		= 2;
 	static constexpr float LoadFactor		= 0.85;
@@ -129,7 +129,7 @@ class Table final : public Obj {
 	virtual void trace(GC& gc) override;
 
 	/// @brief Deletes all the string keys that
-	/// aren't marked as 'alive' by the previous GC cycle.
+	/// aren't marked as 'alive' by the previous GC mark phase.
 	void delete_white_string_keys();
 };
 

@@ -2,16 +2,15 @@
 #include "compiler.hpp"
 #include "gc.hpp"
 #include "table.hpp"
-#include "value.hpp"
-#include <cassert>
-#include <cstdarg>
-#include <cstddef>
 #include <functional>
-#include <iostream>
-#include <set>
 
 namespace snap {
-enum class ExitCode : u8 { Success, CompileError, RuntimeError };
+
+enum class ExitCode : u8 {
+	Success,
+	CompileError,
+	RuntimeError,
+};
 
 using PrintFn = std::function<void(const VM& vm, String* string)>;
 using ErrorFn = std::function<void(const VM& vm, std::string& err_message)>;
@@ -23,14 +22,14 @@ inline void default_print_fn([[maybe_unused]] const VM& vm, String* string) {
 void default_error_fn(const VM& vm, std::string& err_msg);
 
 struct CallFrame {
-	Function* func;
-	size_t ip;
+	Function* func = nullptr;
+	size_t ip = 0;
 	// the base of the Callframe in the VM's
 	// value stack. This denotes the first
 	// slot usable by the CallFrame. All local variables
 	// are represented as a stack offset from this
 	// base.
-	Value* base;
+	Value* base = nullptr;
 };
 
 class VM {
@@ -49,6 +48,10 @@ public:
 	// destroyed when the VM goes out of scope / reaches
 	// the end of it's lifespan.
 	Value return_value = SNAP_NIL_VAL;
+
+	/// TODO: Dynamically grow the stack by statically
+	/// determining the max stack size at compile time
+	/// inside a function body.
 
 	static constexpr size_t StackMaxSize = 256;
 	static constexpr size_t MaxCallStack = 128;
@@ -107,12 +110,18 @@ public:
 	inline void register_object(Obj* o) {
 		SNAP_ASSERT(o != nullptr, "Attempt to register NULL object.");
 
-#ifdef SNAP_STRESS_GC
-#ifdef SNAP_LOG_GC
-		printf("< GC cycle invoked while attempting to allocate %s >\n",
-					 value_to_string(SNAP_OBJECT_VAL(o)).c_str());
+#ifndef SNAP_STRESS_GC
+		if (m_gc.bytes_allocated >= m_gc.next_gc) {
 #endif
-		collect_garbage();
+
+#ifdef SNAP_LOG_GC
+			printf("< GC cycle invoked while attempting to allocate %s >\n",
+						 value_to_string(SNAP_OBJECT_VAL(o)).c_str());
+#endif
+			collect_garbage();
+
+#ifndef SNAP_STRESS_GC
+		}
 #endif
 
 		o->next = m_gc.m_objects;
@@ -137,11 +146,11 @@ public:
 	/// then removes the guard, making it garbage collectable again.
 	void gc_unprotect(Obj* o);
 
-	/// @brief returns the number of objects present in `m_gc.m_objects.`
+	/// @brief returns the number of objects objects that haven't been garbage collected.
 	size_t num_objects() const;
 
 	/// @brief returns the amount of memory currently allocated by the
-	/// VM. Note that this only includes the memory allocated Garbage collect-able
+	/// VM. Note that this only includes the memory allocated Garbage collectable
 	/// objects on the heap and not stack values.
 	size_t memory() const;
 

@@ -1,17 +1,17 @@
-#include <block.hpp>
 #include <cassert>
 #include <compiler.hpp>
 #include <cstring>
-#include <scanner.hpp>
+#include <iostream>
 #include <token.hpp>
 #include <vm.hpp>
 
-// if the condition `cond` is false then execute the `body` before exiting with a c style assert.
+
+// if the condition `cond` is false then execute the `body` before exiting.
 #define ASSERT_BODY(cond, body)                                                                    \
 	{                                                                                                \
 		if (!(cond)) {                                                                                 \
 			body;                                                                                        \
-			abort();                                                                                     \
+			exit(1);                                                                                     \
 		}                                                                                              \
 	}
 

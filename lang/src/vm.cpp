@@ -1,9 +1,9 @@
 #include "str_format.hpp"
 #include <cmath>
-#include <cstdio>
 #include <vm.hpp>
 
 #if defined(SNAP_DEBUG_RUNTIME) || defined(SNAP_DEBUG_DISASSEMBLY)
+#include <cstdio>
 #include <debug.hpp>
 #endif
 
@@ -408,10 +408,10 @@ ExitCode VM::run() {
 		}
 
 		case Op::make_func: {
-			Value vfunc = READ_VALUE();
-			Prototype* proto = SNAP_AS_PROTO(vfunc);
+			Value vproto = READ_VALUE();
+			SNAP_ASSERT_OT(vproto, OT::proto);
 			u32 num_upvals = NEXT_BYTE();
-			Function* func = &make<Function>(proto, num_upvals);
+			Function* func = &make<Function>(SNAP_AS_PROTO(vproto), num_upvals);
 
 			push(SNAP_OBJECT_VAL(func));
 
@@ -430,7 +430,7 @@ ExitCode VM::run() {
 		}
 
 		default: {
-			std::cout << "not implemented " << int(op) << " yet" << std::endl;
+			SNAP_ERROR("Impossible opcode.");
 			return ExitCode::RuntimeError;
 		}
 		}

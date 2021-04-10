@@ -1,7 +1,6 @@
 #pragma once
 #include "function.hpp"
 #include "scanner.hpp"
-#include "token.hpp"
 #include <array>
 
 namespace snap {
@@ -258,11 +257,6 @@ private:
 	std::size_t emit_value(Value value);
 	u32 emit_string(const Token& token);
 	u32 emit_id_string(const Token& token);
-
-	// wraps up the compiler by loading all the
-	// necessary runtime and debug information into
-	// the prototype.
-	void end_compiler();
 
 	/// returns the corresponding bytecode
 	/// from a token. e.g- TokenType::Add
