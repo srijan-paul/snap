@@ -176,17 +176,17 @@ private:
 	void comparison(bool can_assign); // > >= < <=
 	void b_shift(bool can_assign);		// >> <<
 
-	void sum(bool can_assign);				 // + - ..
-	void mult(bool can_assign);				 // * / %
-	void unary(bool can_assign);			 // - + ! not
-	void atomic(bool can_assign);			 // (ID|'(' EXPR ')' ) SUFFIX*
-	void suffix_expr(bool can_assign); // '['EXPR']' | '.'ID | '('ARGS')'
-	void call_args();									 // EXPR (',' EXPR)*
-	void grouping(bool can_assign);		 // '('expr')'
-	void primary(bool can_assign);		 // LITERAL | ID
-	void variable(bool can_assign);		 // ID
-	void literal();										 // NUM | STR | BOOL | nil
-	void func_expr(String* fname);		 // fn NAME? BLOCK
+	void sum(bool can_assign);														 // + - ..
+	void mult(bool can_assign);														 // * / %
+	void unary(bool can_assign);													 // - + ! not
+	void atomic(bool can_assign);													 // (ID|'(' EXPR ')' ) SUFFIX*
+	void suffix_expr(bool can_assign);										 // '['EXPR']' | '.'ID | '('ARGS')' | :ID'('')'
+	void compile_args(bool is_method = false);						 // EXPR (',' EXPR)*
+	void grouping(bool can_assign);												 // '('expr')'
+	void primary(bool can_assign);												 // LITERAL | ID
+	void variable(bool can_assign);												 // ID
+	void literal();																				 // NUM | STR | BOOL | nil
+	void func_expr(String* fname, bool is_method = false); // fn NAME? BLOCK
 	void table();
 
 	/// @brief Compiles a variable assignment RHS, assumes the
@@ -232,6 +232,10 @@ private:
 	/// reserve a stack slot for the parameter, and add the parameter
 	/// name to the symbol table.
 	void add_param(const Token& token);
+
+	/// @brief adds the 'self' parameter to the list of
+	/// locals, reserving a stack slot for it at runtime.
+	void add_self_param();
 
 	/// Look for a variable by it's name token, starting from
 	/// the current scope, moving outward.

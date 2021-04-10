@@ -254,6 +254,8 @@ void table_test() {
 	test_file("table-9.snp", SNAP_NUM_VAL(30), "Chained dot and subscript operators.");
 	test_file("keys.snp", SNAP_NUM_VAL(6), "Subscript operator in table key with interned strings");
 	test_file("point.snp", SNAP_NUM_VAL(50), "Constructor like functions. (point.snp)");
+	test_file("method-1.snp", SNAP_NUM_VAL(3), "Method call syntax.");
+	test_file("method-2.snp", SNAP_NUM_VAL(5), "Chained method calls.");
 
 	std::cout << "[Table tests passed]\n";
 }

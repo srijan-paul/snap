@@ -171,9 +171,9 @@ void Compiler::fn_decl() {
 	new_variable(name_token);
 }
 
-/// Compiles the body of a function assuming everything until the
+/// Compiles the body of a function or method assuming everything until the
 /// the opening parenthesis has been consumed.
-void Compiler::func_expr(String* fname) {
+void Compiler::func_expr(String* fname, bool is_method) {
 	// When compiling the body of the function, we allocate
 	// a prototype, at that point in time, the name of the
 	// function is not reachable by the Garbage Collector,
@@ -184,6 +184,12 @@ void Compiler::func_expr(String* fname) {
 	compiler.expect(TT::LParen, "Expected '(' before function parameters.");
 
 	int param_count = 0;
+
+	if (is_method) {
+		++param_count;
+		compiler.add_self_param();
+	}
+
 	if (!compiler.check(TT::RParen)) {
 		do {
 			compiler.expect(TT::Id, "Expected parameter name.");
@@ -310,7 +316,7 @@ void Compiler::suffix_expr(bool can_assign) {
 			}
 			break;
 		}
-		case TT::LParen: call_args(); break;
+		case TT::LParen: compile_args(); break;
 		case TT::Dot: {
 			advance();
 			expect(TT::Id, "Expected field name.");
@@ -323,6 +329,14 @@ void Compiler::suffix_expr(bool can_assign) {
 			} else {
 				emit(Op::table_get, static_cast<Op>(index));
 			}
+			break;
+		}
+		case TT::Colon: {
+			advance();
+			expect(TT::Id, "Expected method name.");
+			u8 index = emit_id_string(token);
+			emit(Op::prep_method_call, Op(index));
+			compile_args(true);
 			break;
 		}
 		default: return;
@@ -345,19 +359,23 @@ void Compiler::table_assign(Op get_op, int idx) {
 	emit(toktype_to_op(ttype));
 }
 
-void Compiler::call_args() {
+void Compiler::compile_args(bool is_method) {
 	advance(); // eat opening '('
-	u8 argc = 0;
+
+	/// If it's a method call, then start with 1
+	/// argument count for the implicit 'self' argument.
+	u32 argc = is_method ? 1 : 0;
 
 	if (!check(TT::RParen)) {
 		do {
-			argc++;
+			++argc;
+			if (argc > MaxFuncParams) ERROR("Too many arguments to function call.");
 			expr(); // push the arguments on the stack,
 		} while (match(TT::Comma));
 	}
 
 	expect(TT::RParen, "Expected ')' after call.");
-	emit(Op::call_func, static_cast<Op>(argc));
+	emit(Op::call_func, Op(argc));
 }
 
 void Compiler::grouping(bool can_assign) {
@@ -411,7 +429,7 @@ void Compiler::table() {
 			const int key_idx = emit_value(key_string);
 			emit_bytes(Op::load_const, static_cast<Op>(key_idx), token);
 			if (check(TT::LParen)) {
-				func_expr(key_string);
+				func_expr(key_string, true);
 				emit(Op::table_add_field);
 				if (check(TT::RCurlBrace)) break;
 				continue;
@@ -553,10 +571,15 @@ void Compiler::patch_jump(std::size_t index) {
 
 void Compiler::add_param(const Token& token) {
 	new_variable(token);
-	u32 num_params = m_proto->add_param();
-	if (num_params > MaxFuncParams) {
-		error_at_token("Too many function parameters.", token);
-	}
+	m_proto->add_param();
+}
+
+void Compiler::add_self_param() {
+	SNAP_ASSERT(m_symtable.m_num_symbols == 1, "'self' must be the first parameter.");
+
+	constexpr const char* self = "self";
+	m_proto->add_param();
+	m_symtable.add(self, 4, true);
 }
 
 // Helper functions:

@@ -60,7 +60,7 @@ const char* value_type_name(Value v) {
 		const Obj* obj = SNAP_AS_OBJECT(v);
 		if (SNAP_IS_STRING(v)) return "string";
 		if (obj->tag == OT::func) return "function";
-		return "object";
+		return "table";
 	}
 	case VT::Nil: return "nil";
 	case VT::Empty: return "empty";

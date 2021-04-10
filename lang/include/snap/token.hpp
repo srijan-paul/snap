@@ -17,17 +17,17 @@ enum class TokenType {
 	Eof,
 
 	// Operators
-	Plus,	// +
+	Plus,		// +
 	Concat, // ..
 	Minus,	// -
-	Mult,	// *
-	Div,	// /
-	Mod,	// %
-	Exp,	// **
-	Eq,		// =
-	Bang,	// !
-	Dot,	// .
-	Len,	// #
+	Mult,		// *
+	Div,		// /
+	Mod,		// %
+	Exp,		// **
+	Eq,			// =
+	Bang,		// !
+	Dot,		// .
+	Len,		// #
 
 	// NOTE: It is important that these compound
 	// assignment enums are stay in this order.
@@ -43,8 +43,8 @@ enum class TokenType {
 
 	// compare
 
-	Gt,	  // >
-	Lt,	  // <
+	Gt,		// >
+	Lt,		// <
 	GtEq, // >=
 	LtEq, // <=
 
@@ -55,26 +55,26 @@ enum class TokenType {
 
 	// Equality
 
-	EqEq,	// ==
+	EqEq,		// ==
 	BangEq, // !=
 
 	// bitwise
 
-	BitAnd,	   // &
-	BitOr,	   // |
+	BitAnd,		 // &
+	BitOr,		 // |
 	BitLShift, // >>
 	BitRShift, // <<
 
 	// Punctuation
-	Semi,		// ;
-	Colon,		// :
-	Comma,		// ,
-	LParen,		// (
-	RParen,		// )
+	Semi,				// ;
+	Colon,			// :
+	Comma,			// ,
+	LParen,			// (
+	RParen,			// )
 	LCurlBrace, // {
 	RCurlBrace, // }
-	LSqBrace,	// [
-	RSqBrace,	// ]
+	LSqBrace,		// [
+	RSqBrace,		// ]
 
 	// Keywords
 	Let,

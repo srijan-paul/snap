@@ -46,7 +46,7 @@ using number = double;
 #define SNAP_NO_MOVE(class)							 class(class && other) = delete;
 #define SNAP_NO_DEFAULT_CONSTRUCT(class) class() = delete;
 
-// #define SNAP_STRESS_GC 1
+#define SNAP_STRESS_GC 1
 // #define SNAP_LOG_GC		 1
 
 } // namespace snap

@@ -127,8 +127,6 @@ void GC::protect(Obj* o) {
 }
 
 void GC::unprotect(Obj* o) {
-	SNAP_ASSERT(m_extra_roots.find(o) != m_extra_roots.end(),
-							"Attempt to unprotect an object which hasn't been protected.");
 	m_extra_roots.erase(o);
 }
 

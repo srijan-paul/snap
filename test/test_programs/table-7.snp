@@ -6,4 +6,4 @@ const t = {
   k: 5
 }
 
-return t.member_func(t.k)
+return t:member_func(t.k)

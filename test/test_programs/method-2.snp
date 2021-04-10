@@ -8,5 +8,4 @@ const t = {
   }
 }
 
-let x = {}
 return t:f(3):f(2)

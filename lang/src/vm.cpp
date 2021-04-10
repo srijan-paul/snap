@@ -8,6 +8,7 @@
 #endif
 
 #define ERROR(...)		 runtime_error(kt::format_str(__VA_ARGS__))
+#define INDEX_ERROR(v) ERROR("Attempt to index a '{}' value.", SNAP_TYPE_CSTR(v))
 #define CURRENT_LINE() (m_current_block->lines[ip - 1])
 
 #define FETCH()			(m_current_block->code[ip++])
@@ -319,7 +320,7 @@ ExitCode VM::run() {
 				SNAP_AS_TABLE(tvalue)->set(key, value);
 				sp[-1] = value; // assignment returns it's RHS
 			} else {
-				return ERROR("Attempt to index a {} value.", SNAP_TYPE_CSTR(tvalue));
+				return INDEX_ERROR(tvalue);
 			}
 			break;
 		}
@@ -327,11 +328,11 @@ ExitCode VM::run() {
 		// table.key
 		case Op::table_get: {
 			// TOS = as_table(TOS)->get(READ_VAL())
-			if (SNAP_IS_TABLE(PEEK(1))) {
-				Value tvalue = PEEK(1);
+			Value tvalue = PEEK(1);
+			if (SNAP_IS_TABLE(tvalue)) {
 				sp[-1] = SNAP_AS_TABLE(tvalue)->get(READ_VALUE());
 			} else {
-				return ERROR("Attempt to index a {} value.", SNAP_TYPE_CSTR(PEEK(1)));
+				return INDEX_ERROR(tvalue);
 			}
 			break;
 		}
@@ -343,7 +344,7 @@ ExitCode VM::run() {
 			if (SNAP_IS_TABLE(tval)) {
 				push(SNAP_AS_TABLE(tval)->get(READ_VALUE()));
 			} else {
-				return ERROR("Attempt to index a {} value.", SNAP_TYPE_CSTR(PEEK(1)));
+				return INDEX_ERROR(tval);
 			}
 			break;
 		}
@@ -351,11 +352,11 @@ ExitCode VM::run() {
 		// table_or_array[key]
 		case Op::index: {
 			Value key = pop();
-			if (SNAP_IS_TABLE(PEEK(1))) {
-				Value tvalue = PEEK(1);
+			Value tvalue = PEEK(1);
+			if (SNAP_IS_TABLE(tvalue)) {
 				sp[-1] = SNAP_AS_TABLE(tvalue)->get(key);
 			} else {
-				return ERROR("Attempt to index a {} value.", SNAP_TYPE_CSTR(PEEK(1)));
+				return INDEX_ERROR(tvalue);
 			}
 			break;
 		}
@@ -365,10 +366,10 @@ ExitCode VM::run() {
 			Value& vtable = PEEK(2);
 			const Value& key = PEEK(1);
 			if (SNAP_IS_TABLE(vtable)) {
-				if (SNAP_GET_TT(key) == VT::Nil) return runtime_error("Table key cannot be nil.");
+				if (SNAP_IS_NIL(key)) return ERROR("Table key cannot be nil.");
 				push(SNAP_AS_TABLE(vtable)->get(key));
 			} else {
-				return ERROR("Attempt to index a {} value.", SNAP_TYPE_CSTR(vtable));
+				return INDEX_ERROR(vtable);
 			}
 			break;
 		}
@@ -376,6 +377,19 @@ ExitCode VM::run() {
 		case Op::pop_jmp_if_false: {
 			ip += IS_VAL_FALSY(PEEK(1)) ? FETCH_SHORT() : 2;
 			pop();
+			break;
+		}
+
+		// tbl <- POP() 
+		// PUSH(tbl[READ_VALUE()])
+		// PUSH(tbl)
+		case Op::prep_method_call: {
+			Value vtable = PEEK(1);
+			Value vkey = READ_VALUE();
+			SNAP_ASSERT(SNAP_IS_STRING(vkey), "method name not a string.");
+			if (!SNAP_IS_TABLE(vtable)) return INDEX_ERROR(vtable);
+			sp[-1] = SNAP_AS_TABLE(vtable)->get(vkey);
+			push(vtable);
 			break;
 		}
 

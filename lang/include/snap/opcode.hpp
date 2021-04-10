@@ -16,7 +16,9 @@ enum class Opcode : u8 {
 	/// constant pool on top of the stack.
 	load_const,
 
-	/// reads the next opcode as an index
+	/// Operands: Idx
+	/// Stack Effect: 0
+	/// Reads the next opcode as an index
 	/// then attempts to get `constant_pool[index]`
 	/// field of TOS. It assumes that the constant_pool[index]
 	/// is a string value and hence doesn't perform any runtime
@@ -75,6 +77,13 @@ enum class Opcode : u8 {
 	/// If the Op is 0, then the next op contains the index of the
 	/// Upvalue in the current function's `m_upvalues` list.
 	make_func,
+
+	/// Operands: Key
+	/// Stack Effect: 1
+	/// table <- TOS
+	/// TOS   <- table[Key]
+	/// PUSH(table)
+	prep_method_call,
 
 	/// Operands : NumArgs
 	/// Stack Effect: -NumArgs
