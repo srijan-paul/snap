@@ -255,26 +255,7 @@ ExitCode VM::run() {
 				// by the GC. The allocation of the concatenated
 				// string might trigger a GC cycle.
 				gc_protect(right);
-
-				size_t length = left->len() + right->len();
-
-				char* buf = new char[length + 1];
-				buf[length] = '\0';
-
-				std::memcpy(buf, left->c_str(), left->len());
-				std::memcpy(buf + left->len(), right->c_str(), right->len());
-
-				size_t hash = hash_cstring(buf, length);
-				String* interned = interned_strings.find_string(buf, length, hash);
-
-				if (interned == nullptr) {
-					SNAP_SET_OBJECT(a, &make<String>(buf, hash));
-					interned_strings.set(a, SNAP_BOOL_VAL(true));
-				} else {
-					delete[] buf;
-					SNAP_SET_OBJECT(a, interned);
-				}
-
+				a = concatenate(left, right);
 				gc_unprotect(right);
 			}
 			break;
@@ -380,7 +361,7 @@ ExitCode VM::run() {
 			break;
 		}
 
-		// tbl <- POP() 
+		// tbl <- POP()
 		// PUSH(tbl[READ_VALUE()])
 		// PUSH(tbl)
 		case Op::prep_method_call: {
@@ -455,6 +436,29 @@ ExitCode VM::run() {
 	}
 
 	return ExitCode::Success;
+}
+
+Value VM::concatenate(const String* left, const String* right) {
+	size_t length = left->len() + right->len();
+
+	char* buf = new char[length + 1];
+	buf[length] = '\0';
+
+	std::memcpy(buf, left->c_str(), left->len());
+	std::memcpy(buf + left->len(), right->c_str(), right->len());
+
+	size_t hash = hash_cstring(buf, length);
+	String* interned = interned_strings.find_string(buf, length, hash);
+
+	if (interned == nullptr) {
+		String* res = &make<String>(buf, length, hash);
+		Value vresult = SNAP_OBJECT_VAL(res);
+		interned_strings.set(vresult, SNAP_BOOL_VAL(true));
+		return vresult;
+	} else {
+		delete[] buf;
+		return SNAP_OBJECT_VAL(interned);
+	}
 }
 
 #undef FETCH

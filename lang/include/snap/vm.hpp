@@ -196,6 +196,11 @@ private:
 	// strings, we use a table.
 	Table interned_strings;
 
+
+	/// @brief concatenates two strings. Might intern the resulting
+	/// string if it isn't already interned.
+	Value concatenate(const String* left, const String* right);
+
 	/// Wrap a value present at stack slot [slot]
 	/// inside an Upvalue object and add it to the
 	/// VM's currently open Upvalue list in the right
