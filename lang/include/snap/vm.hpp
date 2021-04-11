@@ -25,7 +25,7 @@ void default_error_fn(const VM& vm, std::string& err_msg);
 
 struct CallFrame {
 	/// `func` is either an instance of CClosure
-	///  or Closure. However, since it can be 
+	///  or Closure. However, since it can be
 	///  any of the two, we store a pointer to
 	///  to it's base class and check which one it
 	///  really is at runtime. (using the [tag] field, or
@@ -86,7 +86,7 @@ public:
 	/// @brief Get the [num]th argument of the
 	/// current function. get_arg(0) returns the
 	/// first argument.
-	inline Value get_arg(u8 idx) const {
+	inline Value& get_arg(u8 idx) const {
 		return m_current_frame->base[idx + 1];
 	}
 
@@ -213,6 +213,12 @@ public:
 	/// VM's global variables table.
 	void load_stdlib();
 
+	/// @brief Throws a runtime error by producing a stack trace, then
+	/// calling the `on_error` and shutting down the VM by returning an
+	/// ExitCode::RuntimeError
+	/// @param message The error message.
+	ExitCode runtime_error(std::string const& message);
+
 private:
 	const std::string* m_source;
 	Compiler* m_compiler = nullptr;
@@ -261,7 +267,9 @@ private:
 	/// string if it isn't already interned.
 	Value concatenate(const String* left, const String* right);
 
-	/// @brief prepares for a functionc call by pushing a new 
+	void add_stdlib_object(const char* name, Obj* o);
+
+	/// @brief prepares for a functionc call by pushing a new
 	/// CallFrame onto the call stack. The new frame's func field
 	/// is set to [callable], and the ip of the current call frame
 	/// is cached.
@@ -289,12 +297,6 @@ private:
 	/// @param a The left operand
 	/// @param b The right operand
 	ExitCode binop_error(const char* opstr, Value& a, Value& b);
-
-	/// @brief Throws a runtime error by producing a stack trace, then
-	/// calling the `on_error` and shutting down the VM by returning an
-	/// ExitCode::RuntimeError
-	/// @param message The error message.
-	ExitCode runtime_error(std::string const& message);
 };
 
 } // namespace snap

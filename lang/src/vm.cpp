@@ -1,8 +1,9 @@
 #include "common.hpp"
-#include "stdlib/base.hpp"
 #include "str_format.hpp"
 #include <cmath>
+#include <std/base.hpp>
 #include <vm.hpp>
+
 
 #if defined(SNAP_DEBUG_RUNTIME) || defined(SNAP_DEBUG_DISASSEMBLY)
 #include <cstdio>
@@ -562,15 +563,20 @@ ExitCode VM::runcode(const std::string& code) {
 	return interpret();
 }
 
-void VM::load_stdlib() {
-	auto vprint = SNAP_OBJECT_VAL(&make<CClosure>(stdlib::print));
+void VM::add_stdlib_object(const char* name, Obj* o) {
+	auto vglobal = SNAP_OBJECT_VAL(o);
 	// setting a global variable may trigger a garbage collection
-	// cycle, (when allocating the 'print' snap::String). At that
+	// cycle (when allocating the [name] as snap::String). At that
 	// point, vprint is only reachable on the C stack, so we protect
 	// it by pushing it on to the VM stack.
-	push(vprint);
-	set_global("print", vprint);
+	push(vglobal);
+	set_global(name, vglobal);
 	pop();
+}
+
+void VM::load_stdlib() {
+	add_stdlib_object("print", &make<CClosure>(stdlib::print));
+	add_stdlib_object("setmeta", &make<CClosure>(stdlib::setmeta));
 }
 
 using OT = ObjType;
@@ -668,7 +674,7 @@ void VM::pop_callframe() {
 	/// restore the instruction pointer to continue
 	/// from where we left off.
 	ip = m_current_frame->ip;
-	
+
 	Obj* callable = m_current_frame->func;
 	if (callable->tag == OT::func) {
 		Closure* cl = static_cast<Closure*>(callable);
@@ -739,6 +745,8 @@ ExitCode VM::binop_error(const char* opstr, Value& a, Value& b) {
 }
 
 ExitCode VM::runtime_error(std::string const& message) {
+	/// TODO: This line throws a debug error (in C++) when the current CallFrame is that of a
+	/// CClosure.
 	std::string error_str = kt::format_str("[line {}]: {}\n", CURRENT_LINE(), message);
 
 	error_str += "stack trace:\n";

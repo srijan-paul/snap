@@ -2,8 +2,7 @@
 #include "string.hpp"
 #include "value.hpp"
 #include <cmath>
-#include <unordered_map>
-
+#include <std/base.hpp>
 
 namespace snap {
 
@@ -13,7 +12,9 @@ namespace snap {
 // and linear probing.
 class Table final : public Obj {
 	friend GC;
-  public:
+	friend int stdlib::setmeta(VM&, int);
+
+public:
 	explicit Table() noexcept : Obj{ObjType::table} {};
 	~Table();
 
@@ -21,8 +22,8 @@ class Table final : public Obj {
 	/// power of two, since we are using the `&` trick
 	/// to calculate fast mod.
 	static constexpr size_t DefaultCapacity = 16;
-	static constexpr u8 GrowthFactor		= 2;
-	static constexpr float LoadFactor		= 0.85;
+	static constexpr u8 GrowthFactor = 2;
+	static constexpr float LoadFactor = 0.85;
 
 	/// @return The value assosciated with `key`.
 	Value get(Value key) const;
@@ -68,7 +69,7 @@ class Table final : public Obj {
 		size_t probe_distance = 0;
 	};
 
-  private:
+private:
 	Entry* m_entries = new Entry[DefaultCapacity];
 	/// @brief Total number of entries.
 	/// This includes all tombstones (values that have been
@@ -78,7 +79,7 @@ class Table final : public Obj {
 	/// A tombstone is an entry that was inserted at some
 	/// point but was then removed by calling `Table::remove`.
 	size_t m_num_tombstones = 0;
-	size_t m_cap			= DefaultCapacity;
+	size_t m_cap = DefaultCapacity;
 
 	/// @brief The metatable for this table.
 	/// If a property is not found in this table
@@ -99,7 +100,7 @@ class Table final : public Obj {
 	// because we might need const and non-const overloads, and repeating
 	// code for that isn't the coolest thing to do.
 	Rt& search_entry(const Th* this_, const Value& key, size_t hash) {
-		size_t mask	 = this_->m_cap - 1;
+		size_t mask = this_->m_cap - 1;
 		size_t index = hash & mask;
 
 		// We store the value of the first tombstone.

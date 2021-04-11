@@ -10,4 +10,4 @@ const parent = {
 }
 
 setmeta(child, parent)
-print(child.table)
+print(child.race)

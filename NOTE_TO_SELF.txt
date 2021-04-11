@@ -1,0 +1,15 @@
+DO NOT PROCEED TO WRITE ANY MORE CODE
+UNTIL:
+
+1. You've written tests for:
+  1. Global variables
+  2. 'self'.
+  3. meta tables
+  4. print
+
+2. You've fixed all the TODO's left over
+the last time you worked on this codebase.
+
+3. You've properly checked for garbage collection bugs.
+
+4. You've changed the CFunction API to return a value instead.

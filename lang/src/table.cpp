@@ -56,13 +56,16 @@ Value Table::get(Value key) const {
 
 	while (true) {
 		Entry& entry = m_entries[index];
-		if ((entry.hash == hash and entry.key == key) or IS_ENTRY_FREE(entry)) return entry.value;
+		if (entry.hash == hash and entry.key == key) return entry.value;
+		if (IS_ENTRY_FREE(entry)) break;
 		index = (index + 1) & mask;
 	}
 
 	return m_meta_table == nullptr ? SNAP_NIL_VAL : m_meta_table->get(key);
 }
 
+/// TODO: handle the case for [set] where the [key] is a member of it's
+/// metatable.
 bool Table::set(Value key, Value value) {
 	SNAP_ASSERT(!SNAP_IS_NIL(key), "Table key is nil.");
 
