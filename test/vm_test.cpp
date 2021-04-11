@@ -211,6 +211,7 @@ void fn_tests() {
 							SNAP_NUM_VAL(0), "make_adder closure");
 
 	test_file("llnode-cl.snp", SNAP_NUM_VAL(20), "Linked list closure test");
+	test_file("call.snp", SNAP_NUM_VAL(20), "Call stack");
 }
 
 void table_test() {

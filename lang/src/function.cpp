@@ -38,4 +38,8 @@ void Closure::trace(GC& gc) {
 	gc.mark_object(m_proto);
 }
 
+void CClosure::trace(GC& gc) {
+	/// TODO: mark upvalues.
+}
+
 } // namespace snap

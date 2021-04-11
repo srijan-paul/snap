@@ -13,17 +13,25 @@ enum class ExitCode : u8 {
 	RuntimeError,
 };
 
-using PrintFn = std::function<void(const VM& vm, String* string)>;
+using PrintFn = std::function<void(const VM& vm, const String* string)>;
 using ErrorFn = std::function<void(const VM& vm, std::string& err_message)>;
 
-inline void default_print_fn([[maybe_unused]] const VM& vm, String* string) {
+inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string) {
+	SNAP_ASSERT(string != nullptr, "string to print is null.");
 	printf("%s\n", string->c_str());
 }
 
 void default_error_fn(const VM& vm, std::string& err_msg);
 
 struct CallFrame {
-	Closure* func = nullptr;
+	/// `func` is either an instance of CClosure
+	///  or Closure. However, since it can be 
+	///  any of the two, we store a pointer to
+	///  to it's base class and check which one it
+	///  really is at runtime. (using the [tag] field, or
+	///  dynamic_cast)
+	Obj* func = nullptr;
+
 	size_t ip = 0;
 	// the base of the Callframe in the VM's
 	// value stack. This denotes the first
@@ -75,6 +83,13 @@ public:
 		return *(sp - 1 - depth);
 	}
 
+	/// @brief Get the [num]th argument of the
+	/// current function. get_arg(0) returns the
+	/// first argument.
+	inline Value get_arg(u8 idx) const {
+		return m_current_frame->base[idx + 1];
+	}
+
 	/// pushes a value onto the VM's stack.
 	/// @param value The Value to push onto the stack.
 	inline void push(Value value) {
@@ -86,14 +101,39 @@ public:
 		return *(--sp);
 	}
 
+	/// @brief pop the topmost `n` values from
+	/// the stack.
+	inline void popn(int n) {
+		SNAP_ASSERT(n >= 0, "[n] must be >= 1");
+		sp -= n;
+	}
+
+	/// @brief Returns the currently exceuting function
+	/// wrapped in a value.
+	Value current_fn() const {
+		return SNAP_OBJECT_VAL(m_current_frame->func);
+	}
+
+	Value const* base() const noexcept {
+		return m_current_frame->base;
+	}
+
+	Value* base() noexcept {
+		return m_current_frame->base;
+	}
+
 	bool init();
 	bool call(Value value, u8 argc);
 	bool callfunc(Closure* func, int argc);
+	bool call_cclosure(CClosure* cclosure, int argc);
 
 	ExitCode runcode(const std::string& code);
 	ExitCode runfile(const std::string& filepath);
 	ExitCode run();
-	const Block* block() const;
+
+	const Block* block() const noexcept {
+		return m_current_block;
+	}
 
 	/// @brief makes an object of type [T],
 	/// registers it with the VM and return a reference to
@@ -169,6 +209,10 @@ public:
 	void set_global(String* name, Value value);
 	void set_global(const char* name, Value value);
 
+	/// @brief Loads all the standard library functions into the
+	/// VM's global variables table.
+	void load_stdlib();
+
 private:
 	const std::string* m_source;
 	Compiler* m_compiler = nullptr;
@@ -216,6 +260,17 @@ private:
 	/// @brief concatenates two strings. Might intern the resulting
 	/// string if it isn't already interned.
 	Value concatenate(const String* left, const String* right);
+
+	/// @brief prepares for a functionc call by pushing a new 
+	/// CallFrame onto the call stack. The new frame's func field
+	/// is set to [callable], and the ip of the current call frame
+	/// is cached.
+	void push_callframe(Obj* callable, int argc);
+
+	/// @brief Pops the currently active CallFrame off of the
+	/// call stack, and restores the state of the previous
+	/// CallFrame.
+	void pop_callframe();
 
 	/// Wrap a value present at stack slot [slot]
 	/// inside an Upvalue object and add it to the

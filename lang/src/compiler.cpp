@@ -449,7 +449,8 @@ void Compiler::table() {
 void Compiler::variable(bool can_assign) {
 	advance();
 
-	Op get_op = Op::get_var, set_op = Op::set_var;
+	Op get_op = Op::get_var;
+	Op set_op = Op::set_var;
 
 	int index = find_local_var(token);
 	bool is_const = (index == -1) ? false : m_symtable.find_by_slot(index)->is_const;
@@ -458,15 +459,22 @@ void Compiler::variable(bool can_assign) {
 	// upvalue.
 	if (index == -1) {
 		index = find_upvalue(token);
-		get_op = Opcode::get_upval;
-		set_op = Opcode::set_upval;
-		is_const = (index == -1) ? false : m_symtable.m_upvals[index].is_const;
+
+		if (index == -1) {
+			get_op = Opcode::get_global;
+			set_op = Opcode::set_global;
+			index  = emit_id_string(token);
+		} else {
+			get_op = Opcode::get_upval;
+			set_op = Opcode::set_upval;
+			is_const = m_symtable.m_upvals[index].is_const;
+		}
 	}
 
 	if (can_assign and is_assign_tok(peek.type)) {
 		if (is_const) {
-			std::string message{"Cannot assign to variable '"};
-			message = message + prev.raw(*m_source) + "' which is marked 'const'.";
+			std::string message =
+					kt::format_str("Cannot assign to variable '{}' marked const.", token.raw(*m_source));
 			error_at_token(message.c_str(), token);
 			panic = false; // Don't send the compiler into error recovery mode.
 		}

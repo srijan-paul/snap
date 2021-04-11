@@ -1,3 +1,5 @@
+#include "common.hpp"
+#include "stdlib/base.hpp"
 #include "str_format.hpp"
 #include <cmath>
 #include <vm.hpp>
@@ -224,13 +226,30 @@ ExitCode VM::run() {
 
 		case Op::set_upval: {
 			u8 idx = NEXT_BYTE();
-			*m_current_frame->func->get_upval(idx)->m_value = PEEK(1);
+			Closure* cl = static_cast<Closure*>(m_current_frame->func);
+			*cl->get_upval(idx)->m_value = PEEK(1);
 			break;
 		}
 
 		case Op::get_upval: {
 			u8 idx = NEXT_BYTE();
-			push(*m_current_frame->func->get_upval(idx)->m_value);
+			SNAP_ASSERT(m_current_frame->func->tag == OT::func, "enclosing frame a snap closure!");
+			Closure* cl = static_cast<Closure*>(m_current_frame->func);
+			push(*cl->get_upval(idx)->m_value);
+			break;
+		}
+
+		case Op::set_global: {
+			Value name = READ_VALUE();
+			SNAP_ASSERT(SNAP_IS_STRING(name), "Variable name not a string.");
+			set_global(SNAP_AS_STRING(name), PEEK(1));
+			break;
+		}
+
+		case Op::get_global: {
+			Value name = READ_VALUE();
+			SNAP_ASSERT_OT(name, OT::string);
+			push(get_global(SNAP_AS_STRING(name)));
 			break;
 		}
 
@@ -396,7 +415,7 @@ ExitCode VM::run() {
 			}
 
 			m_current_frame = &m_frames[m_frame_count - 1];
-			m_current_block = &m_current_frame->func->m_proto->block();
+			m_current_block = &static_cast<Closure*>(m_current_frame->func)->m_proto->block();
 			ip = m_current_frame->ip;
 
 			break;
@@ -417,7 +436,8 @@ ExitCode VM::run() {
 				if (is_local) {
 					func->set_upval(i, capture_upvalue(m_current_frame->base + index));
 				} else {
-					func->set_upval(i, (m_current_frame->func->get_upval(index)));
+					Closure* cl = static_cast<Closure*>(m_current_frame->func);
+					func->set_upval(i, cl->get_upval(index));
 				}
 			}
 
@@ -467,7 +487,7 @@ Value VM::get_global(String* name) const {
 	return search->second;
 }
 
-Value VM::get_global(const char* name){
+Value VM::get_global(const char* name) {
 	String& sname = string(name, strlen(name));
 	return get_global(&sname);
 }
@@ -542,6 +562,17 @@ ExitCode VM::runcode(const std::string& code) {
 	return interpret();
 }
 
+void VM::load_stdlib() {
+	auto vprint = SNAP_OBJECT_VAL(&make<CClosure>(stdlib::print));
+	// setting a global variable may trigger a garbage collection
+	// cycle, (when allocating the 'print' snap::String). At that
+	// point, vprint is only reachable on the C stack, so we protect
+	// it by pushing it on to the VM stack.
+	push(vprint);
+	set_global("print", vprint);
+	pop();
+}
+
 using OT = ObjType;
 
 Upvalue* VM::capture_upvalue(Value* slot) {
@@ -596,10 +627,53 @@ bool VM::call(Value value, u8 argc) {
 
 	switch (SNAP_AS_OBJECT(value)->tag) {
 	case OT::func: return callfunc(SNAP_AS_CLOSURE(value), argc);
+	case OT::cfunc: return call_cclosure(SNAP_AS_CCLOSURE(value), argc);
 	default: ERROR("Attempt to call a {} value.", SNAP_TYPE_CSTR(value)); return false;
 	}
 
 	return false;
+}
+
+void VM::push_callframe(Obj* callable, int argc) {
+	SNAP_ASSERT(callable->tag == OT::cfunc or callable->tag == OT::func,
+							"Non callable callframe pushed.");
+
+	// Save the current instruction pointer
+	// in the call frame so we can resume
+	// execution when the function returns.
+	m_current_frame->ip = ip;
+	// prepare the next call frame
+	m_current_frame = &m_frames[m_frame_count++];
+	m_current_frame->func = callable;
+	m_current_frame->base = sp - argc - 1;
+
+	// start from the first opcode
+	m_current_frame->ip = ip = 0;
+
+	if (callable->tag == OT::func) {
+		Closure* cl = static_cast<Closure*>(callable);
+		m_current_block = &cl->m_proto->block();
+	}
+}
+
+void VM::pop_callframe() {
+	m_frame_count--;
+
+	/// If we are in the top level script,
+	/// then there is no older call frame.
+	if (m_frame_count == 0) return;
+
+	m_current_frame = &m_frames[m_frame_count - 1];
+
+	/// restore the instruction pointer to continue
+	/// from where we left off.
+	ip = m_current_frame->ip;
+	
+	Obj* callable = m_current_frame->func;
+	if (callable->tag == OT::func) {
+		Closure* cl = static_cast<Closure*>(callable);
+		m_current_block = &cl->m_proto->block();
+	}
 }
 
 bool VM::callfunc(Closure* func, int argc) {
@@ -621,17 +695,17 @@ bool VM::callfunc(Closure* func, int argc) {
 		}
 	}
 
-	// Save the current instruction pointer
-	// in the call frame so we can resume
-	// execution when the function returns.
-	m_current_frame->ip = ip;
-	// prepare the next call frame
-	m_current_frame = &m_frames[m_frame_count++];
-	m_current_frame->func = func;
-	m_current_frame->base = sp - argc - 1;
-	// start from the first op code
-	m_current_frame->ip = ip = 0;
-	m_current_block = &func->m_proto->block();
+	push_callframe(func, argc);
+	return true;
+}
+
+bool VM::call_cclosure(CClosure* cclosure, int argc) {
+	push_callframe(cclosure, argc);
+	CFunction c_func = cclosure->cfunc();
+	c_func(*this, argc);
+	pop_callframe();
+
+	/// TODO: return false when function exits with an error.
 	return true;
 }
 
@@ -657,10 +731,6 @@ size_t VM::collect_garbage() {
 	return m_gc.sweep();
 }
 
-const Block* VM::block() const {
-	return m_current_block;
-}
-
 // -- Error reporting --
 
 ExitCode VM::binop_error(const char* opstr, Value& a, Value& b) {
@@ -674,7 +744,11 @@ ExitCode VM::runtime_error(std::string const& message) {
 	error_str += "stack trace:\n";
 	for (int i = m_frame_count - 1; i >= 0; --i) {
 		const CallFrame& frame = m_frames[i];
-		const Closure& func = *frame.func;
+
+		/// TODO: Handle CFunction strack traces.
+		if (frame.func->tag == OT::cfunc) continue;
+
+		const Closure& func = *static_cast<Closure*>(frame.func);
 
 		const Block& block = func.m_proto->block();
 		SNAP_ASSERT(frame.ip >= 0 and frame.ip < block.lines.size(),

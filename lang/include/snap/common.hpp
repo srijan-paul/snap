@@ -35,6 +35,8 @@ using number = double;
 #define SNAP_ERROR(message)                                                                        \
 	(fprintf(stderr, "[%s:%d]: Interal Error: %s", __func__, __LINE__, message), abort())
 
+#define SNAP_UNREACHABLE() SNAP_ERROR("Unreachable code point reached.")
+
 #else
 
 #define SNAP_ASSERT(cond, message) 0
@@ -47,6 +49,6 @@ using number = double;
 #define SNAP_NO_DEFAULT_CONSTRUCT(class) class() = delete;
 
 #define SNAP_STRESS_GC 1
-#define SNAP_LOG_GC		 1
+// #define SNAP_LOG_GC		 1
 
 } // namespace snap

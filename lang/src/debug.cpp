@@ -18,6 +18,8 @@ static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)>
 		"get_var",
 		"set_upval",
 		"get_upval",
+		"get_global",
+		"set_global",
 		"make_func",
 		"prepare_method_call",
 		"call_func",

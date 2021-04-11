@@ -104,6 +104,10 @@ public:
 		return sizeof(CClosure);
 	}
 
+	CFunction cfunc() const noexcept {
+		return m_func;
+	}
+
 private:
 	CFunction m_func;
 	void trace(GC& gc) override;

@@ -53,15 +53,29 @@ enum class Opcode : u8 {
 	get_var,
 
 	/// Operands: Idx
+	/// Stack Effect: 0
 	/// Sets the upvalue at index `Idx` in the
 	/// current function's upvalue list to the
 	/// value that is present on top of the stack.
 	set_upval,
 
 	/// Operands: Idx
+	/// Stack Effect: 1
 	/// Pushes the upvalue in the current function's
 	/// upvalue list at index `Idx` on top of the stack.
 	get_upval,
+
+	/// Operands: Idx
+	/// Stack effect: 1
+	/// Pushes the global present at index [Idx] in the
+	/// constant pool to the top of the stack.
+	get_global,
+
+	/// Operands: Idx,
+	/// Stack Effect: 0
+	/// Sets the global variable having the name constant_pool[Idx]
+	/// to the value present on top of the stack.
+	set_global,
 
 	/// Operands: NumUpvals, ... (varargs)
 	/// Gets a function object from the

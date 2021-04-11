@@ -1,8 +1,0 @@
-let x = 'a'
-let y = 'y'
-let z = 'z'
-let w = 'w'
-
-let res = x..y..z..w
-let ab = 'a'..'b'
-return res

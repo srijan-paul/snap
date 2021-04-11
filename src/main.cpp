@@ -22,7 +22,8 @@ int main() {
 	stream << file.rdbuf();
 	std::string code(stream.str());
 
-	VM vm{&code};
+	VM vm;
+	vm.load_stdlib();
 	vm.runcode(code);
 
 	std::cout << "VM returned: ";
