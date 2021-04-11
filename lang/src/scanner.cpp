@@ -6,7 +6,7 @@ namespace snap {
 
 using TT = TokenType;
 
-Token Scanner::make_token(TT type) const {
+Token Scanner::make_token(TT type) const noexcept {
 	return Token{type, Location{{start, current - start}, line_pos.line}};
 }
 
@@ -17,7 +17,7 @@ Token Scanner::token_if_match(char c, TT then, TT other) {
 	return make_token(other);
 }
 
-Token Scanner::next_token() {
+Token Scanner::next_token() noexcept {
 	skip_whitespace();
 	if (eof()) return make_token(TT::Eof);
 
@@ -121,12 +121,12 @@ Token Scanner::make_string(char quote) {
 	return make_token(TT::String);
 }
 
-char Scanner::peek() const {
+char Scanner::peek() const noexcept {
 	if (eof()) return '\0';
 	return source->at(current);
 }
 
-char Scanner::peek_next() const {
+char Scanner::peek_next() const noexcept {
 	if (current + 1 >= current) return '\0';
 	return source->at(current + 1);
 }
@@ -135,11 +135,11 @@ char Scanner::next() {
 	return source->at(current++);
 }
 
-bool Scanner::eof() const {
+bool Scanner::eof() const noexcept {
 	return current >= source->length() or source->at(current) == '\0';
 }
 
-bool Scanner::check(char expected) const {
+bool Scanner::check(char expected) const noexcept {
 	return peek() == expected;
 }
 

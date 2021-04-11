@@ -1,12 +1,8 @@
-const t = {
-  f(x) {
-    return {
-      f(y) {
-        return x + 2
-      }
-    }
-  }
-}
+let x = 'a'
+let y = 'y'
+let z = 'z'
+let w = 'w'
 
-let x = {}
-return t:f(3):f(2)
+let res = x..y..z..w
+let ab = 'a'..'b'
+return res

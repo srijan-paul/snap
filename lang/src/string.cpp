@@ -43,25 +43,11 @@ String::~String() {
 	delete[] m_chars;
 }
 
-String* String::concatenate(const String* left, const String* right) {
-	std::size_t length = left->m_length + right->m_length;
-
-	char* buf = new char[length + 1];
-	buf[length] = '\0';
-	std::memcpy(buf, left->m_chars, left->m_length);
-	std::memcpy(buf + left->m_length, right->m_chars, right->m_length);
-	return new String(buf, length);
-}
-
 bool operator==(const String& a, const String& b) {
 	if (&a == &b) return true;
 	size_t alen = a.len(), blen = b.len();
 	if (alen != blen or a.hash() != b.hash()) return false;
 	return std::memcmp(a.c_str(), b.c_str(), alen) == 0;
-}
-
-const char* String::c_str() const {
-	return m_chars;
 }
 
 char String::at(number index) const {
@@ -70,22 +56,6 @@ char String::at(number index) const {
 	return m_chars[size_t(index)];
 }
 
-char String::operator[](size_t index) const {
-	return at(index);
-}
-
-size_t String::hash() const {
-	return m_hash;
-}
-
-size_t String::len() const {
-	return m_length;
-}
-
 void String::trace([[maybe_unused]] GC& gc){};
-
-size_t String::size() const {
-	return m_length * sizeof(char) + sizeof(String);
-}
 
 } // namespace snap

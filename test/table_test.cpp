@@ -29,7 +29,7 @@ void run_test() {
 	EXPECT(table.get(NUM(1)) == NIL, "Removing keys sets them to nil.");
 
 	unique_str_ptr s(STR("hello", 5));
-	table.set(s.get(), NUM(1));
+	table.set(SNAP_OBJECT_VAL(s.get()), NUM(1));
 	EXPECT(table_has_cstring(table, "hello"), "Table::find_string works as expected.");
 }
 

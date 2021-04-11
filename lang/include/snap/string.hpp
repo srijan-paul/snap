@@ -20,13 +20,28 @@ public:
 	/// @param len length of the string.
 	String(const char* chrs, size_t len);
 
-	const char* c_str() const;
+	inline constexpr const char* c_str() const {
+		return m_chars;
+	}
+
 	char at(number index) const;
-	size_t len() const;
-	size_t hash() const;
-	char operator[](size_t index) const;
-	static String* concatenate(const String* a, const String* b);
-	virtual size_t size() const override;
+
+	constexpr size_t len() const {
+		return m_length;
+	}
+
+	constexpr size_t hash() const {
+		return m_hash;
+	}
+
+	char operator[](size_t index) const {
+		return at(index);
+	}
+
+	size_t size() const override {
+		return m_length * sizeof(char) + sizeof(String);
+	}
+
 	~String();
 
 private:

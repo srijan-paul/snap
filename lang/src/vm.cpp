@@ -636,14 +636,6 @@ String& VM::string(const char* chars, size_t length) {
 
 // 	-- Garbage collection --
 
-void VM::gc_protect(Obj* o) {
-	m_gc.protect(o);
-}
-
-void VM::gc_unprotect(Obj* o) {
-	m_gc.unprotect(o);
-}
-
 size_t VM::collect_garbage() {
 	m_gc.mark();
 	m_gc.trace();

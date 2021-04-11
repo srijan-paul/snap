@@ -30,7 +30,7 @@ namespace snap {
 using Op = Opcode;
 using TT = TokenType;
 
-Compiler::Compiler(VM* vm, const std::string* src) : m_vm{vm}, m_source{src} {
+Compiler::Compiler(VM* vm, const std::string* src) noexcept : m_vm{vm}, m_source{src} {
 	m_scanner = new Scanner{src};
 	advance(); // set `peek` to the first token in the token stream.
 	String* fname = &vm->string("<script>", 8);
@@ -47,7 +47,7 @@ Compiler::Compiler(VM* vm, const std::string* src) : m_vm{vm}, m_source{src} {
 	m_vm->gc_unprotect(fname);
 }
 
-Compiler::Compiler(VM* vm, Compiler* parent, String* name) : m_vm{vm}, m_parent{parent} {
+Compiler::Compiler(VM* vm, Compiler* parent, String* name) noexcept : m_vm{vm}, m_parent{parent} {
 	m_scanner = m_parent->m_scanner;
 	m_proto = &m_vm->make<Prototype>(name);
 
@@ -288,7 +288,7 @@ void Compiler::unary(bool can_assign) {
 		switch (op_token.type) {
 		case TT::Bang: emit(Op::lnot, op_token); break;
 		case TT::Minus: emit(Op::negate, op_token); break;
-		default:;
+		default: SNAP_ERROR("Impossible token.");
 		}
 		return;
 	}
@@ -426,7 +426,7 @@ void Compiler::table() {
 		} else {
 			expect(TT::Id, "Expected identifier as table key.");
 			String* key_string = &m_vm->string(token.raw(*m_source).c_str(), token.length());
-			const int key_idx = emit_value(key_string);
+			const int key_idx = emit_value(SNAP_OBJECT_VAL(key_string));
 			emit_bytes(Op::load_const, static_cast<Op>(key_idx), token);
 			if (check(TT::LParen)) {
 				func_expr(key_string, true);
@@ -511,7 +511,7 @@ void Compiler::literal() {
 	case TT::True: index = emit_value(SNAP_BOOL_VAL(true)); break;
 	case TT::False: index = emit_value(SNAP_BOOL_VAL(false)); break;
 	case TT::Nil: index = emit_value(SNAP_NIL_VAL); break;
-	default:; // Impossible
+	default: SNAP_ERROR("Impossible code reached.");
 	}
 
 	emit(Op::load_const, static_cast<Op>(index));
@@ -590,7 +590,7 @@ void Compiler::advance() {
 	peek = m_scanner->next_token();
 }
 
-bool Compiler::match(TT expected) {
+bool Compiler::match(TT expected) noexcept {
 	if (check(expected)) {
 		advance();
 		return true;
@@ -642,7 +642,7 @@ u32 Compiler::emit_id_string(const Token& token) {
 	return emit_value(SNAP_OBJECT_VAL(s));
 }
 
-int Compiler::find_local_var(const Token& name_token) const {
+int Compiler::find_local_var(const Token& name_token) const noexcept {
 	const char* name = name_token.raw_cstr(m_source);
 	int length = name_token.length();
 	const int idx = m_symtable.find(name, length);
@@ -716,7 +716,7 @@ inline void Compiler::emit(Op a, Op b) {
 	emit(b, token);
 }
 
-Op Compiler::toktype_to_op(TT toktype) const {
+Op Compiler::toktype_to_op(TT toktype) const noexcept {
 	switch (toktype) {
 	case TT::Plus:
 	case TT::PlusEq: return Op::add;
@@ -743,7 +743,7 @@ Op Compiler::toktype_to_op(TT toktype) const {
 	}
 }
 
-bool Compiler::is_assign_tok(TT type) const {
+bool Compiler::is_assign_tok(TT type) const noexcept {
 	return (type == TT::Eq or (type >= TT::ModEq and type <= TT::PlusEq));
 }
 

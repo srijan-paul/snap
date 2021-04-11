@@ -11,12 +11,12 @@ constexpr int VersionPatch = 1;
 
 constexpr const char* VersionCString = "0.0.1";
 
-using u32 = uint32_t;
-using s32 = int32_t;
-using u64 = uint64_t;
-using s64 = int64_t;
-using u8 = uint8_t;
-using u16 = uint16_t;
+using u32 = std::uint32_t;
+using s32 = std::int32_t;
+using u64 = std::uint64_t;
+using s64 = std::int64_t;
+using u8 = std::uint8_t;
+using u16 = std::uint16_t;
 
 using std::size_t;
 using number = double;
@@ -33,7 +33,7 @@ using number = double;
 						 abort(), 0))
 
 #define SNAP_ERROR(message)                                                                        \
-	(fprintf(stderr, "{%s:%d]: Interal Error: %s", __func__, __LINE__, message), abort())
+	(fprintf(stderr, "[%s:%d]: Interal Error: %s", __func__, __LINE__, message), abort())
 
 #else
 
@@ -47,6 +47,6 @@ using number = double;
 #define SNAP_NO_DEFAULT_CONSTRUCT(class) class() = delete;
 
 #define SNAP_STRESS_GC 1
-// #define SNAP_LOG_GC		 1
+#define SNAP_LOG_GC		 1
 
 } // namespace snap

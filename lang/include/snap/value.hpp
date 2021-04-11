@@ -65,17 +65,17 @@ struct Value {
 		Obj* object;
 	} as;
 
-	Value(number v) : tag{ValueType::Number} {
+	explicit Value(number v) noexcept : tag{ValueType::Number} {
 		as.num = v;
 	}
 
-	Value(bool v) : tag{ValueType::Bool} {
+	explicit Value(bool v) noexcept : tag{ValueType::Bool} {
 		as.boolean = v;
 	}
 
-	Value() : tag{ValueType::Nil} {};
+	explicit Value() noexcept : tag{ValueType::Nil} {};
 
-	Value(Obj* o) : tag{ValueType::Object} {
+	explicit Value(Obj* o) noexcept : tag{ValueType::Object} {
 		SNAP_ASSERT(o != nullptr, "Unexpected nullptr object");
 		as.object = o;
 	}

@@ -71,7 +71,7 @@ public:
 
 	// Creates a fresh new compiler that will
 	// parse the toplevel script `src`.
-	Compiler(VM* vm, const std::string* src);
+	explicit Compiler(VM* vm, const std::string* src) noexcept;
 
 	/// @brief Create a child compiler used for
 	/// compiling function bodies. This assumes
@@ -79,7 +79,7 @@ public:
 	/// the everything up to the functions body.
 	/// @param parent The parent compiler that created this compiler. Used for looking up upvalues.
 	/// @param fname name of the function that this compiler is commpiling into.
-	Compiler(VM* vm, Compiler* parent, String* fname);
+	explicit Compiler(VM* vm, Compiler* parent, String* fname) noexcept;
 
 	~Compiler();
 
@@ -118,22 +118,22 @@ private:
 
 	void advance(); // move 1 step forward in the token stream.
 
-	inline bool eof() const {
+	inline bool eof() const noexcept {
 		return peek.type == TokenType::Eof;
 	}
 
-	inline bool check(TokenType expected) const {
+	inline bool check(TokenType expected) const noexcept {
 		return !eof() && peek.type == expected;
 	}
 
-	inline bool isLiteral(TokenType type) const {
+	inline bool isLiteral(TokenType type) const noexcept {
 		return type == TokenType::Integer || type == TokenType::String || type == TokenType::Float ||
 					 type == TokenType::False || type == TokenType::True || type == TokenType::Nil;
 	}
 
 	/// If the next token is of type `expected` then
 	/// consumes it and returns true.
-	bool match(TokenType expected);
+	bool match(TokenType expected) noexcept;
 	/// If the `peek` is not of type `type` then throws
 	/// an error message. Else consumes the token and stays quiet.
 	void expect(TokenType type, const char* err_msg);
@@ -176,16 +176,16 @@ private:
 	void comparison(bool can_assign); // > >= < <=
 	void b_shift(bool can_assign);		// >> <<
 
-	void sum(bool can_assign);														 // + - ..
-	void mult(bool can_assign);														 // * / %
-	void unary(bool can_assign);													 // - + ! not
-	void atomic(bool can_assign);													 // (ID|'(' EXPR ')' ) SUFFIX*
-	void suffix_expr(bool can_assign);										 // '['EXPR']' | '.'ID | '('ARGS')' | :ID'('')'
-	void compile_args(bool is_method = false);						 // EXPR (',' EXPR)*
-	void grouping(bool can_assign);												 // '('expr')'
-	void primary(bool can_assign);												 // LITERAL | ID
-	void variable(bool can_assign);												 // ID
-	void literal();																				 // NUM | STR | BOOL | nil
+	void sum(bool can_assign);								 // + - ..
+	void mult(bool can_assign);								 // * / %
+	void unary(bool can_assign);							 // - + ! not
+	void atomic(bool can_assign);							 // (ID|'(' EXPR ')' ) SUFFIX*
+	void suffix_expr(bool can_assign);				 // '['EXPR']' | '.'ID | '('ARGS')' | :ID'('')'
+	void compile_args(bool is_method = false); // EXPR (',' EXPR)*
+	void grouping(bool can_assign);						 // '('expr')'
+	void primary(bool can_assign);						 // LITERAL | ID
+	void variable(bool can_assign);						 // ID
+	void literal();														 // NUM | STR | BOOL | nil
 	void func_expr(String* fname, bool is_method = false); // fn NAME? BLOCK
 	void table();
 
@@ -241,7 +241,7 @@ private:
 	/// the current scope, moving outward.
 	/// If found, return it's stack slot.
 	/// Else return -1.
-	int find_local_var(const Token& name) const;
+	int find_local_var(const Token& name) const noexcept;
 
 	// Find an upvalue by it's name token.
 	// Starts looking in the current symboltable's upvalue
@@ -262,13 +262,14 @@ private:
 	u32 emit_string(const Token& token);
 	u32 emit_id_string(const Token& token);
 
-	/// returns the corresponding bytecode
+	/// @brief returns the corresponding bytecode
 	/// from a token. e.g- TokenType::Add
 	/// corresponds to Opcode::add.
-	Opcode toktype_to_op(TokenType type) const;
-	/// returns true if 'type' is an
+	Opcode toktype_to_op(TokenType type) const noexcept;
+
+	/// @brief returns true if 'type' is an
 	/// assignment or compound  assignment operator.
-	bool is_assign_tok(TokenType ttype) const;
+	bool is_assign_tok(TokenType ttype) const noexcept;
 };
 
 } // namespace snap

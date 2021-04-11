@@ -12,10 +12,12 @@ struct Block {
 	std::vector<Value> constant_pool;
 	std::vector<u32> lines;
 
-	std::size_t add_instruction(Opcode i, u32 line);
-	std::size_t add_num(u8 i, u32 line);
-	std::size_t add_value(Value value);
-	std::size_t op_count();
+	size_t add_instruction(Opcode i, u32 line);
+	size_t add_num(u8 i, u32 line);
+	size_t add_value(Value value);
+	size_t op_count() const noexcept {
+		return code.size();
+	}
 };
 
 } // namespace snap

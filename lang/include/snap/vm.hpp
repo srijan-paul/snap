@@ -56,7 +56,7 @@ public:
 	static constexpr size_t StackMaxSize = 256;
 	static constexpr size_t MaxCallStack = 128;
 
-	VM(const std::string* src) : m_source{src}, m_gc(*this){};
+	VM(const std::string* src) noexcept : m_source{src}, m_gc(*this){};
 	VM() : m_source{nullptr}, m_gc(*this){};
 	~VM();
 	ExitCode interpret();
@@ -107,7 +107,7 @@ public:
 	}
 
 	/// TODO: Refactor this logic out from vm.hpp to gc.cpp
-	inline void register_object(Obj* o) {
+	inline void register_object(Obj* o) noexcept {
 		SNAP_ASSERT(o != nullptr, "Attempt to register NULL object.");
 
 #ifndef SNAP_STRESS_GC
@@ -140,11 +140,15 @@ public:
 
 	/// @brief Marks the object safe from garbage collection
 	/// until `VM::gc_unprotect` is called on the object.
-	void gc_protect(Obj* o);
+	void gc_protect(Obj* o) {
+		m_gc.protect(o);
+	}
 
 	/// @brief If the object was previously marked safe from GC,
 	/// then removes the guard, making it garbage collectable again.
-	void gc_unprotect(Obj* o);
+	void gc_unprotect(Obj* o) {
+		m_gc.unprotect(o);
+	}
 
 	/// @brief returns the number of objects objects that haven't been garbage collected.
 	size_t num_objects() const;
@@ -187,7 +191,7 @@ private:
 	u32 m_frame_count = 0;
 
 	// current block from which the opcodes
-	// are being read. This always `m_current_frame->func->block`
+	// are being read. This is always `m_current_frame->func->block`
 	const Block* m_current_block = nullptr;
 
 	// Snap interns all strings. So if two separate
@@ -195,7 +199,6 @@ private:
 	// to the same object in heap. To deduplicate
 	// strings, we use a table.
 	Table interned_strings;
-
 
 	/// @brief concatenates two strings. Might intern the resulting
 	/// string if it isn't already interned.

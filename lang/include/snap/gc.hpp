@@ -54,9 +54,10 @@ private:
 
 	/// TODO: Tweak and tune the GC threshholds.
 
-	// the Garbage collector maintains it's personal linked
-	// list of objects this list, and removing all objects
-	// that have no other references anywhere else in the VM.
+	// The garbage collector maintains it's personal linked
+	// list of objects. During the sweep phase of a GC cycle,
+	// this list is travesed and every object that doesn't have
+	// a reference anywhere else is deleted.
 	Obj* m_objects = nullptr;
 	std::stack<Obj*> m_gray_objects;
 

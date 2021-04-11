@@ -256,6 +256,7 @@ void table_test() {
 	test_file("point.snp", SNAP_NUM_VAL(50), "Constructor like functions. (point.snp)");
 	test_file("method-1.snp", SNAP_NUM_VAL(3), "Method call syntax.");
 	test_file("method-2.snp", SNAP_NUM_VAL(5), "Chained method calls.");
+	test_file("suffix-expr.snp", SNAP_NUM_VAL(123), "Chained suffix expressions.");
 
 	std::cout << "[Table tests passed]\n";
 }

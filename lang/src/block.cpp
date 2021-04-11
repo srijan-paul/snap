@@ -21,8 +21,4 @@ size_t Block::add_value(Value value) {
 	return constant_pool.size() - 1;
 }
 
-size_t Block::op_count() {
-	return code.size();
-}
-
 } // namespace snap
