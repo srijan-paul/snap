@@ -9,7 +9,7 @@
 
 using namespace snap;
 
-void assert_val_eq(Value& expected, Value actual, const char* message = "Test failed! ") {
+void assert_val_eq(Value expected, Value actual, const char* message = "Test failed! ") {
 	if (expected != actual) {
 		fprintf(stderr, "%s: ", message);
 		fprintf(stderr, "Expected value to be ");
@@ -261,6 +261,12 @@ void table_test() {
 	std::cout << "[Table tests passed]\n";
 }
 
+void global_test() {
+	VM vm;
+	vm.set_global("foo", SNAP_NUM_VAL(42));
+	assert_val_eq(vm.get_global("foo"), SNAP_NUM_VAL(42), "Global variables.");
+}
+
 void string_test() {
 	test_string_return("string-concat.snp", "this is a string", "Chained string concatenation");
 	test_string_return("string.snp", "snap = good", "String cocatenation in blocks");
@@ -272,6 +278,7 @@ int main() {
 	stmt_tests();
 	fn_tests();
 	table_test();
+	global_test();
 	string_test();
 	return 0;
 }

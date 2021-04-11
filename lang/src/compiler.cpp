@@ -1,13 +1,8 @@
 #include "debug.hpp"
 #include "str_format.hpp"
-#include "table.hpp"
-#include "token.hpp"
-#include "value.hpp"
 #include <compiler.hpp>
-#include <cstdarg>
 #include <cstdio>
 #include <cstring>
-#include <iterator>
 #include <string>
 #include <vm.hpp>
 

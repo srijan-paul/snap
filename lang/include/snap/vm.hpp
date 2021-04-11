@@ -1,5 +1,6 @@
 #pragma once
 #include "compiler.hpp"
+#include "function.hpp"
 #include "gc.hpp"
 #include "table.hpp"
 #include <functional>
@@ -22,7 +23,7 @@ inline void default_print_fn([[maybe_unused]] const VM& vm, String* string) {
 void default_error_fn(const VM& vm, std::string& err_msg);
 
 struct CallFrame {
-	Function* func = nullptr;
+	Closure* func = nullptr;
 	size_t ip = 0;
 	// the base of the Callframe in the VM's
 	// value stack. This denotes the first
@@ -87,7 +88,7 @@ public:
 
 	bool init();
 	bool call(Value value, u8 argc);
-	bool callfunc(Function* func, int argc);
+	bool callfunc(Closure* func, int argc);
 
 	ExitCode runcode(const std::string& code);
 	ExitCode runfile(const std::string& filepath);
@@ -129,6 +130,8 @@ public:
 		m_gc.bytes_allocated += o->size();
 	}
 
+	/// TODO: think of a better name for this method.
+
 	/// @brief Makes an interned string and returns a
 	/// reference to it.
 	String& string(const char* chars, size_t length);
@@ -156,7 +159,15 @@ public:
 	/// @brief returns the amount of memory currently allocated by the
 	/// VM. Note that this only includes the memory allocated Garbage collectable
 	/// objects on the heap and not stack values.
-	size_t memory() const;
+	size_t memory() const noexcept {
+		return m_gc.bytes_allocated;
+	}
+
+	Value get_global(String* name) const;
+	Value get_global(const char* name);
+
+	void set_global(String* name, Value value);
+	void set_global(const char* name, Value value);
 
 private:
 	const std::string* m_source;
@@ -199,6 +210,8 @@ private:
 	// to the same object in heap. To deduplicate
 	// strings, we use a table.
 	Table interned_strings;
+
+	std::unordered_map<String*, Value> m_global_vars;
 
 	/// @brief concatenates two strings. Might intern the resulting
 	/// string if it isn't already interned.

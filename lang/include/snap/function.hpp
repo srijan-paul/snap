@@ -10,9 +10,11 @@ class Prototype final : public Obj {
 	friend Compiler;
 
 public:
-	Prototype(String* funcname) : Obj{ObjType::proto}, m_name{funcname} {};
-	Prototype(String* funcname, u32 param_count)
+	explicit Prototype(String* funcname) noexcept : Obj{ObjType::proto}, m_name{funcname} {};
+	explicit Prototype(String* funcname, u32 param_count) noexcept
 			: Obj{ObjType::proto}, m_name{funcname}, m_num_params{param_count} {};
+
+	~Prototype(){};
 
 	const String* name() const {
 		return m_name;
@@ -40,8 +42,6 @@ public:
 		return sizeof(Prototype);
 	}
 
-	virtual ~Prototype(){};
-
 private:
 	String* const m_name;
 	u32 m_num_params = 0;
@@ -58,11 +58,12 @@ private:
 /// the data part is represented by the upvalues vector
 /// holding all the captured variables from enclosing
 /// scopes.
-class Function final : public Obj {
+class Closure final : public Obj {
 public:
 	Prototype* const m_proto;
 
-	Function(Prototype* proto, u32 upval_count);
+	explicit Closure(Prototype* proto, u32 upval_count) noexcept;
+	~Closure() override{};
 
 	const String* name() const {
 		return m_proto->name();
@@ -74,7 +75,8 @@ public:
 
 	/// @brief returns the Upvalue at index [idx] in the
 	/// upvalue list.
-	Upvalue* get_upval(u32 idx) {
+	Upvalue* get_upval(u32 idx) noexcept {
+		SNAP_ASSERT(idx < m_upvals.size(), "Invalid upvalue index.");
 		return m_upvals[idx];
 	}
 
@@ -83,13 +85,27 @@ public:
 	void set_upval(u32 idx, Upvalue* uv);
 
 	size_t size() const override {
-		return sizeof(Function);
+		return sizeof(Closure);
 	}
-
-	virtual ~Function(){};
 
 private:
 	std::vector<Upvalue*> m_upvals;
+	void trace(GC& gc) override;
+};
+
+/// TODO: Upvalues for CFunctions.
+
+class CClosure final : public Obj {
+public:
+	explicit CClosure(CFunction fn) noexcept : Obj(ObjType::cfunc), m_func{fn} {};
+	~CClosure() override{};
+
+	size_t size() const override {
+		return sizeof(CClosure);
+	}
+
+private:
+	CFunction m_func;
 	void trace(GC& gc) override;
 };
 

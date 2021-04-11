@@ -33,7 +33,7 @@ std::string value_to_string(Value v) {
 		switch (obj->tag) {
 		case OT::string: return SNAP_AS_CSTRING(v);
 		case OT::func:
-			return std::string("[fn ") + static_cast<const Function*>(obj)->name_cstr() + "]";
+			return std::string("[fn ") + static_cast<const Closure*>(obj)->name_cstr() + "]";
 		case OT::proto:
 			return std::string("[prototype ") + static_cast<const Prototype*>(obj)->name_cstr() + "]";
 		case OT::upvalue: {

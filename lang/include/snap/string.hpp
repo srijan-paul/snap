@@ -18,7 +18,7 @@ class String final : public Obj {
 
 public:
 	/// @param len length of the string.
-	String(const char* chrs, size_t len);
+	explicit String(const char* chrs, size_t len) noexcept;
 
 	inline constexpr const char* c_str() const {
 		return m_chars;
@@ -51,23 +51,23 @@ private:
 	/// IMPORTANT: It is the caller's responsibilty to ensure
 	/// that `hash` is the correct hash of the this string,
 	/// having the same value has `hash_cstring(chrs, len)`.
-	String(const char* chrs, size_t len, size_t hash);
+	explicit String(const char* chrs, size_t len, size_t hash) noexcept;
 
 	/// @brief creates a string that owns the (heap allocated) characters `chrs`.
 	/// @param chrs Null terminated character buffer on the heap.
 	/// @param hash The hash for this cstring.
-	String(char* chrs, size_t hash)
+	explicit String(char* chrs, size_t hash) noexcept
 			: Obj{ObjType::string}, m_chars{chrs}, m_length{strlen(chrs)}, m_hash{hash} {};
 
 	/// @brief Creates a string that owns the characters `chrs`.
 	/// @param chrs pointer to the character buffer. Must be null terminated.
-	String(char* chrs)
+	explicit String(char* chrs) noexcept
 			: Obj(ObjType::string), m_chars{chrs}, m_length{strlen(chrs)}, m_hash{hash_cstring(
 																																				 chrs, m_length)} {};
 
-	virtual void trace(GC& gc) override;
+	void trace(GC& gc) override;
 
-	const char* m_chars = nullptr;
+	const char* m_chars;
 	const size_t m_length;
 	/// @brief The string's hash value. This is computed by calling
 	/// `hash_cstring(cstr, length)`.

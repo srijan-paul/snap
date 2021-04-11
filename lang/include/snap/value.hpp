@@ -10,6 +10,7 @@ enum class ObjType : u8 {
 	string,
 	proto,
 	func,
+	cfunc,
 	upvalue,
 	table,
 };
@@ -152,7 +153,7 @@ void print_value(Value v);
 #define SNAP_AS_BOOL(v)			((v).as.boolean)
 #define SNAP_AS_NIL(v)			((v).as.double)
 #define SNAP_AS_OBJECT(v)		((v).as.object)
-#define SNAP_AS_FUNCTION(v) (static_cast<snap::Function*>(SNAP_AS_OBJECT(v)))
+#define SNAP_AS_CLOSURE(v) (static_cast<snap::Closure*>(SNAP_AS_OBJECT(v)))
 #define SNAP_AS_PROTO(v)		(static_cast<snap::Prototype*>(SNAP_AS_OBJECT(v)))
 #define SNAP_AS_STRING(v)		(static_cast<snap::String*>(SNAP_AS_OBJECT(v)))
 #define SNAP_AS_CSTRING(v)	(SNAP_AS_STRING(v)->c_str())

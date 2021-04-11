@@ -15,8 +15,12 @@ class GC;
 
 class Obj;
 class String;
-class Function;
 class Table;
 class Prototype;
+class Closure;
+
+/// Functions that are called from a snap script
+/// but are implemented in C++.
+using CFunction = int (*)(VM& vm, int argc);
 
 } // namespace snap

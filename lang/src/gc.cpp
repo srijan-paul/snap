@@ -35,7 +35,7 @@ void GC::mark() {
 
 	// The following roots are known atm ->
 	// 1. The VM's value stack.
-	// 2. Every Closure in the call stack.
+	// 2. Every closure in the call stack.
 	// 3. The open upvalue chain.
 	// 4. Compiler roots, if the compiler is active.
 	// 5. The table of global variables.
@@ -44,8 +44,8 @@ void GC::mark() {
 		mark_value(*v);
 	}
 
-	for (CallFrame* frame = m_vm->m_frames; frame < m_vm->m_current_frame; ++frame) {
-		mark_object(frame->func);
+	for (int i = m_vm->m_frame_count - 1; i >= 0; --i) {
+		mark_object(m_vm->m_frames[i].func);
 	}
 
 	for (Upvalue* uv = m_vm->m_open_upvals; uv != nullptr; uv = uv->next_upval) {
@@ -54,6 +54,11 @@ void GC::mark() {
 
 	for (Obj* o : m_extra_roots) {
 		mark_object(o);
+	}
+
+	for (auto entry : m_vm->m_global_vars) {
+		mark_object(entry.first);
+		mark_value(entry.second);
 	}
 
 	mark_compiler_roots();

@@ -406,7 +406,7 @@ ExitCode VM::run() {
 			Value vproto = READ_VALUE();
 			SNAP_ASSERT_OT(vproto, OT::proto);
 			u32 num_upvals = NEXT_BYTE();
-			Function* func = &make<Function>(SNAP_AS_PROTO(vproto), num_upvals);
+			Closure* func = &make<Closure>(SNAP_AS_PROTO(vproto), num_upvals);
 
 			push(SNAP_OBJECT_VAL(func));
 
@@ -461,6 +461,26 @@ Value VM::concatenate(const String* left, const String* right) {
 	}
 }
 
+Value VM::get_global(String* name) const {
+	auto search = m_global_vars.find(name);
+	if (search == m_global_vars.end()) return SNAP_NIL_VAL;
+	return search->second;
+}
+
+Value VM::get_global(const char* name){
+	String& sname = string(name, strlen(name));
+	return get_global(&sname);
+}
+
+void VM::set_global(String* name, Value value) {
+	m_global_vars[name] = value;
+}
+
+void VM::set_global(const char* name, Value value) {
+	String& sname = string(name, strlen(name));
+	m_global_vars[&sname] = value;
+}
+
 #undef FETCH
 #undef FETCH_SHORT
 #undef NEXT_BYTE
@@ -498,7 +518,7 @@ bool VM::init() {
 	// can trigger a garbage collection cycle, we protect
 	// the proto.
 	gc_protect(proto);
-	Function* func = &make<Function>(proto, 0);
+	Closure* func = &make<Closure>(proto, 0);
 
 	// Once the function has been made, proto can
 	// be reached via `func->m_proto`, so we can
@@ -520,11 +540,6 @@ bool VM::init() {
 ExitCode VM::runcode(const std::string& code) {
 	m_source = &code;
 	return interpret();
-}
-
-ExitCode VM::runfile(const std::string& filepath) {
-	SNAP_ERROR("Not implemented VM::runfile()");
-	return ExitCode::CompileError;
 }
 
 using OT = ObjType;
@@ -580,14 +595,14 @@ bool VM::call(Value value, u8 argc) {
 		ERROR("Attempt to call a {} value.", SNAP_TYPE_CSTR(value));
 
 	switch (SNAP_AS_OBJECT(value)->tag) {
-	case OT::func: return callfunc(SNAP_AS_FUNCTION(value), argc);
+	case OT::func: return callfunc(SNAP_AS_CLOSURE(value), argc);
 	default: ERROR("Attempt to call a {} value.", SNAP_TYPE_CSTR(value)); return false;
 	}
 
 	return false;
 }
 
-bool VM::callfunc(Function* func, int argc) {
+bool VM::callfunc(Closure* func, int argc) {
 	int extra = argc - func->m_proto->param_count();
 
 	// extra arguments are ignored and
@@ -642,10 +657,6 @@ size_t VM::collect_garbage() {
 	return m_gc.sweep();
 }
 
-size_t VM::memory() const {
-	return m_gc.bytes_allocated;
-}
-
 const Block* VM::block() const {
 	return m_current_block;
 }
@@ -663,7 +674,7 @@ ExitCode VM::runtime_error(std::string const& message) {
 	error_str += "stack trace:\n";
 	for (int i = m_frame_count - 1; i >= 0; --i) {
 		const CallFrame& frame = m_frames[i];
-		const Function& func = *frame.func;
+		const Closure& func = *frame.func;
 
 		const Block& block = func.m_proto->block();
 		SNAP_ASSERT(frame.ip >= 0 and frame.ip < block.lines.size(),

@@ -1,8 +1,9 @@
+#include <compiler.hpp>
 #include <function.hpp>
 #include <gc.hpp>
 #include <iostream>
 #include <upvalue.hpp>
-#include <compiler.hpp>
+
 
 namespace snap {
 
@@ -19,18 +20,18 @@ void Prototype::trace(GC& gc) {
 	}
 }
 
-/// Function ///
+/// Function `///
 
-Function::Function(Prototype* proto, u32 upval_count) : Obj(ObjType::func), m_proto{proto} {
+Closure::Closure(Prototype* proto, u32 upval_count) noexcept : Obj(ObjType::func), m_proto{proto} {
 	m_upvals.resize(upval_count);
 }
 
-void Function::set_upval(u32 idx, Upvalue* uv) {
+void Closure::set_upval(u32 idx, Upvalue* uv) {
 	SNAP_ASSERT(idx < m_upvals.size(), "Invalid upvalue index.");
 	m_upvals[idx] = uv;
 }
 
-void Function::trace(GC& gc) {
+void Closure::trace(GC& gc) {
 	for (Upvalue* upval : m_upvals) {
 		gc.mark_object(upval);
 	}
