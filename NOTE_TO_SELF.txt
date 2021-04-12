@@ -1,12 +1,6 @@
 DO NOT PROCEED TO WRITE ANY MORE CODE
 UNTIL:
 
-1. You've written tests for:
-  1. Global variables
-  2. 'self'.
-  3. meta tables
-  4. print
-
 2. You've fixed all the TODO's left over from
 the last time you worked on this codebase.
 

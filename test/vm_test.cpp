@@ -23,6 +23,7 @@ void assert_val_eq(Value expected, Value actual, const char* message = "Test fai
 static void test_return(const std::string&& code, Value expected,
 												const char* message = "Test failed!") {
 	VM vm;
+	vm.load_stdlib();
 	vm.runcode(code);
 	assert_val_eq(expected, vm.return_value, message);
 }
@@ -258,6 +259,9 @@ void table_test() {
 	test_file("method-1.snp", SNAP_NUM_VAL(3), "Method call syntax.");
 	test_file("method-2.snp", SNAP_NUM_VAL(5), "Chained method calls.");
 	test_file("suffix-expr.snp", SNAP_NUM_VAL(123), "Chained suffix expressions.");
+	test_file("inherit.snp", SNAP_NUM_VAL(21), "Prototypical inheritance with setmeta builtin.");
+	test_file("self.snp", SNAP_NUM_VAL(6), "Prototypical inheritance with setmeta builtin.");
+	test_file("global.snp", SNAP_NUM_VAL(6), "Global variables.");
 
 	std::cout << "[Table tests passed]\n";
 }

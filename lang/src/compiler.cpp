@@ -398,12 +398,8 @@ void Compiler::primary(bool can_assign) {
 	} else if (match(TT::LCurlBrace)) {
 		table();
 	} else {
-		const std::string raw = peek.raw(*m_source);
-		const char fmt[] = "Unexpected '%s'.";
-		const std::size_t bufsize = strlen(fmt) + raw.length() - 1;
-		const std::unique_ptr<char[]> buf{new char[bufsize]};
-		sprintf(buf.get(), fmt, raw.c_str());
-		error_at(buf.get(), peek.location.line);
+		error_at(kt::format_str("Unexpected '{}'.", peek.raw(*m_source)).c_str(), peek.location.line);
+		advance();
 	}
 }
 
@@ -443,7 +439,7 @@ void Compiler::table() {
 		return;
 	}
 
-	expect(TT::RCurlBrace, "Expected '}' to close table, or ',' to separate entry.");
+	expect(TT::RCurlBrace, "Expected '}' to close table or ',' to separate entry.");
 }
 
 void Compiler::variable(bool can_assign) {
@@ -463,7 +459,7 @@ void Compiler::variable(bool can_assign) {
 		if (index == -1) {
 			get_op = Opcode::get_global;
 			set_op = Opcode::set_global;
-			index  = emit_id_string(token);
+			index = emit_id_string(token);
 		} else {
 			get_op = Opcode::get_upval;
 			set_op = Opcode::set_upval;
@@ -521,9 +517,14 @@ void Compiler::literal() {
 }
 
 void Compiler::recover() {
-	while (!(eof() or match(TT::Semi) or match(TT::LCurlBrace) or match(TT::LSqBrace))) {
+	while (!eof()) {
 		advance();
+		if (token.type == TT::Semi or token.type == TT::RCurlBrace or token.type == TT::RSqBrace) {
+			advance();
+			break;
+		}
 	}
+	panic = false;
 }
 
 void Compiler::enter_block() {
@@ -627,6 +628,7 @@ void Compiler::error_at_token(const char* message, const Token& token) {
 void Compiler::error(std::string&& message) {
 	m_vm->on_error(*m_vm, message);
 	has_error = true;
+	panic = true;
 }
 
 bool Compiler::ok() const {
