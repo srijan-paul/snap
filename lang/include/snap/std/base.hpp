@@ -4,9 +4,9 @@
 namespace snap {
 namespace stdlib {
 
-int print(VM& vm, int argc);
-int require(VM& vm, int argc);
-int setmeta(VM& vm, int argc);
+Value print(VM& vm, int argc);
+Value require(VM& vm, int argc);
+Value setmeta(VM& vm, int argc);
 
 }
 }; // namespace snap

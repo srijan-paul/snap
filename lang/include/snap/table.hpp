@@ -12,7 +12,7 @@ namespace snap {
 // and linear probing.
 class Table final : public Obj {
 	friend GC;
-	friend int stdlib::setmeta(VM&, int);
+	friend Value stdlib::setmeta(VM&, int);
 
 public:
 	explicit Table() noexcept : Obj{ObjType::table} {};

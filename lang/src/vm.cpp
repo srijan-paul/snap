@@ -708,8 +708,11 @@ bool VM::callfunc(Closure* func, int argc) {
 bool VM::call_cclosure(CClosure* cclosure, int argc) {
 	push_callframe(cclosure, argc);
 	CFunction c_func = cclosure->cfunc();
-	c_func(*this, argc);
+	Value ret = c_func(*this, argc);
 	pop_callframe();
+
+	popn(argc);
+	sp[-1] = ret;
 
 	/// TODO: return false when function exits with an error.
 	return true;

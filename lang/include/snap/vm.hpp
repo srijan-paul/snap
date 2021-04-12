@@ -122,6 +122,20 @@ public:
 		return m_current_frame->base;
 	}
 
+	/// @brief saves the current top
+	/// of the stack so it can be restored
+	/// later.
+	void save_stack() noexcept {
+		m_saved_top = sp;
+	}
+
+	/// @brief restores the top of the stack
+	/// by setting it back to where it was
+	/// when [savestack] was last called.
+	void restore_stack() noexcept {
+		sp = m_saved_top;
+	}
+
 	bool init();
 	bool call(Value value, u8 argc);
 	bool callfunc(Closure* func, int argc);
@@ -229,6 +243,11 @@ private:
 	// The stack pointer pointing to the next free slot
 	// in the stack.
 	StackId sp = m_stack;
+
+	/// The last saved location of [sp].
+	/// This is used to restore the stack's
+	/// top with [restore_stack]
+	StackId m_saved_top = m_stack;
 
 	// The instruction pointer.
 	// It stores the index of the next instruction

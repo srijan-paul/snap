@@ -16,7 +16,7 @@ int main() {
 	// 'scratchpad' of sorts to test some code.
 	const char* filepath = "../src/main.snp";
 	std::ifstream file(filepath);
-	assert(file.good() && "File doesn't exist");
+	assert(file.good() and "File doesn't exist");
 
 	std::ostringstream stream;
 	stream << file.rdbuf();

@@ -1,14 +1,4 @@
-const vec2 = {
-  make(x, y) {
-    const v = {x: x, y: y }
-    setmeta(v, self)
-    return v
-  }, <-- REMOVING THIS COMMA CAUSES THE COMPILER TO GO CRAZY, fix.
-
-  log() {
-    print(self.x, self.y)
-  }
+const t = {
+  a: 1
+  b: 2
 }
-
-let v = vec2:make(10, 20)
-v:log()
