@@ -56,7 +56,7 @@ public:
 	/// An empty slot is represented by an Entry
 	/// whose key is Nil and a tombstone is
 	/// represented by an entry whose key's
-	/// type tag is VT::Empty.
+	/// type tag is VT::Undefined.
 	struct Entry {
 		Value key;
 		Value value;
@@ -83,7 +83,7 @@ private:
 
 	/// @brief The prototype for this table.
 	/// If a property is not found in this table
-	/// then a lookup is done on the meta table.
+	/// then a lookup is done on the prototype.
 	Table* m_proto_table = nullptr;
 
 	size_t hash_value(Value value) const;
@@ -115,7 +115,7 @@ private:
 			// we came across, then store that slot.
 			// If no slot with that key is found, then we must be looking for a slot to insert a new
 			// element into the hash table, so we return the tombstone as a slot for insertion.
-			if (SNAP_IS_EMPTY(entry.key) and first_tombstone == nullptr) {
+			if (SNAP_IS_UNDEFINED(entry.key) and first_tombstone == nullptr) {
 				first_tombstone = &entry;
 			} else if ((entry.hash == hash and entry.key == key)) {
 				return entry;

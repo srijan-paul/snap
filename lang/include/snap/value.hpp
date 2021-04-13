@@ -49,7 +49,7 @@ protected:
 	virtual size_t size() const = 0;
 };
 
-enum class ValueType { Number, Bool, Object, Nil, Empty };
+enum class ValueType { Number, Bool, Object, Nil, Undefined };
 
 // Without NaN tagging, values are represented
 // as structs weighing 16 bytes. 1 word for the
@@ -79,6 +79,12 @@ struct Value {
 	explicit Value(Obj* o) noexcept : tag{ValueType::Object} {
 		SNAP_ASSERT(o != nullptr, "Unexpected nullptr object");
 		as.object = o;
+	}
+
+	static inline Value undefined() {
+		Value undef;
+		undef.tag = ValueType::Undefined;
+		return undef;
 	}
 
 	inline number as_num() const {
@@ -133,6 +139,7 @@ void print_value(Value v);
 #define SNAP_BOOL_VAL(b)	 (snap::Value(static_cast<bool>(b)))
 #define SNAP_OBJECT_VAL(o) (snap::Value(static_cast<snap::Obj*>(o)))
 #define SNAP_NIL_VAL			 (snap::Value())
+#define SNAP_UNDEF_VAL		 (snap::Value::undefined())
 
 #define SNAP_SET_TT(v, tt)		((v).tag = tt)
 #define SNAP_GET_TT(v)				((v).tag)
@@ -142,13 +149,13 @@ void print_value(Value v);
 	(SNAP_ASSERT((SNAP_AS_OBJECT(v)->tag == ot), "Mismatched object types."))
 #define SNAP_TYPE_CSTR(v) (value_type_name(v))
 
-#define SNAP_IS_NUM(v)		((v).tag == snap::ValueType::Number)
-#define SNAP_IS_BOOL(v)		((v).tag == snap::ValueType::Bool)
-#define SNAP_IS_NIL(v)		((v).tag == snap::ValueType::Nil)
-#define SNAP_IS_EMPTY(v)	((v).tag == snap::ValueType::Empty)
-#define SNAP_IS_OBJECT(v) ((v).tag == snap::ValueType::Object)
-#define SNAP_IS_STRING(v) (SNAP_IS_OBJECT(v) and SNAP_AS_OBJECT(v)->tag == snap::ObjType::string)
-#define SNAP_IS_TABLE(v)	(SNAP_IS_OBJECT(v) and SNAP_AS_OBJECT(v)->tag == snap::ObjType::table)
+#define SNAP_IS_NUM(v)			 ((v).tag == snap::ValueType::Number)
+#define SNAP_IS_BOOL(v)			 ((v).tag == snap::ValueType::Bool)
+#define SNAP_IS_NIL(v)			 ((v).tag == snap::ValueType::Nil)
+#define SNAP_IS_UNDEFINED(v) ((v).tag == snap::ValueType::Undefined)
+#define SNAP_IS_OBJECT(v)		 ((v).tag == snap::ValueType::Object)
+#define SNAP_IS_STRING(v)		 (SNAP_IS_OBJECT(v) and SNAP_AS_OBJECT(v)->tag == snap::ObjType::string)
+#define SNAP_IS_TABLE(v)		 (SNAP_IS_OBJECT(v) and SNAP_AS_OBJECT(v)->tag == snap::ObjType::table)
 
 #define SNAP_AS_NUM(v)			((v).as.num)
 #define SNAP_AS_BOOL(v)			((v).as.boolean)

@@ -49,7 +49,7 @@ std::string value_to_string(Value v) {
 	case VT::Number: return std::to_string(SNAP_AS_NUM(v));
 	case VT::Bool: return SNAP_AS_BOOL(v) ? "true" : "false";
 	case VT::Nil: return "nil";
-	case VT::Empty: return "undefined";
+	case VT::Undefined: return "undefined";
 	case VT::Object: {
 		const Obj* obj = SNAP_AS_OBJECT(v);
 
@@ -87,7 +87,7 @@ const char* value_type_name(Value v) {
 		return "table";
 	}
 	case VT::Nil: return "nil";
-	case VT::Empty: return "empty";
+	case VT::Undefined: return "empty";
 	}
 }
 

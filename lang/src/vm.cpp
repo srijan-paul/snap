@@ -249,7 +249,11 @@ ExitCode VM::run() {
 		case Op::get_global: {
 			Value name = READ_VALUE();
 			SNAP_ASSERT_OT(name, OT::string);
-			push(get_global(SNAP_AS_STRING(name)));
+			Value v = get_global(SNAP_AS_STRING(name));
+			if (SNAP_IS_UNDEFINED(v)) {
+				return ERROR("Undefined variable '{}'.", SNAP_AS_STRING(name)->c_str());
+			}
+			push(v);
 			break;
 		}
 
@@ -483,7 +487,7 @@ Value VM::concatenate(const String* left, const String* right) {
 
 Value VM::get_global(String* name) const {
 	auto search = m_global_vars.find(name);
-	if (search == m_global_vars.end()) return SNAP_NIL_VAL;
+	if (search == m_global_vars.end()) return SNAP_UNDEF_VAL;
 	return search->second;
 }
 

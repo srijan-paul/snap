@@ -278,6 +278,10 @@ void string_test() {
 	std::cout << "[String tests passed]\n";
 }
 
+void loop_test() {
+	// test_file("loop-while.snp", SNAP_NUM_VAL(55), "While loops (sum)");
+}
+
 int main() {
 	expr_tests();
 	stmt_tests();
@@ -285,5 +289,6 @@ int main() {
 	table_test();
 	global_test();
 	string_test();
+	loop_test();
 	return 0;
 }

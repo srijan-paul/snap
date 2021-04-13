@@ -84,8 +84,8 @@ public:
 	~Compiler();
 
 	/// @brief Compile a top level script
-	/// @return a function prototype containing the bytecode for the script.
-	CodeBlock* compile();
+	/// @return a function's codeblock containing the bytecode for the script.
+	[[nodiscard]] CodeBlock* compile();
 
 	/// @brief returns true if the compiler
 	/// has encountered an error while compiling
@@ -258,7 +258,7 @@ private:
 	void emit_bytes(Opcode a, Opcode b, u32 line);
 	void emit_bytes(Opcode a, Opcode b, const Token& token);
 	void emit(Opcode a, Opcode b);
-	std::size_t emit_value(Value value);
+	size_t emit_value(Value value);
 	u32 emit_string(const Token& token);
 	u32 emit_id_string(const Token& token);
 

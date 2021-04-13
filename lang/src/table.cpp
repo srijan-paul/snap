@@ -1,3 +1,4 @@
+#include "common.hpp"
 #include "value.hpp"
 #include <gc.hpp>
 #include <table.hpp>
@@ -11,11 +12,11 @@ using OT = ObjType;
 #define TABLE_GET_SLOT(k, h)			 search_entry<Table, Entry>(this, k, h)
 #define TABLE_GET_SLOT_CONST(k, h) search_entry<const Table, const Entry>(this, k, h)
 #define TABLE_PLACE_TOMBSTONE(e)                                                                   \
-	(SNAP_SET_TT(e.key, VT::Empty), e.value = SNAP_NIL_VAL, ++m_num_tombstones)
+	(SNAP_SET_TT(e.key, VT::Undefined), e.value = SNAP_NIL_VAL, ++m_num_tombstones)
 
 // check if an entry is unoccupied.
 #define IS_ENTRY_FREE(e) (SNAP_IS_NIL(e.key))
-#define IS_ENTRY_DEAD(e) (SNAP_IS_EMPTY(e.key))
+#define IS_ENTRY_DEAD(e) (SNAP_IS_UNDEFINED(e.key))
 #define HASH_OBJ(o)			 ((size_t)(o)&UINT64_MAX)
 
 Table::~Table() {
@@ -33,7 +34,7 @@ void Table::ensure_capacity() {
 		Entry& entry = old_entries[i];
 		// We don't re-insert tombstones or entries that were
 		// never occupied in the first place.
-		if (IS_ENTRY_FREE(entry) or SNAP_IS_EMPTY(entry.key)) continue;
+		if (IS_ENTRY_FREE(entry) or IS_ENTRY_DEAD(entry)) continue;
 		Entry& new_entry = TABLE_GET_SLOT(entry.key, entry.hash);
 		new_entry = std::move(entry);
 	}
@@ -194,7 +195,7 @@ size_t Table::hash_value(Value key) const {
 	case VT::Bool: return SNAP_AS_BOOL(key) ? 7 : 15;
 	case VT::Number: return size_t(SNAP_AS_NUM(key)); // TODO: use a proper numeric hash
 	case VT::Object: return hash_object(SNAP_AS_OBJECT(key));
-	default: return -1; // impossible.
+	default: SNAP_UNREACHABLE(); 
 	}
 }
 

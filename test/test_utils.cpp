@@ -82,11 +82,6 @@ void print_token(const snap::Token& token, const std::string& src) {
 	std::printf("'%s'", token.raw(src).c_str());
 }
 
-void compile(const std::string* code, VM* vm) {
-	Compiler compiler(vm, code);
-	compiler.compile();
-}
-
 void print_disassembly(const char* code) {
 	const std::string code_s{code};
 	snap::VM vm{&code_s};
