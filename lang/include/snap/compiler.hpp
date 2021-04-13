@@ -85,7 +85,7 @@ public:
 
 	/// @brief Compile a top level script
 	/// @return a function prototype containing the bytecode for the script.
-	Prototype* compile();
+	CodeBlock* compile();
 
 	/// @brief returns true if the compiler
 	/// has encountered an error while compiling
@@ -94,7 +94,7 @@ public:
 
 private:
 	VM* m_vm;
-	Prototype* m_proto;
+	CodeBlock* m_codeblock;
 	Compiler* const m_parent = nullptr;
 
 	const std::string* m_source;
@@ -147,7 +147,7 @@ private:
 	void error(std::string&& message);
 
 	// Compile a function's body (if this is a child compiler).
-	Prototype* compile_func();
+	CodeBlock* compile_func();
 
 	// keep eating tokens until a token
 	// that may indicate the end of a block or statement

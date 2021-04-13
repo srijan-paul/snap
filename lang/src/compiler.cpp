@@ -7,7 +7,7 @@
 #include <vm.hpp>
 
 #define TOK2NUM(t) SNAP_NUM_VAL(std::stod(t.raw(*m_source)))
-#define THIS_BLOCK (m_proto->block())
+#define THIS_BLOCK (m_codeblock->block())
 #define ERROR(...) (error(kt::format_str(__VA_ARGS__)))
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
@@ -32,19 +32,19 @@ Compiler::Compiler(VM* vm, const std::string* src) noexcept : m_vm{vm}, m_source
 	// reserve the first slot for this toplevel function.
 	m_symtable.add("<script>", 8, true);
 
-	// When allocating [m_proto], the String "script"
+	// When allocating [m_codeblock], the String "script"
 	// not reachable by the VM, so we protect it from GC.
 	m_vm->gc_protect(fname);
-	m_proto = &vm->make<Prototype>(fname);
+	m_codeblock = &vm->make<CodeBlock>(fname);
 
-	// Now the string is reachable through the prototype,
-	// So we can unprotect it.
+	// Now the string is reachable through the code
+	// block, So we can unprotect it.
 	m_vm->gc_unprotect(fname);
 }
 
 Compiler::Compiler(VM* vm, Compiler* parent, String* name) noexcept : m_vm{vm}, m_parent{parent} {
 	m_scanner = m_parent->m_scanner;
-	m_proto = &m_vm->make<Prototype>(name);
+	m_codeblock = &m_vm->make<CodeBlock>(name);
 
 	m_symtable.add(name->c_str(), name->len(), false);
 
@@ -66,24 +66,24 @@ Compiler::~Compiler() {
 	}
 }
 
-Prototype* Compiler::compile() {
+CodeBlock* Compiler::compile() {
 	while (!eof()) {
 		toplevel();
 	}
 
 	emit(Op::load_nil, Op::return_val);
-	m_proto->m_num_upvals = m_symtable.m_num_upvals;
-	return m_proto;
+	m_codeblock->m_num_upvals = m_symtable.m_num_upvals;
+	return m_codeblock;
 }
 
-Prototype* Compiler::compile_func() {
+CodeBlock* Compiler::compile_func() {
 	test(TT::LCurlBrace, "Expected '{' before function body.");
 
 	block_stmt();
 	emit(Op::load_nil, Op::return_val);
-	m_proto->m_num_upvals = m_symtable.m_num_upvals;
+	m_codeblock->m_num_upvals = m_symtable.m_num_upvals;
 	m_vm->m_compiler = m_parent;
-	return m_proto;
+	return m_codeblock;
 }
 
 // top level statements are one of:
@@ -170,7 +170,7 @@ void Compiler::fn_decl() {
 /// the opening parenthesis has been consumed.
 void Compiler::func_expr(String* fname, bool is_method) {
 	// When compiling the body of the function, we allocate
-	// a prototype, at that point in time, the name of the
+	// a code block; at that point in time, the name of the
 	// function is not reachable by the Garbage Collector,
 	// so we protect it.
 	m_vm->gc_protect(fname);
@@ -199,13 +199,13 @@ void Compiler::func_expr(String* fname, bool is_method) {
 
 	compiler.expect(TT::RParen, "Expected ')' after function parameters.");
 
-	Prototype* proto = compiler.compile_func();
-	const u8 idx = emit_value(SNAP_OBJECT_VAL(proto));
+	CodeBlock* code = compiler.compile_func();
+	const u8 idx = emit_value(SNAP_OBJECT_VAL(code));
 
 	emit_bytes(Op::make_func, static_cast<Op>(idx), token);
-	emit(static_cast<Op>(proto->m_num_upvals), token);
+	emit(static_cast<Op>(code->m_num_upvals), token);
 
-	// Now, [fname] can be reached via the prototype itself.
+	// Now, [fname] can be reached via the code block itself.
 	m_vm->gc_unprotect(fname);
 
 	for (int i = 0; i < compiler.m_symtable.m_num_upvals; ++i) {
@@ -215,7 +215,7 @@ void Compiler::func_expr(String* fname, bool is_method) {
 	}
 
 #ifdef SNAP_DEBUG_DISASSEMBLY
-	disassemble_block(proto->name_cstr(), proto->block());
+	disassemble_block(code->name_cstr(), code->block());
 #endif
 
 	prev = compiler.prev;
@@ -575,14 +575,14 @@ void Compiler::patch_jump(std::size_t index) {
 
 void Compiler::add_param(const Token& token) {
 	new_variable(token);
-	m_proto->add_param();
+	m_codeblock->add_param();
 }
 
 void Compiler::add_self_param() {
 	SNAP_ASSERT(m_symtable.m_num_symbols == 1, "'self' must be the first parameter.");
 
 	constexpr const char* self = "self";
-	m_proto->add_param();
+	m_codeblock->add_param();
 	m_symtable.add(self, 4, true);
 }
 

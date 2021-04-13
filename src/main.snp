@@ -8,5 +8,5 @@ const mt = {
   d: 3
 }
 
-setmeta(t, mt)
+setproto(t, mt)
 print(t.a, t.d)

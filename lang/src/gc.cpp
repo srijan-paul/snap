@@ -21,7 +21,7 @@ void GC::mark_compiler_roots() {
 	if (compiler == nullptr) return;
 
 	while (compiler != nullptr) {
-		mark_object(compiler->m_proto);
+		mark_object(compiler->m_codeblock);
 		compiler = compiler->m_parent;
 	}
 }

@@ -55,9 +55,10 @@ std::string value_to_string(Value v) {
 
 		switch (obj->tag) {
 		case OT::string: return SNAP_AS_CSTRING(v);
-		case OT::func: return std::string("[fn ") + static_cast<const Closure*>(obj)->name_cstr() + "]";
-		case OT::proto:
-			return std::string("[prototype ") + static_cast<const Prototype*>(obj)->name_cstr() + "]";
+		case OT::closure:
+			return std::string("[fn ") + static_cast<const Closure*>(obj)->name_cstr() + "]";
+		case OT::codeblock:
+			return std::string("[code ") + static_cast<const CodeBlock*>(obj)->name_cstr() + "]";
 		case OT::upvalue: {
 			const Upvalue* upval = static_cast<const Upvalue*>(obj);
 			return value_to_string(*(upval->m_value));
@@ -81,7 +82,7 @@ const char* value_type_name(Value v) {
 	case VT::Object: {
 		const Obj* obj = SNAP_AS_OBJECT(v);
 		if (SNAP_IS_STRING(v)) return "string";
-		if (obj->tag == OT::func or obj->tag == OT::cfunc) return "function";
+		if (obj->tag == OT::c_closure or obj->tag == OT::closure) return "function";
 		SNAP_ASSERT(obj->tag == OT::table, "Impossible type tag.");
 		return "table";
 	}

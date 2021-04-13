@@ -17,5 +17,5 @@ const mt = {
   }
 }
 
-setmeta(t, mt)
+setproto(t, mt)
 return t:getx() + t:gety() + t:getz()

@@ -61,11 +61,11 @@ Value Table::get(Value key) const {
 		index = (index + 1) & mask;
 	}
 
-	return m_meta_table == nullptr ? SNAP_NIL_VAL : m_meta_table->get(key);
+	return m_proto_table == nullptr ? SNAP_NIL_VAL : m_proto_table->get(key);
 }
 
 /// TODO: handle the case for [set] where the [key] is a member of it's
-/// metatable.
+/// prototype.
 bool Table::set(Value key, Value value) {
 	SNAP_ASSERT(!SNAP_IS_NIL(key), "Table key is nil.");
 

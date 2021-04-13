@@ -3,7 +3,6 @@
 #include "function.hpp"
 #include "gc.hpp"
 #include "table.hpp"
-#include "value.hpp"
 #include <functional>
 
 namespace snap {
@@ -80,7 +79,7 @@ public:
 		Value* base = nullptr;
 
 		bool is_cclosure() const noexcept {
-			return func->tag == ObjType::cfunc;
+			return func->tag == ObjType::c_closure;
 		}
 	};
 

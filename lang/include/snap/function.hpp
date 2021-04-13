@@ -6,15 +6,15 @@ namespace snap {
 
 // A protoype is the body of a function
 // that contains the bytecode.
-class Prototype final : public Obj {
+class CodeBlock final : public Obj {
 	friend Compiler;
 
 public:
-	explicit Prototype(String* funcname) noexcept : Obj{ObjType::proto}, m_name{funcname} {};
-	explicit Prototype(String* funcname, u32 param_count) noexcept
-			: Obj{ObjType::proto}, m_name{funcname}, m_num_params{param_count} {};
+	explicit CodeBlock(String* funcname) noexcept : Obj{ObjType::codeblock}, m_name{funcname} {};
+	explicit CodeBlock(String* funcname, u32 param_count) noexcept
+			: Obj{ObjType::codeblock}, m_name{funcname}, m_num_params{param_count} {};
 
-	~Prototype(){};
+	~CodeBlock(){};
 
 	const String* name() const {
 		return m_name;
@@ -39,7 +39,7 @@ public:
 	}
 
 	size_t size() const override {
-		return sizeof(Prototype);
+		return sizeof(CodeBlock);
 	}
 
 private:
@@ -60,17 +60,17 @@ private:
 /// scopes.
 class Closure final : public Obj {
 public:
-	Prototype* const m_proto;
+	CodeBlock* const m_codeblock;
 
-	explicit Closure(Prototype* proto, u32 upval_count) noexcept;
+	explicit Closure(CodeBlock* proto, u32 upval_count) noexcept;
 	~Closure() override{};
 
 	const String* name() const {
-		return m_proto->name();
+		return m_codeblock->name();
 	}
 
 	const char* name_cstr() const {
-		return m_proto->name_cstr();
+		return m_codeblock->name_cstr();
 	}
 
 	/// @brief returns the Upvalue at index [idx] in the
@@ -97,7 +97,7 @@ private:
 
 class CClosure final : public Obj {
 public:
-	explicit CClosure(CFunction fn) noexcept : Obj(ObjType::cfunc), m_func{fn} {};
+	explicit CClosure(CFunction fn) noexcept : Obj(ObjType::c_closure), m_func{fn} {};
 	~CClosure() override{};
 
 	size_t size() const override {

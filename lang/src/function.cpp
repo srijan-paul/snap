@@ -4,16 +4,15 @@
 #include <iostream>
 #include <upvalue.hpp>
 
-
 namespace snap {
 
-u32 Prototype::add_param() {
+u32 CodeBlock::add_param() {
 	++m_num_params;
 	SNAP_ASSERT(m_num_params < Compiler::MaxFuncParams, "Too many function parameters.");
 	return m_num_params;
 }
 
-void Prototype::trace(GC& gc) {
+void CodeBlock::trace(GC& gc) {
 	gc.mark_object(m_name);
 	for (Value val : m_block.constant_pool) {
 		gc.mark_value(val);
@@ -22,7 +21,8 @@ void Prototype::trace(GC& gc) {
 
 /// Function `///
 
-Closure::Closure(Prototype* proto, u32 upval_count) noexcept : Obj(ObjType::func), m_proto{proto} {
+Closure::Closure(CodeBlock* code, u32 upval_count) noexcept
+		: Obj(ObjType::closure), m_codeblock{code} {
 	m_upvals.resize(upval_count);
 }
 
@@ -35,7 +35,7 @@ void Closure::trace(GC& gc) {
 	for (Upvalue* upval : m_upvals) {
 		gc.mark_object(upval);
 	}
-	gc.mark_object(m_proto);
+	gc.mark_object(m_codeblock);
 }
 
 void CClosure::trace(GC& gc) {

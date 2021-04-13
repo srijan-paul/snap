@@ -22,7 +22,7 @@ snap::Value snap::stdlib::print(VM& vm, int argc) {
 	return SNAP_NIL_VAL;
 }
 
-snap::Value snap::stdlib::setmeta(VM& vm, int argc) {
+snap::Value snap::stdlib::setproto(VM& vm, int argc) {
 	static const char* func_name = "setmeta";
 
 	if (argc != 2) {
@@ -43,6 +43,17 @@ snap::Value snap::stdlib::setmeta(VM& vm, int argc) {
 		return SNAP_NIL_VAL;
 	}
 
-	SNAP_AS_TABLE(vtable)->m_meta_table = SNAP_AS_TABLE(vmeta);
+	// Check for cyclic meta tables.
+	Table* table = SNAP_AS_TABLE(vtable);
+	const Table* metatable = SNAP_AS_TABLE(vmeta);
+	while (metatable != nullptr) {
+		if (metatable == table) {
+			vm.runtime_error("Cyclic metatables are not allowed.");
+			return SNAP_NIL_VAL;
+		}
+		metatable = metatable->m_proto_table;
+	}
+
+	table->m_proto_table = SNAP_AS_TABLE(vmeta);
 	return vtable;
 }

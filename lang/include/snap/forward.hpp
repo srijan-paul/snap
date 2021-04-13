@@ -16,7 +16,7 @@ class GC;
 class Obj;
 class String;
 class Table;
-class Prototype;
+class CodeBlock;
 class Closure;
 
 /// Functions that are called from a snap script

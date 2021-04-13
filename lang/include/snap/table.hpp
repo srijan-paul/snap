@@ -12,7 +12,7 @@ namespace snap {
 // and linear probing.
 class Table final : public Obj {
 	friend GC;
-	friend Value stdlib::setmeta(VM&, int);
+	friend Value stdlib::setproto(VM&, int);
 
 public:
 	explicit Table() noexcept : Obj{ObjType::table} {};
@@ -81,10 +81,10 @@ private:
 	size_t m_num_tombstones = 0;
 	size_t m_cap = DefaultCapacity;
 
-	/// @brief The metatable for this table.
+	/// @brief The prototype for this table.
 	/// If a property is not found in this table
 	/// then a lookup is done on the meta table.
-	Table* m_meta_table = nullptr;
+	Table* m_proto_table = nullptr;
 
 	size_t hash_value(Value value) const;
 	size_t hash_object(Obj* object) const;

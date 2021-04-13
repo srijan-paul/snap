@@ -233,7 +233,7 @@ ExitCode VM::run() {
 
 		case Op::get_upval: {
 			u8 idx = NEXT_BYTE();
-			SNAP_ASSERT(m_current_frame->func->tag == OT::func, "enclosing frame a snap closure!");
+			SNAP_ASSERT(m_current_frame->func->tag == OT::closure, "enclosing frame a snap closure!");
 			Closure* cl = static_cast<Closure*>(m_current_frame->func);
 			push(*cl->get_upval(idx)->m_value);
 			break;
@@ -415,17 +415,17 @@ ExitCode VM::run() {
 			}
 
 			m_current_frame = &m_frames[m_frame_count - 1];
-			m_current_block = &static_cast<Closure*>(m_current_frame->func)->m_proto->block();
+			m_current_block = &static_cast<Closure*>(m_current_frame->func)->m_codeblock->block();
 			ip = m_current_frame->ip;
 
 			break;
 		}
 
 		case Op::make_func: {
-			Value vproto = READ_VALUE();
-			SNAP_ASSERT_OT(vproto, OT::proto);
+			Value vcode = READ_VALUE();
+			SNAP_ASSERT_OT(vcode, OT::codeblock);
 			u32 num_upvals = NEXT_BYTE();
-			Closure* func = &make<Closure>(SNAP_AS_PROTO(vproto), num_upvals);
+			Closure* func = &make<Closure>(SNAP_AS_PROTO(vcode), num_upvals);
 
 			push(SNAP_OBJECT_VAL(func));
 
@@ -531,22 +531,22 @@ bool VM::init() {
 	Compiler compiler{this, m_source};
 	m_compiler = &compiler;
 
-	Prototype* proto = m_compiler->compile();
+	CodeBlock* code = m_compiler->compile();
 	// If the compilation failed, return false
 	// and signal a compile time error.
 	if (!compiler.ok()) return false;
 
-	// There are no reachable references to `proto`
+	// There are no reachable references to [code]
 	// when we allocate `func`. Since allocating a func
 	// can trigger a garbage collection cycle, we protect
-	// the proto.
-	gc_protect(proto);
-	Closure* func = &make<Closure>(proto, 0);
+	// the code block.
+	gc_protect(code);
+	Closure* func = &make<Closure>(code, 0);
 
-	// Once the function has been made, proto can
-	// be reached via `func->m_proto`, so we can
+	// Once the function has been made, [code] can
+	// be reached via `func->m_codeblock`, so we can
 	// unprotect it.
-	gc_unprotect(proto);
+	gc_unprotect(code);
 
 	push(SNAP_OBJECT_VAL(func));
 	callfunc(func, 0);
@@ -578,7 +578,7 @@ void VM::add_stdlib_object(const char* name, Obj* o) {
 
 void VM::load_stdlib() {
 	add_stdlib_object("print", &make<CClosure>(stdlib::print));
-	add_stdlib_object("setmeta", &make<CClosure>(stdlib::setmeta));
+	add_stdlib_object("setproto", &make<CClosure>(stdlib::setproto));
 }
 
 using OT = ObjType;
@@ -634,8 +634,8 @@ bool VM::call(Value value, u8 argc) {
 		ERROR("Attempt to call a {} value.", SNAP_TYPE_CSTR(value));
 
 	switch (SNAP_AS_OBJECT(value)->tag) {
-	case OT::func: return callfunc(SNAP_AS_CLOSURE(value), argc);
-	case OT::cfunc: return call_cclosure(SNAP_AS_CCLOSURE(value), argc);
+	case OT::closure: return callfunc(SNAP_AS_CLOSURE(value), argc);
+	case OT::c_closure: return call_cclosure(SNAP_AS_CCLOSURE(value), argc);
 	default: ERROR("Attempt to call a {} value.", SNAP_TYPE_CSTR(value)); return false;
 	}
 
@@ -643,7 +643,7 @@ bool VM::call(Value value, u8 argc) {
 }
 
 void VM::push_callframe(Obj* callable, int argc) {
-	SNAP_ASSERT(callable->tag == OT::cfunc or callable->tag == OT::func,
+	SNAP_ASSERT(callable->tag == OT::c_closure or callable->tag == OT::closure,
 							"Non callable callframe pushed.");
 
 	// Save the current instruction pointer
@@ -658,9 +658,9 @@ void VM::push_callframe(Obj* callable, int argc) {
 	// start from the first opcode
 	m_current_frame->ip = ip = 0;
 
-	if (callable->tag == OT::func) {
+	if (callable->tag == OT::closure) {
 		Closure* cl = static_cast<Closure*>(callable);
-		m_current_block = &cl->m_proto->block();
+		m_current_block = &cl->m_codeblock->block();
 	}
 }
 
@@ -678,14 +678,14 @@ void VM::pop_callframe() {
 	ip = m_current_frame->ip;
 
 	Obj* callable = m_current_frame->func;
-	if (callable->tag == OT::func) {
+	if (callable->tag == OT::closure) {
 		Closure* cl = static_cast<Closure*>(callable);
-		m_current_block = &cl->m_proto->block();
+		m_current_block = &cl->m_codeblock->block();
 	}
 }
 
 bool VM::callfunc(Closure* func, int argc) {
-	int extra = argc - func->m_proto->param_count();
+	int extra = argc - func->m_codeblock->param_count();
 
 	// extra arguments are ignored and
 	// arguments that aren't provded are replaced with nil.
@@ -764,7 +764,7 @@ ExitCode VM::runtime_error(std::string const& message) {
 
 		const Closure& func = *static_cast<Closure*>(frame.func);
 
-		const Block& block = func.m_proto->block();
+		const Block& block = func.m_codeblock->block();
 		SNAP_ASSERT(frame.ip >= 0 and frame.ip < block.lines.size(),
 								"IP not in range for std::vector<u32> block.lines.");
 
