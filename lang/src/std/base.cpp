@@ -2,6 +2,12 @@
 #include <std/base.hpp>
 #include <vm.hpp>
 
+static void bad_arg_error(snap::VM& vm, const char* fname, int argn, const char* expected_type,
+													const char* received_type) {
+	vm.runtime_error(kt::format_str("Bad argument #{} to '{}' expected {}, got {}.", argn, fname,
+																	expected_type, received_type));
+}
+
 /// TODO: benchmark and optimize this.
 snap::Value snap::stdlib::print(VM& vm, int argc) {
 	std::string res = "";
@@ -17,20 +23,19 @@ snap::Value snap::stdlib::print(VM& vm, int argc) {
 }
 
 snap::Value snap::stdlib::setmeta(VM& vm, int argc) {
+	static const char* func_name = "setmeta";
+
 	SNAP_ASSERT(argc == 2, "Incorrect number of arguments for function 'setmeta'.");
 	Value& vtable = vm.get_arg(0);
 	Value& vmeta = vm.get_arg(1);
 
-	/// TODO: this error message can be abstracted away a bit.
 	if (!SNAP_IS_TABLE(vtable)) {
-		vm.runtime_error(kt::format_str("Bad argument #1 to 'setmeta'. Expected table, got {}.",
-																		SNAP_TYPE_CSTR(vtable)));
+		bad_arg_error(vm, func_name, 1, "table", SNAP_TYPE_CSTR(vmeta));
 		return SNAP_NIL_VAL;
 	}
 
 	if (!SNAP_IS_TABLE(vmeta)) {
-		vm.runtime_error(kt::format_str("Bad argument #2 to 'setmeta'. Expected table, got {}.",
-																		SNAP_TYPE_CSTR(vmeta)));
+		bad_arg_error(vm, func_name, 2, "table", SNAP_TYPE_CSTR(vmeta));
 		return SNAP_NIL_VAL;
 	}
 

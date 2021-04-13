@@ -1,7 +1,1 @@
-const t   = { a: 1, b: 2 }
-const mt  = { b: 3, c: 4 }
-const mmt = { c: 5, d: 6 }
-
-setmeta(t, mt)
-setmeta(mt, mmt)
-print(t.a, t.b, t.c, t.d)
+return 42;
