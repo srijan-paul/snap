@@ -242,6 +242,8 @@ private:
 	const std::string* m_source;
 	Compiler* m_compiler = nullptr;
 
+	bool m_has_error = false;
+
 	Value m_stack[StackMaxSize];
 	using StackId = Value*;
 

@@ -515,7 +515,10 @@ void VM::set_global(const char* name, Value value) {
 
 ExitCode VM::interpret() {
 	bool ok = init();
-	if (!ok) return ExitCode::CompileError;
+	if (!ok) {
+		m_has_error = true;
+		return ExitCode::CompileError;
+	}
 	return run();
 }
 
@@ -713,8 +716,7 @@ bool VM::call_cclosure(CClosure* cclosure, int argc) {
 	popn(argc);
 	sp[-1] = ret;
 
-	/// TODO: return false when function exits with an error.
-	return true;
+	return m_has_error;
 }
 
 String& VM::string(const char* chars, size_t length) {
@@ -747,6 +749,8 @@ ExitCode VM::binop_error(const char* opstr, Value& a, Value& b) {
 }
 
 ExitCode VM::runtime_error(std::string const& message) {
+	m_has_error = true;
+
 	std::string error_str =
 			(m_current_frame->is_cclosure())
 					? kt::format_str("{}\nstack trace:\n", message)
