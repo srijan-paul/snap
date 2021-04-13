@@ -23,37 +23,37 @@ snap::Value snap::stdlib::print(VM& vm, int argc) {
 }
 
 snap::Value snap::stdlib::setproto(VM& vm, int argc) {
-	static const char* func_name = "setmeta";
+	static const char* func_name = "setproto";
 
 	if (argc != 2) {
-		vm.runtime_error("'setmeta' builtin expects exactly 2 arguments.");
+		vm.runtime_error("'setproto' builtin expects exactly 2 arguments.");
 		return SNAP_NIL_VAL;
 	}
 
 	Value& vtable = vm.get_arg(0);
-	Value& vmeta = vm.get_arg(1);
+	Value& vproto = vm.get_arg(1);
 
 	if (!SNAP_IS_TABLE(vtable)) {
-		bad_arg_error(vm, func_name, 1, "table", SNAP_TYPE_CSTR(vmeta));
+		bad_arg_error(vm, func_name, 1, "table", SNAP_TYPE_CSTR(vproto));
 		return SNAP_NIL_VAL;
 	}
 
-	if (!SNAP_IS_TABLE(vmeta)) {
-		bad_arg_error(vm, func_name, 2, "table", SNAP_TYPE_CSTR(vmeta));
+	if (!SNAP_IS_TABLE(vproto)) {
+		bad_arg_error(vm, func_name, 2, "table", SNAP_TYPE_CSTR(vproto));
 		return SNAP_NIL_VAL;
 	}
 
 	// Check for cyclic meta tables.
 	Table* table = SNAP_AS_TABLE(vtable);
-	const Table* metatable = SNAP_AS_TABLE(vmeta);
-	while (metatable != nullptr) {
-		if (metatable == table) {
-			vm.runtime_error("Cyclic metatables are not allowed.");
+	const Table* prototype = SNAP_AS_TABLE(vproto);
+	while (prototype != nullptr) {
+		if (prototype == table) {
+			vm.runtime_error("cyclic prototype chains are not allowed.");
 			return SNAP_NIL_VAL;
 		}
-		metatable = metatable->m_proto_table;
+		prototype = prototype->m_proto_table;
 	}
 
-	table->m_proto_table = SNAP_AS_TABLE(vmeta);
+	table->m_proto_table = SNAP_AS_TABLE(vproto);
 	return vtable;
 }
