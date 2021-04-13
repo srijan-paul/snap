@@ -34,7 +34,7 @@ snap::Value snap::stdlib::setproto(VM& vm, int argc) {
 	Value& vproto = vm.get_arg(1);
 
 	if (!SNAP_IS_TABLE(vtable)) {
-		bad_arg_error(vm, func_name, 1, "table", SNAP_TYPE_CSTR(vproto));
+		bad_arg_error(vm, func_name, 1, "table", SNAP_TYPE_CSTR(vtable));
 		return SNAP_NIL_VAL;
 	}
 
