@@ -25,7 +25,11 @@ snap::Value snap::stdlib::print(VM& vm, int argc) {
 snap::Value snap::stdlib::setmeta(VM& vm, int argc) {
 	static const char* func_name = "setmeta";
 
-	SNAP_ASSERT(argc == 2, "Incorrect number of arguments for function 'setmeta'.");
+	if (argc != 2) {
+		vm.runtime_error("'setmeta' builtin expects exactly 2 arguments.");
+		return SNAP_NIL_VAL;
+	}
+
 	Value& vtable = vm.get_arg(0);
 	Value& vmeta = vm.get_arg(1);
 

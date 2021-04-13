@@ -1,7 +1,0 @@
-DO NOT PROCEED TO WRITE ANY MORE CODE
-UNTIL:
-
-2. You've fixed all the TODO's left over from
-the last time you worked on this codebase.
-
-3. You've properly checked for garbage collection bugs.
