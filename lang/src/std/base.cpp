@@ -40,5 +40,5 @@ snap::Value snap::stdlib::setmeta(VM& vm, int argc) {
 	}
 
 	SNAP_AS_TABLE(vtable)->m_meta_table = SNAP_AS_TABLE(vmeta);
-	return SNAP_NIL_VAL;
+	return vtable;
 }

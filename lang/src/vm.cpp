@@ -4,7 +4,6 @@
 #include <std/base.hpp>
 #include <vm.hpp>
 
-
 #if defined(SNAP_DEBUG_RUNTIME) || defined(SNAP_DEBUG_DISASSEMBLY)
 #include <cstdio>
 #include <debug.hpp>
@@ -748,16 +747,16 @@ ExitCode VM::binop_error(const char* opstr, Value& a, Value& b) {
 }
 
 ExitCode VM::runtime_error(std::string const& message) {
-	/// TODO: This line throws a debug error (in C++) when the current CallFrame is that of a
-	/// CClosure.
-	std::string error_str = kt::format_str("[line {}]: {}\n", CURRENT_LINE(), message);
+	std::string error_str =
+			(m_current_frame->is_cclosure())
+					? kt::format_str("{}\nstack trace:\n", message)
+					: kt::format_str("[line {}]: {}\nstack trace:\n", CURRENT_LINE(), message);
 
-	error_str += "stack trace:\n";
 	for (int i = m_frame_count - 1; i >= 0; --i) {
 		const CallFrame& frame = m_frames[i];
 
 		/// TODO: Handle CFunction strack traces.
-		if (frame.func->tag == OT::cfunc) continue;
+		if (frame.is_cclosure()) continue;
 
 		const Closure& func = *static_cast<Closure*>(frame.func);
 

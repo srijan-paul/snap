@@ -3,6 +3,7 @@
 #include "function.hpp"
 #include "gc.hpp"
 #include "table.hpp"
+#include "value.hpp"
 #include <functional>
 
 namespace snap {
@@ -22,24 +23,6 @@ inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string
 }
 
 void default_error_fn(const VM& vm, std::string& err_msg);
-
-struct CallFrame {
-	/// `func` is either an instance of CClosure
-	///  or Closure. However, since it can be
-	///  any of the two, we store a pointer to
-	///  to it's base class and check which one it
-	///  really is at runtime. (using the [tag] field, or
-	///  dynamic_cast)
-	Obj* func = nullptr;
-
-	size_t ip = 0;
-	// the base of the Callframe in the VM's
-	// value stack. This denotes the first
-	// slot usable by the CallFrame. All local variables
-	// are represented as a stack offset from this
-	// base.
-	Value* base = nullptr;
-};
 
 class VM {
 	friend GC;
@@ -78,6 +61,28 @@ public:
 	/// in the VM. It takes a reference to the VM, and the error
 	/// message as a c string.
 	ErrorFn on_error = default_error_fn;
+
+	struct CallFrame {
+		/// `func` is either an instance of CClosure
+		///  or Closure. However, since it can be
+		///  any of the two, we store a pointer to
+		///  to it's base class and check which one it
+		///  really is at runtime. (using the [tag] field, or
+		///  dynamic_cast)
+		Obj* func = nullptr;
+
+		size_t ip = 0;
+		// the base of the Callframe in the VM's
+		// value stack. This denotes the first
+		// slot usable by the CallFrame. All local variables
+		// are represented as a stack offset from this
+		// base.
+		Value* base = nullptr;
+
+		bool is_cclosure() const noexcept {
+			return func->tag == ObjType::cfunc;
+		}
+	};
 
 	inline Value peek(u8 depth = 0) const {
 		return *(sp - 1 - depth);
