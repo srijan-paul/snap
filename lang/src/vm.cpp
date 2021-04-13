@@ -716,7 +716,7 @@ bool VM::call_cclosure(CClosure* cclosure, int argc) {
 	popn(argc);
 	sp[-1] = ret;
 
-	return m_has_error;
+	return !m_has_error;
 }
 
 String& VM::string(const char* chars, size_t length) {
