@@ -18,7 +18,7 @@ using ErrorFn = std::function<void(const VM& vm, std::string& err_message)>;
 
 inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string) {
 	SNAP_ASSERT(string != nullptr, "string to print is null.");
-	printf("%s\n", string->c_str());
+	printf("%s", string->c_str());
 }
 
 void default_error_fn(const VM& vm, std::string& err_msg);

@@ -160,6 +160,7 @@ private:
 	void declarator(bool is_const); // ID (= EXPR)?
 	void block_stmt();							// {stmt*}
 	void if_stmt();									// if EXPR STMT (else STMT)?
+	void while_stmt();              // while EXPR STMT
 	void expr_stmt();								// FUNCALL | ASSIGN
 	void fn_decl();									// fn (ID|SUFFIXED_EXPR) BLOCK
 	void ret_stmt();								// return EXPR?

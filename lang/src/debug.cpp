@@ -5,12 +5,14 @@
 #include <value.hpp>
 
 namespace snap {
+
 using Op = Opcode;
+using std::printf;
 
-#define PRINT_VAL(v) (printf("%s", (value_to_string(v).c_str())))
-
-static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)> op_strs = {
+static constexpr std::array<const char*, size_t(Op::op_count)> op_strs = {
 		"load_const",
+		"get_global",
+		"set_global",
 		"table_get",
 		"table_set",
 		"table_get_no_pop",
@@ -18,8 +20,6 @@ static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)>
 		"get_var",
 		"set_upval",
 		"get_upval",
-		"get_global",
-		"set_global",
 		"make_func",
 		"prep_method_call",
 		"call_func",
@@ -46,10 +46,12 @@ static constexpr std::array<const char*, static_cast<std::size_t>(Op::op_count)>
 		"close_upval",
 		"return_val",
 		"new_table",
+		"index_set",
 		"table_add_field",
 		"index",
 		"index_no_pop",
 		"jmp",
+		"jmp_back",
 		"jmp_if_false_or_pop",
 		"jmp_if_true_or_pop",
 		"pop_jmp_if_false",
@@ -59,68 +61,71 @@ const char* op2s(Op op) {
 	return op_strs[static_cast<u32>(op)];
 }
 
-static void print_line(const Block& block, std::size_t index) {
-	if (index == 0 or block.lines[index] == block.lines[index - 1])
-		std::printf("    	");
-	else
-		std::printf("%04d	", block.lines[index]);
+static void print_line(const Block& block, size_t index) {
+	if (index == 0 or block.lines[index] == block.lines[index - 1]) {
+		printf("   |	");
+	} else {
+		printf("\n%04d	", block.lines[index]);
+	}
 }
 
-static std::size_t constant_instr(const Block& block, Op op, std::size_t index) {
-	const auto const_index = (u8)(block.code[index + 1]);
+static size_t constant_instr(const Block& block, Op op, size_t index) {
+	const u8 const_index = u8(block.code[index + 1]);
 	const Value v = block.constant_pool[const_index];
-	std::printf("%04d	%-4zu  %-22s (%d) ", block.lines[index], index, op2s(op), const_index);
-	PRINT_VAL(v);
-	printf("\n");
+	print_line(block, index);
+	printf("%-4zu  %-22s  %d\t(", index, op2s(op), const_index);
+	print_value(v);
+	printf(")\n");
 	return 2;
 }
 
-static std::size_t simple_instr(const Block& block, Op op, std::size_t index) {
+static size_t simple_instr(const Block& block, Op op, size_t index) {
 	print_line(block, index);
-	std::printf("%-4zu  %-22s\n", index, op2s(op));
+	printf("%-4zu  %-22s\n", index, op2s(op));
 	return 1;
 }
 
-static std::size_t instr_single_operand(const Block& block, std::size_t index) {
+static size_t instr_single_operand(const Block& block, size_t index) {
 	Op op = block.code[index];
 	Op operand = block.code[index + 1];
 
 	print_line(block, index);
-	std::printf("%-4zu  %-22s  %d\n", index, op2s(op), static_cast<int>(operand));
+	printf("%-4zu  %-22s  %d\n", index, op2s(op), static_cast<int>(operand));
 	return 2;
 }
 
-static std::size_t instr_two_operand(const Block& block, std::size_t index) {
+static size_t instr_two_operand(const Block& block, size_t index) {
 	Op op = block.code[index];
 
-	u8 a = (u8)(block.code[index + 1]);
-	u8 b = (u8)(block.code[index + 2]);
+	u8 a = u8(block.code[index + 1]);
+	u8 b = u8(block.code[index + 2]);
 
-	u16 distance = (u16)((a << 8) | b);
+	u16 distance = u16((a << 8) | b);
 
 	print_line(block, index);
-	std::printf("%-4zu  %-22s  %d  (%zu)\n", index, op2s(op), distance, index + distance + 3);
+	size_t op_index = op == Op::jmp_back ? index - distance : index + distance + 3;
+	printf("%-4zu  %-22s  %d (%zu)\n", index, op2s(op), distance, op_index);
 
 	return 3;
 }
 
-std::size_t disassemble_instr(const Block& block, Op op, std::size_t offset) {
+size_t disassemble_instr(const Block& block, Op op, size_t offset) {
 
 	if (op == Op::make_func) {
 		int old_loc = offset;
 
-		std::printf("%04d	", block.lines[offset]);
-		std::printf("%-4zu  %-22s  ", offset++, op2s(op));
+		printf("%04d	", block.lines[offset]);
+		printf("%-4zu  %-22s  ", offset++, op2s(op));
 		print_value(block.constant_pool[(size_t)block.code[offset]]);
-		std::printf("\n");
+		printf("\n");
 
 		u8 num_upvals = static_cast<u8>(block.code[++offset]);
 		for (int i = 0; i < num_upvals; ++i) {
 			bool is_local = static_cast<bool>(block.code[offset++]);
 			if (is_local) {
 				int idx = static_cast<int>(block.code[++offset]);
-				std::printf("        %-4zu  %-22s  %s %d\n", offset - 1, " ",
-										is_local ? "local" : "upvalue", idx);
+				printf("        %-4zu  %-22s  %s %d\n", offset - 1, " ", is_local ? "local" : "upvalue",
+							 idx);
 			}
 		}
 		return offset - old_loc + 1;

@@ -80,6 +80,7 @@ enum class TokenType {
 	Let,
 	Const,
 	If,
+	While,
 	Else,
 	Nil,
 	Fn,

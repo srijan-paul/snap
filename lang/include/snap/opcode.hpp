@@ -17,6 +17,18 @@ enum class Opcode : u8 {
 	load_const,
 
 	/// Operands: Idx
+	/// Stack effect: 1
+	/// Pushes the global present at index [Idx] in the
+	/// constant pool to the top of the stack.
+	get_global,
+
+	/// Operands: Idx,
+	/// Stack Effect: 0
+	/// Sets the global variable having the name constant_pool[Idx]
+	/// to the value present on top of the stack.
+	set_global,
+
+	/// Operands: Idx
 	/// Stack Effect: 0
 	/// Reads the next opcode as an index
 	/// then attempts to get `constant_pool[index]`
@@ -64,18 +76,6 @@ enum class Opcode : u8 {
 	/// Pushes the upvalue in the current function's
 	/// upvalue list at index `Idx` on top of the stack.
 	get_upval,
-
-	/// Operands: Idx
-	/// Stack effect: 1
-	/// Pushes the global present at index [Idx] in the
-	/// constant pool to the top of the stack.
-	get_global,
-
-	/// Operands: Idx,
-	/// Stack Effect: 0
-	/// Sets the global variable having the name constant_pool[Idx]
-	/// to the value present on top of the stack.
-	set_global,
 
 	/// Operands: NumUpvals, ... (varargs)
 	/// Gets a function object from the
@@ -242,13 +242,21 @@ enum class Opcode : u8 {
 	/// a short int.
 	jmp,
 
+	/// Operands: A B
+	/// Stack Effect: 0
+	/// Jump the instruction pointer backwards
+	/// by AB. (ip = ip - AB)
+	jmp_back,
+
 	/// Operands: A, B
+	/// Stack Effect: 0
 	/// If the value on top of the stack
 	/// is falsy, then jump forward AB
 	/// instructions.
 	jmp_if_false_or_pop,
 
 	/// Operands: A, B
+	/// Stack Effect: 0
 	/// If the Value on top of the
 	/// stack is truthy, then jump
 	/// forward AB insructions.

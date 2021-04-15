@@ -102,6 +102,7 @@ void Compiler::toplevel() {
 	case TT::Let: return var_decl();
 	case TT::LCurlBrace: return block_stmt();
 	case TT::If: return if_stmt();
+	case TT::While: return while_stmt();
 	case TT::Fn: return fn_decl();
 	case TT::Return: return ret_stmt();
 	default: expr_stmt();
@@ -140,17 +141,34 @@ void Compiler::block_stmt() {
 void Compiler::if_stmt() {
 	advance(); // consume 'if'
 	expr();		 // parse condition.
-	const std::size_t jmp = emit_jump(Op::pop_jmp_if_false);
+	const size_t jmp = emit_jump(Op::pop_jmp_if_false);
 	toplevel();
 
 	if (match(TT::Else)) {
-		std::size_t else_jmp = emit_jump(Op::jmp);
+		size_t else_jmp = emit_jump(Op::jmp);
 		patch_jump(jmp);
 		toplevel();
 		patch_jump(else_jmp);
 		return;
 	}
 
+	patch_jump(jmp);
+}
+
+void Compiler::while_stmt() {
+	advance(); // consume 'while'
+	size_t nopcodes = THIS_BLOCK.op_count();
+	expr(); // parse condition.
+	const size_t jmp = emit_jump(Op::pop_jmp_if_false);
+	toplevel();
+
+	emit(Op::jmp_back);
+	const u32 jmp_dist = THIS_BLOCK.op_count() - nopcodes + 2;
+	if (jmp_dist > UINT16_MAX) {
+		ERROR("While block blody too big.");
+		return;
+	}
+	emit(static_cast<Op>((jmp_dist << 8) & 0xff), static_cast<Op>(jmp_dist & 0xff));
 	patch_jump(jmp);
 }
 

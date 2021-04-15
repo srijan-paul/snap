@@ -158,6 +158,8 @@ static void stmt_tests() {
 		return b)",
 							SNAP_NUM_VAL(7), "If statement with else-if branch");
 
+	test_file("var.snp", SNAP_NUM_VAL(13), "Var declarations.");
+
 	std::cout << "Statement tests passed\n";
 }
 
@@ -279,7 +281,8 @@ void string_test() {
 }
 
 void loop_test() {
-	// test_file("loop-while.snp", SNAP_NUM_VAL(55), "While loops (sum)");
+	test_file("loop-while.snp", SNAP_NUM_VAL(45), "While loops (sum)");
+	test_file("nested-while.snp", SNAP_NUM_VAL(165), "Nested While loops");
 }
 
 int main() {

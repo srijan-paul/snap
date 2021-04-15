@@ -1,12 +1,10 @@
-const t = {
-  a: 1,
-  b: 2
+let sum = 0
+let i   = 0
+
+const limit = 10
+while i < limit {
+  sum += i
+  i   += 1
 }
 
-const mt = {
-  c: 1,
-  d: 3
-}
-
-setproto(t, mt)
-print(t.a, t.d)
+print(sum)

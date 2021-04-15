@@ -23,7 +23,7 @@ using number = double;
 
 #define SNAP_MODE_DEBUG
 // #define SNAP_DEBUG_RUNTIME		 1
-// #define SNAP_DEBUG_DISASSEMBLY 1
+#define SNAP_DEBUG_DISASSEMBLY 1
 
 #ifdef SNAP_MODE_DEBUG
 
