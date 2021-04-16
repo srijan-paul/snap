@@ -10,3 +10,5 @@ while (i < 10) {
   x += i
   i += 1
 }
+
+return x
