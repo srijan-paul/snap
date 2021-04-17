@@ -1,10 +1,8 @@
-let sum = 0
-let i   = 0
+let a = 1
+let b = 2
 
-const limit = 10
-while i < limit {
-  sum += i
-  i   += 1
-}
+if a > b {
+  if a < b }
+  let a = 1
 
-print(sum)
+return a+b

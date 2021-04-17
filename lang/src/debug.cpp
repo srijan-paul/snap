@@ -103,7 +103,7 @@ static size_t instr_two_operand(const Block& block, size_t index) {
 	u16 distance = u16((a << 8) | b);
 
 	print_line(block, index);
-	size_t op_index = op == Op::jmp_back ? index - distance : index + distance + 3;
+	size_t op_index = op == Op::jmp_back ? (index + 3) - distance : (index + 3) + distance;
 	printf("%-4zu  %-22s  %d (%zu)\n", index, op2s(op), distance, op_index);
 
 	return 3;

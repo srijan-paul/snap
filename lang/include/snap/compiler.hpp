@@ -101,7 +101,9 @@ private:
 		u32 start;
 		/// The jumps that this loop contains has
 		/// Which need to be patched.
-		std::vector<u32> m_jumps;
+		u32 scope_depth = 0;
+		std::vector<u32> m_breaks;
+		std::vector<u32> m_continues;
 	};
 
 	VM* m_vm;
@@ -173,6 +175,7 @@ private:
 	void block_stmt();							// {stmt*}
 	void if_stmt();									// if EXPR STMT (else STMT)?
 	void while_stmt();							// while EXPR STMT
+	void break_stmt();							// BREAK
 	void expr_stmt();								// FUNCALL | ASSIGN
 	void fn_decl();									// fn (ID|SUFFIXED_EXPR) BLOCK
 	void ret_stmt();								// return EXPR?

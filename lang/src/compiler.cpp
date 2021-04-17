@@ -1,3 +1,4 @@
+#include "common.hpp"
 #include "debug.hpp"
 #include "str_format.hpp"
 #include <compiler.hpp>
@@ -8,7 +9,7 @@
 
 #define TOK2NUM(t) SNAP_NUM_VAL(std::stod(t.raw(*m_source)))
 #define THIS_BLOCK (m_codeblock->block())
-#define ERROR(...) (error(kt::format_str(__VA_ARGS__)))
+#define ERROR(...) (error_at_token(kt::format_str(__VA_ARGS__).c_str(), token))
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
 	void name(bool can_assign) {                                                                     \
@@ -105,6 +106,7 @@ void Compiler::toplevel() {
 	case TT::While: return while_stmt();
 	case TT::Fn: return fn_decl();
 	case TT::Return: return ret_stmt();
+	case TT::Break: return break_stmt();
 	default: expr_stmt();
 	}
 }
@@ -158,22 +160,53 @@ void Compiler::if_stmt() {
 void Compiler::enter_loop(Loop& loop) {
 	loop.enclosing = m_loop;
 	loop.start = THIS_BLOCK.op_count() - 1;
+	loop.scope_depth = m_symtable.m_scope_depth;
 	m_loop = &loop;
 }
 
 void Compiler::exit_loop() {
 	SNAP_ASSERT(m_loop != nullptr, "Attempt to exit loop in a top-level block.");
 
-	// emit the jmp_back instruction that connects the end of the
+	// Emit the jmp_back instruction that connects the end of the
 	// loop to the beginning.
 	emit(Op::jmp_back);
-	u32 jmp_dist = THIS_BLOCK.op_count() - m_loop->start + 1;
+	u32 jmp_dist = (THIS_BLOCK.op_count() - 1) - m_loop->start + 2;
 	if (jmp_dist > UINT16_MAX) {
 		ERROR("Loop body is too big.");
 		return;
 	}
 	emit(static_cast<Op>((jmp_dist << 8) & 0xff), static_cast<Op>(jmp_dist & 0xff));
+
+	// Patch the jump instructions for the break
+	// statements.
+	for (u32 jmp : m_loop->m_breaks) {
+		patch_jump(jmp);
+	}
+
 	m_loop = m_loop->enclosing;
+}
+
+void Compiler::break_stmt() {
+	advance(); // consume 'break'
+	if (m_loop == nullptr) {
+		ERROR("break statement outside a loop.");
+		return;
+	}
+
+	int loop_depth = m_loop->scope_depth;
+	int curr_depth = m_symtable.m_scope_depth;
+	int diff = curr_depth - loop_depth;
+
+	SNAP_ASSERT(diff > 0, "Impossible.");
+
+	for (int i = 0; i <= diff; ++i) {
+		discard_locals();
+	}
+
+	// Remember the index of the jump
+	// so that it can be patched later.
+	int jmp = emit_jump(Op::jmp);
+	m_loop->m_breaks.push_back(jmp);
 }
 
 void Compiler::while_stmt() {
@@ -433,7 +466,7 @@ void Compiler::primary(bool can_assign) {
 	} else if (match(TT::LCurlBrace)) {
 		table();
 	} else {
-		error_at(kt::format_str("Unexpected '{}'.", peek.raw(*m_source)).c_str(), peek.location.line);
+		ERROR("Unexpected '{}'.", peek.raw(*m_source));
 		advance();
 	}
 }
@@ -537,15 +570,18 @@ void Compiler::var_assign(Op get_op, u32 idx_or_name_str) {
 
 void Compiler::literal() {
 	advance();
-	std::size_t index = 0;
+	u32 index = 0;
 	switch (token.type) {
 	case TT::Integer:
 	case TT::Float: index = emit_value(TOK2NUM(token)); break;
 	case TT::String: index = emit_string(token); break;
 	case TT::True: index = emit_value(SNAP_BOOL_VAL(true)); break;
 	case TT::False: index = emit_value(SNAP_BOOL_VAL(false)); break;
-	case TT::Nil: index = emit_value(SNAP_NIL_VAL); break;
-	default: SNAP_ERROR("Impossible code reached.");
+	case TT::Nil: {
+		emit(Op::load_nil);
+		return;
+	}
+	default: SNAP_UNREACHABLE();
 	}
 
 	emit(Op::load_const, static_cast<Op>(index));
@@ -554,10 +590,7 @@ void Compiler::literal() {
 void Compiler::recover() {
 	while (!eof()) {
 		advance();
-		if (token.type == TT::Semi or token.type == TT::RCurlBrace or token.type == TT::RSqBrace) {
-			advance();
-			break;
-		}
+		if (check(TT::Semi)) break;
 	}
 	panic = false;
 }
@@ -569,21 +602,23 @@ void Compiler::enter_block() noexcept {
 void Compiler::discard_locals() {
 	for (int i = m_symtable.m_num_symbols - 1; i >= 0; i--) {
 		const LocalVar& var = m_symtable.m_symbols[i];
-
 		if (var.depth != m_symtable.m_scope_depth) break;
-
 		emit(var.is_captured ? Op::close_upval : Op::pop);
-		--m_symtable.m_num_symbols;
 	}
 }
 
 void Compiler::exit_block() {
-	discard_locals();
+	for (int i = m_symtable.m_num_symbols - 1; i >= 0; i--) {
+		const LocalVar& var = m_symtable.m_symbols[i];
+		if (var.depth != m_symtable.m_scope_depth) break;
+		emit(var.is_captured ? Op::close_upval : Op::pop);
+		--m_symtable.m_num_symbols;
+	}
 	--m_symtable.m_scope_depth;
 }
 
-std::size_t Compiler::emit_jump(Opcode op) {
-	std::size_t index = THIS_BLOCK.code.size();
+size_t Compiler::emit_jump(Opcode op) {
+	size_t index = THIS_BLOCK.code.size();
 	emit(op);
 	emit(static_cast<Op>(0xff));
 	emit(static_cast<Op>(0xff));
@@ -656,14 +691,16 @@ void Compiler::test(TT expected, const char* errmsg) {
 }
 
 void Compiler::error_at(const char* message, u32 line) {
-	ERROR("[line {}]: {}", line, message);
+	error(kt::format_str("[line {}]: {}", line, message));
 }
 
 void Compiler::error_at_token(const char* message, const Token& token) {
-	ERROR("[line {}]: near '{}': {}", token.location.line, token.raw(*m_source).c_str(), message);
+	error(kt::format_str("[line {}]: near '{}': {}", token.location.line, token.raw(*m_source),
+											 message));
 }
 
 void Compiler::error(std::string&& message) {
+	if (panic) return;
 	m_vm->on_error(*m_vm, message);
 	has_error = true;
 	panic = true;

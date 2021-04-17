@@ -213,7 +213,8 @@ ExitCode VM::run() {
 		}
 
 		case Op::jmp_back: {
-			ip -= FETCH_SHORT();
+			u16 dist = FETCH_SHORT();
+			ip -= dist; 
 			break;
 		}
 
@@ -792,7 +793,7 @@ ExitCode VM::runtime_error(std::string const& message) {
 // The default behavior on an error is to simply
 // print it to the stderr.
 void default_error_fn([[maybe_unused]] const VM& vm, std::string& err_msg) {
-	fprintf(stderr, "%s", err_msg.c_str());
+	fprintf(stderr, "%s\n", err_msg.c_str());
 }
 
 /// TODO: The user might need some objects even after the VM
