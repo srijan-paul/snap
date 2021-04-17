@@ -1,4 +1,5 @@
 #pragma once
+#include "common.hpp"
 #include "function.hpp"
 #include "scanner.hpp"
 #include <array>
@@ -68,6 +69,7 @@ public:
 
 	SNAP_NO_COPY(Compiler);
 	SNAP_NO_MOVE(Compiler);
+	SNAP_NO_DEFAULT_CONSTRUCT(Compiler);
 
 	// Creates a fresh new compiler that will
 	// parse the toplevel script `src`.
@@ -93,9 +95,19 @@ public:
 	bool ok() const;
 
 private:
+	struct Loop {
+		Loop* enclosing;
+		/// The first instruction of this loop.
+		u32 start;
+		/// The jumps that this loop contains has
+		/// Which need to be patched.
+		std::vector<u32> m_jumps;
+	};
+
 	VM* m_vm;
 	CodeBlock* m_codeblock;
 	Compiler* const m_parent = nullptr;
+	Loop* m_loop = nullptr;
 
 	const std::string* m_source;
 	bool has_error = false;
@@ -160,7 +172,7 @@ private:
 	void declarator(bool is_const); // ID (= EXPR)?
 	void block_stmt();							// {stmt*}
 	void if_stmt();									// if EXPR STMT (else STMT)?
-	void while_stmt();              // while EXPR STMT
+	void while_stmt();							// while EXPR STMT
 	void expr_stmt();								// FUNCALL | ASSIGN
 	void fn_decl();									// fn (ID|SUFFIXED_EXPR) BLOCK
 	void ret_stmt();								// return EXPR?
@@ -212,18 +224,25 @@ private:
 	///				 constant pool as an operand too.
 	void table_assign(Opcode get_op, int idx);
 
-	void enter_block();
+	void enter_block() noexcept;
+
+	/// Emit pop instructions for all local variables in
+	/// the stack, and close instructions for all upvalues.
+	void discard_locals();
 	// Exit the current scope, popping all local
 	// variables off the stack and closing any upvalues.
 	void exit_block();
 
+	void enter_loop(Loop& loop);
+	void exit_loop();
+
 	// Emits a jump instruction, followed by two opcodes
 	// that encode the jump location. Returns the index
 	// of the first half of the jump offset.
-	std::size_t emit_jump(Opcode op);
+	size_t emit_jump(Opcode op);
 	// Patches the jump instruction whose offset operand is at index `index`,
 	// encoding the address of the most recently emitted opcode.
-	void patch_jump(std::size_t index);
+	void patch_jump(size_t index);
 
 	/// @brief create a new variable and add it to the
 	/// current scope in the symbol table.
@@ -234,7 +253,7 @@ private:
 	/// name to the symbol table.
 	void add_param(const Token& token);
 
-	/// @brief adds the 'self' parameter to the list of
+	/// @brief Adds the 'self' parameter to the list of
 	/// locals, reserving a stack slot for it at runtime.
 	void add_self_param();
 
@@ -244,21 +263,20 @@ private:
 	/// Else return -1.
 	int find_local_var(const Token& name) const noexcept;
 
-	// Find an upvalue by it's name token.
-	// Starts looking in the current symboltable's upvalue
-	// array, If it isn't found there then it recursively
-	// searches up the parent compiler chain repeating the process.
-	// Once an upvalue is found, it adds it the current
-	// Upvalue list and returns an index to that.
-	// If no upvalue is found, returns -1.
+	/// Find an upvalue by it's name token.
+	/// Starts looking in the current symboltable's upvalue
+	/// array, If it isn't found there then it recursively
+	/// searches up the parent compiler chain repeating the process.
+	/// Once an upvalue is found, it adds it the current
+	/// Upvalue list and returns an index to that.
+	/// If no upvalue is found, returns -1.
 	int find_upvalue(const Token& name);
 
 	inline void emit(Opcode op);
+	inline void emit(Opcode a, Opcode b);
 	inline void emit(Opcode op, u32 line);
 	inline void emit(Opcode op, const Token& token);
-	void emit_bytes(Opcode a, Opcode b, u32 line);
 	void emit_bytes(Opcode a, Opcode b, const Token& token);
-	void emit(Opcode a, Opcode b);
 	size_t emit_value(Value value);
 	u32 emit_string(const Token& token);
 	u32 emit_id_string(const Token& token);

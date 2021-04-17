@@ -155,20 +155,37 @@ void Compiler::if_stmt() {
 	patch_jump(jmp);
 }
 
-void Compiler::while_stmt() {
-	advance(); // consume 'while'
-	size_t nopcodes = THIS_BLOCK.op_count();
-	expr(); // parse condition.
-	const size_t jmp = emit_jump(Op::pop_jmp_if_false);
-	toplevel();
+void Compiler::enter_loop(Loop& loop) {
+	loop.enclosing = m_loop;
+	loop.start = THIS_BLOCK.op_count() - 1;
+	m_loop = &loop;
+}
 
+void Compiler::exit_loop() {
+	SNAP_ASSERT(m_loop != nullptr, "Attempt to exit loop in a top-level block.");
+
+	// emit the jmp_back instruction that connects the end of the
+	// loop to the beginning.
 	emit(Op::jmp_back);
-	const u32 jmp_dist = THIS_BLOCK.op_count() - nopcodes + 2;
+	u32 jmp_dist = THIS_BLOCK.op_count() - m_loop->start + 1;
 	if (jmp_dist > UINT16_MAX) {
-		ERROR("While block blody too big.");
+		ERROR("Loop body is too big.");
 		return;
 	}
 	emit(static_cast<Op>((jmp_dist << 8) & 0xff), static_cast<Op>(jmp_dist & 0xff));
+	m_loop = m_loop->enclosing;
+}
+
+void Compiler::while_stmt() {
+	advance(); // consume 'while'
+
+	Loop while_loop;
+	enter_loop(while_loop);
+
+	expr(); // parse condition.
+	u32 jmp = emit_jump(Opcode::pop_jmp_if_false);
+	toplevel();
+	exit_loop();
 	patch_jump(jmp);
 }
 
@@ -545,11 +562,11 @@ void Compiler::recover() {
 	panic = false;
 }
 
-void Compiler::enter_block() {
+void Compiler::enter_block() noexcept {
 	++m_symtable.m_scope_depth;
 }
 
-void Compiler::exit_block() {
+void Compiler::discard_locals() {
 	for (int i = m_symtable.m_num_symbols - 1; i >= 0; i--) {
 		const LocalVar& var = m_symtable.m_symbols[i];
 
@@ -558,7 +575,10 @@ void Compiler::exit_block() {
 		emit(var.is_captured ? Op::close_upval : Op::pop);
 		--m_symtable.m_num_symbols;
 	}
+}
 
+void Compiler::exit_block() {
+	discard_locals();
 	--m_symtable.m_scope_depth;
 }
 
@@ -704,10 +724,10 @@ int Compiler::find_upvalue(const Token& token) {
 	return -1;
 }
 
-std::size_t Compiler::emit_value(Value v) {
-	std::size_t index = THIS_BLOCK.add_value(v);
+size_t Compiler::emit_value(Value v) {
+	size_t index = THIS_BLOCK.add_value(v);
 	if (index >= Compiler::MaxLocalVars) {
-		error_at_token("Too many constants in one function.", token);
+		error_at_token("Too many constants in a single block.", token);
 	}
 	return index;
 }
@@ -727,11 +747,6 @@ inline void Compiler::emit(Op op, u32 line) {
 inline void Compiler::emit_bytes(Op a, Op b, const Token& token) {
 	emit(a, token);
 	emit(b, token);
-}
-
-inline void Compiler::emit_bytes(Op a, Op b, u32 line) {
-	emit(a, line);
-	emit(b, line);
 }
 
 inline void Compiler::emit(Op a, Op b) {

@@ -48,6 +48,9 @@ public:
 	/// inside the table, else nullptr.
 	String* find_string(const char* chars, size_t length, size_t hash) const;
 
+	/// Returns the total number of alive entries in
+	/// this hashtable. values that have been set to nil
+	/// don't count.
 	virtual size_t size() const override;
 
 	/// An Entry represents a key-value pair
