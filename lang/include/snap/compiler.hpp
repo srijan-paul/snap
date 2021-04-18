@@ -65,6 +65,7 @@ class Compiler {
 public:
 	static constexpr u8 MaxLocalVars = UINT8_MAX;
 	static constexpr u8 MaxUpValues = UINT8_MAX;
+	static constexpr u8 MaxConstants = UINT8_MAX;
 	static constexpr u8 MaxFuncParams = 200;
 
 	SNAP_NO_COPY(Compiler);
@@ -103,11 +104,11 @@ private:
 		Loop* enclosing;
 		/// The first instruction of this loop.
 		u32 start;
-		/// The jumps that this loop contains has
-		/// Which need to be patched.
-		u32 scope_depth = 0;
-		std::vector<u32> m_breaks;
-		std::vector<u32> m_continues;
+		/// The scope depth of the loop's statement
+		/// (for, while etc) itself. The contents of
+		/// the loop's body (if it's a block)
+		/// have depth greater by 1.
+		u32 scope_depth;
 	};
 
 	VM* m_vm;
@@ -214,7 +215,7 @@ private:
 	/// Note that this does not emit `set` instructions for the
 	/// actual assignment, rather consumes the assignment RHS
 	/// and accounts for any compound assignment operators.
-	/// @param get_op The `get` opcode to use, in case it's a compound assignment.
+	/// @param get_op The 'get' opcode to use, in case it's a compound assignment.
 	/// @param idx_or_name_str The index where to load the variable from, if it's a local
 	///                        else the index in the constant pool for the global's name.
 	void var_assign(Opcode get_op, u32 idx_or_name_str);
@@ -225,17 +226,20 @@ private:
 	/// stack, but does not emit the actual 'set' opcode.
 	/// @param get_op In case it's a compound assign like `+=`, we need to fetch
 	/// 			 the value of that field in the table before assigning to it.
-	///				 `get_op` can be one of `table_get_fast_keep` or `table_get_keep`.
+	///				 [get_op] can be one of `index_no_pop` or `table_get_no_pop`.
 	/// @param idx In case we are assigning to a table field indexed by the dot (.) operator
-	/// 			 then we the `get_op` needs to use the position of that fieldn's name in the
+	/// 			 then we the [get_op] needs to use the position of that fieldn's name in the
 	///				 constant pool as an operand too.
 	void table_assign(Opcode get_op, int idx);
 
 	void enter_block() noexcept;
 
-	/// Emit pop instructions for all local variables in
-	/// the stack, and close instructions for all upvalues.
-	void discard_locals();
+	/// Emit pop and close instructions for the variables and upvalues
+	/// upto scope depth [depth]. Note that this only emits instructions
+	/// to discard the locals at runtime, but doesn't actually remove
+	/// them from the symbol table. This is used to emit instructions for
+	/// 'break' and 'continue' statements.
+	void discard_loop_locals(u32 depth);
 	// Exit the current scope, popping all local
 	// variables off the stack and closing any upvalues.
 	void exit_block();

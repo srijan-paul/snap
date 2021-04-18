@@ -201,6 +201,16 @@ void Compiler::exit_loop() {
 	m_loop = m_loop->enclosing;
 }
 
+void Compiler::discard_loop_locals(u32 depth) {
+	SNAP_ASSERT(m_symtable.m_scope_depth > depth, "Bad call to discard_locals.");
+
+	for (int i = m_symtable.m_num_symbols - 1; i >= 0; i--) {
+		const LocalVar& var = m_symtable.m_symbols[i];
+		if (var.depth <= depth) break;
+		emit(var.is_captured ? Op::close_upval : Op::pop);
+	}
+}
+
 void Compiler::break_stmt() {
 	advance(); // consume 'break'
 	if (m_loop == nullptr) {
@@ -208,15 +218,9 @@ void Compiler::break_stmt() {
 		return;
 	}
 
-	int loop_depth = m_loop->scope_depth;
-	int curr_depth = m_symtable.m_scope_depth;
-	int diff = curr_depth - loop_depth;
-
-	SNAP_ASSERT(diff > 0, "Impossible.");
-
-	for (int i = 0; i <= diff; ++i) {
-		discard_locals();
-	}
+	/// remove all the local variables inside the
+	/// loop's body before jumping out.
+	discard_loop_locals(m_loop->scope_depth);
 
 	// A 'break' statement's jump instruction is
 	// characterized by a `no_op` instruction. So when
@@ -258,8 +262,8 @@ void Compiler::fn_decl() {
 	new_variable(name_token);
 }
 
-/// Compiles the body of a function or method assuming everything until the
-/// the opening parenthesis has been consumed.
+// Compile the body of a function or method assuming everything until the
+// the opening parenthesis has been consumed.
 void Compiler::func_expr(String* fname, bool is_method) {
 	// When compiling the body of the function, we allocate
 	// a code block; at that point in time, the name of the
@@ -608,6 +612,12 @@ void Compiler::literal() {
 	default: SNAP_UNREACHABLE();
 	}
 
+	if (index > MaxLocalVars) {
+		ERROR("Too many literal constants in one function.");
+	}
+
+	/// TODO: handle indices larger than UINT8_MAX, by adding a
+	/// load_const_long.
 	emit(Op::load_const, static_cast<Op>(index));
 }
 
@@ -621,14 +631,6 @@ void Compiler::recover() {
 
 void Compiler::enter_block() noexcept {
 	++m_symtable.m_scope_depth;
-}
-
-void Compiler::discard_locals() {
-	for (int i = m_symtable.m_num_symbols - 1; i >= 0; i--) {
-		const LocalVar& var = m_symtable.m_symbols[i];
-		if (var.depth != m_symtable.m_scope_depth) break;
-		emit(var.is_captured ? Op::close_upval : Op::pop);
-	}
 }
 
 void Compiler::exit_block() {
