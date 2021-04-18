@@ -9,7 +9,7 @@ namespace snap {
 using Op = Opcode;
 using std::printf;
 
-static constexpr std::array<const char*, size_t(Op::op_count)> op_strs = {
+static constexpr std::array op_strs = {
 		"load_const",
 		"get_global",
 		"set_global",
@@ -55,6 +55,7 @@ static constexpr std::array<const char*, size_t(Op::op_count)> op_strs = {
 		"jmp_if_false_or_pop",
 		"jmp_if_true_or_pop",
 		"pop_jmp_if_false",
+		"no_op",
 };
 
 const char* op2s(Op op) {
@@ -140,7 +141,8 @@ size_t disassemble_instr(const Block& block, Op op, size_t offset) {
 	} else if (op >= Op_2_operands_start and op <= Op_2_operands_end) {
 		return instr_two_operand(block, offset);
 	}
-	return 1;
+	// no op
+	return instr_two_operand(block, offset);
 }
 
 void disassemble_block(const char* name, const Block& block) {

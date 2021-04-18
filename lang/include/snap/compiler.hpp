@@ -92,7 +92,11 @@ public:
 	/// @brief returns true if the compiler
 	/// has encountered an error while compiling
 	/// the source.
-	bool ok() const;
+	bool ok() const noexcept;
+
+	/// Provided a bytecode instruction's index, returns the number of
+	/// operands it takes.
+	int op_arity(u32 indx) const noexcept;
 
 private:
 	struct Loop {
@@ -240,8 +244,8 @@ private:
 	void exit_loop();
 
 	// Emits a jump instruction, followed by two opcodes
-	// that encode the jump location. Returns the index
-	// of the first half of the jump offset.
+	// that encode the jump location in big endian.
+	// Returns the index  of the first half of the jump offset.
 	size_t emit_jump(Opcode op);
 	// Patches the jump instruction whose offset operand is at index `index`,
 	// encoding the address of the most recently emitted opcode.

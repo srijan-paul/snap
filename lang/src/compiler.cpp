@@ -1,5 +1,6 @@
 #include "common.hpp"
 #include "debug.hpp"
+#include "opcode.hpp"
 #include "str_format.hpp"
 #include <compiler.hpp>
 #include <cstdio>
@@ -159,7 +160,10 @@ void Compiler::if_stmt() {
 
 void Compiler::enter_loop(Loop& loop) {
 	loop.enclosing = m_loop;
-	loop.start = THIS_BLOCK.op_count() - 1;
+	// loop.start stores index of the first instruction
+	// in the loop. Which here is the next instruction to be
+	// emitted.
+	loop.start = THIS_BLOCK.op_count();
 	loop.scope_depth = m_symtable.m_scope_depth;
 	m_loop = &loop;
 }
@@ -167,20 +171,31 @@ void Compiler::enter_loop(Loop& loop) {
 void Compiler::exit_loop() {
 	SNAP_ASSERT(m_loop != nullptr, "Attempt to exit loop in a top-level block.");
 
+	int n_ops = THIS_BLOCK.op_count();
 	// Emit the jmp_back instruction that connects the end of the
 	// loop to the beginning.
 	emit(Op::jmp_back);
-	u32 jmp_dist = (THIS_BLOCK.op_count() - 1) - m_loop->start + 2;
+	u32 jmp_dist = (THIS_BLOCK.op_count() - 1) - m_loop->start + 3;
 	if (jmp_dist > UINT16_MAX) {
 		ERROR("Loop body is too big.");
 		return;
 	}
 	emit(static_cast<Op>((jmp_dist << 8) & 0xff), static_cast<Op>(jmp_dist & 0xff));
 
-	// Patch the jump instructions for the break
-	// statements.
-	for (u32 jmp : m_loop->m_breaks) {
-		patch_jump(jmp);
+	for (int i = m_loop->start; i < n_ops;) {
+		// no_op instructions are 'placeholders' for
+		// jumps resulting from a break or continue statement.
+		if (THIS_BLOCK.code[i] == Op::no_op) {
+			THIS_BLOCK.code[i] = Op::jmp;
+			patch_jump(i + 1);
+		}
+
+		// It is crucial that we increment the counter by the
+		// current instruction's arity (number of operands needed)
+		// instead of simply doing `i++`. If we do `i++` then we'd
+		// be reading operands to other instructions like `load_const`
+		// as bytecode instructions and misinterpreting the values.
+		i += op_arity(i) + 1;
 	}
 
 	m_loop = m_loop->enclosing;
@@ -203,10 +218,19 @@ void Compiler::break_stmt() {
 		discard_locals();
 	}
 
-	// Remember the index of the jump
-	// so that it can be patched later.
-	int jmp = emit_jump(Op::jmp);
-	m_loop->m_breaks.push_back(jmp);
+	// A 'break' statement's jump instruction is
+	// characterized by a `no_op` instruction. So when
+	// the `loop_exit` method is patching old loops, it
+	// doesn't get confused between 'jmp' instructions from
+	// break statements and 'jmp' instructions from other
+	// statements like if
+	int jmp = emit_jump(Op::no_op);
+
+	// A no_op instruction followed by a 0x00
+	// is recognized as a 'break' statement.
+	// Later the 0x00 and the next byte are
+	// changed into the actual jump offset.
+	THIS_BLOCK.code[jmp + 1] = Op(0x00);
 }
 
 void Compiler::while_stmt() {
@@ -262,7 +286,7 @@ void Compiler::func_expr(String* fname, bool is_method) {
 	}
 
 	if (param_count > MaxFuncParams) {
-		compiler.error_at_token("Function cannot have more than 200 parameters", compiler.token);
+		compiler.error_at_token("unction cannot have more than 200 parameters", compiler.token);
 	}
 
 	compiler.expect(TT::RParen, "Expected ')' after function parameters.");
@@ -618,14 +642,14 @@ void Compiler::exit_block() {
 }
 
 size_t Compiler::emit_jump(Opcode op) {
-	size_t index = THIS_BLOCK.code.size();
+	size_t index = THIS_BLOCK.op_count();
 	emit(op);
 	emit(static_cast<Op>(0xff));
 	emit(static_cast<Op>(0xff));
 	return index + 1;
 }
 
-void Compiler::patch_jump(std::size_t index) {
+void Compiler::patch_jump(size_t index) {
 	u32 jump_dist = THIS_BLOCK.op_count() - index - 2;
 	if (jump_dist > UINT16_MAX) {
 		error_at("Too much code to jump over.", token.location.line);
@@ -706,7 +730,7 @@ void Compiler::error(std::string&& message) {
 	panic = true;
 }
 
-bool Compiler::ok() const {
+bool Compiler::ok() const noexcept {
 	return !has_error;
 }
 
@@ -814,9 +838,30 @@ Op Compiler::toktype_to_op(TT toktype) const noexcept {
 	case TT::Lt: return Op::lt;
 	case TT::GtEq: return Op::gte;
 	case TT::LtEq: return Op::lte;
-	default: return Op::op_count;
+	default: SNAP_UNREACHABLE();
 	}
 }
+
+#define CHECK_ARITY(x, y) ((x) >= (Op_##y##_operands_start) and ((x) <= (Op_##y##_operands_end)))
+int Compiler::op_arity(u32 op_index) const noexcept {
+	Op op = THIS_BLOCK.code[op_index];
+	if (op == Op::make_func) {
+		SNAP_ASSERT(op_index != THIS_BLOCK.op_count() - 1, "Op::make_func cannot be the last opcode");
+		int n_upvals = int(THIS_BLOCK.code[op_index + 1]);
+		return 1 + n_upvals * 2;
+	}
+
+	if (CHECK_ARITY(op, 0)) return 0;
+	if (CHECK_ARITY(op, 1)) return 1;
+
+	// Constant instructions take 1 operand, the index of the
+	// constant.
+	if (op >= Op_const_start and op <= Op_const_end) return 1;
+	SNAP_ASSERT(CHECK_ARITY(op, 2), "Instructions other than make_func can have upto 2 operands.");
+	return 2;
+}
+
+#undef CHECK_ARITY
 
 bool Compiler::is_assign_tok(TT type) const noexcept {
 	return (type == TT::Eq or (type >= TT::ModEq and type <= TT::PlusEq));

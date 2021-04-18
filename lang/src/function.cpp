@@ -3,6 +3,7 @@
 #include <gc.hpp>
 #include <iostream>
 #include <upvalue.hpp>
+#include <xutility>
 
 namespace snap {
 
@@ -38,7 +39,7 @@ void Closure::trace(GC& gc) {
 	gc.mark_object(m_codeblock);
 }
 
-void CClosure::trace(GC& gc) {
+void CClosure::trace([[maybe_unused]] GC& gc) {
 	/// TODO: mark upvalues.
 }
 

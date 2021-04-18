@@ -268,7 +268,7 @@ enum class Opcode : u8 {
 	/// If the value discarded is falsy then jump
 	/// forward AB instructios.
 	pop_jmp_if_false,
-	op_count
+	no_op
 };
 
 /// numerically lowest opcode that takes no operands
