@@ -18,7 +18,7 @@ Token Scanner::token_if_match(char c, TT then, TT other) {
 }
 
 Token Scanner::next_token() noexcept {
-	skip_whitespace();
+	skip_irrelevant();
 	if (eof()) return make_token(TT::Eof);
 
 	start = current;
@@ -89,8 +89,7 @@ static constexpr KeywordData keywords[] = {
 		{"or", 2, TT::Or},			 {"and", 3, TT::Or},		{"let", 3, TT::Let},
 		{"const", 5, TT::Const}, {"if", 2, TT::If},			{"else", 4, TT::Else},
 		{"while", 5, TT::While}, {"fn", 2, TT::Fn},			{"return", 6, TT::Return},
-		{"break", 5, TT::Break}
-};
+		{"break", 5, TT::Break}};
 
 TT Scanner::kw_or_id_type() const {
 	for (auto& kw : keywords) {
@@ -129,7 +128,7 @@ char Scanner::peek() const noexcept {
 }
 
 char Scanner::peek_next() const noexcept {
-	if (current + 1 >= current) return '\0';
+	if (current + 1 >= source->length()) return '\0';
 	return source->at(current + 1);
 }
 
@@ -153,7 +152,7 @@ bool Scanner::match(char expected) {
 	return false;
 }
 
-void Scanner::skip_whitespace() {
+void Scanner::skip_irrelevant() {
 	while (true) {
 		switch (peek()) {
 		case ' ':
@@ -164,9 +163,20 @@ void Scanner::skip_whitespace() {
 			line_pos.column = 1;
 			next();
 			break;
+		case '-':
+			if (peek_next() == '-') {
+				skip_comment();
+				break;
+			}
+			return;
 		default: return;
 		}
 	}
+}
+
+void Scanner::skip_comment() {
+	SNAP_ASSERT(peek() == '-' and peek_next() == '-', "Bad call to Scanner::skip_comment.");
+	while (!(eof() or check('\n') or check('\r'))) next();
 }
 
 } // namespace snap

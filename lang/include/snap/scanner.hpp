@@ -24,7 +24,9 @@ private:
 	u32 start = 0;
 	u32 current = 0;
 
-	void skip_whitespace();
+	/// Skip whitespace, newlines and comments.
+	void skip_irrelevant();
+	void skip_comment();
 	bool eof() const noexcept;
 	char next();
 	char peek() const noexcept;

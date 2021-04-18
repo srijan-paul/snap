@@ -22,4 +22,5 @@ while true {
   j += c - d
 }
 
+-- expect: 25
 print(i + j + k)
