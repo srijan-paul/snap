@@ -283,6 +283,8 @@ void string_test() {
 void loop_test() {
 	test_file("loop-while.snp", SNAP_NUM_VAL(45), "While loops (sum)");
 	test_file("nested-while.snp", SNAP_NUM_VAL(165), "Nested While loops");
+	test_file("while-break.snp", SNAP_NUM_VAL(25), "breaks in loops");
+	test_file("while-break-nest.snp", SNAP_NUM_VAL(2660), "breaks in loops");
 }
 
 int main() {
