@@ -104,7 +104,7 @@ struct Token {
 	explicit Token(TokenType type, Location loc) noexcept : type{type}, location{loc} {};
 	Token() : location{} {};
 	std::string raw(const std::string& source) const;
-	const char* raw_cstr(const std::string* source) const;
+	const char* raw_cstr(const std::string& source) const;
 	SourcePosition source_pos() const;
 
 	inline u32 length() const {

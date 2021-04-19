@@ -9,8 +9,8 @@ std::string Token::raw(const std::string& source) const {
 	return source.substr(pos.start, pos.length);
 }
 
-const char* Token::raw_cstr(const std::string* source) const {
-	return source->c_str() + location.source_pos.start;
+const char* Token::raw_cstr(const std::string& source) const {
+	return source.c_str() + location.source_pos.start;
 }
 
 SourcePosition Token::source_pos() const {

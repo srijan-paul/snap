@@ -285,7 +285,6 @@ private:
 
 	inline void emit(Opcode op);
 	inline void emit(Opcode a, Opcode b);
-	inline void emit(Opcode op, u32 line);
 	inline void emit(Opcode op, const Token& token);
 	void emit_bytes(Opcode a, Opcode b, const Token& token);
 	size_t emit_value(Value value);

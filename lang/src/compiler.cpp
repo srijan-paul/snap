@@ -127,7 +127,7 @@ void Compiler::declarator(bool is_const) {
 	// default value is `nil`.
 	const Token name = token;
 
-	match(TT::Eq) ? expr() : emit(Op::load_nil, token.location.line);
+	match(TT::Eq) ? expr() : emit(Op::load_nil, token);
 	new_variable(name, is_const);
 }
 
@@ -255,7 +255,7 @@ void Compiler::fn_decl() {
 	expect(TT::Id, "expected function name");
 
 	const Token name_token = token;
-	String* fname = &m_vm->string(name_token.raw_cstr(m_source), name_token.length());
+	String* fname = &m_vm->string(name_token.raw_cstr(*m_source), name_token.length());
 
 	func_expr(fname);
 
@@ -739,17 +739,17 @@ bool Compiler::ok() const noexcept {
 u32 Compiler::emit_string(const Token& token) {
 	u32 length = token.length() - 2; // minus the quotes
 	// +1 to skip the openening quote.
-	String& string = m_vm->string(token.raw_cstr(m_source) + 1, length);
+	String& string = m_vm->string(token.raw_cstr(*m_source) + 1, length);
 	return emit_value(SNAP_OBJECT_VAL(&string));
 }
 
 u32 Compiler::emit_id_string(const Token& token) {
-	String* s = &m_vm->string(token.raw(*m_source).c_str(), token.length());
+	String* s = &m_vm->string(token.raw_cstr(*m_source), token.length());
 	return emit_value(SNAP_OBJECT_VAL(s));
 }
 
 int Compiler::find_local_var(const Token& name_token) const noexcept {
-	const char* name = name_token.raw_cstr(m_source);
+	const char* name = name_token.raw_cstr(*m_source);
 	int length = name_token.length();
 	const int idx = m_symtable.find(name, length);
 	return idx;
@@ -803,10 +803,6 @@ inline void Compiler::emit(Op op, const Token& token) {
 	THIS_BLOCK.add_instruction(op, token.location.line);
 }
 
-inline void Compiler::emit(Op op, u32 line) {
-	THIS_BLOCK.add_instruction(op, line);
-}
-
 inline void Compiler::emit_bytes(Op a, Op b, const Token& token) {
 	emit(a, token);
 	emit(b, token);
@@ -856,8 +852,8 @@ int Compiler::op_arity(u32 op_index) const noexcept {
 	if (CHECK_ARITY(op, 0)) return 0;
 	if (CHECK_ARITY(op, 1)) return 1;
 
-	// Constant instructions take 1 operand, the index of the
-	// constant.
+	// Constant instructions take 1 operand: the index of the
+	// constant in the constant pool.
 	if (op >= Op_const_start and op <= Op_const_end) return 1;
 	SNAP_ASSERT(CHECK_ARITY(op, 2), "Instructions other than make_func can have upto 2 operands.");
 	return 2;
@@ -870,7 +866,7 @@ bool Compiler::is_assign_tok(TT type) const noexcept {
 }
 
 int Compiler::new_variable(const Token& varname, bool is_const) {
-	const char* name = varname.raw_cstr(m_source);
+	const char* name = varname.raw_cstr(*m_source);
 	const u32 length = varname.length();
 
 	// check of a variable with this name already exists in the current scope.
