@@ -30,7 +30,7 @@ using TT = TokenType;
 Compiler::Compiler(VM* vm, const std::string* src) noexcept : m_vm{vm}, m_source{src} {
 	m_scanner = new Scanner{src};
 	advance(); // set `peek` to the first token in the token stream.
-	String* fname = &vm->string("<script>", 8);
+	String* fname = &vm->make_string("<script>", 8);
 	// reserve the first slot for this toplevel function.
 	m_symtable.add("<script>", 8, true);
 
@@ -227,7 +227,7 @@ void Compiler::break_stmt() {
 	// the `loop_exit` method is patching old loops, it
 	// doesn't get confused between 'jmp' instructions from
 	// break statements and 'jmp' instructions from other
-	// statements like if
+	// statements like "if".
 	int jmp = emit_jump(Op::no_op);
 
 	// A no_op instruction followed by a 0x00
@@ -255,10 +255,9 @@ void Compiler::fn_decl() {
 	expect(TT::Id, "expected function name");
 
 	const Token name_token = token;
-	String* fname = &m_vm->string(name_token.raw_cstr(*m_source), name_token.length());
+	String* fname = &m_vm->make_string(name_token.raw_cstr(*m_source), name_token.length());
 
 	func_expr(fname);
-
 	new_variable(name_token);
 }
 
@@ -296,6 +295,7 @@ void Compiler::func_expr(String* fname, bool is_method) {
 	compiler.expect(TT::RParen, "Expected ')' after function parameters.");
 
 	CodeBlock* code = compiler.compile_func();
+	if (compiler.has_error) has_error = true;
 	const u8 idx = emit_value(SNAP_OBJECT_VAL(code));
 
 	emit_bytes(Op::make_func, static_cast<Op>(idx), token);
@@ -483,7 +483,7 @@ void Compiler::primary(bool can_assign) {
 		literal();
 	} else if (match(TT::Fn)) {
 		static constexpr const char* name = "<anonymous>";
-		String* fname = &m_vm->string(name, 11);
+		String* fname = &m_vm->make_string(name, 11);
 		if (check(TT::LParen)) return func_expr(fname);
 		// Names of lambda expressions are simply ignored
 		// Unless found in a statement context.
@@ -512,7 +512,7 @@ void Compiler::table() {
 			expect(TT::RSqBrace, "Expected ']' near table key.");
 		} else {
 			expect(TT::Id, "Expected identifier as table key.");
-			String* key_string = &m_vm->string(token.raw(*m_source).c_str(), token.length());
+			String* key_string = &m_vm->make_string(token.raw(*m_source).c_str(), token.length());
 			const int key_idx = emit_value(SNAP_OBJECT_VAL(key_string));
 			emit_bytes(Op::load_const, static_cast<Op>(key_idx), token);
 			if (check(TT::LParen)) {
@@ -739,12 +739,12 @@ bool Compiler::ok() const noexcept {
 u32 Compiler::emit_string(const Token& token) {
 	u32 length = token.length() - 2; // minus the quotes
 	// +1 to skip the openening quote.
-	String& string = m_vm->string(token.raw_cstr(*m_source) + 1, length);
+	String& string = m_vm->make_string(token.raw_cstr(*m_source) + 1, length);
 	return emit_value(SNAP_OBJECT_VAL(&string));
 }
 
 u32 Compiler::emit_id_string(const Token& token) {
-	String* s = &m_vm->string(token.raw_cstr(*m_source), token.length());
+	String* s = &m_vm->make_string(token.raw_cstr(*m_source), token.length());
 	return emit_value(SNAP_OBJECT_VAL(s));
 }
 

@@ -498,7 +498,7 @@ Value VM::get_global(String* name) const {
 }
 
 Value VM::get_global(const char* name) {
-	String& sname = string(name, strlen(name));
+	String& sname = make_string(name, strlen(name));
 	return get_global(&sname);
 }
 
@@ -507,7 +507,7 @@ void VM::set_global(String* name, Value value) {
 }
 
 void VM::set_global(const char* name, Value value) {
-	String& sname = string(name, strlen(name));
+	String& sname = make_string(name, strlen(name));
 	m_global_vars[&sname] = value;
 }
 
@@ -729,7 +729,7 @@ bool VM::call_cclosure(CClosure* cclosure, int argc) {
 	return !m_has_error;
 }
 
-String& VM::string(const char* chars, size_t length) {
+String& VM::make_string(const char* chars, size_t length) {
 	size_t hash = hash_cstring(chars, length);
 
 	// If an identical string has already been created, then

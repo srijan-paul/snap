@@ -192,7 +192,7 @@ public:
 
 	/// @brief Makes an interned string and returns a
 	/// reference to it.
-	String& string(const char* chars, size_t length);
+	String& make_string(const char* chars, size_t length);
 
 	/// @brief Triggers a garbage collection cycle, does a
 	/// mark-trace-sweep.
@@ -292,6 +292,9 @@ private:
 	/// string if it isn't already interned.
 	Value concatenate(const String* left, const String* right);
 
+	/// Load a snap::Object into the global variable list.
+	/// generally used for loading functions and objects from
+	/// the standard library.
 	void add_stdlib_object(const char* name, Obj* o);
 
 	/// @brief prepares for a functionc call by pushing a new

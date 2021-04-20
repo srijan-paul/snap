@@ -1,9 +1,7 @@
 #include <compiler.hpp>
 #include <function.hpp>
 #include <gc.hpp>
-#include <iostream>
 #include <upvalue.hpp>
-#include <xutility>
 
 namespace snap {
 

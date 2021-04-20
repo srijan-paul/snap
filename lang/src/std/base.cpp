@@ -16,7 +16,7 @@ snap::Value snap::stdlib::print(VM& vm, int argc) {
 	}
 
 	res += "\n";
-	String& snap_str = vm.string(res.c_str(), res.size());
+	String& snap_str = vm.make_string(res.c_str(), res.size());
 	vm.print(vm, &snap_str);
 
 	return SNAP_NIL_VAL;

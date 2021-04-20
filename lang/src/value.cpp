@@ -27,7 +27,7 @@ static char* num_to_cstr(Value v) {
 	const char* fmt = is_whole ? "%d" : "%f";
 	int bufsize = std::snprintf(nullptr, 0, fmt, num) + 1;
 
-	char* buf = new char[bufsize]; // + 1 for null terminator.
+	char* buf = new char[bufsize];
 	int res = std::sprintf(buf, fmt, num);
 	SNAP_ASSERT(res > 0, "sprintf failed!");
 
@@ -36,10 +36,7 @@ static char* num_to_cstr(Value v) {
 
 char* value_to_cstring(Value v) {
 	switch (SNAP_GET_TT(v)) {
-	case VT::Number: {
-		return num_to_cstr(v);
-	}
-
+	case VT::Number: return num_to_cstr(v);
 	default: SNAP_UNREACHABLE();
 	}
 }
