@@ -85,7 +85,8 @@ enum class TokenType {
 	Nil,
 	Fn,
 	Return,
-	Break
+	Break,
+	Continue,
 };
 
 struct SourcePosition {

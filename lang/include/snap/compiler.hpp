@@ -181,6 +181,7 @@ private:
 	void if_stmt();									// if EXPR STMT (else STMT)?
 	void while_stmt();							// while EXPR STMT
 	void break_stmt();							// BREAK
+	void continue_stmt();						// CONTINUE
 	void expr_stmt();								// FUNCALL | ASSIGN
 	void fn_decl();									// fn (ID|SUFFIXED_EXPR) BLOCK
 	void ret_stmt();								// return EXPR?
@@ -251,9 +252,12 @@ private:
 	// that encode the jump location in big endian.
 	// Returns the index  of the first half of the jump offset.
 	size_t emit_jump(Opcode op);
-	// Patches the jump instruction whose offset operand is at index `index`,
+	// Patches the jump instruction whose first operand is at index [index],
 	// encoding the address of the most recently emitted opcode.
 	void patch_jump(size_t index);
+	// Patches a jump instruction whose first operand is at index [index] 
+	// that's supposed  to  jump backwards to the opcode at at index [dst_index]
+	void patch_backwards_jump(size_t index, u32 dst_index);
 
 	/// @brief create a new variable and add it to the
 	/// current scope in the symbol table.

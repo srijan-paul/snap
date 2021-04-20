@@ -7,4 +7,6 @@ while i < 10 {
   sum += i;
 }
 
-print('The sum is: ', sum);
+-- expect: 53
+return sum
+

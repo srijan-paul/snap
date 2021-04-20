@@ -101,15 +101,17 @@ void Compiler::toplevel() {
 
 	switch (tt) {
 	case TT::Const:
-	case TT::Let: return var_decl();
-	case TT::LCurlBrace: return block_stmt();
-	case TT::If: return if_stmt();
-	case TT::While: return while_stmt();
-	case TT::Fn: return fn_decl();
-	case TT::Return: return ret_stmt();
-	case TT::Break: return break_stmt();
-	default: expr_stmt();
+	case TT::Let: var_decl(); break;
+	case TT::LCurlBrace: block_stmt(); break;
+	case TT::If: if_stmt(); break;
+	case TT::While: while_stmt(); break;
+	case TT::Fn: fn_decl(); break;
+	case TT::Return: ret_stmt(); break;
+	case TT::Break: break_stmt(); break;
+	case TT::Continue: continue_stmt(); break;
+	default: expr_stmt(); break;
 	}
+	match(TT::Semi);
 }
 
 void Compiler::var_decl() {
@@ -118,7 +120,6 @@ void Compiler::var_decl() {
 	do {
 		declarator(is_const);
 	} while (match(TT::Comma));
-	match(TT::Semi); // optional semi colon at the end.
 }
 
 void Compiler::declarator(bool is_const) {
@@ -174,20 +175,24 @@ void Compiler::exit_loop() {
 	int n_ops = THIS_BLOCK.op_count();
 	// Emit the jmp_back instruction that connects the end of the
 	// loop to the beginning.
-	emit(Op::jmp_back);
-	u32 jmp_dist = (THIS_BLOCK.op_count() - 1) - m_loop->start + 3;
-	if (jmp_dist > UINT16_MAX) {
-		ERROR("Loop body is too big.");
-		return;
-	}
-	emit(static_cast<Op>((jmp_dist << 8) & 0xff), static_cast<Op>(jmp_dist & 0xff));
+	int back_jmp = emit_jump(Op::jmp_back);
+	patch_backwards_jump(back_jmp, m_loop->start);
 
 	for (int i = m_loop->start; i < n_ops;) {
 		// no_op instructions are 'placeholders' for
 		// jumps resulting from a break or continue statement.
 		if (THIS_BLOCK.code[i] == Op::no_op) {
-			THIS_BLOCK.code[i] = Op::jmp;
-			patch_jump(i + 1);
+
+			// If it's a break statement then patch it to the
+			// end of the loop.
+			if (u8(THIS_BLOCK.code[i + 1]) == 0) {
+				THIS_BLOCK.code[i] = Op::jmp;
+				patch_jump(i + 1);
+			} else {
+				SNAP_ASSERT(u8(THIS_BLOCK.code[i + 1]) == 0xff, "Bad jump.");
+				THIS_BLOCK.code[i] = Op::jmp_back;
+				patch_backwards_jump(i + 1, m_loop->start);
+			}
 		}
 
 		// It is crucial that we increment the counter by the
@@ -234,7 +239,22 @@ void Compiler::break_stmt() {
 	// is recognized as a 'break' statement.
 	// Later the 0x00 and the next byte are
 	// changed into the actual jump offset.
-	THIS_BLOCK.code[jmp + 1] = Op(0x00);
+	THIS_BLOCK.code[jmp] = Op(0x00);
+}
+
+void Compiler::continue_stmt() {
+	advance(); // consume 'continue'
+	if (m_loop == nullptr) {
+		ERROR("continue statement outside a loop.");
+		return;
+	}
+
+	discard_loop_locals(m_loop->scope_depth);
+
+	// continue statement jumps that need to be patched
+	// later are marked with a `no_op` instruction followed
+	// by two `0xff`s.
+	emit_jump(Op::no_op);
 }
 
 void Compiler::while_stmt() {
@@ -331,13 +351,11 @@ void Compiler::ret_stmt() {
 		emit(Op::load_nil);
 	}
 	emit(Opcode::return_val);
-	match(TT::Semi);
 }
 
 void Compiler::expr_stmt() {
 	expr();
 	emit(Opcode::pop, token);
-	match(TT::Semi);
 }
 
 void Compiler::expr(bool can_assign) {
@@ -654,7 +672,8 @@ size_t Compiler::emit_jump(Opcode op) {
 void Compiler::patch_jump(size_t index) {
 	u32 jump_dist = THIS_BLOCK.op_count() - index - 2;
 	if (jump_dist > UINT16_MAX) {
-		error_at("Too much code to jump over.", token.location.line);
+		ERROR("Too much code to jump over");
+		return;
 	}
 
 	// If we use a single opcode for the jump offset, then we're only allowed
@@ -670,6 +689,16 @@ void Compiler::patch_jump(size_t index) {
 	// and joins them together using some bit operators.
 	THIS_BLOCK.code[index] = static_cast<Op>((jump_dist >> 8) & 0xff);
 	THIS_BLOCK.code[index + 1] = static_cast<Op>(jump_dist & 0xff);
+}
+
+void Compiler::patch_backwards_jump(size_t index, u32 dst_index) {
+	u32 distance = index - dst_index + 2;
+	if (distance > UINT16_MAX) {
+		ERROR("Too much code to jump over.");
+		return;
+	}
+	THIS_BLOCK.code[index] = static_cast<Op>((distance >> 8) & 0xff);
+	THIS_BLOCK.code[index + 1] = static_cast<Op>(distance & 0xff);
 }
 
 void Compiler::add_param(const Token& token) {

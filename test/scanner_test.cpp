@@ -26,12 +26,13 @@ static bool run_tests() {
 	bool passed = true;
 	std::string code = "123 4.55 + - -= += >= >> << > < <=";
 	passed = passed && compare_ttypes(&code, {TT::Integer, TT::Float, TT::Plus, TT::Minus,
-											  TT::MinusEq, TT::PlusEq, TT::GtEq, TT::BitRShift,
-											  TT::BitLShift, TT::Gt, TT::Lt, TT::LtEq});
+																						TT::MinusEq, TT::PlusEq, TT::GtEq, TT::BitRShift,
+																						TT::BitLShift, TT::Gt, TT::Lt, TT::LtEq});
 
 	// test keyword and identifier scanning
-	code = "let true false xyz else";
-	passed = passed && compare_ttypes(&code, {TT::Let, TT::True, TT::False, TT::Id, TT::Else, TT::Eof});
+	code = "let true false xyz else break continue";
+	passed = passed && compare_ttypes(&code, {TT::Let, TT::True, TT::False, TT::Id, TT::Else,
+																						TT::Break, TT::Continue, TT::Eof});
 
 	code = "'this is a string' .. 'this is also string'";
 	passed = passed && compare_ttypes(&code, {TT::String, TT::Concat, TT::String, TT::Eof});
