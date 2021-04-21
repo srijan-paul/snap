@@ -59,6 +59,8 @@ struct SymbolTable {
 	const LocalVar* find_by_slot(const u8 offset) const;
 };
 
+enum class ExpKind { prefix, exp_stmt, call, index, member_access, grouping, none };
+
 class Compiler {
 	friend GC;
 
@@ -182,30 +184,37 @@ private:
 	void while_stmt();							// while EXPR STMT
 	void break_stmt();							// BREAK
 	void continue_stmt();						// CONTINUE
-	void expr_stmt();								// FUNCALL | ASSIGN
 	void fn_decl();									// fn (ID|SUFFIXED_EXPR) BLOCK
 	void ret_stmt();								// return EXPR?
+	void expr_stmt();								// FUNCALL | ASSIGN
+	void complete_expr_stmt();
 
-	void expr(bool can_assign = true);
+	// parses a expression statement's prefix.
+	// returns true if the statement was a
+	// complete expression statement by itself
+	// (such as 'a = 1') else returns false.
+	bool prefix();
 
-	void logic_or(bool can_assign);	 // || or
-	void logic_and(bool can_assign); // && and
+	void expr();
 
-	void bit_or(bool can_assign);	 // |
-	void bit_and(bool can_assign); // &
+	void logic_or();	// || or
+	void logic_and(); // && and
 
-	void equality(bool can_assign);		// == !=
-	void comparison(bool can_assign); // > >= < <=
-	void b_shift(bool can_assign);		// >> <<
+	void bit_or();	// |
+	void bit_and(); // &
 
-	void sum(bool can_assign);								 // + - ..
-	void mult(bool can_assign);								 // * / %
-	void unary(bool can_assign);							 // - + ! not
-	void atomic(bool can_assign);							 // (ID|'(' EXPR ')' ) SUFFIX*
-	void suffix_expr(bool can_assign);				 // '['EXPR']' | '.'ID | '('ARGS')' | :ID'('')'
+	void equality();	 // == !=
+	void comparison(); // > >= < <=
+	void b_shift();		 // >> <<
+
+	void sum();																 // + - ..
+	void mult();															 // * / %
+	void unary();															 // - + ! not
+	void atomic();														 // (ID|'(' EXPR ')' ) SUFFIX*
+	void suffix_expr();												 // '['EXPR']' | '.'ID | '('ARGS')' | :ID'('')'
 	void compile_args(bool is_method = false); // EXPR (',' EXPR)*
-	void grouping(bool can_assign);						 // '('expr')'
-	void primary(bool can_assign);						 // LITERAL | ID
+	void grouping();													 // '('expr')'
+	void primary();														 // LITERAL | ID
 	void variable(bool can_assign);						 // ID
 	void literal();														 // NUM | STR | BOOL | nil
 	void func_expr(String* fname, bool is_method = false); // fn NAME? BLOCK
@@ -255,7 +264,7 @@ private:
 	// Patches the jump instruction whose first operand is at index [index],
 	// encoding the address of the most recently emitted opcode.
 	void patch_jump(size_t index);
-	// Patches a jump instruction whose first operand is at index [index] 
+	// Patches a jump instruction whose first operand is at index [index]
 	// that's supposed  to  jump backwards to the opcode at at index [dst_index]
 	void patch_backwards_jump(size_t index, u32 dst_index);
 

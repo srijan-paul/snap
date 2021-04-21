@@ -12,4 +12,5 @@ sum += x
 sum += y
 sum += z
 
+-- expect: 13
 return sum

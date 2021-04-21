@@ -1,10 +1,11 @@
-let sum = 0;
-let i   = 0;
-
-while i < 10 {
-  i += 1;
-  if i == 3 continue;
-  sum += i;
+let k = {
+  f() {
+    return {
+      f() {
+        print(123)
+      }
+    }
+  }
 }
 
-print('The sum is: ', sum);
+k:f():f()

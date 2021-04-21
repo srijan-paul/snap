@@ -105,10 +105,11 @@ static void expr_tests() {
 	test_return(R"(
 		let a = 1
 		let b = 3
-		a = b = 5
+		a = 5
+		b = 4 
 		return a + b
 	)",
-							SNAP_NUM_VAL(10.0), "Chained assignments to local variables");
+							SNAP_NUM_VAL(9), "top level local variables");
 
 	test_return("return 9 & 7", SNAP_NUM_VAL(1));
 	test_return("return 4 | 9", SNAP_NUM_VAL(13));
@@ -158,7 +159,7 @@ static void stmt_tests() {
 		return b)",
 							SNAP_NUM_VAL(7), "If statement with else-if branch");
 
-	test_file("var.snp", SNAP_NUM_VAL(13), "Var declarations.");
+	test_file("var.snp", SNAP_NUM_VAL(13), "block scoped declarations.");
 
 	std::cout << "Statement tests passed\n";
 }

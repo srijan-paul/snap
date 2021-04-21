@@ -214,7 +214,7 @@ ExitCode VM::run() {
 
 		case Op::jmp_back: {
 			u16 dist = FETCH_SHORT();
-			ip -= dist; 
+			ip -= dist;
 			break;
 		}
 
@@ -226,20 +226,21 @@ ExitCode VM::run() {
 
 		case Op::set_var: {
 			u8 idx = NEXT_BYTE();
-			SET_VAR(idx, peek(0));
+			SET_VAR(idx, pop());
 			break;
 		}
 
 		case Op::set_upval: {
 			u8 idx = NEXT_BYTE();
+			SNAP_ASSERT(m_current_frame->func->tag == OT::closure, "enclosing frame a CClosure!");
 			Closure* cl = static_cast<Closure*>(m_current_frame->func);
-			*cl->get_upval(idx)->m_value = PEEK(1);
+			*cl->get_upval(idx)->m_value = pop();
 			break;
 		}
 
 		case Op::get_upval: {
 			u8 idx = NEXT_BYTE();
-			SNAP_ASSERT(m_current_frame->func->tag == OT::closure, "enclosing frame a snap closure!");
+			SNAP_ASSERT(m_current_frame->func->tag == OT::closure, "enclosing frame a CClosure!");
 			Closure* cl = static_cast<Closure*>(m_current_frame->func);
 			push(*cl->get_upval(idx)->m_value);
 			break;
@@ -248,7 +249,7 @@ ExitCode VM::run() {
 		case Op::set_global: {
 			Value name = READ_VALUE();
 			SNAP_ASSERT(SNAP_IS_STRING(name), "Variable name not a string.");
-			set_global(SNAP_AS_STRING(name), PEEK(1));
+			set_global(SNAP_AS_STRING(name), pop());
 			break;
 		}
 

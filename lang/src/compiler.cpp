@@ -13,11 +13,11 @@
 #define ERROR(...) (error_at_token(kt::format_str(__VA_ARGS__).c_str(), token))
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
-	void name(bool can_assign) {                                                                     \
-		next_fn(can_assign);                                                                           \
+	void name() {                                                                                    \
+		next_fn();                                                                                     \
 		while (cond) {                                                                                 \
 			const Token op_token = token;                                                                \
-			next_fn(false);                                                                              \
+			next_fn();                                                                                   \
 			emit(toktype_to_op(op_token.type), op_token);                                                \
 		}                                                                                              \
 	}
@@ -354,28 +354,122 @@ void Compiler::ret_stmt() {
 }
 
 void Compiler::expr_stmt() {
-	expr();
-	emit(Opcode::pop, token);
+	bool complete_expr = prefix();
+	if (complete_expr) return;
+	complete_expr_stmt();
+
+	// the pop instruction here can be implicit
+	// for 'set' and 'index' instructions.
+	emit(Op::pop);
 }
 
-void Compiler::expr(bool can_assign) {
-	logic_or(can_assign);
+void Compiler::complete_expr_stmt() {
+	ExpKind exp_kind = ExpKind::prefix;
+	while (true) {
+		switch (peek.type) {
+		case TT::LSqBrace: {
+			advance();
+			expr();
+			expect(TT::RSqBrace, "Expected ']' to close index expression.");
+			if (is_assign_tok(peek.type)) {
+				table_assign(Op::index_no_pop, -1);
+				emit(Op::index_set);
+				return;
+			} else {
+				emit(Op::index);
+			}
+			break;
+		}
+
+		case TT::LParen: {
+			compile_args();
+			exp_kind = ExpKind::call;
+			break;
+		}
+
+		case TT::Dot: {
+			advance();
+			expect(TT::Id, "Expected field name.");
+			const u8 index = emit_id_string(token);
+
+			if (is_assign_tok(peek.type)) {
+				table_assign(Op::table_get_no_pop, index);
+				emit(Op::table_set, Op(index));
+				return;
+			} else {
+				exp_kind = ExpKind::member_access;
+				emit(Op::table_get, Op(index));
+			}
+			break;
+		}
+
+		case TT::Colon: {
+			advance();
+			expect(TT::Id, "Expected method name.");
+			u8 index = emit_id_string(token);
+			emit(Op::prep_method_call, Op(index));
+			compile_args(true);
+			exp_kind = ExpKind::call;
+			break;
+		}
+
+		default: {
+			if (exp_kind == ExpKind::call) return;
+			ERROR("Unexpected expression.");
+			return;
+		}
+		}
+	}
 }
 
-void Compiler::logic_or(bool can_assign) {
-	logic_and(can_assign);
+bool Compiler::prefix() {
+	if (check(TT::LParen)) {
+		grouping();
+		return false;
+	}
+
+	if (match(TT::Id)) {
+		if (is_assign_tok(peek.type)) {
+			variable(true);
+			return true;
+		} else {
+			variable(false);
+			return false;
+		}
+	}
+
+	if (!isLiteral(peek.type)) {
+		ERROR("Unexpected '{}'.", peek.raw(*m_source));
+		return true;
+	}
+
+	if (peek.type == TT::Nil) {
+		ERROR("Unexpected 'nil'.");
+		return true;
+	}
+
+	literal();
+	return false;
+}
+
+void Compiler::expr() {
+	logic_or();
+}
+
+void Compiler::logic_or() {
+	logic_and();
 	if (match(TT::Or)) {
 		const std::size_t jump = emit_jump(Op::jmp_if_true_or_pop);
-		logic_or(false);
+		logic_or();
 		patch_jump(jump);
 	}
 }
 
-void Compiler::logic_and(bool can_assign) {
-	bit_or(can_assign);
+void Compiler::logic_and() {
+	bit_or();
 	if (match(TT::And)) {
 		std::size_t jump = emit_jump(Op::jmp_if_false_or_pop);
-		logic_and(false);
+		logic_and();
 		patch_jump(jump);
 	}
 }
@@ -389,11 +483,11 @@ DEFINE_PARSE_FN(Compiler::b_shift, match(TT::BitLShift) or match(TT::BitRShift),
 DEFINE_PARSE_FN(Compiler::sum, (match(TT::Plus) or match(TT::Minus) or match(TT::Concat)), mult)
 DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) or match(TT::Mod) or match(TT::Div)), unary)
 
-void Compiler::unary(bool can_assign) {
+void Compiler::unary() {
 	if (check(TT::Bang) or check(TT::Minus)) {
 		advance();
 		const Token op_token = token;
-		atomic(false);
+		atomic();
 		switch (op_token.type) {
 		case TT::Bang: emit(Op::lnot, op_token); break;
 		case TT::Minus: emit(Op::negate, op_token); break;
@@ -401,28 +495,22 @@ void Compiler::unary(bool can_assign) {
 		}
 		return;
 	}
-	atomic(can_assign);
+	atomic();
 }
 
-void Compiler::atomic(bool can_assign) {
-	grouping(can_assign);
-	suffix_expr(can_assign);
+void Compiler::atomic() {
+	grouping();
+	suffix_expr();
 }
 
-void Compiler::suffix_expr(bool can_assign) {
+void Compiler::suffix_expr() {
 	while (true) {
 		switch (peek.type) {
 		case TT::LSqBrace: {
 			advance();
 			expr();
 			expect(TT::RSqBrace, "Expected ']' to close index expression.");
-			if (can_assign and is_assign_tok(peek.type)) {
-				table_assign(Op::index_no_pop, -1);
-				emit(Op::index_set);
-				return;
-			} else {
-				emit(Op::index);
-			}
+			emit(Op::index);
 			break;
 		}
 		case TT::LParen: compile_args(); break;
@@ -430,14 +518,7 @@ void Compiler::suffix_expr(bool can_assign) {
 			advance();
 			expect(TT::Id, "Expected field name.");
 			const u8 index = emit_id_string(token);
-
-			if (can_assign and is_assign_tok(peek.type)) {
-				table_assign(Op::table_get_no_pop, index);
-				emit(Op::table_set, Op(index));
-				return;
-			} else {
-				emit(Op::table_get, static_cast<Op>(index));
-			}
+			emit(Op::table_get, static_cast<Op>(index));
 			break;
 		}
 		case TT::Colon: {
@@ -487,16 +568,16 @@ void Compiler::compile_args(bool is_method) {
 	emit(Op::call_func, Op(argc));
 }
 
-void Compiler::grouping(bool can_assign) {
+void Compiler::grouping() {
 	if (match(TT::LParen)) {
 		expr();
 		expect(TT::RParen, "Expected ')' after grouping expression.");
 		return;
 	}
-	primary(can_assign);
+	primary();
 }
 
-void Compiler::primary(bool can_assign) {
+void Compiler::primary() {
 	if (isLiteral(peek.type)) {
 		literal();
 	} else if (match(TT::Fn)) {
@@ -507,8 +588,8 @@ void Compiler::primary(bool can_assign) {
 		// Unless found in a statement context.
 		expect(TT::Id, "Expected function name or '('.");
 		return func_expr(fname);
-	} else if (check(TT::Id)) {
-		variable(can_assign);
+	} else if (match(TT::Id)) {
+		variable(false);
 	} else if (match(TT::LCurlBrace)) {
 		table();
 	} else {
@@ -542,7 +623,7 @@ void Compiler::table() {
 		}
 
 		expect(TT::Colon, "Expected ':' after table key.");
-		expr(false);
+		expr();
 		emit(Op::table_add_field);
 
 		if (check(TT::RCurlBrace)) break;
@@ -557,8 +638,6 @@ void Compiler::table() {
 }
 
 void Compiler::variable(bool can_assign) {
-	advance();
-
 	Op get_op = Op::get_var;
 	Op set_op = Op::set_var;
 
@@ -581,7 +660,9 @@ void Compiler::variable(bool can_assign) {
 		}
 	}
 
-	if (can_assign and is_assign_tok(peek.type)) {
+	if (can_assign) {
+
+		SNAP_ASSERT(is_assign_tok(peek.type), "Not in an assignment context.");
 		if (is_const) {
 			std::string message =
 					kt::format_str("Cannot assign to variable '{}' marked const.", token.raw(*m_source));
