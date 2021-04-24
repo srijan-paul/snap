@@ -353,17 +353,18 @@ void Compiler::ret_stmt() {
 }
 
 void Compiler::expr_stmt() {
-	bool complete_expr = prefix();
-	if (complete_expr) return;
-	complete_expr_stmt();
+	ExpKind prefix_type = prefix();
+	if (prefix_type == ExpKind::none) return;
+	complete_expr_stmt(prefix_type);
 
 	// the pop instruction here can be implicit
 	// for 'set' and 'index' instructions.
 	emit(Op::pop);
 }
 
-void Compiler::complete_expr_stmt() {
-	ExpKind exp_kind = ExpKind::prefix;
+void Compiler::complete_expr_stmt(ExpKind prefix_type) {
+	ExpKind exp_kind = prefix_type;
+
 	while (true) {
 		switch (peek.type) {
 		case TT::LSqBrace: {
@@ -376,11 +377,16 @@ void Compiler::complete_expr_stmt() {
 				return;
 			} else {
 				emit(Op::index);
+				exp_kind = ExpKind::prefix;
 			}
 			break;
 		}
 
 		case TT::LParen: {
+			if (exp_kind == ExpKind::literal_value) {
+				ERROR("Unexpected '('");
+				return;
+			}
 			compile_args();
 			exp_kind = ExpKind::call;
 			break;
@@ -396,7 +402,7 @@ void Compiler::complete_expr_stmt() {
 				emit(Op::table_set, Op(index));
 				return;
 			} else {
-				exp_kind = ExpKind::member_access;
+				exp_kind = ExpKind::prefix;
 				emit(Op::table_get, Op(index));
 			}
 			break;
@@ -421,34 +427,36 @@ void Compiler::complete_expr_stmt() {
 	}
 }
 
-bool Compiler::prefix() {
+ExpKind Compiler::prefix() {
 	if (check(TT::LParen)) {
 		grouping();
-		return false;
+		return ExpKind::prefix;
 	}
 
 	if (match(TT::Id)) {
 		if (is_assign_tok(peek.type)) {
 			variable(true);
-			return true;
+			// not an expression anymore, it is
+			// an assignment statment now
+			return ExpKind::none;
 		} else {
 			variable(false);
-			return false;
+			return ExpKind::prefix;
 		}
 	}
 
 	if (!is_literal(peek.type)) {
 		ERROR("Unexpected '{}'.", peek.raw(*m_source));
-		return true;
+		return ExpKind::literal_value;
 	}
 
 	if (peek.type == TT::Nil) {
 		ERROR("Unexpected 'nil'.");
-		return true;
+		return ExpKind::none;
 	}
 
 	literal();
-	return false;
+	return ExpKind::literal_value;
 }
 
 void Compiler::expr() {

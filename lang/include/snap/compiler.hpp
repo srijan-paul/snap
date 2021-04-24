@@ -29,7 +29,8 @@ struct LocalVar {
 	bool is_captured = false;
 
 	explicit LocalVar() noexcept {};
-	LocalVar(const char* varname, u32 name_len, u8 scope_depth = 0, bool isconst = false)
+	explicit LocalVar(const char* varname, u32 name_len, u8 scope_depth = 0,
+										bool isconst = false) noexcept
 			: name{varname}, length{name_len}, depth{scope_depth}, is_const{isconst} {};
 };
 
@@ -60,6 +61,8 @@ struct SymbolTable {
 };
 
 enum class ExpKind {
+	literal_value,
+	identifier,
 	prefix,
 	call,
 	index,
@@ -193,13 +196,13 @@ private:
 	void fn_decl();									// fn (ID|SUFFIXED_EXPR) BLOCK
 	void ret_stmt();								// return EXPR?
 	void expr_stmt();								// FUNCALL | ASSIGN
-	void complete_expr_stmt();
+	void complete_expr_stmt(ExpKind prefix_type);
 
 	// parses a expression statement's prefix.
 	// returns true if the statement was a
 	// complete expression statement by itself
 	// (such as 'a = 1') else returns false.
-	bool prefix();
+	ExpKind prefix();
 
 	void expr();
 
