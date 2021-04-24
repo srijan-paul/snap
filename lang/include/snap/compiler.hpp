@@ -59,7 +59,13 @@ struct SymbolTable {
 	const LocalVar* find_by_slot(const u8 offset) const;
 };
 
-enum class ExpKind { prefix, exp_stmt, call, index, member_access, grouping, none };
+enum class ExpKind {
+	prefix,
+	call,
+	index,
+	member_access,
+	none,
+};
 
 class Compiler {
 	friend GC;
@@ -147,7 +153,7 @@ private:
 		return !eof() && peek.type == expected;
 	}
 
-	inline bool isLiteral(TokenType type) const noexcept {
+	inline bool is_literal(TokenType type) const noexcept {
 		return type == TokenType::Integer || type == TokenType::String || type == TokenType::Float ||
 					 type == TokenType::False || type == TokenType::True || type == TokenType::Nil;
 	}

@@ -13,6 +13,7 @@ enum class ObjType : u8 {
 	c_closure,
 	upvalue,
 	table,
+	user_data,
 };
 
 /// Objects always live on the heap. A value which is an object contains a pointer
@@ -60,61 +61,27 @@ enum class ValueType { Number, Bool, Object, Nil, Undefined };
 /// SNAP_NAN_TAGGING is defined.
 struct Value {
 	ValueType tag;
-	union {
+	union Data {
 		number num;
 		bool boolean;
 		Obj* object;
+		Data(){};
+		Data(number v) noexcept : num(v){};
+		Data(bool b) noexcept : boolean(b){};
+		Data(Obj* o) noexcept : object(o){};
 	} as;
 
-	explicit Value(number v) noexcept : tag{ValueType::Number} {
-		as.num = v;
-	}
-
-	explicit Value(bool v) noexcept : tag{ValueType::Bool} {
-		as.boolean = v;
-	}
-
+	explicit Value(number n) noexcept : tag{ValueType::Number}, as{n} {};
+	explicit Value(bool b) noexcept : tag{ValueType::Bool}, as{b} {};
 	explicit Value() noexcept : tag{ValueType::Nil} {};
-
-	explicit Value(Obj* o) noexcept : tag{ValueType::Object} {
+	explicit Value(Obj* o) noexcept : tag{ValueType::Object}, as{o} {
 		SNAP_ASSERT(o != nullptr, "Unexpected nullptr object");
-		as.object = o;
 	}
 
 	static inline Value undefined() {
 		Value undef;
 		undef.tag = ValueType::Undefined;
 		return undef;
-	}
-
-	inline number as_num() const {
-		SNAP_ASSERT(is_num(), "Not a number.");
-		return as.num;
-	}
-
-	inline bool as_bool() const {
-		return as.boolean;
-	}
-
-	inline Obj* as_object() const {
-		SNAP_ASSERT(is_object(), "Not a object.");
-		return as.object;
-	}
-
-	inline bool is_bool() const {
-		return tag == ValueType::Bool;
-	}
-
-	inline bool is_num() const {
-		return tag == ValueType::Number;
-	}
-
-	inline bool is_object() const {
-		return tag == ValueType::Object;
-	}
-
-	inline bool is_string() const {
-		return tag == ValueType::Object && as_object()->tag == ObjType::string;
 	}
 };
 
@@ -125,7 +92,7 @@ bool operator!=(const Value& a, const Value& b);
 // these procedures as free functions instead
 // of methods, but once we have NaN tagging, we
 // would still like to have the same procedure
-// signatures.
+// signatures used across the codebase.
 std::string value_to_string(Value v);
 char* value_to_cstring(Value v);
 const char* value_type_name(Value v);

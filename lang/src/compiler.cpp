@@ -3,7 +3,6 @@
 #include "opcode.hpp"
 #include "str_format.hpp"
 #include <compiler.hpp>
-#include <cstdio>
 #include <cstring>
 #include <string>
 #include <vm.hpp>
@@ -344,7 +343,7 @@ void Compiler::ret_stmt() {
 	// If the next token marks the start of an expression, then
 	// compile this statement as `return EXPR`, else it's just a `return`.
 	// where a `nil` after the return is implicit.
-	if (isLiteral(peek.type) or check(TT::Id) or check(TT::Bang) or check(TT::Minus) or
+	if (is_literal(peek.type) or check(TT::Id) or check(TT::Bang) or check(TT::Minus) or
 			check(TT::LParen) or check(TT::Fn) or check(TT::LCurlBrace)) {
 		expr();
 	} else {
@@ -438,7 +437,7 @@ bool Compiler::prefix() {
 		}
 	}
 
-	if (!isLiteral(peek.type)) {
+	if (!is_literal(peek.type)) {
 		ERROR("Unexpected '{}'.", peek.raw(*m_source));
 		return true;
 	}
@@ -578,7 +577,7 @@ void Compiler::grouping() {
 }
 
 void Compiler::primary() {
-	if (isLiteral(peek.type)) {
+	if (is_literal(peek.type)) {
 		literal();
 	} else if (match(TT::Fn)) {
 		static constexpr const char* name = "<anonymous>";
@@ -661,7 +660,6 @@ void Compiler::variable(bool can_assign) {
 	}
 
 	if (can_assign) {
-
 		SNAP_ASSERT(is_assign_tok(peek.type), "Not in an assignment context.");
 		if (is_const) {
 			std::string message =

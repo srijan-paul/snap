@@ -91,11 +91,11 @@ const char* value_type_name(Value v) {
 bool operator==(const Value& a, const Value& b) {
 	if (a.tag != b.tag) return false;
 	switch (a.tag) {
-	case VT::Number: return b.as_num() == a.as_num();
-	case VT::Bool: return a.as_bool() == b.as_bool();
+	case VT::Number: return SNAP_AS_NUM(b) == SNAP_AS_NUM(a);
+	case VT::Bool: return SNAP_AS_BOOL(a) == SNAP_AS_BOOL(b);
 	case VT::Object: {
-		const Obj* oa = a.as_object();
-		const Obj* ob = b.as_object();
+		const Obj* oa = SNAP_AS_OBJECT(a);
+		const Obj* ob = SNAP_AS_OBJECT(b);
 		if (oa->tag != ob->tag) return false;
 		return oa == ob;
 	}

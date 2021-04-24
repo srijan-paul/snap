@@ -1,11 +1,2 @@
-let k = {
-  f() {
-    return {
-      f() {
-        print(123)
-      }
-    }
-  }
-}
-
-k:f():f()
+let x = 1
+return x * 2
