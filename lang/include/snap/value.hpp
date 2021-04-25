@@ -31,8 +31,11 @@ public:
 	const ObjType tag;
 
 	explicit Obj(ObjType tt) noexcept : tag{tt} {};
-	virtual const char* to_cstring() const;
+	Obj(Obj&& o) = default;
+	Obj(Obj const& o) = default;
 	virtual ~Obj() = default;
+
+	virtual const char* to_cstring() const;
 
 protected:
 	/// @brief pointer to the next object in the VM's GC linked list.

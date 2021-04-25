@@ -117,7 +117,7 @@ while true {
 }
 ```
 
-For a more complete spec of the language, and all it's features visit [doc.md](./doc.md).
+For a more complete spec of the language, and all it's features visit [manual.md](./doc/manual.md).
 
 # Roadmap.
 

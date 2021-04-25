@@ -110,6 +110,12 @@ public:
 	/// operands it takes.
 	int op_arity(u32 indx) const noexcept;
 
+	/// Returns [op]'s stack effect. The stack effect of an
+	/// opcode is the number of values it pushes/pops on/off the
+	/// stack. A stack effect of -1 means the opcode pops one item
+	/// off the stack.
+	int op_stack_effect(Opcode op) const noexcept;
+
 private:
 	struct Loop {
 		Loop* enclosing;

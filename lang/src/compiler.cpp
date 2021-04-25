@@ -974,8 +974,18 @@ int Compiler::op_arity(u32 op_index) const noexcept {
 	SNAP_ASSERT(CHECK_ARITY(op, 2), "Instructions other than make_func can have upto 2 operands.");
 	return 2;
 }
-
 #undef CHECK_ARITY
+
+int Compiler::op_stack_effect(Op op) const noexcept {
+/// TODO: handle call_func and return_val.
+#define OP(_, __, stack_effect) stack_effect
+constexpr std::array<int, size_t(Op::no_op) + 1> stack_effects = {
+	#include <opcodex>
+};
+#undef OP
+
+return stack_effects[size_t(op)];
+}
 
 bool Compiler::is_assign_tok(TT type) const noexcept {
 	return (type == TT::Eq or (type >= TT::ModEq and type <= TT::PlusEq));
