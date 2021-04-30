@@ -11,6 +11,7 @@ quite often:
 | POP()     | Discard the value on top of the stack and  return it.                                                                 |
 | PUSH(x)   | Push `x` on top of the VM's stack.                                                                                    |
 | CONSTANTS | The constant pool of the current function. It is an array containing the literal values used in the current function. |
+| BASE      | Base index of the current callframe. This is used to read local variables                                             |
 
 
 ## Snap Bytecode

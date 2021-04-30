@@ -43,7 +43,12 @@ char* value_to_cstring(Value v) {
 
 std::string value_to_string(Value v) {
 	switch (SNAP_GET_TT(v)) {
-	case VT::Number: return std::to_string(SNAP_AS_NUM(v));
+	case VT::Number: {
+		number num = SNAP_AS_NUM(v);
+		if (u64(num) == num) return std::to_string(u64(num));
+		return std::to_string(num);
+	}
+
 	case VT::Bool: return SNAP_AS_BOOL(v) ? "true" : "false";
 	case VT::Nil: return "nil";
 	case VT::Undefined: return "undefined";

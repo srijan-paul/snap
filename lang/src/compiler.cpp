@@ -294,6 +294,8 @@ void Compiler::func_expr(String* fname, bool is_method) {
 
 	int param_count = 0;
 
+	/// Methods have an implicit 'self' parameter, used to
+	/// reference the object itself.
 	if (is_method) {
 		++param_count;
 		compiler.add_self_param();
@@ -308,7 +310,7 @@ void Compiler::func_expr(String* fname, bool is_method) {
 	}
 
 	if (param_count > MaxFuncParams) {
-		compiler.error_at_token("unction cannot have more than 200 parameters", compiler.token);
+		compiler.error_at_token("Function cannot have more than 200 parameters", compiler.token);
 	}
 
 	compiler.expect(TT::RParen, "Expected ')' after function parameters.");
@@ -317,29 +319,38 @@ void Compiler::func_expr(String* fname, bool is_method) {
 	if (compiler.has_error) has_error = true;
 	const u8 idx = emit_value(SNAP_OBJECT_VAL(code));
 
-	emit_bytes(Op::make_func, static_cast<Op>(idx), token);
-	emit(static_cast<Op>(code->m_num_upvals), token);
+	emit(Op::make_func);
+	emit_arg(idx);
+	emit_arg(code->m_num_upvals);
 
 	// Now, [fname] can be reached via the code block itself.
 	m_vm->gc_unprotect(fname);
 
 	for (int i = 0; i < compiler.m_symtable.m_num_upvals; ++i) {
 		const UpvalDesc& upval = compiler.m_symtable.m_upvals[i];
-		emit(upval.is_local ? static_cast<Op>(1) : static_cast<Op>(0));
-		emit(static_cast<Op>(upval.index));
+
+		/// An operand of '1' means that the upvalue exists in the call
+		/// frame of the currently executing function while this closure is
+		/// being created. '0' means the upvalue exists in the current
+		/// function's upvalue list.
+		emit_arg(upval.is_local ? 1 : 0);
+		emit_arg(upval.index);
 	}
 
 #ifdef SNAP_DEBUG_DISASSEMBLY
 	disassemble_block(code->name_cstr(), code->block());
 #endif
 
+	/// synchronize the parent compiler with
+	/// the child so we can continue compiling
+	/// from where the child left off.
 	prev = compiler.prev;
 	token = compiler.token;
 	peek = compiler.peek;
 }
 
 void Compiler::ret_stmt() {
-	advance(); // eat the return keyword.
+	advance(); // eat the 'return' keyword.
 	// If the next token marks the start of an expression, then
 	// compile this statement as `return EXPR`, else it's just a `return`.
 	// where a `nil` after the return is implicit.
@@ -349,7 +360,7 @@ void Compiler::ret_stmt() {
 	} else {
 		emit(Op::load_nil);
 	}
-	emit(Opcode::return_val);
+	emit(Op::return_val);
 }
 
 void Compiler::expr_stmt() {
@@ -357,8 +368,8 @@ void Compiler::expr_stmt() {
 	if (prefix_type == ExpKind::none) return;
 	complete_expr_stmt(prefix_type);
 
-	// the pop instruction here can be implicit
-	// for 'set' and 'index' instructions.
+	/// TODO: The pop instruction here can be implicit
+	/// for 'set' and 'index' instructions.
 	emit(Op::pop);
 }
 
@@ -399,11 +410,11 @@ void Compiler::complete_expr_stmt(ExpKind prefix_type) {
 
 			if (is_assign_tok(peek.type)) {
 				table_assign(Op::table_get_no_pop, index);
-				emit(Op::table_set, Op(index));
+				emit_with_arg(Op::table_set, index);
 				return;
 			} else {
 				exp_kind = ExpKind::prefix;
-				emit(Op::table_get, Op(index));
+				emit_with_arg(Op::table_get, index);
 			}
 			break;
 		}
@@ -412,7 +423,7 @@ void Compiler::complete_expr_stmt(ExpKind prefix_type) {
 			advance();
 			expect(TT::Id, "Expected method name.");
 			u8 index = emit_id_string(token);
-			emit(Op::prep_method_call, Op(index));
+			emit_with_arg(Op::prep_method_call, index);
 			compile_args(true);
 			exp_kind = ExpKind::call;
 			break;
@@ -436,7 +447,7 @@ ExpKind Compiler::prefix() {
 	if (match(TT::Id)) {
 		if (is_assign_tok(peek.type)) {
 			variable(true);
-			// not an expression anymore, it is
+			// Not an expression anymore, it is
 			// an assignment statment now
 			return ExpKind::none;
 		} else {
@@ -525,14 +536,14 @@ void Compiler::suffix_expr() {
 			advance();
 			expect(TT::Id, "Expected field name.");
 			const u8 index = emit_id_string(token);
-			emit(Op::table_get, static_cast<Op>(index));
+			emit_with_arg(Op::table_get, index);
 			break;
 		}
 		case TT::Colon: {
 			advance();
 			expect(TT::Id, "Expected method name.");
 			u8 index = emit_id_string(token);
-			emit(Op::prep_method_call, Op(index));
+			emit_with_arg(Op::prep_method_call, index);
 			compile_args(true);
 			break;
 		}
@@ -542,16 +553,28 @@ void Compiler::suffix_expr() {
 }
 
 void Compiler::table_assign(Op get_op, int idx) {
+	SNAP_ASSERT(is_assign_tok(peek.type), "Bad call to Compiler::table_assign");
+
 	advance();
 	const TT ttype = token.type;
 
+	/// if this is a simple assignment with '=' operator,
+	/// then simply compile the RHS as an expression and
+	/// return to the call site, wherein it's the caller's
+	/// responsibility to emit the 'set' opcode.
 	if (ttype == TT::Eq) {
 		expr();
 		return;
 	}
 
+	/// If we've reached here then it must be a compound
+	/// assignment operator. So we first need to get the
+	/// original field value, push it on top of the stack,
+	/// modify this value then use a 'set' opcode to store
+	/// it back into the table/array. The 'set' opcode is
+	/// emitted by the caller.
 	emit(get_op);
-	if (idx > 0) emit(Op(idx));
+	if (idx > 0) emit_arg(idx);
 	expr();
 	emit(toktype_to_op(ttype));
 }
@@ -572,7 +595,7 @@ void Compiler::compile_args(bool is_method) {
 	}
 
 	expect(TT::RParen, "Expected ')' after call.");
-	emit(Op::call_func, Op(argc));
+	emit_with_arg(Op::call_func, argc);
 }
 
 void Compiler::grouping() {
@@ -589,7 +612,7 @@ void Compiler::primary() {
 		literal();
 	} else if (match(TT::Fn)) {
 		static constexpr const char* name = "<anonymous>";
-		String* fname = &m_vm->make_string(name, 11);
+		String* fname = &m_vm->make_string(name, strlen(name));
 		if (check(TT::LParen)) return func_expr(fname);
 		// Names of lambda expressions are simply ignored
 		// Unless found in a statement context.
@@ -605,22 +628,22 @@ void Compiler::primary() {
 	}
 }
 
-/// @brief compiles a table, assuming the opening '{' has been
-/// consumed.
 void Compiler::table() {
 	emit(Opcode::new_table);
 
+	/// empty table.
 	if (match(TT::RCurlBrace)) return;
 
 	do {
 		if (match(TT::LSqBrace)) {
+			/// a computed table key like in { [1 + 2]: 3 }
 			expr();
 			expect(TT::RSqBrace, "Expected ']' near table key.");
 		} else {
 			expect(TT::Id, "Expected identifier as table key.");
-			String* key_string = &m_vm->make_string(token.raw(*m_source).c_str(), token.length());
+			String* key_string = &m_vm->make_string(token.raw_cstr(*m_source), token.length());
 			const int key_idx = emit_value(SNAP_OBJECT_VAL(key_string));
-			emit_bytes(Op::load_const, static_cast<Op>(key_idx), token);
+			emit_with_arg(Op::load_const, key_idx);
 			if (check(TT::LParen)) {
 				func_expr(key_string, true);
 				emit(Op::table_add_field);
@@ -682,21 +705,22 @@ void Compiler::variable(bool can_assign) {
 		/// time we are setting the value, the RHS
 		/// is sitting ready on top of the stack.
 		var_assign(get_op, index);
-		emit_bytes(set_op, static_cast<Op>(index), token);
+		emit_with_arg(set_op, index);
 	} else {
-		emit_bytes(get_op, static_cast<Op>(index), token);
+		emit_with_arg(get_op, index);
 	}
 }
 
 void Compiler::var_assign(Op get_op, u32 idx_or_name_str) {
 	advance();
 	const TT ttype = token.type;
+	SNAP_ASSERT(is_assign_tok(ttype), "Bad call to Compiler::var_assign");
 	if (ttype == TT::Eq) {
 		expr();
 		return;
 	}
 
-	emit(get_op, Op(idx_or_name_str));
+	emit_with_arg(get_op, idx_or_name_str);
 	expr();
 	emit(toktype_to_op(ttype));
 }
@@ -722,8 +746,8 @@ void Compiler::literal() {
 	}
 
 	/// TODO: handle indices larger than UINT8_MAX, by adding a
-	/// load_const_long.
-	emit(Op::load_const, static_cast<Op>(index));
+	/// load_const_long instruction that takes 2 operands.
+	emit_with_arg(Op::load_const, static_cast<u8>(index));
 }
 
 void Compiler::recover() {
@@ -751,8 +775,8 @@ void Compiler::exit_block() {
 size_t Compiler::emit_jump(Opcode op) {
 	size_t index = THIS_BLOCK.op_count();
 	emit(op);
-	emit(static_cast<Op>(0xff));
-	emit(static_cast<Op>(0xff));
+	emit_arg(0xff);
+	emit_arg(0xff);
 	return index + 1;
 }
 
@@ -919,9 +943,13 @@ inline void Compiler::emit(Op op, const Token& token) {
 	THIS_BLOCK.add_instruction(op, token.location.line);
 }
 
-inline void Compiler::emit_bytes(Op a, Op b, const Token& token) {
-	emit(a, token);
-	emit(b, token);
+inline void Compiler::emit_arg(u8 operand) {
+	THIS_BLOCK.add_instruction(Op(operand), token.location.line);
+}
+
+inline void Compiler::emit_with_arg(Op op, u8 arg) {
+	emit(op);
+	emit_arg(arg);
 }
 
 inline void Compiler::emit(Op a, Op b) {
@@ -979,12 +1007,12 @@ int Compiler::op_arity(u32 op_index) const noexcept {
 int Compiler::op_stack_effect(Op op) const noexcept {
 /// TODO: handle call_func and return_val.
 #define OP(_, __, stack_effect) stack_effect
-constexpr std::array<int, size_t(Op::no_op) + 1> stack_effects = {
-	#include <opcodex>
-};
+	constexpr std::array<int, size_t(Op::no_op) + 1> stack_effects = {
+#include <opcodex>
+	};
 #undef OP
 
-return stack_effects[size_t(op)];
+	return stack_effects[size_t(op)];
 }
 
 bool Compiler::is_assign_tok(TT type) const noexcept {

@@ -1,6 +1,7 @@
 #pragma once
 #include "common.hpp"
 #include "function.hpp"
+#include "opcode.hpp"
 #include "scanner.hpp"
 #include <array>
 
@@ -222,17 +223,23 @@ private:
 	void comparison(); // > >= < <=
 	void b_shift();		 // >> <<
 
-	void sum();																 // + - ..
-	void mult();															 // * / %
-	void unary();															 // - + ! not
-	void atomic();														 // (ID|'(' EXPR ')' ) SUFFIX*
-	void suffix_expr();												 // '['EXPR']' | '.'ID | '('ARGS')' | :ID'('')'
-	void compile_args(bool is_method = false); // EXPR (',' EXPR)*
-	void grouping();													 // '('expr')'
-	void primary();														 // LITERAL | ID
-	void variable(bool can_assign);						 // ID
-	void literal();														 // NUM | STR | BOOL | nil
+	void sum();					// + - ..
+	void mult();				// * / %
+	void unary();				// - + ! not
+	void atomic();			// (ID|'(' EXPR ')' ) SUFFIX*
+	void suffix_expr(); // '['EXPR']' | '.'ID | '('ARGS')' | :ID'('')'
+
+	/// @brief Compiles the arguments for a call expression. The current token
+	/// must be the opening '(' for the argument
+	void compile_args(bool is_method = false);						 // EXPR (',' EXPR)*
+	void grouping();																			 // '('expr')'
+	void primary();																				 // LITERAL | ID
+	void variable(bool can_assign);												 // ID
+	void literal();																				 // NUM | STR | BOOL | nil
 	void func_expr(String* fname, bool is_method = false); // fn NAME? BLOCK
+	
+	/// @brief compiles a table, assuming the opening '{' has been
+	/// consumed.
 	void table();
 
 	/// @brief Compiles a variable assignment RHS, assumes the
@@ -253,7 +260,7 @@ private:
 	/// 			 the value of that field in the table before assigning to it.
 	///				 [get_op] can be one of `index_no_pop` or `table_get_no_pop`.
 	/// @param idx In case we are assigning to a table field indexed by the dot (.) operator
-	/// 			 then we the [get_op] needs to use the position of that fieldn's name in the
+	/// 			 then we the [get_op] needs to use the position of that field's name in the
 	///				 constant pool as an operand too.
 	void table_assign(Opcode get_op, int idx);
 
@@ -265,8 +272,8 @@ private:
 	/// them from the symbol table. This is used to emit instructions for
 	/// 'break' and 'continue' statements.
 	void discard_loop_locals(u32 depth);
-	// Exit the current scope, popping all local
-	// variables off the stack and closing any upvalues.
+	// Exit the current scope, emitting pop instructions 
+	// for all local variables and close instructions for upvalues.
 	void exit_block();
 
 	void enter_loop(Loop& loop);
@@ -314,7 +321,9 @@ private:
 	inline void emit(Opcode op);
 	inline void emit(Opcode a, Opcode b);
 	inline void emit(Opcode op, const Token& token);
-	void emit_bytes(Opcode a, Opcode b, const Token& token);
+	inline void emit_arg(u8 arg);
+	inline void emit_with_arg(Opcode opm, u8 arg);
+
 	size_t emit_value(Value value);
 	u32 emit_string(const Token& token);
 	u32 emit_id_string(const Token& token);
