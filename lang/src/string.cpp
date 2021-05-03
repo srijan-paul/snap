@@ -3,7 +3,7 @@
 #include <cstring>
 #include <string.hpp>
 
-namespace snap {
+namespace vyse {
 
 // this hash function is from: https://craftinginterpreters.com/hash-tables.html
 u32 hash_cstring(const char* key, int len) {
@@ -31,7 +31,7 @@ String::String(const char* chrs, std::size_t len) noexcept : Obj(ObjType::string
 
 String::String(const char* chrs, size_t len, size_t hash) noexcept
 		: Obj{OT::string}, m_length{len} {
-	SNAP_ASSERT(hash == hash_cstring(chrs, len), "Incorrect cstring hash.");
+	VYSE_ASSERT(hash == hash_cstring(chrs, len), "Incorrect cstring hash.");
 	char* buf = new char[len + 1];
 	std::memcpy(buf, chrs, len);
 	buf[len] = '\0';
@@ -51,11 +51,11 @@ bool operator==(const String& a, const String& b) {
 }
 
 char String::at(number index) const {
-	SNAP_ASSERT(index > 0 and index < m_length, "string index out of range.");
-	SNAP_ASSERT(index == size_t(index), "string index not a whole number.");
+	VYSE_ASSERT(index > 0 and index < m_length, "string index out of range.");
+	VYSE_ASSERT(index == size_t(index), "string index not a whole number.");
 	return m_chars[size_t(index)];
 }
 
 void String::trace([[maybe_unused]] GC& gc){};
 
-} // namespace snap
+} // namespace vyse 

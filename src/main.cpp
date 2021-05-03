@@ -8,7 +8,7 @@
 #include <string>
 #include <vm.hpp>
 
-using namespace snap;
+using namespace vyse;
 
 int main() {
 	// Temporarily we use this entry point to run

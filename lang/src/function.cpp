@@ -3,11 +3,11 @@
 #include <gc.hpp>
 #include <upvalue.hpp>
 
-namespace snap {
+namespace vyse {
 
 u32 CodeBlock::add_param() {
 	++m_num_params;
-	SNAP_ASSERT(m_num_params < Compiler::MaxFuncParams, "Too many function parameters.");
+	VYSE_ASSERT(m_num_params < Compiler::MaxFuncParams, "Too many function parameters.");
 	return m_num_params;
 }
 
@@ -26,7 +26,7 @@ Closure::Closure(CodeBlock* code, u32 upval_count) noexcept
 }
 
 void Closure::set_upval(u32 idx, Upvalue* uv) {
-	SNAP_ASSERT(idx < m_upvals.size(), "Invalid upvalue index.");
+	VYSE_ASSERT(idx < m_upvals.size(), "Invalid upvalue index.");
 	m_upvals[idx] = uv;
 }
 
@@ -41,4 +41,4 @@ void CClosure::trace([[maybe_unused]] GC& gc) {
 	/// TODO: mark upvalues.
 }
 
-} // namespace snap
+} // namespace vyse 

@@ -4,7 +4,7 @@
 #include <table.hpp>
 #include <upvalue.hpp>
 
-namespace snap {
+namespace vyse {
 
 using VT = ValueType;
 using OT = ObjType;
@@ -12,11 +12,11 @@ using OT = ObjType;
 #define TABLE_GET_SLOT(k, h)			 search_entry<Table, Entry>(this, k, h)
 #define TABLE_GET_SLOT_CONST(k, h) search_entry<const Table, const Entry>(this, k, h)
 #define TABLE_PLACE_TOMBSTONE(e)                                                                   \
-	(SNAP_SET_TT(e.key, VT::Undefined), e.value = SNAP_NIL_VAL, ++m_num_tombstones)
+	(VYSE_SET_TT(e.key, VT::Undefined), e.value = VYSE_NIL_VAL, ++m_num_tombstones)
 
 // check if an entry is unoccupied.
-#define IS_ENTRY_FREE(e) (SNAP_IS_NIL(e.key))
-#define IS_ENTRY_DEAD(e) (SNAP_IS_UNDEFINED(e.key))
+#define IS_ENTRY_FREE(e) (VYSE_IS_NIL(e.key))
+#define IS_ENTRY_DEAD(e) (VYSE_IS_UNDEFINED(e.key))
 #define HASH_OBJ(o)			 ((size_t)(o)&UINT64_MAX)
 
 Table::~Table() {
@@ -49,7 +49,7 @@ void Table::ensure_capacity() {
 }
 
 Value Table::get(Value key) const {
-	if (SNAP_IS_NIL(key)) return SNAP_NIL_VAL;
+	if (VYSE_IS_NIL(key)) return VYSE_NIL_VAL;
 
 	size_t mask = m_cap - 1;
 	size_t hash = hash_value(key);
@@ -62,18 +62,18 @@ Value Table::get(Value key) const {
 		index = (index + 1) & mask;
 	}
 
-	return m_proto_table == nullptr ? SNAP_NIL_VAL : m_proto_table->get(key);
+	return m_proto_table == nullptr ? VYSE_NIL_VAL : m_proto_table->get(key);
 }
 
 /// TODO: handle the case for [set] where the [key] is a member of it's
 /// prototype.
 bool Table::set(Value key, Value value) {
-	SNAP_ASSERT(!SNAP_IS_NIL(key), "Table key is nil.");
+	VYSE_ASSERT(!VYSE_IS_NIL(key), "Table key is nil.");
 
 	// If the value is nil, then the key is
 	// simply removed with a tombstone in the
 	// table.
-	if (SNAP_IS_NIL(value)) return remove(key);
+	if (VYSE_IS_NIL(value)) return remove(key);
 
 	ensure_capacity();
 	size_t hash = hash_value(key);
@@ -162,8 +162,8 @@ size_t Table::length() const {
 }
 
 String* Table::find_string(const char* chars, size_t length, size_t hash) const {
-	SNAP_ASSERT(chars != nullptr, "key string is null.");
-	SNAP_ASSERT(hash == hash_cstring(chars, length), "Incorrect cstring hash.");
+	VYSE_ASSERT(chars != nullptr, "key string is null.");
+	VYSE_ASSERT(hash == hash_cstring(chars, length), "Incorrect cstring hash.");
 
 	size_t mask = m_cap - 1;
 	size_t index = hash & mask;
@@ -173,8 +173,8 @@ String* Table::find_string(const char* chars, size_t length, size_t hash) const 
 
 		if (entry.hash == hash) {
 			Value& k = entry.key;
-			if (SNAP_IS_STRING(k)) {
-				String* s = SNAP_AS_STRING(k);
+			if (VYSE_IS_STRING(k)) {
+				String* s = VYSE_AS_STRING(k);
 				if (s->len() == length and std::memcmp(s->c_str(), chars, length) == 0) return s;
 			}
 		}
@@ -190,12 +190,12 @@ String* Table::find_string(const char* chars, size_t length, size_t hash) const 
 }
 
 size_t Table::hash_value(Value key) const {
-	SNAP_ASSERT(!SNAP_IS_NIL(key), "Attempt to hash a nil key.");
-	switch (SNAP_GET_TT(key)) {
-	case VT::Bool: return SNAP_AS_BOOL(key) ? 7 : 15;
-	case VT::Number: return size_t(SNAP_AS_NUM(key)); // TODO: use a proper numeric hash
-	case VT::Object: return hash_object(SNAP_AS_OBJECT(key));
-	default: SNAP_UNREACHABLE(); 
+	VYSE_ASSERT(!VYSE_IS_NIL(key), "Attempt to hash a nil key.");
+	switch (VYSE_GET_TT(key)) {
+	case VT::Bool: return VYSE_AS_BOOL(key) ? 7 : 15;
+	case VT::Number: return size_t(VYSE_AS_NUM(key)); // TODO: use a proper numeric hash
+	case VT::Object: return hash_object(VYSE_AS_OBJECT(key));
+	default: VYSE_UNREACHABLE(); 
 	}
 }
 
@@ -220,7 +220,7 @@ void Table::delete_white_string_keys() {
 	for (u32 i = 0; i < m_cap; ++i) {
 		Entry& entry = m_entries[i];
 		if (IS_ENTRY_DEAD(entry) or IS_ENTRY_FREE(entry)) continue;
-		if (SNAP_IS_STRING(entry.key) and !SNAP_AS_STRING(entry.key)->marked) {
+		if (VYSE_IS_STRING(entry.key) and !VYSE_AS_STRING(entry.key)->marked) {
 			TABLE_PLACE_TOMBSTONE(entry);
 		}
 	}
@@ -234,4 +234,4 @@ bool operator==(const Table::Entry& a, const Table::Entry& b) {
 	return a.hash == b.hash and a.key == b.key;
 }
 
-} // namespace snap
+} // namespace vyse 

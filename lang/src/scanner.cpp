@@ -2,7 +2,7 @@
 #include <cstring>
 #include <scanner.hpp>
 
-namespace snap {
+namespace vyse {
 
 using TT = TokenType;
 
@@ -178,8 +178,8 @@ void Scanner::skip_irrelevant() {
 }
 
 void Scanner::skip_comment() {
-	SNAP_ASSERT(peek() == '-' and peek_next() == '-', "Bad call to Scanner::skip_comment.");
+	VYSE_ASSERT(peek() == '-' and peek_next() == '-', "Bad call to Scanner::skip_comment.");
 	while (!(eof() or check('\n') or check('\r'))) next();
 }
 
-} // namespace snap
+} // namespace vyse

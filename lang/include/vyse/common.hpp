@@ -3,7 +3,7 @@
 #include <cstring>
 #include <memory>
 
-namespace snap {
+namespace vyse {
 
 constexpr int VersionMajor = 0;
 constexpr int VersionMinor = 0;
@@ -21,34 +21,34 @@ using u16 = std::uint16_t;
 using std::size_t;
 using number = double;
 
-#define SNAP_MODE_DEBUG
-// #define SNAP_DEBUG_RUNTIME		 1
-#define SNAP_DEBUG_DISASSEMBLY 1
+#define VYSE_DEBUG 
+// #define VYSE_DEBUG_RUNTIME		 1
+#define VYSE_DEBUG_DISASSEMBLY 1
 
-#ifdef SNAP_MODE_DEBUG
+#ifdef VYSE_DEBUG
 
-#define SNAP_ASSERT(cond, message)                                                                 \
+#define VYSE_ASSERT(cond, message)                                                                 \
 	((cond) ? 0                                                                                      \
 					: (fprintf(stderr, "[%s:%d]: ASSERTION FAILED!: %s", __func__, __LINE__, message),       \
 						 abort(), 0))
 
-#define SNAP_ERROR(message)                                                                        \
+#define VYSE_ERROR(message)                                                                        \
 	(fprintf(stderr, "[%s:%d]: Interal Error: %s", __func__, __LINE__, message), abort())
 
-#define SNAP_UNREACHABLE() SNAP_ERROR("Unreachable code point reached.")
+#define VYSE_UNREACHABLE() VYSE_ERROR("Unreachable code point reached.")
 
 #else
 
-#define SNAP_ASSERT(cond, message) 0
-#define SNAP_ERROR(message)				 0
+#define VYSE_ASSERT(cond, message) 0
+#define VYSE_ERROR(message)				 0
 
 #endif
 
-#define SNAP_NO_COPY(class)							 class(class const& other) = delete
-#define SNAP_NO_MOVE(class)							 class(class && other) = delete
-#define SNAP_NO_DEFAULT_CONSTRUCT(class) class() = delete
+#define VYSE_NO_COPY(class)							 class(class const& other) = delete
+#define VYSE_NO_MOVE(class)							 class(class && other) = delete
+#define VYSE_NO_DEFAULT_CONSTRUCT(class) class() = delete
 
-#define SNAP_STRESS_GC 1
-// #define SNAP_LOG_GC		 1
+#define VYSE_STRESS_GC 1
+// #define VYSE_LOG_GC		 1
 
-} // namespace snap
+} // namespace vyse

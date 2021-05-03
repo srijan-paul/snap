@@ -1,9 +1,9 @@
 /// Forward declarations to avoid name resolution
 /// conflicts.
 
-namespace snap {
+namespace vyse {
 
-#ifndef SNAP_NAN_TAG
+#ifndef VYSE_NAN_TAG
 struct Value;
 #else
 using Value = double;
@@ -23,4 +23,4 @@ class Closure;
 /// but are implemented in C++.
 using CFunction = Value (*)(VM& vm, int argc);
 
-} // namespace snap
+} // namespace vyse 

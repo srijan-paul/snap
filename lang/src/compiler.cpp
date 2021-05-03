@@ -7,7 +7,7 @@
 #include <string>
 #include <vm.hpp>
 
-#define TOK2NUM(t) SNAP_NUM_VAL(std::stod(t.raw(*m_source)))
+#define TOK2NUM(t) VYSE_NUM_VAL(std::stod(t.raw(*m_source)))
 #define THIS_BLOCK (m_codeblock->block())
 #define ERROR(...) (error_at_token(kt::format_str(__VA_ARGS__).c_str(), token))
 
@@ -21,7 +21,7 @@
 		}                                                                                              \
 	}
 
-namespace snap {
+namespace vyse {
 
 using Op = Opcode;
 using TT = TokenType;
@@ -169,7 +169,7 @@ void Compiler::enter_loop(Loop& loop) {
 }
 
 void Compiler::exit_loop() {
-	SNAP_ASSERT(m_loop != nullptr, "Attempt to exit loop in a top-level block.");
+	VYSE_ASSERT(m_loop != nullptr, "Attempt to exit loop in a top-level block.");
 
 	int n_ops = THIS_BLOCK.op_count();
 	// Emit the jmp_back instruction that connects the end of the
@@ -188,7 +188,7 @@ void Compiler::exit_loop() {
 				THIS_BLOCK.code[i] = Op::jmp;
 				patch_jump(i + 1);
 			} else {
-				SNAP_ASSERT(u8(THIS_BLOCK.code[i + 1]) == 0xff, "Bad jump.");
+				VYSE_ASSERT(u8(THIS_BLOCK.code[i + 1]) == 0xff, "Bad jump.");
 				THIS_BLOCK.code[i] = Op::jmp_back;
 				patch_backwards_jump(i + 1, m_loop->start);
 			}
@@ -206,7 +206,7 @@ void Compiler::exit_loop() {
 }
 
 void Compiler::discard_loop_locals(u32 depth) {
-	SNAP_ASSERT(m_symtable.m_scope_depth > depth, "Bad call to discard_locals.");
+	VYSE_ASSERT(m_symtable.m_scope_depth > depth, "Bad call to discard_locals.");
 
 	for (int i = m_symtable.m_num_symbols - 1; i >= 0; i--) {
 		const LocalVar& var = m_symtable.m_symbols[i];
@@ -317,7 +317,7 @@ void Compiler::func_expr(String* fname, bool is_method) {
 
 	CodeBlock* code = compiler.compile_func();
 	if (compiler.has_error) has_error = true;
-	const u8 idx = emit_value(SNAP_OBJECT_VAL(code));
+	const u8 idx = emit_value(VYSE_OBJECT_VAL(code));
 
 	emit(Op::make_func);
 	emit_arg(idx);
@@ -337,7 +337,7 @@ void Compiler::func_expr(String* fname, bool is_method) {
 		emit_arg(upval.index);
 	}
 
-#ifdef SNAP_DEBUG_DISASSEMBLY
+#ifdef VYSE_DEBUG_DISASSEMBLY
 	disassemble_block(code->name_cstr(), code->block());
 #endif
 
@@ -509,7 +509,7 @@ void Compiler::unary() {
 		switch (op_token.type) {
 		case TT::Bang: emit(Op::lnot, op_token); break;
 		case TT::Minus: emit(Op::negate, op_token); break;
-		default: SNAP_ERROR("Impossible token.");
+		default: VYSE_ERROR("Impossible token.");
 		}
 		return;
 	}
@@ -553,7 +553,7 @@ void Compiler::suffix_expr() {
 }
 
 void Compiler::table_assign(Op get_op, int idx) {
-	SNAP_ASSERT(is_assign_tok(peek.type), "Bad call to Compiler::table_assign");
+	VYSE_ASSERT(is_assign_tok(peek.type), "Bad call to Compiler::table_assign");
 
 	advance();
 	const TT ttype = token.type;
@@ -642,7 +642,7 @@ void Compiler::table() {
 		} else {
 			expect(TT::Id, "Expected identifier as table key.");
 			String* key_string = &m_vm->make_string(token.raw_cstr(*m_source), token.length());
-			const int key_idx = emit_value(SNAP_OBJECT_VAL(key_string));
+			const int key_idx = emit_value(VYSE_OBJECT_VAL(key_string));
 			emit_with_arg(Op::load_const, key_idx);
 			if (check(TT::LParen)) {
 				func_expr(key_string, true);
@@ -691,7 +691,7 @@ void Compiler::variable(bool can_assign) {
 	}
 
 	if (can_assign) {
-		SNAP_ASSERT(is_assign_tok(peek.type), "Not in an assignment context.");
+		VYSE_ASSERT(is_assign_tok(peek.type), "Not in an assignment context.");
 		if (is_const) {
 			std::string message =
 					kt::format_str("Cannot assign to variable '{}' marked const.", token.raw(*m_source));
@@ -714,7 +714,7 @@ void Compiler::variable(bool can_assign) {
 void Compiler::var_assign(Op get_op, u32 idx_or_name_str) {
 	advance();
 	const TT ttype = token.type;
-	SNAP_ASSERT(is_assign_tok(ttype), "Bad call to Compiler::var_assign");
+	VYSE_ASSERT(is_assign_tok(ttype), "Bad call to Compiler::var_assign");
 	if (ttype == TT::Eq) {
 		expr();
 		return;
@@ -732,13 +732,13 @@ void Compiler::literal() {
 	case TT::Integer:
 	case TT::Float: index = emit_value(TOK2NUM(token)); break;
 	case TT::String: index = emit_string(token); break;
-	case TT::True: index = emit_value(SNAP_BOOL_VAL(true)); break;
-	case TT::False: index = emit_value(SNAP_BOOL_VAL(false)); break;
+	case TT::True: index = emit_value(VYSE_BOOL_VAL(true)); break;
+	case TT::False: index = emit_value(VYSE_BOOL_VAL(false)); break;
 	case TT::Nil: {
 		emit(Op::load_nil);
 		return;
 	}
-	default: SNAP_UNREACHABLE();
+	default: VYSE_UNREACHABLE();
 	}
 
 	if (index > MaxLocalVars) {
@@ -818,7 +818,7 @@ void Compiler::add_param(const Token& token) {
 }
 
 void Compiler::add_self_param() {
-	SNAP_ASSERT(m_symtable.m_num_symbols == 1, "'self' must be the first parameter.");
+	VYSE_ASSERT(m_symtable.m_num_symbols == 1, "'self' must be the first parameter.");
 
 	constexpr const char* self = "self";
 	m_codeblock->add_param();
@@ -880,12 +880,12 @@ u32 Compiler::emit_string(const Token& token) {
 	u32 length = token.length() - 2; // minus the quotes
 	// +1 to skip the openening quote.
 	String& string = m_vm->make_string(token.raw_cstr(*m_source) + 1, length);
-	return emit_value(SNAP_OBJECT_VAL(&string));
+	return emit_value(VYSE_OBJECT_VAL(&string));
 }
 
 u32 Compiler::emit_id_string(const Token& token) {
 	String* s = &m_vm->make_string(token.raw_cstr(*m_source), token.length());
-	return emit_value(SNAP_OBJECT_VAL(s));
+	return emit_value(VYSE_OBJECT_VAL(s));
 }
 
 int Compiler::find_local_var(const Token& name_token) const noexcept {
@@ -986,7 +986,7 @@ Op Compiler::toktype_to_op(TT toktype) const noexcept {
 	case TT::Lt: return Op::lt;
 	case TT::GtEq: return Op::gte;
 	case TT::LtEq: return Op::lte;
-	default: SNAP_UNREACHABLE();
+	default: VYSE_UNREACHABLE();
 	}
 }
 
@@ -994,7 +994,7 @@ Op Compiler::toktype_to_op(TT toktype) const noexcept {
 int Compiler::op_arity(u32 op_index) const noexcept {
 	Op op = THIS_BLOCK.code[op_index];
 	if (op == Op::make_func) {
-		SNAP_ASSERT(op_index != THIS_BLOCK.op_count() - 1, "Op::make_func cannot be the last opcode");
+		VYSE_ASSERT(op_index != THIS_BLOCK.op_count() - 1, "Op::make_func cannot be the last opcode");
 		int n_upvals = int(THIS_BLOCK.code[op_index + 1]);
 		return 1 + n_upvals * 2;
 	}
@@ -1005,7 +1005,7 @@ int Compiler::op_arity(u32 op_index) const noexcept {
 	// Constant instructions take 1 operand: the index of the
 	// constant in the constant pool.
 	if (op >= Op_const_start and op <= Op_const_end) return 1;
-	SNAP_ASSERT(CHECK_ARITY(op, 2), "Instructions other than make_func can have upto 2 operands.");
+	VYSE_ASSERT(CHECK_ARITY(op, 2), "Instructions other than make_func can have upto 2 operands.");
 	return 2;
 }
 #undef CHECK_ARITY
@@ -1086,4 +1086,4 @@ int SymbolTable::add_upvalue(int index, bool is_local, bool is_const) {
 	return m_num_upvals++;
 }
 
-} // namespace snap
+} // namespace vyse 

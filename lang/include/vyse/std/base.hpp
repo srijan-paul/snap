@@ -1,7 +1,7 @@
 #pragma once
 #include "../forward.hpp"
 
-namespace snap {
+namespace vyse {
 namespace stdlib {
 
 Value print(VM& vm, int argc);

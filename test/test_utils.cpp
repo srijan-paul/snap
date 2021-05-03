@@ -3,11 +3,11 @@
 #include <iostream>
 #include <vm.hpp>
 
-using namespace snap;
-using TT = snap::TokenType;
+using namespace vyse;
+using TT = vyse::TokenType;
 
 // clang-format off
-void print_ttype(snap::TokenType type) {
+void print_ttype(vyse::TokenType type) {
 	std::string type_strs[] = {
 
 		"Integer",	
@@ -77,14 +77,14 @@ void print_ttype(snap::TokenType type) {
 	std::printf("%-10s", str.c_str());
 }
 
-void print_token(const snap::Token& token, const std::string& src) {
+void print_token(const vyse::Token& token, const std::string& src) {
 	print_ttype(token.type);
 	std::printf("'%s'", token.raw(src).c_str());
 }
 
 void print_disassembly(const char* code) {
 	const std::string code_s{code};
-	snap::VM vm{&code_s};
+	vyse::VM vm{&code_s};
 	vm.init();
 	disassemble_block("test_block", *vm.block());
 	printf("\n");

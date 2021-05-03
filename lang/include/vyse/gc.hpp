@@ -5,15 +5,15 @@
 #include <set>
 #include <stack>
 
-namespace snap {
+namespace vyse {
 
 class GC {
 	friend VM;
 
 public:
-	SNAP_NO_DEFAULT_CONSTRUCT(GC);
-	SNAP_NO_COPY(GC);
-	SNAP_NO_MOVE(GC);
+	VYSE_NO_DEFAULT_CONSTRUCT(GC);
+	VYSE_NO_COPY(GC);
+	VYSE_NO_MOVE(GC);
 
 	static constexpr size_t InitialGCLimit = 1024 * 1024; 
 
@@ -66,4 +66,4 @@ private:
 	std::set<Obj*> m_extra_roots;
 };
 
-} // namespace snap
+} // namespace vyse 

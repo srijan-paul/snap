@@ -4,12 +4,12 @@
 #include <stdint.h>
 #include <string>
 
-namespace snap {
+namespace vyse {
 
 class Scanner {
-	SNAP_NO_COPY(Scanner);
-	SNAP_NO_MOVE(Scanner);
-	SNAP_NO_DEFAULT_CONSTRUCT(Scanner);
+	VYSE_NO_COPY(Scanner);
+	VYSE_NO_MOVE(Scanner);
+	VYSE_NO_DEFAULT_CONSTRUCT(Scanner);
 
 public:
 	Scanner(const std::string* src) noexcept : source{src} {};
@@ -47,4 +47,4 @@ private:
 	Token make_string(char quote);
 	Token token_if_match(char c, TokenType then, TokenType other);
 };
-} // namespace snap
+} // namespace vyse 

@@ -5,7 +5,7 @@
 #include "table.hpp"
 #include <functional>
 
-namespace snap {
+namespace vyse {
 
 enum class ExitCode : u8 {
 	Success,
@@ -17,7 +17,7 @@ using PrintFn = std::function<void(const VM& vm, const String* string)>;
 using ErrorFn = std::function<void(const VM& vm, std::string& err_message)>;
 
 inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string) {
-	SNAP_ASSERT(string != nullptr, "string to print is null.");
+	VYSE_ASSERT(string != nullptr, "string to print is null.");
 	printf("%s", string->c_str());
 }
 
@@ -28,8 +28,8 @@ class VM {
 	friend Compiler;
 
 public:
-	SNAP_NO_COPY(VM);
-	SNAP_NO_MOVE(VM);
+	VYSE_NO_COPY(VM);
+	VYSE_NO_MOVE(VM);
 
 	// The value returned by the VM at the
 	// end of it's execution. Nil by default.
@@ -38,7 +38,7 @@ public:
 	// If this is an object, then that will be
 	// destroyed when the VM goes out of scope / reaches
 	// the end of it's lifespan.
-	Value return_value = SNAP_NIL_VAL;
+	Value return_value = VYSE_NIL_VAL;
 
 	/// TODO: Dynamically grow the stack by statically
 	/// determining the max stack size at compile time
@@ -52,8 +52,8 @@ public:
 	~VM();
 	ExitCode interpret();
 
-	/// the function that snap uses to print stuff onto the console.
-	/// It is called whenever the `print` function is called in snap source code.
+	/// the function that vyse uses to print stuff onto the console.
+	/// It is called whenever the `print` function is called in vyse source code.
 	PrintFn print = default_print_fn;
 
 	/// The function called when there is a compile or runtime error
@@ -108,14 +108,14 @@ public:
 	/// @brief pop the topmost `n` values from
 	/// the stack.
 	inline void popn(int n) {
-		SNAP_ASSERT(n >= 0, "[n] must be >= 1");
+		VYSE_ASSERT(n >= 0, "[n] must be >= 1");
 		sp -= n;
 	}
 
 	/// @brief Returns the currently exceuting function
 	/// wrapped in a value.
 	Value current_fn() const {
-		return SNAP_OBJECT_VAL(m_current_frame->func);
+		return VYSE_OBJECT_VAL(m_current_frame->func);
 	}
 
 	Value const* base() const noexcept {
@@ -167,19 +167,19 @@ public:
 
 	/// TODO: Refactor this logic out from vm.hpp to gc.cpp
 	inline void register_object(Obj* o) noexcept {
-		SNAP_ASSERT(o != nullptr, "Attempt to register NULL object.");
+		VYSE_ASSERT(o != nullptr, "Attempt to register NULL object.");
 
-#ifndef SNAP_STRESS_GC
+#ifndef VYSE_STRESS_GC
 		if (m_gc.bytes_allocated >= m_gc.next_gc) {
 #endif
 
-#ifdef SNAP_LOG_GC
+#ifdef VYSE_LOG_GC
 			printf("< GC cycle invoked while attempting to allocate %s >\n",
-						 value_to_string(SNAP_OBJECT_VAL(o)).c_str());
+						 value_to_string(VYSE_OBJECT_VAL(o)).c_str());
 #endif
 			collect_garbage();
 
-#ifndef SNAP_STRESS_GC
+#ifndef VYSE_STRESS_GC
 		}
 #endif
 
@@ -280,7 +280,7 @@ private:
 	// are being read. This is always `m_current_frame->func->block`
 	const Block* m_current_block = nullptr;
 
-	// Snap interns all strings. So if two separate
+	// Vyse interns all strings. So if two separate
 	// string values are identical, then they point
 	// to the same object in heap. To deduplicate
 	// strings, we use a table.
@@ -292,7 +292,7 @@ private:
 	/// string if it isn't already interned.
 	Value concatenate(const String* left, const String* right);
 
-	/// Load a snap::Object into the global variable list.
+	/// Load a vyse::Object into the global variable list.
 	/// generally used for loading functions and objects from
 	/// the standard library.
 	void add_stdlib_object(const char* name, Obj* o);
@@ -327,4 +327,4 @@ private:
 	ExitCode binop_error(const char* opstr, Value& a, Value& b);
 };
 
-} // namespace snap
+} // namespace vyse 

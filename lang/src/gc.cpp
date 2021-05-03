@@ -1,16 +1,16 @@
 #include "value.hpp"
 #include <vm.hpp>
 
-namespace snap {
+namespace vyse {
 
 void GC::mark_value(Value v) {
-	if (SNAP_IS_OBJECT(v)) mark_object(SNAP_AS_OBJECT(v));
+	if (VYSE_IS_OBJECT(v)) mark_object(VYSE_AS_OBJECT(v));
 }
 
 void GC::mark_object(Obj* o) {
 	if (o == nullptr or o->marked) return;
-#ifdef SNAP_LOG_GC
-	printf("marked: %p [%s] \n", (void*)o, value_to_string(SNAP_OBJECT_VAL(o)).c_str());
+#ifdef VYSE_LOG_GC
+	printf("marked: %p [%s] \n", (void*)o, value_to_string(VYSE_OBJECT_VAL(o)).c_str());
 #endif
 	o->marked = true;
 	m_gray_objects.push(o);
@@ -28,7 +28,7 @@ void GC::mark_compiler_roots() {
 
 void GC::mark() {
 
-#ifdef SNAP_LOG_GC
+#ifdef VYSE_LOG_GC
 	printf("-- [GC start] --\n");
 	printf("-- Mark --\n");
 #endif
@@ -65,7 +65,7 @@ void GC::mark() {
 }
 
 void GC::trace() {
-#ifdef SNAP_LOG_GC
+#ifdef VYSE_LOG_GC
 	printf("-- Trace --\n");
 #endif
 
@@ -73,16 +73,16 @@ void GC::trace() {
 		Obj* gray_obj = m_gray_objects.top();
 		m_gray_objects.pop();
 
-#ifdef SNAP_LOG_GC
+#ifdef VYSE_LOG_GC
 		printf("Tracing: %p [%s] \n", (void*)gray_obj,
-					 value_to_string(SNAP_OBJECT_VAL(gray_obj)).c_str());
+					 value_to_string(VYSE_OBJECT_VAL(gray_obj)).c_str());
 #endif
 		gray_obj->trace(*this);
 	}
 }
 
 size_t GC::sweep() {
-#ifdef SNAP_LOG_GC
+#ifdef VYSE_LOG_GC
 	printf("-- Sweep --\n");
 #endif
 
@@ -105,8 +105,8 @@ size_t GC::sweep() {
 		} else {
 			Obj* next = current->next;
 
-#ifdef SNAP_LOG_GC
-			printf("Freed: %s\n", value_to_string(SNAP_OBJECT_VAL(current)).c_str());
+#ifdef VYSE_LOG_GC
+			printf("Freed: %s\n", value_to_string(VYSE_OBJECT_VAL(current)).c_str());
 #endif
 
 			bytes_freed += current->size();
@@ -121,7 +121,7 @@ size_t GC::sweep() {
 	}
 
 	bytes_allocated -= bytes_freed;
-#ifdef SNAP_LOG_GC
+#ifdef VYSE_LOG_GC
 	printf("-- [GC END] Freed %zu bytes --\n\n", bytes_freed);
 #endif
 	return bytes_freed;
@@ -135,4 +135,4 @@ void GC::unprotect(Obj* o) {
 	m_extra_roots.erase(o);
 }
 
-} // namespace snap
+} // namespace vyse 

@@ -1,7 +1,7 @@
-# Snap bytecode reference.
+# Vyse bytecode reference.
 
-This document contains all relevant information about the Snap VM's bytecode.
-Snap's VM is a stack based virtual machine. In this document, we will use the following terms
+This document contains all relevant information about the Vyse VM's bytecode.
+Vyse's VM is a stack based virtual machine. In this document, we will use the following terms
 quite often:
 
 
@@ -14,7 +14,7 @@ quite often:
 | BASE      | Base index of the current callframe. This is used to read local variables                                             |
 
 
-## Snap Bytecode
+## Vyse Bytecode
 
 | Opcode              | Operands           | Arity         | Stack Effect         | Stack state                               | Description                                                  |
 | ------------------- | ------------------ | ------------- | -------------------- | ----------------------------------------- | ------------------------------------------------------------ |

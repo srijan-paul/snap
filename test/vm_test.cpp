@@ -7,7 +7,7 @@
 #include <sstream>
 #include <stdlib.h>
 
-using namespace snap;
+using namespace vyse;
 
 void assert_val_eq(Value expected, Value actual, const char* message = "Test failed! ") {
 	if (expected != actual) {
@@ -70,37 +70,37 @@ static void test_string_return(const char* filename, const char* expected,
 		abort();
 	}
 
-	if (!SNAP_IS_STRING(vm.return_value)) {
+	if (!VYSE_IS_STRING(vm.return_value)) {
 		std::cout << "[ Failed ]" << message << "Expected string but got ";
 		print_value(vm.return_value);
 		std::cout << "\n";
 		abort();
 	}
 
-	if (std::memcmp(SNAP_AS_CSTRING(vm.return_value), expected, strlen(expected)) != 0) {
+	if (std::memcmp(VYSE_AS_CSTRING(vm.return_value), expected, strlen(expected)) != 0) {
 		std::cout << message << "[ STRINGS NOT EQUAL ] \n";
 		std::cout << "Expected: '" << expected << "'.\n";
-		std::cout << "Got: '" << SNAP_AS_CSTRING(vm.return_value) << "'\n";
+		std::cout << "Got: '" << VYSE_AS_CSTRING(vm.return_value) << "'\n";
 		abort();
 	}
 }
 
 static void expr_tests() {
-	test_return("return 5 / 2", SNAP_NUM_VAL(2.5));
-	test_return("return 5 % 2", SNAP_NUM_VAL(1.0));
-	test_return("return 5 + 2", SNAP_NUM_VAL(7.0));
-	test_return("return 5 - 2", SNAP_NUM_VAL(3.0));
-	test_return("return 3 * 5", SNAP_NUM_VAL(15.0));
+	test_return("return 5 / 2", VYSE_NUM_VAL(2.5));
+	test_return("return 5 % 2", VYSE_NUM_VAL(1.0));
+	test_return("return 5 + 2", VYSE_NUM_VAL(7.0));
+	test_return("return 5 - 2", VYSE_NUM_VAL(3.0));
+	test_return("return 3 * 5", VYSE_NUM_VAL(15.0));
 
-	test_return("return 3 < 5", SNAP_BOOL_VAL(true));
-	test_return("return 3 > 5", SNAP_BOOL_VAL(false));
-	test_return("return 3 <= 3", SNAP_BOOL_VAL(true));
-	test_return("return 4 >= 4", SNAP_BOOL_VAL(true));
+	test_return("return 3 < 5", VYSE_BOOL_VAL(true));
+	test_return("return 3 > 5", VYSE_BOOL_VAL(false));
+	test_return("return 3 <= 3", VYSE_BOOL_VAL(true));
+	test_return("return 4 >= 4", VYSE_BOOL_VAL(true));
 
-	test_return("return 10 - 5 - 2", SNAP_NUM_VAL(3.0));
-	test_return("return 10 && 5 && 2", SNAP_NUM_VAL(2));
-	test_return("return 10 || 5 || 2", SNAP_NUM_VAL(10));
-	test_return("return 10 - 5 - 2", SNAP_NUM_VAL(3.0));
+	test_return("return 10 - 5 - 2", VYSE_NUM_VAL(3.0));
+	test_return("return 10 && 5 && 2", VYSE_NUM_VAL(2));
+	test_return("return 10 || 5 || 2", VYSE_NUM_VAL(10));
+	test_return("return 10 - 5 - 2", VYSE_NUM_VAL(3.0));
 
 	test_return(R"(
 		let a = 1
@@ -109,17 +109,17 @@ static void expr_tests() {
 		b = 4 
 		return a + b
 	)",
-							SNAP_NUM_VAL(9), "top level local variables");
+							VYSE_NUM_VAL(9), "top level local variables");
 
-	test_return("return 9 & 7", SNAP_NUM_VAL(1));
-	test_return("return 4 | 9", SNAP_NUM_VAL(13));
+	test_return("return 9 & 7", VYSE_NUM_VAL(1));
+	test_return("return 4 | 9", VYSE_NUM_VAL(13));
 
 	// test precedence
 
-	test_return("return 5 > 2 && 3 > -10", SNAP_BOOL_VAL(true));
+	test_return("return 5 > 2 && 3 > -10", VYSE_BOOL_VAL(true));
 
 	// test string equality
-	test_return("return 'abc' == 'abc'", SNAP_BOOL_VAL(true));
+	test_return("return 'abc' == 'abc'", VYSE_BOOL_VAL(true));
 	test_return(R"(
 		const a = 'abcde'
 		const b = "abcde"
@@ -128,9 +128,9 @@ static void expr_tests() {
 
 		return a == b and c..d == 'aabb'
 	)",
-							SNAP_BOOL_VAL(true));
+							VYSE_BOOL_VAL(true));
 
-	test_file("compound-assign.snp", SNAP_NUM_VAL(8), "Compound assignment operators");
+	test_file("compound-assign.vy", VYSE_NUM_VAL(8), "Compound assignment operators");
 
 	std::cout << "[Expression tests passed]\n";
 }
@@ -144,7 +144,7 @@ static void stmt_tests() {
 		}
 		return b
 		)",
-							SNAP_NUM_VAL(5), "If statement without else branch");
+							VYSE_NUM_VAL(5), "If statement without else branch");
 
 	test_return(R"(
 		let a = 3;
@@ -157,9 +157,9 @@ static void stmt_tests() {
 			b = 7
 		}
 		return b)",
-							SNAP_NUM_VAL(7), "If statement with else-if branch");
+							VYSE_NUM_VAL(7), "If statement with else-if branch");
 
-	test_file("var.snp", SNAP_NUM_VAL(13), "block scoped declarations.");
+	test_file("var.vy", VYSE_NUM_VAL(13), "block scoped declarations.");
 
 	std::cout << "Statement tests passed\n";
 }
@@ -174,7 +174,7 @@ void fn_tests() {
 		}
 		return adder(10)(20)
 	)",
-							SNAP_NUM_VAL(30), "chained calls with parameters");
+							VYSE_NUM_VAL(30), "chained calls with parameters");
 
 	test_return(R"(
 		fn x() {
@@ -191,7 +191,7 @@ void fn_tests() {
 		}
 		return x()()()
 	)",
-							SNAP_NUM_VAL(6), "Closures and chained function calls");
+							VYSE_NUM_VAL(6), "Closures and chained function calls");
 
 	test_return(R"(
 		fn fib(n) {
@@ -200,7 +200,7 @@ void fn_tests() {
 		}
 		return fib(10)
 	)",
-							SNAP_NUM_VAL(89), "Recursive fiboacci");
+							VYSE_NUM_VAL(89), "Recursive fiboacci");
 
 	test_return(R"(
 		fn make_adder(x) {
@@ -212,10 +212,10 @@ void fn_tests() {
 		const add10 = make_adder(10)
 		return add10(-10)
 	)",
-							SNAP_NUM_VAL(0), "make_adder closure");
+							VYSE_NUM_VAL(0), "make_adder closure");
 
-	test_file("llnode-cl.snp", SNAP_NUM_VAL(20), "Linked list closure test");
-	test_file("call.snp", SNAP_NUM_VAL(20), "Call stack");
+	test_file("llnode-cl.vy", VYSE_NUM_VAL(20), "Linked list closure test");
+	test_file("call.vy", VYSE_NUM_VAL(20), "Call stack");
 }
 
 void table_test() {
@@ -225,7 +225,7 @@ void table_test() {
 	} 
 	return T.a + T.b
 	)",
-							SNAP_NUM_VAL(3), " Indexing tables with '.' operator");
+							VYSE_NUM_VAL(3), " Indexing tables with '.' operator");
 
 	test_return(R"(
 		fn Node(a, b) {
@@ -234,7 +234,7 @@ void table_test() {
 		const head = Node(10, Node(20))
 		return head.next.data
 	)",
-							SNAP_NUM_VAL(20), "Linked lists as tables test");
+							VYSE_NUM_VAL(20), "Linked lists as tables test");
 
 	// setting table field names.
 	test_return(R"(
@@ -245,49 +245,49 @@ void table_test() {
 		t.k = 3
 		return t.k +  a
 	)",
-							SNAP_NUM_VAL(10), "setting table field names");
+							VYSE_NUM_VAL(10), "setting table field names");
 
-	test_file("table-1.snp", SNAP_NUM_VAL(3), "returning tables from a closure");
-	test_file("table-2.snp", SNAP_NUM_VAL(6), "Accessing table fields");
-	test_file("table-3.snp", SNAP_NUM_VAL(11), "Accessing table fields");
-	test_file("table-4.snp", SNAP_NUM_VAL(10), "Computed member assignment and access");
-	test_file("table-5.snp", SNAP_NUM_VAL(10),
+	test_file("table-1.vy", VYSE_NUM_VAL(3), "returning tables from a closure");
+	test_file("table-2.vy", VYSE_NUM_VAL(6), "Accessing table fields");
+	test_file("table-3.vy", VYSE_NUM_VAL(11), "Accessing table fields");
+	test_file("table-4.vy", VYSE_NUM_VAL(10), "Computed member assignment and access");
+	test_file("table-5.vy", VYSE_NUM_VAL(10),
 						"Computed member access and dot member access are equivalent for string keys");
-	test_file("table-6.snp", SNAP_NUM_VAL(25), "Compound assignment to computed members");
-	test_file("table-7.snp", SNAP_NUM_VAL(10), "Syntactic sugar for table methods");
-	test_file("table-8.snp", SNAP_NUM_VAL(1), "Empty tables.");
-	test_file("table-9.snp", SNAP_NUM_VAL(30), "Chained dot and subscript operators.");
-	test_file("keys.snp", SNAP_NUM_VAL(6), "Subscript operator in table key with interned strings");
-	test_file("point.snp", SNAP_NUM_VAL(50), "Constructor like functions. (point.snp)");
-	test_file("method-1.snp", SNAP_NUM_VAL(3), "Method call syntax.");
-	test_file("method-2.snp", SNAP_NUM_VAL(5), "Chained method calls.");
-	test_file("suffix-expr.snp", SNAP_NUM_VAL(123), "Chained suffix expressions.");
-	test_file("inherit.snp", SNAP_NUM_VAL(21), "Prototypical inheritance with setmeta builtin.");
-	test_file("self.snp", SNAP_NUM_VAL(6), "Prototypical inheritance with setmeta builtin.");
-	test_file("global.snp", SNAP_NUM_VAL(6), "Global variables.");
+	test_file("table-6.vy", VYSE_NUM_VAL(25), "Compound assignment to computed members");
+	test_file("table-7.vy", VYSE_NUM_VAL(10), "Syntactic sugar for table methods");
+	test_file("table-8.vy", VYSE_NUM_VAL(1), "Empty tables.");
+	test_file("table-9.vy", VYSE_NUM_VAL(30), "Chained dot and subscript operators.");
+	test_file("keys.vy", VYSE_NUM_VAL(6), "Subscript operator in table key with interned strings");
+	test_file("point.vy", VYSE_NUM_VAL(50), "Constructor like functions. (point.vy)");
+	test_file("method-1.vy", VYSE_NUM_VAL(3), "Method call syntax.");
+	test_file("method-2.vy", VYSE_NUM_VAL(5), "Chained method calls.");
+	test_file("suffix-expr.vy", VYSE_NUM_VAL(123), "Chained suffix expressions.");
+	test_file("inherit.vy", VYSE_NUM_VAL(21), "Prototypical inheritance with setmeta builtin.");
+	test_file("self.vy", VYSE_NUM_VAL(6), "Prototypical inheritance with setmeta builtin.");
+	test_file("global.vy", VYSE_NUM_VAL(6), "Global variables.");
 
 	std::cout << "[Table tests passed]\n";
 }
 
 void global_test() {
 	VM vm;
-	vm.set_global("foo", SNAP_NUM_VAL(42));
-	assert_val_eq(vm.get_global("foo"), SNAP_NUM_VAL(42), "Global variables.");
+	vm.set_global("foo", VYSE_NUM_VAL(42));
+	assert_val_eq(vm.get_global("foo"), VYSE_NUM_VAL(42), "Global variables.");
 }
 
 void string_test() {
-	test_string_return("string-concat.snp", "this is a string", "Chained string concatenation");
-	test_string_return("string.snp", "snap = good", "String cocatenation in blocks");
+	test_string_return("string-concat.vy", "this is a string", "Chained string concatenation");
+	test_string_return("string.vy", "snap = good", "String cocatenation in blocks");
 	std::cout << "[String tests passed]\n";
 }
 
 void loop_test() {
-	test_file("loop-while.snp", SNAP_NUM_VAL(45), "While loops (sum)");
-	test_file("nested-while.snp", SNAP_NUM_VAL(165), "Nested While loops");
-	test_file("while-break.snp", SNAP_NUM_VAL(25), "breaks in loops");
-	test_file("while-break-nest.snp", SNAP_NUM_VAL(2660), "breaks in loops");
-	test_file("while-closure.snp", SNAP_NUM_VAL(55), "closure inside a while loop.");
-	test_file("continue.snp", SNAP_NUM_VAL(52), "continue statements in loops.");
+	test_file("loop-while.vy", VYSE_NUM_VAL(45), "While loops (sum)");
+	test_file("nested-while.vy", VYSE_NUM_VAL(165), "Nested While loops");
+	test_file("while-break.vy", VYSE_NUM_VAL(25), "breaks in loops");
+	test_file("while-break-nest.vy", VYSE_NUM_VAL(2660), "breaks in loops");
+	test_file("while-closure.vy", VYSE_NUM_VAL(55), "closure inside a while loop.");
+	test_file("continue.vy", VYSE_NUM_VAL(52), "continue statements in loops.");
 }
 
 int main() {

@@ -4,12 +4,12 @@
 #include <sstream>
 #include <vm.hpp>
 
-using namespace snap;
+using namespace vyse;
 
 /// @brief Runs a benchmark by running [code] [times] number of times (1000 by default)
 /// then logs out the average time taken for [code] to run.
 /// @param message An info message to display alongside the benchmark.
-/// @param code   The snap code to run.
+/// @param code   The vyse code to run.
 /// @param times  Number of times the code should run.
 void run_code(std::string&& message, std::string&& code, std::size_t times = 10000) {
 	Clock clk{message, times};

@@ -4,13 +4,13 @@
 #include <std/base.hpp>
 #include <vm.hpp>
 
-#if defined(SNAP_DEBUG_RUNTIME) || defined(SNAP_DEBUG_DISASSEMBLY)
+#if defined(VYSE_DEBUG_RUNTIME) || defined(VYSE_DEBUG_DISASSEMBLY)
 #include <cstdio>
 #include <debug.hpp>
 #endif
 
 #define ERROR(...)		 runtime_error(kt::format_str(__VA_ARGS__))
-#define INDEX_ERROR(v) ERROR("Attempt to index a '{}' value.", SNAP_TYPE_CSTR(v))
+#define INDEX_ERROR(v) ERROR("Attempt to index a '{}' value.", VYSE_TYPE_CSTR(v))
 #define CURRENT_LINE() (m_current_block->lines[ip - 1])
 
 #define FETCH()			(m_current_block->code[ip++])
@@ -26,24 +26,24 @@
 #define PEEK(depth) sp[-depth]
 #define POP()				*(--sp)
 
-namespace snap {
+namespace vyse {
 
 using Op = Opcode;
 using VT = ValueType;
 using OT = ObjType;
 
-#define IS_VAL_FALSY(v)	 ((SNAP_IS_BOOL(v) and !(SNAP_AS_BOOL(v))) or SNAP_IS_NIL(v))
+#define IS_VAL_FALSY(v)	 ((VYSE_IS_BOOL(v) and !(VYSE_AS_BOOL(v))) or VYSE_IS_NIL(v))
 #define IS_VAL_TRUTHY(v) (!IS_VAL_FALSY(v))
 
-#define UNOP_ERROR(op, v) ERROR("Cannot use operator '{}' on type '{}'.", op, SNAP_TYPE_CSTR(v))
+#define UNOP_ERROR(op, v) ERROR("Cannot use operator '{}' on type '{}'.", op, VYSE_TYPE_CSTR(v))
 
 #define CMP_OP(op)                                                                                 \
 	do {                                                                                             \
 		Value b = pop();                                                                               \
 		Value a = pop();                                                                               \
                                                                                                    \
-		if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {                                                       \
-			push(SNAP_BOOL_VAL(SNAP_AS_NUM(a) op SNAP_AS_NUM(b)));                                       \
+		if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                       \
+			push(VYSE_BOOL_VAL(VYSE_AS_NUM(a) op VYSE_AS_NUM(b)));                                       \
 		} else {                                                                                       \
 			return binop_error(#op, b, a);                                                               \
 		}                                                                                              \
@@ -54,8 +54,8 @@ using OT = ObjType;
 		Value& a = PEEK(1);                                                                            \
 		Value& b = PEEK(2);                                                                            \
                                                                                                    \
-		if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {                                                       \
-			SNAP_SET_NUM(b, SNAP_AS_NUM(b) op SNAP_AS_NUM(a));                                           \
+		if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                       \
+			VYSE_SET_NUM(b, VYSE_AS_NUM(b) op VYSE_AS_NUM(a));                                           \
 			pop();                                                                                       \
 		} else {                                                                                       \
 			return binop_error(#op, b, a);                                                               \
@@ -66,14 +66,14 @@ using OT = ObjType;
 	Value& b = PEEK(1);                                                                              \
 	Value& a = PEEK(2);                                                                              \
                                                                                                    \
-	if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {                                                         \
-		SNAP_SET_NUM(a, SNAP_CAST_INT(a) op SNAP_CAST_INT(b));                                         \
+	if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                         \
+		VYSE_SET_NUM(a, VYSE_CAST_INT(a) op VYSE_CAST_INT(b));                                         \
 		pop();                                                                                         \
 	} else {                                                                                         \
 		return binop_error(#op, a, b);                                                                 \
 	}
 
-#ifdef SNAP_DEBUG_RUNTIME
+#ifdef VYSE_DEBUG_RUNTIME
 void print_stack(Value* stack, size_t sp) {
 	printf("(%zu)[ ", sp);
 	for (Value* v = stack; v < stack + sp; v++) {
@@ -88,13 +88,13 @@ ExitCode VM::run() {
 
 	while (true) {
 		const Op op = FETCH();
-#ifdef SNAP_DEBUG_RUNTIME
+#ifdef VYSE_DEBUG_RUNTIME
 		disassemble_instr(*m_current_block, op, ip - 1);
 #endif
 
 		switch (op) {
 		case Op::load_const: push(READ_VALUE()); break;
-		case Op::load_nil: push(SNAP_NIL_VAL); break;
+		case Op::load_nil: push(VYSE_NIL_VAL); break;
 
 		case Op::pop: pop(); break;
 		case Op::add: BINOP(+); break;
@@ -110,11 +110,11 @@ ExitCode VM::run() {
 			Value& a = PEEK(1);
 			Value& b = PEEK(2);
 
-			if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {
-				if (SNAP_AS_NUM(b) == 0) {
+			if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {
+				if (VYSE_AS_NUM(b) == 0) {
 					return runtime_error("Attempt to divide by 0.\n");
 				}
-				SNAP_SET_NUM(b, SNAP_AS_NUM(b) / SNAP_AS_NUM(a));
+				VYSE_SET_NUM(b, VYSE_AS_NUM(b) / VYSE_AS_NUM(a));
 				pop();
 			} else {
 				return binop_error("/", b, a);
@@ -126,8 +126,8 @@ ExitCode VM::run() {
 			Value& a = PEEK(1);
 			Value& b = PEEK(2);
 
-			if (SNAP_IS_NUM(a) and SNAP_IS_NUM(b)) {
-				SNAP_SET_NUM(b, fmod(SNAP_AS_NUM(b), SNAP_AS_NUM(a)));
+			if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {
+				VYSE_SET_NUM(b, fmod(VYSE_AS_NUM(b), VYSE_AS_NUM(a)));
 			} else {
 				return binop_error("%", b, a);
 			}
@@ -159,21 +159,21 @@ ExitCode VM::run() {
 		case Op::eq: {
 			Value a = pop();
 			Value b = pop();
-			push(SNAP_BOOL_VAL(a == b));
+			push(VYSE_BOOL_VAL(a == b));
 			break;
 		}
 
 		case Op::neq: {
 			Value a = pop();
 			Value b = pop();
-			push(SNAP_BOOL_VAL(a != b));
+			push(VYSE_BOOL_VAL(a != b));
 			break;
 		}
 
 		case Op::negate: {
 			Value& operand = PEEK(1);
-			if (SNAP_IS_NUM(operand))
-				SNAP_SET_NUM(operand, -SNAP_AS_NUM(operand));
+			if (VYSE_IS_NUM(operand))
+				VYSE_SET_NUM(operand, -VYSE_AS_NUM(operand));
 			else
 				UNOP_ERROR("-", operand);
 			break;
@@ -181,7 +181,7 @@ ExitCode VM::run() {
 
 		case Op::lnot: {
 			Value a = pop();
-			push(SNAP_BOOL_VAL(IS_VAL_FALSY(a)));
+			push(VYSE_BOOL_VAL(IS_VAL_FALSY(a)));
 			break;
 		}
 
@@ -232,7 +232,7 @@ ExitCode VM::run() {
 
 		case Op::set_upval: {
 			u8 idx = NEXT_BYTE();
-			SNAP_ASSERT(m_current_frame->func->tag == OT::closure, "enclosing frame a CClosure!");
+			VYSE_ASSERT(m_current_frame->func->tag == OT::closure, "enclosing frame a CClosure!");
 			Closure* cl = static_cast<Closure*>(m_current_frame->func);
 			*cl->get_upval(idx)->m_value = pop();
 			break;
@@ -240,7 +240,7 @@ ExitCode VM::run() {
 
 		case Op::get_upval: {
 			u8 idx = NEXT_BYTE();
-			SNAP_ASSERT(m_current_frame->func->tag == OT::closure, "enclosing frame a CClosure!");
+			VYSE_ASSERT(m_current_frame->func->tag == OT::closure, "enclosing frame a CClosure!");
 			Closure* cl = static_cast<Closure*>(m_current_frame->func);
 			push(*cl->get_upval(idx)->m_value);
 			break;
@@ -248,17 +248,17 @@ ExitCode VM::run() {
 
 		case Op::set_global: {
 			Value name = READ_VALUE();
-			SNAP_ASSERT(SNAP_IS_STRING(name), "Variable name not a string.");
-			set_global(SNAP_AS_STRING(name), pop());
+			VYSE_ASSERT(VYSE_IS_STRING(name), "Variable name not a string.");
+			set_global(VYSE_AS_STRING(name), pop());
 			break;
 		}
 
 		case Op::get_global: {
 			Value name = READ_VALUE();
-			SNAP_ASSERT_OT(name, OT::string);
-			Value v = get_global(SNAP_AS_STRING(name));
-			if (SNAP_IS_UNDEFINED(v)) {
-				return ERROR("Undefined variable '{}'.", SNAP_AS_STRING(name)->c_str());
+			VYSE_ASSERT_OT(name, OT::string);
+			Value v = get_global(VYSE_AS_STRING(name));
+			if (VYSE_IS_UNDEFINED(v)) {
+				return ERROR("Undefined variable '{}'.", VYSE_AS_STRING(name)->c_str());
 			}
 			push(v);
 			break;
@@ -274,11 +274,11 @@ ExitCode VM::run() {
 			Value& a = PEEK(2);
 			Value b = pop();
 
-			if (!(SNAP_IS_STRING(a) and SNAP_IS_STRING(b))) {
+			if (!(VYSE_IS_STRING(a) and VYSE_IS_STRING(b))) {
 				return binop_error("..", a, b);
 			} else {
-				auto left = SNAP_AS_STRING(a);
-				auto right = SNAP_AS_STRING(b);
+				auto left = VYSE_AS_STRING(a);
+				auto right = VYSE_AS_STRING(b);
 
 				// The second string has been popped
 				// off the stack and might not be reachable.
@@ -292,7 +292,7 @@ ExitCode VM::run() {
 		}
 
 		case Op::new_table: {
-			push(SNAP_OBJECT_VAL(&make<Table>()));
+			push(VYSE_OBJECT_VAL(&make<Table>()));
 			break;
 		}
 
@@ -301,7 +301,7 @@ ExitCode VM::run() {
 			Value key = pop();
 
 			Value vtable = PEEK(1);
-			SNAP_AS_TABLE(vtable)->set(key, value);
+			VYSE_AS_TABLE(vtable)->set(key, value);
 			break;
 		}
 
@@ -309,14 +309,14 @@ ExitCode VM::run() {
 		case Op::index_set: {
 			Value value = pop();
 			Value key = pop();
-			if (SNAP_IS_NIL(key)) return ERROR("Table key cannot be nil.");
+			if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
 
 			Value& tvalue = PEEK(1);
-			if (SNAP_IS_TABLE(tvalue)) {
-				SNAP_AS_TABLE(tvalue)->set(key, value);
+			if (VYSE_IS_TABLE(tvalue)) {
+				VYSE_AS_TABLE(tvalue)->set(key, value);
 				sp[-1] = value; // assignment returns it's RHS.
 			} else {
-				return ERROR("Attempt to index a {} value.", SNAP_TYPE_CSTR(tvalue));
+				return ERROR("Attempt to index a {} value.", VYSE_TYPE_CSTR(tvalue));
 			}
 			break;
 		}
@@ -324,11 +324,11 @@ ExitCode VM::run() {
 		// table.key = value
 		case Op::table_set: {
 			const Value& key = READ_VALUE();
-			if (SNAP_IS_NIL(key)) return ERROR("Table key cannot be nil.");
+			if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
 			Value value = pop();
 			Value& tvalue = PEEK(1);
-			if (SNAP_IS_TABLE(tvalue)) {
-				SNAP_AS_TABLE(tvalue)->set(key, value);
+			if (VYSE_IS_TABLE(tvalue)) {
+				VYSE_AS_TABLE(tvalue)->set(key, value);
 				sp[-1] = value; // assignment returns it's RHS
 			} else {
 				return INDEX_ERROR(tvalue);
@@ -340,8 +340,8 @@ ExitCode VM::run() {
 		case Op::table_get: {
 			// TOS = as_table(TOS)->get(READ_VAL())
 			Value tvalue = PEEK(1);
-			if (SNAP_IS_TABLE(tvalue)) {
-				sp[-1] = SNAP_AS_TABLE(tvalue)->get(READ_VALUE());
+			if (VYSE_IS_TABLE(tvalue)) {
+				sp[-1] = VYSE_AS_TABLE(tvalue)->get(READ_VALUE());
 			} else {
 				return INDEX_ERROR(tvalue);
 			}
@@ -352,8 +352,8 @@ ExitCode VM::run() {
 		case Op::table_get_no_pop: {
 			// push((TOS)->get(READ_VAL()))
 			Value tval = PEEK(1);
-			if (SNAP_IS_TABLE(tval)) {
-				push(SNAP_AS_TABLE(tval)->get(READ_VALUE()));
+			if (VYSE_IS_TABLE(tval)) {
+				push(VYSE_AS_TABLE(tval)->get(READ_VALUE()));
 			} else {
 				return INDEX_ERROR(tval);
 			}
@@ -364,8 +364,8 @@ ExitCode VM::run() {
 		case Op::index: {
 			Value key = pop();
 			Value tvalue = PEEK(1);
-			if (SNAP_IS_TABLE(tvalue)) {
-				sp[-1] = SNAP_AS_TABLE(tvalue)->get(key);
+			if (VYSE_IS_TABLE(tvalue)) {
+				sp[-1] = VYSE_AS_TABLE(tvalue)->get(key);
 			} else {
 				return INDEX_ERROR(tvalue);
 			}
@@ -376,9 +376,9 @@ ExitCode VM::run() {
 		case Op::index_no_pop: {
 			Value& vtable = PEEK(2);
 			const Value& key = PEEK(1);
-			if (SNAP_IS_TABLE(vtable)) {
-				if (SNAP_IS_NIL(key)) return ERROR("Table key cannot be nil.");
-				push(SNAP_AS_TABLE(vtable)->get(key));
+			if (VYSE_IS_TABLE(vtable)) {
+				if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
+				push(VYSE_AS_TABLE(vtable)->get(key));
 			} else {
 				return INDEX_ERROR(vtable);
 			}
@@ -397,9 +397,9 @@ ExitCode VM::run() {
 		case Op::prep_method_call: {
 			Value vtable = PEEK(1);
 			Value vkey = READ_VALUE();
-			SNAP_ASSERT(SNAP_IS_STRING(vkey), "method name not a string.");
-			if (!SNAP_IS_TABLE(vtable)) return INDEX_ERROR(vtable);
-			sp[-1] = SNAP_AS_TABLE(vtable)->get(vkey);
+			VYSE_ASSERT(VYSE_IS_STRING(vkey), "method name not a string.");
+			if (!VYSE_IS_TABLE(vtable)) return INDEX_ERROR(vtable);
+			sp[-1] = VYSE_AS_TABLE(vtable)->get(vkey);
 			push(vtable);
 			break;
 		}
@@ -434,11 +434,11 @@ ExitCode VM::run() {
 
 		case Op::make_func: {
 			Value vcode = READ_VALUE();
-			SNAP_ASSERT_OT(vcode, OT::codeblock);
+			VYSE_ASSERT_OT(vcode, OT::codeblock);
 			u32 num_upvals = NEXT_BYTE();
-			Closure* func = &make<Closure>(SNAP_AS_PROTO(vcode), num_upvals);
+			Closure* func = &make<Closure>(VYSE_AS_PROTO(vcode), num_upvals);
 
-			push(SNAP_OBJECT_VAL(func));
+			push(VYSE_OBJECT_VAL(func));
 
 			for (u8 i = 0; i < num_upvals; ++i) {
 				bool is_local = NEXT_BYTE();
@@ -456,11 +456,11 @@ ExitCode VM::run() {
 		}
 
 		default: {
-			SNAP_ERROR("Impossible opcode.");
+			VYSE_ERROR("Impossible opcode.");
 			return ExitCode::RuntimeError;
 		}
 		}
-#ifdef SNAP_DEBUG_RUNTIME
+#ifdef VYSE_DEBUG_RUNTIME
 		print_stack(m_stack, sp - m_stack);
 		printf("\n");
 #endif
@@ -483,18 +483,18 @@ Value VM::concatenate(const String* left, const String* right) {
 
 	if (interned == nullptr) {
 		String* res = &make<String>(buf, length, hash);
-		Value vresult = SNAP_OBJECT_VAL(res);
-		interned_strings.set(vresult, SNAP_BOOL_VAL(true));
+		Value vresult = VYSE_OBJECT_VAL(res);
+		interned_strings.set(vresult, VYSE_BOOL_VAL(true));
 		return vresult;
 	} else {
 		delete[] buf;
-		return SNAP_OBJECT_VAL(interned);
+		return VYSE_OBJECT_VAL(interned);
 	}
 }
 
 Value VM::get_global(String* name) const {
 	auto search = m_global_vars.find(name);
-	if (search == m_global_vars.end()) return SNAP_UNDEF_VAL;
+	if (search == m_global_vars.end()) return VYSE_UNDEF_VAL;
 	return search->second;
 }
 
@@ -559,10 +559,10 @@ bool VM::init() {
 	// unprotect it.
 	gc_unprotect(code);
 
-	push(SNAP_OBJECT_VAL(func));
+	push(VYSE_OBJECT_VAL(func));
 	callfunc(func, 0);
 
-#ifdef SNAP_DEBUG_DISASSEMBLY
+#ifdef VYSE_DEBUG_DISASSEMBLY
 	disassemble_block(func->name()->c_str(), *m_current_block);
 	printf("\n");
 #endif
@@ -577,9 +577,9 @@ ExitCode VM::runcode(const std::string& code) {
 }
 
 void VM::add_stdlib_object(const char* name, Obj* o) {
-	auto vglobal = SNAP_OBJECT_VAL(o);
+	auto vglobal = VYSE_OBJECT_VAL(o);
 	// setting a global variable may trigger a garbage collection
-	// cycle (when allocating the [name] as snap::String). At that
+	// cycle (when allocating the [name] as vyse::String). At that
 	// point, vprint is only reachable on the C stack, so we protect
 	// it by pushing it on to the VM stack.
 	push(vglobal);
@@ -641,20 +641,20 @@ void VM::close_upvalues_upto(Value* last) {
 }
 
 bool VM::call(Value value, u8 argc) {
-	if (!SNAP_CHECK_TT(value, VT::Object))
-		ERROR("Attempt to call a {} value.", SNAP_TYPE_CSTR(value));
+	if (!VYSE_CHECK_TT(value, VT::Object))
+		ERROR("Attempt to call a {} value.", VYSE_TYPE_CSTR(value));
 
-	switch (SNAP_AS_OBJECT(value)->tag) {
-	case OT::closure: return callfunc(SNAP_AS_CLOSURE(value), argc);
-	case OT::c_closure: return call_cclosure(SNAP_AS_CCLOSURE(value), argc);
-	default: ERROR("Attempt to call a {} value.", SNAP_TYPE_CSTR(value)); return false;
+	switch (VYSE_AS_OBJECT(value)->tag) {
+	case OT::closure: return callfunc(VYSE_AS_CLOSURE(value), argc);
+	case OT::c_closure: return call_cclosure(VYSE_AS_CCLOSURE(value), argc);
+	default: ERROR("Attempt to call a {} value.", VYSE_TYPE_CSTR(value)); return false;
 	}
 
 	return false;
 }
 
 void VM::push_callframe(Obj* callable, int argc) {
-	SNAP_ASSERT(callable->tag == OT::c_closure or callable->tag == OT::closure,
+	VYSE_ASSERT(callable->tag == OT::c_closure or callable->tag == OT::closure,
 							"Non callable callframe pushed.");
 
 	// Save the current instruction pointer
@@ -702,7 +702,7 @@ bool VM::callfunc(Closure* func, int argc) {
 	// arguments that aren't provded are replaced with nil.
 	if (extra < 0) {
 		while (extra < 0) {
-			push(SNAP_NIL_VAL);
+			push(VYSE_NIL_VAL);
 			argc++;
 			extra++;
 		}
@@ -739,7 +739,7 @@ String& VM::make_string(const char* chars, size_t length) {
 	if (interned != nullptr) return *interned;
 
 	String* string = &make<String>(chars, length, hash);
-	interned_strings.set(SNAP_OBJECT_VAL(string), SNAP_BOOL_VAL(true));
+	interned_strings.set(VYSE_OBJECT_VAL(string), VYSE_BOOL_VAL(true));
 
 	return *string;
 }
@@ -756,7 +756,7 @@ size_t VM::collect_garbage() {
 
 ExitCode VM::binop_error(const char* opstr, Value& a, Value& b) {
 	return ERROR("Cannot use operator '{}' on operands of type '{}' and '{}'.", opstr,
-							 SNAP_TYPE_CSTR(a), SNAP_TYPE_CSTR(b));
+							 VYSE_TYPE_CSTR(a), VYSE_TYPE_CSTR(b));
 }
 
 ExitCode VM::runtime_error(std::string const& message) {
@@ -776,7 +776,7 @@ ExitCode VM::runtime_error(std::string const& message) {
 		const Closure& func = *static_cast<Closure*>(frame.func);
 
 		const Block& block = func.m_codeblock->block();
-		SNAP_ASSERT(frame.ip >= 0 and frame.ip < block.lines.size(),
+		VYSE_ASSERT(frame.ip >= 0 and frame.ip < block.lines.size(),
 								"IP not in range for std::vector<u32> block.lines.");
 
 		int line = block.lines[frame.ip];
@@ -808,4 +808,4 @@ VM::~VM() {
 	}
 }
 
-} // namespace snap
+} // namespace vyse 

@@ -4,7 +4,7 @@
 #include <array>
 
 
-namespace snap {
+namespace vyse {
 
 ///  IMPORTANT: after making any changes to this enum, make sure
 ///  relevant changes are made in the 4 variables below, and in the `op_strs`
@@ -35,4 +35,4 @@ constexpr auto Op_1_operands_end = Opcode::call_func;
 constexpr auto Op_2_operands_start = Opcode::jmp;
 constexpr auto Op_2_operands_end = Opcode::pop_jmp_if_false;
 
-} // namespace snap
+} // namespace vyse 

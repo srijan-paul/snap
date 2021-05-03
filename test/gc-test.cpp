@@ -2,7 +2,7 @@
 #include "function.hpp"
 #include "test_utils.hpp"
 
-using namespace snap;
+using namespace vyse;
 
 #define ASSERT_MEM(got, expect, message)                                                           \
 	ASSERT(got == expect, message << " (expected: " << expect << " got: " << got << ")");
@@ -12,11 +12,11 @@ static constexpr size_t table_size(int cap = Table::DefaultCapacity) {
 }
 
 static constexpr size_t string_size(int nchars) {
-	return sizeof(char) * nchars + sizeof(snap::String);
+	return sizeof(char) * nchars + sizeof(vyse::String);
 }
 
-static constexpr size_t closure_size = sizeof(snap::Closure);
-static constexpr size_t proto_size = sizeof(snap::CodeBlock);
+static constexpr size_t closure_size = sizeof(vyse::Closure);
+static constexpr size_t proto_size = sizeof(vyse::CodeBlock);
 
 /// @brief The minimum memory allocated by a VM after having compiled any code.
 static constexpr size_t base_size = closure_size + proto_size + string_size(8);

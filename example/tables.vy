@@ -9,5 +9,5 @@ const parent = {
   race: "Human"
 }
 
-setmeta(child, parent)
+setproto(child, parent)
 print(child.race)

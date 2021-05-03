@@ -1,11 +1,11 @@
-# The Snap language specification.
+# The Vyse language specification.
 
-Snap is a relatively fast, dynamically typed scripting language intended for
+Vyse is a relatively fast, dynamically typed scripting language intended for
 embedding in C++ applications, like game engines.
 
 ## Operators
 
-Snap supports the following operators, from highest to lowest precedence:
+Vyse supports the following operators, from highest to lowest precedence:
 ```
 +----------+-------------------------------+---------------+
 | Operator | Name/Description              | Associativity |
@@ -64,7 +64,7 @@ const fib_base = 1; // variables declared with `const` cannot be mutated
 
 ## Control Flow.
 
-Snap supports the following control flow statements:
+Vyse supports the following control flow statements:
 if-else if-else, for, while, do..while.
 
 If statements are very straightforward:
@@ -79,7 +79,7 @@ if condition1 {
 }
 ```
 
-For loops in snap come with an tiny bit of extra power. The
+For loops in vyse come with an tiny bit of extra power. The
 general for loops look like this:
 
 ```lua
@@ -120,7 +120,7 @@ for i = 1, #my_array {
 Wherein the value of `i` starts at 1 and goes up by 1 until it's as big
 as the size of the array.
 
-However, Snap provides a more convienient way to do it when you're
+However, Vyse provides a more convienient way to do it when you're
 concerned with the value at the `i`th index and not `i` itself:
 
 ```lua
@@ -150,7 +150,7 @@ let greet = fn(name) {
 }
 ```
 
-All functions are first class values in Snap
+All functions are first class values in Vyse
 This means functions can be passed around and used just like
 any other value.
 
@@ -287,7 +287,7 @@ like method overriding.
 
 ## Operator overloads
 
-Many snap operators can be overloaded to perform different actions.
+Many vyse operators can be overloaded to perform different actions.
 The overloading methods must exist somewhere up in the parent object hierarchy.
 Eg -
 

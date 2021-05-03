@@ -2,10 +2,10 @@
 #include "token.hpp"
 #include "value.hpp"
 
-namespace snap {
+namespace vyse {
 
 u32 hash_cstring(const char* chars, int len);
-/// Strings in snap are heap allocated, and contain 3 important fields:
+/// Strings in vyse are heap allocated, and contain 3 important fields:
 /// `m_chars`  -> Pointer to the C string on the heap (null terminated).
 /// `m_length` -> Length of the string.
 /// `m_hash`   -> Unlike other objects, a string's hash is computed by walking over it's
@@ -14,7 +14,7 @@ u32 hash_cstring(const char* chars, int len);
 class String final : public Obj {
 	friend VM;
 
-	SNAP_NO_DEFAULT_CONSTRUCT(String);
+	VYSE_NO_DEFAULT_CONSTRUCT(String);
 
 public:
 	/// @param len length of the string.
@@ -75,4 +75,4 @@ private:
 };
 
 bool operator==(const String& a, const String& b);
-} // namespace snap
+} // namespace vyse 

@@ -5,7 +5,7 @@
 
 #include <vector>
 
-namespace snap {
+namespace vyse {
 
 struct Block {
 	std::vector<Opcode> code;
@@ -20,4 +20,4 @@ struct Block {
 	}
 };
 
-} // namespace snap
+} // namespace vyse

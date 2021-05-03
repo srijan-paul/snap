@@ -4,10 +4,10 @@
 #include <cmath>
 #include <std/base.hpp>
 
-namespace snap {
+namespace vyse {
 
 // This is the core table data structure
-// in snap. I decided to go with a hashtable
+// in vyse. I decided to go with a hashtable
 // implementation that uses Robinhood hashing
 // and linear probing.
 class Table final : public Obj {
@@ -43,7 +43,7 @@ public:
 	size_t length() const;
 
 	/// @brief Takes a string C string on the heap. checks if
-	/// a snap::String exists with the same characters.
+	/// a vyse::String exists with the same characters.
 	/// @return A pointer to the string object, if found
 	/// inside the table, else nullptr.
 	String* find_string(const char* chars, size_t length, size_t hash) const;
@@ -55,7 +55,7 @@ public:
 
 	/// An Entry represents a key-value pair
 	/// in the hashtable, both the key and the
-	/// value are of type `snap::Value`.
+	/// value are of type `vyse::Value`.
 	/// An empty slot is represented by an Entry
 	/// whose key is Nil and a tombstone is
 	/// represented by an entry whose key's
@@ -118,11 +118,11 @@ private:
 			// we came across, then store that slot.
 			// If no slot with that key is found, then we must be looking for a slot to insert a new
 			// element into the hash table, so we return the tombstone as a slot for insertion.
-			if (SNAP_IS_UNDEFINED(entry.key) and first_tombstone == nullptr) {
+			if (VYSE_IS_UNDEFINED(entry.key) and first_tombstone == nullptr) {
 				first_tombstone = &entry;
 			} else if ((entry.hash == hash and entry.key == key)) {
 				return entry;
-			} else if (SNAP_IS_NIL(entry.key)) {
+			} else if (VYSE_IS_NIL(entry.key)) {
 				return first_tombstone ? *first_tombstone : entry;
 			}
 
@@ -139,4 +139,4 @@ private:
 
 bool operator==(const Table::Entry& a, const Table::Entry& b);
 
-} // namespace snap
+} // namespace vyse 

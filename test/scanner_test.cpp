@@ -3,7 +3,7 @@
 #include "token.hpp"
 #include <scanner.hpp>
 
-using namespace snap;
+using namespace vyse;
 using TT = TokenType;
 
 static bool compare_ttypes(const std::string* code, std::vector<TT> expected) {

@@ -2,7 +2,7 @@
 #include "string.hpp"
 #include "upvalue.hpp"
 
-namespace snap {
+namespace vyse {
 
 // A protoype is the body of a function
 // that contains the bytecode.
@@ -79,7 +79,7 @@ public:
 	/// @brief returns the Upvalue at index [idx] in the
 	/// upvalue list.
 	Upvalue* get_upval(u32 idx) noexcept {
-		SNAP_ASSERT(idx < m_upvals.size(), "Invalid upvalue index.");
+		VYSE_ASSERT(idx < m_upvals.size(), "Invalid upvalue index.");
 		return m_upvals[idx];
 	}
 
@@ -116,4 +116,4 @@ private:
 	void trace(GC& gc) override;
 };
 
-} // namespace snap
+} // namespace vyse 

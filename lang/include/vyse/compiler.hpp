@@ -5,7 +5,7 @@
 #include "scanner.hpp"
 #include <array>
 
-namespace snap {
+namespace vyse {
 
 struct LocalVar {
 	/// Pointer to the local variable's name in the source code.
@@ -80,9 +80,9 @@ public:
 	static constexpr u8 MaxConstants = UINT8_MAX;
 	static constexpr u8 MaxFuncParams = 200;
 
-	SNAP_NO_COPY(Compiler);
-	SNAP_NO_MOVE(Compiler);
-	SNAP_NO_DEFAULT_CONSTRUCT(Compiler);
+	VYSE_NO_COPY(Compiler);
+	VYSE_NO_MOVE(Compiler);
+	VYSE_NO_DEFAULT_CONSTRUCT(Compiler);
 
 	// Creates a fresh new compiler that will
 	// parse the toplevel script `src`.
@@ -343,4 +343,4 @@ private:
 	bool is_assign_tok(TokenType ttype) const noexcept;
 };
 
-} // namespace snap
+} // namespace vyse 

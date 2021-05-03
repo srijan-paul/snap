@@ -2,14 +2,14 @@
 #include <debug.hpp>
 #include <opcode.hpp>
 
-using namespace snap;
-using Op = snap::Opcode;
+using namespace vyse;
+using Op = vyse::Opcode;
 
 void block_test() {
 	std::printf("--- block test ---\n");
 
 	Block b;
-	const u8 index = b.add_value(SNAP_NUM_VAL(1.5));
+	const u8 index = b.add_value(VYSE_NUM_VAL(1.5));
 	b.add_instruction(Op::load_const, 1);
 	b.add_instruction(static_cast<Op>(index), 1);
 	b.add_instruction(Op::pop, 1);

@@ -2,7 +2,7 @@
 #include <common.hpp>
 #include <value.hpp>
 
-namespace snap {
+namespace vyse {
 
 size_t Block::add_instruction(Opcode i, u32 line) {
 	code.push_back(i);
@@ -21,4 +21,4 @@ size_t Block::add_value(Value value) {
 	return constant_pool.size() - 1;
 }
 
-} // namespace snap
+} // namespace vyse
