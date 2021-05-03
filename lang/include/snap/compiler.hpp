@@ -134,6 +134,11 @@ private:
 	Compiler* const m_parent = nullptr;
 	Loop* m_loop = nullptr;
 
+	/// Running sum of the stack size.
+	/// This is calculated by adding together
+	/// the stack effects of emitted instructions.
+	s64 m_stack_size = 0;
+
 	const std::string* m_source;
 	bool has_error = false;
 	// When true, the compiler goes into

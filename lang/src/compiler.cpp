@@ -936,7 +936,13 @@ size_t Compiler::emit_value(Value v) {
 }
 
 inline void Compiler::emit(Op op) {
-	THIS_BLOCK.add_instruction(op, token.location.line);
+	int stack_effect = op_stack_effect(op);
+	m_stack_size += stack_effect;
+	if (m_stack_size > m_codeblock->max_stack_size) {
+		m_codeblock->max_stack_size = m_stack_size;
+	}
+
+	emit(op, token);
 }
 
 inline void Compiler::emit(Op op, const Token& token) {
@@ -944,7 +950,7 @@ inline void Compiler::emit(Op op, const Token& token) {
 }
 
 inline void Compiler::emit_arg(u8 operand) {
-	THIS_BLOCK.add_instruction(Op(operand), token.location.line);
+	THIS_BLOCK.add_instruction(static_cast<Op>(operand), token.location.line);
 }
 
 inline void Compiler::emit_with_arg(Op op, u8 arg) {
