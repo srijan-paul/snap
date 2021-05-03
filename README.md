@@ -1,27 +1,27 @@
-# Snap
+# Vyse
 
 <br />
 <p align="center">
   <a href="#">
-    <img src="./media/logo.svg" alt="Logo" width="200" height="200">
+    <img src="./media/vyse_logo.svg" alt="Logo" width="200" height="200">
   </a>
 
-  <h2 align="center">Snap</h2>
+  <h2 align="center">Vyse</h2>
 
   <p align="center">
    An elegant and embeddable programming language
     <br />
-    <a href="https://github.com/srijan-paul/snap/blob/main/doc.md"><b>Visit the language spec »</b></a>
+    <a href="https://github.com/srijan-paul/vyse/blob/main/doc.md"><b>Visit the language spec »</b></a>
     <br />
     <br />
-    <a href="https://github.com/srijan-paul/snap/issues">Report Bug</a>
+    <a href="https://github.com/srijan-paul/vyse/issues">Report Bug</a>
      •
-    <a href="https://github.com/srijan-paul/snap/issues">Request Feature</a>
+    <a href="https://github.com/srijan-paul/vyse/issues">Request Feature</a>
   </p>
 </p>
 
-Snap is a dynamically typed, interpreted and fast scriptling language inspired by Lua for rapid prototyping of applications like video games.
-(Note that this is a work in progresss project and few of promised are currently under development, It is advised to not use snap for any development purposes in it's current stage).
+Vyse is a dynamically typed, interpreted and fast scriptling language inspired by Lua for rapid prototyping of applications like video games.
+(Note that this is a work in progresss project and few of promised are currently under development, It is advised to not use vyse for any development purposes in it's current stage).
 
 # Table of Contents
 
@@ -35,9 +35,9 @@ Snap is a dynamically typed, interpreted and fast scriptling language inspired b
 
 # Goal
 
-Snap aims to pick up after the Lua programming language, by adding popularly desired features on top of it,
+Vyse aims to pick up after the Lua programming language, by adding popularly desired features on top of it,
 whilst providing similar speed and minimalism as Lua.
-Some quirks about Lua that Snap changes are:
+There exist some quirks in Lua that Vyse aims to change.
 
 - Variables are global by default
 - Long keywords like `local` and the use of `do .. end` to designate blocks instead of `{}` makes it unlikeable to
@@ -50,7 +50,7 @@ Some quirks about Lua that Snap changes are:
   - `switch` statements.
 - Arrays starting at 1.
 
-Snap aims to keep most of what Lua provides, but address the aforementioned issues and offer the following QoL feautures:
+Vyse aims to keep most of what Lua provides, but address the aforementioned issues and offer the following QoL feautures:
 
 - A Familiar syntax for programmers migrating from Javascript and C
 - An easy to integrate C++ API for easy embedding in applications
@@ -121,7 +121,7 @@ For a more complete spec of the language, and all it's features visit [manual.md
 
 # Roadmap.
 
-Currently, snap supports basic control flow, variable declaration, usage and basic collection data structures.
+Currently, vyse supports basic control flow, variable declaration, usage and basic collection data structures.
 To move towards a more complete implementation, the following tasks have to be attended to:
 
 1. [x] Implement parent tables (metatables in Lua). [**DONE**]
@@ -133,20 +133,20 @@ To move towards a more complete implementation, the following tasks have to be a
 
 # Implementation.
 
-Snap runs on the Snap Virtual Machine (svm for short). The VM has a stack based architechture that operates on 1 byte long opcodes. To keep the implementation concise and simple, snap uses a single pass compiler that directly consumes tokens
+Vyse runs on the Vyse Virtual Machine (svm for short). The VM has a stack based architechture that operates on 1 byte long opcodes. To keep the implementation concise and simple, vyse uses a single pass compiler that directly consumes tokens
 and emits bytecode.
 
 The stages involved are :
 
 ### Lexing / Tokenizing (String -> Token)
 
-The snap lexer resides in the `src/syntax/scanner.hpp` file, A simple hand written lexer that accepts a string returns a
+The vyse lexer resides in the `src/syntax/scanner.hpp` file, A simple hand written lexer that accepts a string returns a
 token whenever the method `next_token()` is called.
 The Lexer is called from within the Compiler, but can also be instantiated and used stand-alone for testing purposes.
 
 ### Compiling (Tokens -> Bytecode)
 
-The Compiler compiles tokens to Bytecode following the Snap Bytecode Instruction format (`lang/include/opcode.hpp`).
+The Compiler compiles tokens to Bytecode following the Vyse Bytecode Instruction format (`lang/include/opcode.hpp`).
 Every instruction is 1 byte long. The compiler returns a function containing all the bytecode from the script, which is 
 then loaded into the VM and called.
 
@@ -158,17 +158,17 @@ for lambdas and closures following Lua's upvalue design.
 
 # Building
 
-To build snap from source, it is recommended that you use CMake (version 3.13 or higher).
+To build vyse from source, it is recommended that you use CMake (version 3.13 or higher).
 The build tool used here is Ninja, but you can use any other build tool of your preference (eg- make).
 
-After downloading/cloning snap into a directory, `cd` into it and run the following commands to run the tests:
+After downloading/cloning vyse into a directory, `cd` into it and run the following commands to run the tests:
 
 ```
 mkdir bin
 cd bin
 cmake -G .. Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -CMAKE_C_COMPILER=clang -CMAKE_CXX_COMPILER=clang++
 ninja
-./snap
+./vyse
 ```
 
 Note that `-CMAKE_C_COMPILER=clang -CMAKE_CXX_COMPILER=clang++` are optional, and you can use any C++ compiler toolchain of your liking.
@@ -176,14 +176,14 @@ Note that `-CMAKE_C_COMPILER=clang -CMAKE_CXX_COMPILER=clang++` are optional, an
 # Editor-Support
 
 Currently, syntax highlighting and code completion snippets are supported on the following code editors:
-- [x] [VS Code](https://github.com/srijan-paul/vscode-snap)
+- [x] [VS Code](https://github.com/srijan-paul/vscode-vyse)
 - [ ] Sublime text [In Progress]
 - [ ] Vim [Coming soon]
 - [ ] Atom [Coming soon]
 
 # Development
 
-If you're looking to fork contribute to snap, It is recommended to have clang-format for formatting and clangd language server for
+If you're looking to fork contribute to vyse, It is recommended to have clang-format for formatting and clangd language server for
 your text editor. On VSCode, the `C/C++` extension can be used to debug the executable.
 
-All the source and header files for snap are present in the `lang` directory in the project's root folder.
+All the source and header files for vyse are present in the `lang` directory in the project's root folder.
