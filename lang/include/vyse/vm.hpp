@@ -3,6 +3,7 @@
 #include "function.hpp"
 #include "gc.hpp"
 #include "table.hpp"
+#include "vm_stack.hpp"
 #include <functional>
 
 namespace vyse {
@@ -44,14 +45,6 @@ public:
 	/// determining the max stack size at compile time
 	/// inside a function body.
 
-	static constexpr size_t StackMaxSize = 256;
-	static constexpr size_t MaxCallStack = 128;
-
-	VM(const std::string* src) noexcept : m_source{src}, m_gc(*this){};
-	VM() : m_source{nullptr}, m_gc(*this){};
-	~VM();
-	ExitCode interpret();
-
 	/// the function that vyse uses to print stuff onto the console.
 	/// It is called whenever the `print` function is called in vyse source code.
 	PrintFn print = default_print_fn;
@@ -60,6 +53,20 @@ public:
 	/// in the VM. It takes a reference to the VM, and the error
 	/// message as a c string.
 	ErrorFn on_error = default_error_fn;
+
+	/// Maximum size of the call stack. If the call stack
+	/// size exceeds this, then there is a stack overflow.
+	static constexpr size_t MaxCallStack = 256;
+
+	/// @brief The VM's value stack. All operations in Vyse
+	/// are done by popping from and pushing to this data 
+	/// structure.
+	Stack m_stack;
+
+	VM(const std::string* src) noexcept : m_source{src}, m_gc(*this){};
+	VM() : m_source{nullptr}, m_gc(*this){};
+	~VM();
+	ExitCode interpret();
 
 	struct CallFrame {
 		/// `func` is either an instance of CClosure
@@ -83,33 +90,11 @@ public:
 		}
 	};
 
-	inline Value peek(u8 depth = 0) const {
-		return *(sp - 1 - depth);
-	}
-
 	/// @brief Get the [num]th argument of the
 	/// current function. get_arg(0) returns the
 	/// first argument.
 	inline Value& get_arg(u8 idx) const {
 		return m_current_frame->base[idx + 1];
-	}
-
-	/// pushes a value onto the VM's stack.
-	/// @param value The Value to push onto the stack.
-	inline void push(Value value) {
-		*(sp++) = value;
-	}
-
-	/// @brief pops a value from the VM stack and returns it.
-	inline Value pop() {
-		return *(--sp);
-	}
-
-	/// @brief pop the topmost `n` values from
-	/// the stack.
-	inline void popn(int n) {
-		VYSE_ASSERT(n >= 0, "[n] must be >= 1");
-		sp -= n;
 	}
 
 	/// @brief Returns the currently exceuting function
@@ -124,20 +109,6 @@ public:
 
 	Value* base() noexcept {
 		return m_current_frame->base;
-	}
-
-	/// @brief saves the current top
-	/// of the stack so it can be restored
-	/// later.
-	void save_stack() noexcept {
-		m_saved_top = sp;
-	}
-
-	/// @brief restores the top of the stack
-	/// by setting it back to where it was
-	/// when [savestack] was last called.
-	void restore_stack() noexcept {
-		sp = m_saved_top;
 	}
 
 	bool init();
@@ -239,21 +210,8 @@ public:
 
 private:
 	const std::string* m_source;
-	Compiler* m_compiler = nullptr;
-
 	bool m_has_error = false;
-
-	Value m_stack[StackMaxSize];
-	using StackId = Value*;
-
-	// The stack pointer pointing to the next free slot
-	// in the stack.
-	StackId sp = m_stack;
-
-	/// The last saved location of [sp].
-	/// This is used to restore the stack's
-	/// top with [restore_stack]
-	StackId m_saved_top = m_stack;
+	Compiler* m_compiler = nullptr;
 
 	// The instruction pointer.
 	// It stores the index of the next instruction
@@ -327,4 +285,4 @@ private:
 	ExitCode binop_error(const char* opstr, Value& a, Value& b);
 };
 
-} // namespace vyse 
+} // namespace vyse

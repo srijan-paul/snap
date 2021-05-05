@@ -23,8 +23,10 @@
 #define SET_VAR(index, value) (m_current_frame->base[index] = value)
 
 // PEEK(1) fetches the topmost value in the stack.
-#define PEEK(depth) sp[-depth]
-#define POP()				*(--sp)
+#define PEEK(depth) m_stack.top[-depth]
+#define POP()				(m_stack.pop())
+#define DISCARD()		(--m_stack.top)
+#define PUSH(value) m_stack.push(value)
 
 namespace vyse {
 
@@ -39,11 +41,11 @@ using OT = ObjType;
 
 #define CMP_OP(op)                                                                                 \
 	do {                                                                                             \
-		Value b = pop();                                                                               \
-		Value a = pop();                                                                               \
+		Value b = m_stack.pop();                                                                       \
+		Value a = m_stack.pop();                                                                       \
                                                                                                    \
 		if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                       \
-			push(VYSE_BOOL_VAL(VYSE_AS_NUM(a) op VYSE_AS_NUM(b)));                                       \
+			PUSH(VYSE_BOOL_VAL(VYSE_AS_NUM(a) op VYSE_AS_NUM(b)));                                       \
 		} else {                                                                                       \
 			return binop_error(#op, b, a);                                                               \
 		}                                                                                              \
@@ -56,7 +58,7 @@ using OT = ObjType;
                                                                                                    \
 		if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                       \
 			VYSE_SET_NUM(b, VYSE_AS_NUM(b) op VYSE_AS_NUM(a));                                           \
-			pop();                                                                                       \
+			DISCARD();                                                                                   \
 		} else {                                                                                       \
 			return binop_error(#op, b, a);                                                               \
 		}                                                                                              \
@@ -68,7 +70,7 @@ using OT = ObjType;
                                                                                                    \
 	if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                         \
 		VYSE_SET_NUM(a, VYSE_CAST_INT(a) op VYSE_CAST_INT(b));                                         \
-		pop();                                                                                         \
+		DISCARD();                                                                                     \
 	} else {                                                                                         \
 		return binop_error(#op, a, b);                                                                 \
 	}
@@ -93,10 +95,10 @@ ExitCode VM::run() {
 #endif
 
 		switch (op) {
-		case Op::load_const: push(READ_VALUE()); break;
-		case Op::load_nil: push(VYSE_NIL_VAL); break;
+		case Op::load_const: PUSH(READ_VALUE()); break;
+		case Op::load_nil: PUSH(VYSE_NIL_VAL); break;
 
-		case Op::pop: pop(); break;
+		case Op::pop: m_stack.pop(); break;
 		case Op::add: BINOP(+); break;
 		case Op::sub: BINOP(-); break;
 		case Op::mult: BINOP(*); break;
@@ -115,7 +117,7 @@ ExitCode VM::run() {
 					return runtime_error("Attempt to divide by 0.\n");
 				}
 				VYSE_SET_NUM(b, VYSE_AS_NUM(b) / VYSE_AS_NUM(a));
-				pop();
+				POP();
 			} else {
 				return binop_error("/", b, a);
 			}
@@ -132,7 +134,7 @@ ExitCode VM::run() {
 				return binop_error("%", b, a);
 			}
 
-			pop();
+			POP();
 			break;
 		}
 
@@ -157,16 +159,16 @@ ExitCode VM::run() {
 		}
 
 		case Op::eq: {
-			Value a = pop();
-			Value b = pop();
-			push(VYSE_BOOL_VAL(a == b));
+			Value a = m_stack.pop();
+			Value b = m_stack.pop();
+			PUSH(VYSE_BOOL_VAL(a == b));
 			break;
 		}
 
 		case Op::neq: {
-			Value a = pop();
-			Value b = pop();
-			push(VYSE_BOOL_VAL(a != b));
+			Value a = POP();
+			Value b = POP();
+			PUSH(VYSE_BOOL_VAL(a != b));
 			break;
 		}
 
@@ -180,8 +182,8 @@ ExitCode VM::run() {
 		}
 
 		case Op::lnot: {
-			Value a = pop();
-			push(VYSE_BOOL_VAL(IS_VAL_FALSY(a)));
+			Value a = POP();
+			PUSH(VYSE_BOOL_VAL(IS_VAL_FALSY(a)));
 			break;
 		}
 
@@ -191,7 +193,7 @@ ExitCode VM::run() {
 				ip += FETCH_SHORT();
 			} else {
 				ip += 2;
-				pop();
+				POP();
 			}
 			break;
 		}
@@ -202,7 +204,7 @@ ExitCode VM::run() {
 				ip += FETCH_SHORT();
 			} else {
 				ip += 2;
-				pop();
+				POP();
 			}
 			break;
 		}
@@ -220,13 +222,13 @@ ExitCode VM::run() {
 
 		case Op::get_var: {
 			u8 idx = NEXT_BYTE();
-			push(GET_VAR(idx));
+			PUSH(GET_VAR(idx));
 			break;
 		}
 
 		case Op::set_var: {
 			u8 idx = NEXT_BYTE();
-			SET_VAR(idx, pop());
+			SET_VAR(idx, POP());
 			break;
 		}
 
@@ -234,7 +236,7 @@ ExitCode VM::run() {
 			u8 idx = NEXT_BYTE();
 			VYSE_ASSERT(m_current_frame->func->tag == OT::closure, "enclosing frame a CClosure!");
 			Closure* cl = static_cast<Closure*>(m_current_frame->func);
-			*cl->get_upval(idx)->m_value = pop();
+			*cl->get_upval(idx)->m_value = POP();
 			break;
 		}
 
@@ -242,37 +244,37 @@ ExitCode VM::run() {
 			u8 idx = NEXT_BYTE();
 			VYSE_ASSERT(m_current_frame->func->tag == OT::closure, "enclosing frame a CClosure!");
 			Closure* cl = static_cast<Closure*>(m_current_frame->func);
-			push(*cl->get_upval(idx)->m_value);
+			PUSH(*cl->get_upval(idx)->m_value);
 			break;
 		}
 
 		case Op::set_global: {
 			Value name = READ_VALUE();
 			VYSE_ASSERT(VYSE_IS_STRING(name), "Variable name not a string.");
-			set_global(VYSE_AS_STRING(name), pop());
+			set_global(VYSE_AS_STRING(name), POP());
 			break;
 		}
 
 		case Op::get_global: {
 			Value name = READ_VALUE();
 			VYSE_ASSERT_OT(name, OT::string);
-			Value v = get_global(VYSE_AS_STRING(name));
-			if (VYSE_IS_UNDEFINED(v)) {
+			Value value = get_global(VYSE_AS_STRING(name));
+			if (VYSE_IS_UNDEFINED(value)) {
 				return ERROR("Undefined variable '{}'.", VYSE_AS_STRING(name)->c_str());
 			}
-			push(v);
+			PUSH(value);
 			break;
 		}
 
 		case Op::close_upval: {
-			close_upvalues_upto(sp - 1);
-			pop();
+			close_upvalues_upto(m_stack.top - 1);
+			POP();
 			break;
 		}
 
 		case Op::concat: {
 			Value& a = PEEK(2);
-			Value b = pop();
+			Value b = POP();
 
 			if (!(VYSE_IS_STRING(a) and VYSE_IS_STRING(b))) {
 				return binop_error("..", a, b);
@@ -292,13 +294,13 @@ ExitCode VM::run() {
 		}
 
 		case Op::new_table: {
-			push(VYSE_OBJECT_VAL(&make<Table>()));
+			PUSH(VYSE_OBJECT_VAL(&make<Table>()));
 			break;
 		}
 
 		case Op::table_add_field: {
-			Value value = pop();
-			Value key = pop();
+			Value value = POP();
+			Value key = POP();
 
 			Value vtable = PEEK(1);
 			VYSE_AS_TABLE(vtable)->set(key, value);
@@ -307,14 +309,14 @@ ExitCode VM::run() {
 
 		// table[key] = value
 		case Op::index_set: {
-			Value value = pop();
-			Value key = pop();
+			Value value = POP();
+			Value key = POP();
 			if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
 
 			Value& tvalue = PEEK(1);
 			if (VYSE_IS_TABLE(tvalue)) {
 				VYSE_AS_TABLE(tvalue)->set(key, value);
-				sp[-1] = value; // assignment returns it's RHS.
+				m_stack.top[-1] = value; // assignment returns it's RHS.
 			} else {
 				return ERROR("Attempt to index a {} value.", VYSE_TYPE_CSTR(tvalue));
 			}
@@ -325,11 +327,11 @@ ExitCode VM::run() {
 		case Op::table_set: {
 			const Value& key = READ_VALUE();
 			if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
-			Value value = pop();
+			Value value = POP();
 			Value& tvalue = PEEK(1);
 			if (VYSE_IS_TABLE(tvalue)) {
 				VYSE_AS_TABLE(tvalue)->set(key, value);
-				sp[-1] = value; // assignment returns it's RHS
+				m_stack.top[-1] = value; // assignment returns it's RHS
 			} else {
 				return INDEX_ERROR(tvalue);
 			}
@@ -341,7 +343,7 @@ ExitCode VM::run() {
 			// TOS = as_table(TOS)->get(READ_VAL())
 			Value tvalue = PEEK(1);
 			if (VYSE_IS_TABLE(tvalue)) {
-				sp[-1] = VYSE_AS_TABLE(tvalue)->get(READ_VALUE());
+				m_stack.top[-1] = VYSE_AS_TABLE(tvalue)->get(READ_VALUE());
 			} else {
 				return INDEX_ERROR(tvalue);
 			}
@@ -353,7 +355,7 @@ ExitCode VM::run() {
 			// push((TOS)->get(READ_VAL()))
 			Value tval = PEEK(1);
 			if (VYSE_IS_TABLE(tval)) {
-				push(VYSE_AS_TABLE(tval)->get(READ_VALUE()));
+				PUSH(VYSE_AS_TABLE(tval)->get(READ_VALUE()));
 			} else {
 				return INDEX_ERROR(tval);
 			}
@@ -362,10 +364,10 @@ ExitCode VM::run() {
 
 		// table_or_array[key]
 		case Op::index: {
-			Value key = pop();
+			Value key = POP();
 			Value tvalue = PEEK(1);
 			if (VYSE_IS_TABLE(tvalue)) {
-				sp[-1] = VYSE_AS_TABLE(tvalue)->get(key);
+				m_stack.top[-1] = VYSE_AS_TABLE(tvalue)->get(key);
 			} else {
 				return INDEX_ERROR(tvalue);
 			}
@@ -378,7 +380,7 @@ ExitCode VM::run() {
 			const Value& key = PEEK(1);
 			if (VYSE_IS_TABLE(vtable)) {
 				if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
-				push(VYSE_AS_TABLE(vtable)->get(key));
+				PUSH(VYSE_AS_TABLE(vtable)->get(key));
 			} else {
 				return INDEX_ERROR(vtable);
 			}
@@ -387,7 +389,7 @@ ExitCode VM::run() {
 
 		case Op::pop_jmp_if_false: {
 			ip += IS_VAL_FALSY(PEEK(1)) ? FETCH_SHORT() : 2;
-			pop();
+			DISCARD();
 			break;
 		}
 
@@ -399,8 +401,8 @@ ExitCode VM::run() {
 			Value vkey = READ_VALUE();
 			VYSE_ASSERT(VYSE_IS_STRING(vkey), "method name not a string.");
 			if (!VYSE_IS_TABLE(vtable)) return INDEX_ERROR(vtable);
-			sp[-1] = VYSE_AS_TABLE(vtable)->get(vkey);
-			push(vtable);
+			m_stack.top[-1] = VYSE_AS_TABLE(vtable)->get(vkey);
+			PUSH(vtable);
 			break;
 		}
 
@@ -412,12 +414,12 @@ ExitCode VM::run() {
 		}
 
 		case Op::return_val: {
-			Value result = pop();
+			Value result = POP();
 			close_upvalues_upto(m_current_frame->base);
-			sp = m_current_frame->base + 1;
+			m_stack.top = m_current_frame->base + 1;
 
-			pop();
-			push(result);
+			DISCARD();
+			PUSH(result);
 
 			m_frame_count--;
 			if (m_frame_count == 0) {
@@ -438,7 +440,7 @@ ExitCode VM::run() {
 			u32 num_upvals = NEXT_BYTE();
 			Closure* func = &make<Closure>(VYSE_AS_PROTO(vcode), num_upvals);
 
-			push(VYSE_OBJECT_VAL(func));
+			PUSH(VYSE_OBJECT_VAL(func));
 
 			for (u8 i = 0; i < num_upvals; ++i) {
 				bool is_local = NEXT_BYTE();
@@ -559,7 +561,7 @@ bool VM::init() {
 	// unprotect it.
 	gc_unprotect(code);
 
-	push(VYSE_OBJECT_VAL(func));
+	PUSH(VYSE_OBJECT_VAL(func));
 	callfunc(func, 0);
 
 #ifdef VYSE_DEBUG_DISASSEMBLY
@@ -582,9 +584,9 @@ void VM::add_stdlib_object(const char* name, Obj* o) {
 	// cycle (when allocating the [name] as vyse::String). At that
 	// point, vprint is only reachable on the C stack, so we protect
 	// it by pushing it on to the VM stack.
-	push(vglobal);
+	PUSH(vglobal);
 	set_global(name, vglobal);
-	pop();
+	DISCARD();
 }
 
 void VM::load_stdlib() {
@@ -664,7 +666,7 @@ void VM::push_callframe(Obj* callable, int argc) {
 	// prepare the next call frame
 	m_current_frame = &m_frames[m_frame_count++];
 	m_current_frame->func = callable;
-	m_current_frame->base = sp - argc - 1;
+	m_current_frame->base = m_stack.top - argc - 1;
 
 	// start from the first opcode
 	m_current_frame->ip = ip = 0;
@@ -702,13 +704,13 @@ bool VM::callfunc(Closure* func, int argc) {
 	// arguments that aren't provded are replaced with nil.
 	if (extra < 0) {
 		while (extra < 0) {
-			push(VYSE_NIL_VAL);
+			PUSH(VYSE_NIL_VAL);
 			argc++;
 			extra++;
 		}
 	} else {
 		while (extra > 0) {
-			pop();
+			DISCARD();
 			argc--;
 			extra--;
 		}
@@ -724,8 +726,8 @@ bool VM::call_cclosure(CClosure* cclosure, int argc) {
 	Value ret = c_func(*this, argc);
 	pop_callframe();
 
-	popn(argc);
-	sp[-1] = ret;
+	m_stack.popn(argc);
+	m_stack.top[-1] = ret;
 
 	return !m_has_error;
 }
@@ -808,4 +810,4 @@ VM::~VM() {
 	}
 }
 
-} // namespace vyse 
+} // namespace vyse

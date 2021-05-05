@@ -13,6 +13,11 @@ OP(set_upval, 1, -1),
 OP(get_upval, 1, 1),
 OP(make_func, -1, 1), /* special arity */
 OP(prep_method_call, 1, 1),
+
+// Note that calling function pushes a new call 
+// frame onto the stack, therefore it does not count
+// as incrementing the stack size of the *current*
+// closure.
 OP(call_func, 1, 0), /* special stack effect */
 
 OP(pop, 0, -1),
@@ -36,7 +41,7 @@ OP(negate, 0, 0),
 OP(lnot, 0, 0),
 OP(load_nil, 0, 1),
 OP(close_upval, 0, -1),
-OP(return_val, 0, -1), /* special stack effect */
+OP(return_val, 0, 0), /* special stack effect */
 OP(new_table, 0, 1),
 OP(index_set, 0, -2),
 OP(table_add_field, 0, -2),

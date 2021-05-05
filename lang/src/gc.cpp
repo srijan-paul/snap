@@ -40,7 +40,7 @@ void GC::mark() {
 	// 4. Compiler roots, if the compiler is active.
 	// 5. The table of global variables.
 	// 6. The 'extra_roots' set.
-	for (Value* v = m_vm->m_stack; v < m_vm->sp; ++v) {
+	for (Value* v = m_vm->m_stack.m_values; v < m_vm->m_stack.top; ++v) {
 		mark_value(*v);
 	}
 
@@ -135,4 +135,4 @@ void GC::unprotect(Obj* o) {
 	m_extra_roots.erase(o);
 }
 
-} // namespace vyse 
+} // namespace vyse
