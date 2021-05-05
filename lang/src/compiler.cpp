@@ -294,8 +294,8 @@ void Compiler::func_expr(String* fname, bool is_method) {
 
 	int param_count = 0;
 
-	/// Methods have an implicit 'self' parameter, used to
-	/// reference the object itself.
+	// Methods have an implicit 'self' parameter, used to
+	// reference the object itself.
 	if (is_method) {
 		++param_count;
 		compiler.add_self_param();
@@ -329,10 +329,10 @@ void Compiler::func_expr(String* fname, bool is_method) {
 	for (int i = 0; i < compiler.m_symtable.m_num_upvals; ++i) {
 		const UpvalDesc& upval = compiler.m_symtable.m_upvals[i];
 
-		/// An operand of '1' means that the upvalue exists in the call
-		/// frame of the currently executing function while this closure is
-		/// being created. '0' means the upvalue exists in the current
-		/// function's upvalue list.
+		// An operand of '1' means that the upvalue exists in the call
+		// frame of the currently executing function while this closure is
+		// being created. '0' means the upvalue exists in the current
+		// function's upvalue list.
 		emit_arg(upval.is_local ? 1 : 0);
 		emit_arg(upval.index);
 	}
@@ -341,9 +341,8 @@ void Compiler::func_expr(String* fname, bool is_method) {
 	disassemble_block(code->name_cstr(), code->block());
 #endif
 
-	/// synchronize the parent compiler with
-	/// the child so we can continue compiling
-	/// from where the child left off.
+	// synchronize the parent compiler with the child so we can continue compiling
+	// from where the child left off.
 	prev = compiler.prev;
 	token = compiler.token;
 	peek = compiler.peek;
@@ -699,10 +698,8 @@ void Compiler::variable(bool can_assign) {
 			panic = false; // Don't send the compiler into error recovery mode.
 		}
 
-		/// Compile the RHS of the assignment, and
-		/// any necessary arithmetic ops if its a
-		/// compound assignment operator. So by the
-		/// time we are setting the value, the RHS
+		/// Compile the RHS of the assignment, and any necessary arithmetic ops if its a
+		/// compound assignment operator. So by the time we are setting the value, the RHS
 		/// is sitting ready on top of the stack.
 		var_assign(get_op, index);
 		emit_with_arg(set_op, index);
@@ -1011,7 +1008,6 @@ int Compiler::op_arity(u32 op_index) const noexcept {
 #undef CHECK_ARITY
 
 int Compiler::op_stack_effect(Op op) const noexcept {
-/// TODO: handle call_func and return_val.
 #define OP(_, __, stack_effect) stack_effect
 	constexpr std::array<int, size_t(Op::no_op) + 1> stack_effects = {
 #include <opcodex>

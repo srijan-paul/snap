@@ -1,5 +1,6 @@
 #include "common.hpp"
 #include "str_format.hpp"
+#include "value.hpp"
 #include <cmath>
 #include <std/base.hpp>
 #include <vm.hpp>
@@ -463,7 +464,8 @@ ExitCode VM::run() {
 		}
 		}
 #ifdef VYSE_DEBUG_RUNTIME
-		print_stack(m_stack, sp - m_stack);
+		printf("[stack max: %zu]\t", m_stack.m_size);
+		print_stack(m_stack.m_values, m_stack.top - m_stack.m_values);
 		printf("\n");
 #endif
 	}
@@ -568,7 +570,6 @@ bool VM::init() {
 	disassemble_block(func->name()->c_str(), *m_current_block);
 	printf("\n");
 #endif
-
 	m_compiler = nullptr;
 	return true;
 }
@@ -700,6 +701,10 @@ void VM::pop_callframe() {
 bool VM::callfunc(Closure* func, int argc) {
 	int extra = argc - func->m_codeblock->param_count();
 
+	// make sure there is enough room in the stack
+	// for this function call.
+	m_stack.ensure_cap(func->m_codeblock->stack_size());
+
 	// extra arguments are ignored and
 	// arguments that aren't provded are replaced with nil.
 	if (extra < 0) {
@@ -805,6 +810,9 @@ VM::~VM() {
 	if (m_gc.m_objects == nullptr) return;
 	for (Obj* object = m_gc.m_objects; object != nullptr;) {
 		Obj* next = object->next;
+		// printf("object: ");
+		// print_value(VYSE_OBJECT_VAL(object));
+		// printf("\n");
 		delete object;
 		object = next;
 	}

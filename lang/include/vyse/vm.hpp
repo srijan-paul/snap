@@ -59,7 +59,7 @@ public:
 	static constexpr size_t MaxCallStack = 256;
 
 	/// @brief The VM's value stack. All operations in Vyse
-	/// are done by popping from and pushing to this data 
+	/// are done by popping from and pushing to this data
 	/// structure.
 	Stack m_stack;
 

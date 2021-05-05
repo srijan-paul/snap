@@ -1,8 +1,11 @@
+#pragma once
 #include "common.hpp"
 #include "value.hpp"
+#include <cstddef>
 
 namespace vyse {
 
+/// Total wasted hours: 12 
 class Stack final {
 	friend VM;
 	friend GC;
@@ -10,12 +13,12 @@ class Stack final {
 	VYSE_NO_MOVE(Stack);
 
 public:
-	static constexpr size_t InitialSize = 128;
+	static constexpr size_t InitialSize = 4;
 
-	Stack(){};
+	Stack() = default;
 
 	/// @brief Pushes [value] on top of the stack.
-	void push(Value value) noexcept {
+	inline void push(Value value) noexcept {
 		*(top++) = value;
 	}
 
@@ -24,7 +27,7 @@ public:
 	}
 
 	/// @brief Pops a value from the stack and returns it
-	Value pop() {
+	inline Value pop() {
 		return *(--top);
 	}
 
@@ -35,9 +38,8 @@ public:
 		top -= n;
 	}
 
-	/// @brief saves the current top
-	/// of the stack so it can be restored
-	/// later.
+	/// @brief saves the current top of the stack
+	/// so it can be restored later
 	void save_stack() noexcept {
 		m_saved_top = top;
 	}
@@ -47,6 +49,27 @@ public:
 	/// when [savestack] was last called.
 	void restore_stack() noexcept {
 		top = m_saved_top;
+	}
+
+	/// @brief Ensures that there are at least [num_slots]
+	/// slots free past the top in the stack.
+	/// @return returns true if the stack growht was successful
+	/// and false if the program ran out of memory trying to
+	/// grow the stack.
+	bool ensure_cap(size_t num_slots) {
+		std::ptrdiff_t count = top - m_values;
+		size_t num_free_slots = m_size - count;
+
+		/// TODO: update saved_top.
+		if (num_slots > num_free_slots) {
+			size_t diff = num_slots - num_free_slots;
+			m_size += diff + 1;
+			m_values = static_cast<Value*>(realloc(m_values, m_size * sizeof(Value)));
+			if (m_values == nullptr) return false;
+			top = m_values + count;
+		}
+
+		return true;
 	}
 
 private:

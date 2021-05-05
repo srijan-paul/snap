@@ -1,13 +1,10 @@
-let a = 1
-let b = 2
+-- x : 5
+-- y : 3
+-- toplevel: 2 
+--
 
-fn f() {
-  let d
-  {
-    let c = a + b
-    d = c * 2
-  }
-  return d
+fn func() {
+	return 'aaa'  .. 'bbb'
 }
 
-print(f())
+return func() 

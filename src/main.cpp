@@ -14,9 +14,9 @@ int main() {
 	// Temporarily we use this entry point to run
 	// a file main.snp, so we can use that as a
 	// 'scratchpad' of sorts to test some code.
-	const char* filepath = "../src/main.snp";
+	const char* filepath = "./src/main.vy";
 	std::ifstream file(filepath);
-	assert(file.good() and "File doesn't exist");
+	VYSE_ASSERT(file.good(), "Test file doesn't exist");
 
 	std::ostringstream stream;
 	stream << file.rdbuf();

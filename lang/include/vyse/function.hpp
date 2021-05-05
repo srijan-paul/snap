@@ -42,6 +42,10 @@ public:
 		return sizeof(CodeBlock);
 	}
 
+	size_t stack_size() const noexcept {
+		return max_stack_size;
+	}
+
 private:
 	String* const m_name;
 	u32 m_num_params = 0;
