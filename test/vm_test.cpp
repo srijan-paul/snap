@@ -102,15 +102,6 @@ static void expr_tests() {
 	test_return("return 10 || 5 || 2", VYSE_NUM(10));
 	test_return("return 10 - 5 - 2", VYSE_NUM(3.0));
 
-	test_return(R"(
-		let a = 1
-		let b = 3
-		a = 5
-		b = 4 
-		return a + b
-	)",
-							VYSE_NUM(9), "top level local variables");
-
 	test_return("return 9 & 7", VYSE_NUM(1));
 	test_return("return 4 | 9", VYSE_NUM(13));
 
@@ -120,101 +111,29 @@ static void expr_tests() {
 
 	// test string equality
 	test_return("return 'abc' == 'abc'", VYSE_BOOL(true));
-	test_return(R"(
-		const a = 'abcde'
-		const b = "abcde"
-		const c = 'aa'
-		const d = 'bb'
-
-		return a == b and c..d == 'aabb'
-	)",
-							VYSE_BOOL(true));
 
 	test_file("expr/compound-assign.vy", VYSE_NUM(8), "Compound assignment operators");
+	test_file("statements/locals.vy", VYSE_NUM(9), "top level local variables");
+	test_file("expr/concat.vy", VYSE_BOOL(true));
 
 	std::cout << "[Expression tests passed]\n";
 }
 
 static void stmt_tests() {
-	test_return(R"(
-		let a = 1;
-		let b = 2;
-		if a < b {
-			b = 5
-		}
-		return b
-		)",
-							VYSE_NUM(5), "If statement without else branch");
-
-	test_return(R"(
-		let a = 3;
-		let b = 3;
-		if a < b {
-			b = 5
-		} else if b > a {
-			b = 6
-		} else {
-			b = 7
-		}
-		return b)",
-							VYSE_NUM(7), "If statement with else-if branch");
 
 	test_file("statements/var.vy", VYSE_NUM(13), "block scoped declarations.");
+	test_file("if/if.vy", VYSE_NUM(5), "If statement without else branch");
+	test_file("if/else-if.vy", VYSE_NUM(7), "If statement with an else-if branch");
 	test_file("statements/global.vy", VYSE_NUM(6), "Global variables.");
 
 	std::cout << "Statement tests passed\n";
 }
 
 void fn_tests() {
-	test_return(R"(
-		fn adder(x) {
-			fn add(y) {
-				return x + y
-			}	
-			return add
-		}
-		return adder(10)(20)
-	)",
-							VYSE_NUM(30), "chained calls with parameters");
-
-	test_return(R"(
-		fn x() {
-			let a = 1
-			let b = 2
-			fn y() {
-				let c = 3
-				fn z() {
-					return a + b + c;
-				}
-				return z
-			}
-			return y
-		}
-		return x()()()
-	)",
-							VYSE_NUM(6), "Closures and chained function calls");
-
-	test_return(R"(
-		fn fib(n) {
-			if (n <= 1) return 1
-			return fib(n - 1) + fib(n - 2)
-		}
-		return fib(10)
-	)",
-							VYSE_NUM(89), "Recursive fiboacci");
-
-	test_return(R"(
-		fn make_adder(x) {
-			return fn(y) {
-				return x + y
-			}
-		}
-
-		const add10 = make_adder(10)
-		return add10(-10)
-	)",
-							VYSE_NUM(0), "make_adder closure");
-
+	test_file("closures/adder-2.vy", VYSE_NUM(30), "chained calls with parameters");
+	test_file("closures/nested-closures.vy", VYSE_NUM(6), "Closures and chained function calls");
+	test_file("closures/fib-rec.vy", VYSE_NUM(89), "Recursive fiboacci");
+	test_file("closures/adder.vy", VYSE_NUM(0), "make_adder closure");
 	test_file("closures/llnode-cl.vy", VYSE_NUM(20), "Linked list closure test");
 	test_file("closures/call.vy", VYSE_NUM(20), "Call stack");
 	test_file("closures/gc-closure.vy", VYSE_NUM(40), "Closures with stress GC");
@@ -228,15 +147,6 @@ void table_test() {
 	return T.a + T.b
 	)",
 							VYSE_NUM(3), " Indexing tables with '.' operator");
-
-	test_return(R"(
-		fn Node(a, b) {
-			return  { data: a, next: b }
-		}
-		const head = Node(10, Node(20))
-		return head.next.data
-	)",
-							VYSE_NUM(20), "Linked lists as tables test");
 
 	// setting table field names.
 	test_return(R"(
@@ -266,6 +176,7 @@ void table_test() {
 	test_file("tables/suffix-expr.vy", VYSE_NUM(123), "Chained suffix expressions.");
 	test_file("tables/inherit.vy", VYSE_NUM(21), "Prototypical inheritance with setmeta builtin.");
 	test_file("tables/self.vy", VYSE_NUM(6), "Prototypical inheritance with setmeta builtin.");
+	test_file("tables/link-list.vy", VYSE_NUM(20), "Linked lists as tables test");
 
 	std::cout << "[Table tests passed]\n";
 }
@@ -277,7 +188,8 @@ void global_test() {
 }
 
 void string_test() {
-	test_string_return("strings/string-concat.vy", "this is a string", "Chained string concatenation");
+	test_string_return("strings/string-concat.vy", "this is a string",
+										 "Chained string concatenation");
 	test_string_return("strings/string.vy", "snap = good", "String cocatenation in blocks");
 	test_string_return("strings/gc-strcat.vy", "xyz", "String cocatenation and GC");
 	std::cout << "[String tests passed]\n";
