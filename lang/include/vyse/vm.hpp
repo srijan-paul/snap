@@ -39,7 +39,7 @@ public:
 	// If this is an object, then that will be
 	// destroyed when the VM goes out of scope / reaches
 	// the end of it's lifespan.
-	Value return_value = VYSE_NIL_VAL;
+	Value return_value = VYSE_NIL;
 
 	/// TODO: Dynamically grow the stack by statically
 	/// determining the max stack size at compile time
@@ -100,7 +100,7 @@ public:
 	/// @brief Returns the currently exceuting function
 	/// wrapped in a value.
 	Value current_fn() const {
-		return VYSE_OBJECT_VAL(m_current_frame->func);
+		return VYSE_OBJECT(m_current_frame->func);
 	}
 
 	Value const* base() const noexcept {
@@ -146,7 +146,7 @@ public:
 
 #ifdef VYSE_LOG_GC
 			printf("< GC cycle invoked while attempting to allocate %s >\n",
-						 value_to_string(VYSE_OBJECT_VAL(o)).c_str());
+						 value_to_string(VYSE_OBJECT(o)).c_str());
 #endif
 			collect_garbage();
 

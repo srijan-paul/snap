@@ -7,7 +7,7 @@
 #include <string>
 #include <vm.hpp>
 
-#define TOK2NUM(t) VYSE_NUM_VAL(std::stod(t.raw(*m_source)))
+#define TOK2NUM(t) VYSE_NUM(std::stod(t.raw(*m_source)))
 #define THIS_BLOCK (m_codeblock->block())
 #define ERROR(...) (error_at_token(kt::format_str(__VA_ARGS__).c_str(), token))
 
@@ -333,7 +333,7 @@ void Compiler::func_expr(String* fname, bool is_method) {
 
 	CodeBlock* code = compiler.compile_func();
 	if (compiler.has_error) has_error = true;
-	const u8 idx = emit_value(VYSE_OBJECT_VAL(code));
+	const u8 idx = emit_value(VYSE_OBJECT(code));
 
 	emit(Op::make_func);
 	emit_arg(idx);
@@ -716,7 +716,7 @@ void Compiler::table() {
 		} else {
 			expect(TT::Id, "Expected identifier as table key.");
 			String* key_string = &m_vm->make_string(token.raw_cstr(*m_source), token.length());
-			const int key_idx = emit_value(VYSE_OBJECT_VAL(key_string));
+			const int key_idx = emit_value(VYSE_OBJECT(key_string));
 			emit_with_arg(Op::load_const, key_idx);
 			if (check(TT::LParen)) {
 				func_expr(key_string, true);
@@ -804,8 +804,8 @@ void Compiler::literal() {
 	case TT::Integer:
 	case TT::Float: index = emit_value(TOK2NUM(token)); break;
 	case TT::String: index = emit_string(token); break;
-	case TT::True: index = emit_value(VYSE_BOOL_VAL(true)); break;
-	case TT::False: index = emit_value(VYSE_BOOL_VAL(false)); break;
+	case TT::True: index = emit_value(VYSE_BOOL(true)); break;
+	case TT::False: index = emit_value(VYSE_BOOL(false)); break;
 	case TT::Nil: {
 		emit(Op::load_nil);
 		return;
@@ -952,12 +952,12 @@ u32 Compiler::emit_string(const Token& token) {
 	u32 length = token.length() - 2; // minus the quotes
 	// +1 to skip the openening quote.
 	String& string = m_vm->make_string(token.raw_cstr(*m_source) + 1, length);
-	return emit_value(VYSE_OBJECT_VAL(&string));
+	return emit_value(VYSE_OBJECT(&string));
 }
 
 u32 Compiler::emit_id_string(const Token& token) {
 	String* s = &m_vm->make_string(token.raw_cstr(*m_source), token.length());
-	return emit_value(VYSE_OBJECT_VAL(s));
+	return emit_value(VYSE_OBJECT(s));
 }
 
 int Compiler::find_local_var(const Token& name_token) const noexcept {

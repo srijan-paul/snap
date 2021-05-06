@@ -47,7 +47,7 @@ using OT = ObjType;
 		Value a = m_stack.pop();                                                                       \
                                                                                                    \
 		if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                       \
-			PUSH(VYSE_BOOL_VAL(VYSE_AS_NUM(a) op VYSE_AS_NUM(b)));                                       \
+			PUSH(VYSE_BOOL(VYSE_AS_NUM(a) op VYSE_AS_NUM(b)));                                       \
 		} else {                                                                                       \
 			return binop_error(#op, b, a);                                                               \
 		}                                                                                              \
@@ -98,7 +98,7 @@ ExitCode VM::run() {
 
 		switch (op) {
 		case Op::load_const: PUSH(READ_VALUE()); break;
-		case Op::load_nil: PUSH(VYSE_NIL_VAL); break;
+		case Op::load_nil: PUSH(VYSE_NIL); break;
 
 		case Op::pop: m_stack.pop(); break;
 		case Op::add: BINOP(+); break;
@@ -163,14 +163,14 @@ ExitCode VM::run() {
 		case Op::eq: {
 			Value a = m_stack.pop();
 			Value b = m_stack.pop();
-			PUSH(VYSE_BOOL_VAL(a == b));
+			PUSH(VYSE_BOOL(a == b));
 			break;
 		}
 
 		case Op::neq: {
 			Value a = POP();
 			Value b = POP();
-			PUSH(VYSE_BOOL_VAL(a != b));
+			PUSH(VYSE_BOOL(a != b));
 			break;
 		}
 
@@ -185,7 +185,7 @@ ExitCode VM::run() {
 
 		case Op::lnot: {
 			Value a = POP();
-			PUSH(VYSE_BOOL_VAL(IS_VAL_FALSY(a)));
+			PUSH(VYSE_BOOL(IS_VAL_FALSY(a)));
 			break;
 		}
 
@@ -296,7 +296,7 @@ ExitCode VM::run() {
 		}
 
 		case Op::new_table: {
-			PUSH(VYSE_OBJECT_VAL(&make<Table>()));
+			PUSH(VYSE_OBJECT(&make<Table>()));
 			break;
 		}
 
@@ -442,7 +442,7 @@ ExitCode VM::run() {
 			u32 num_upvals = NEXT_BYTE();
 			Closure* func = &make<Closure>(VYSE_AS_PROTO(vcode), num_upvals);
 
-			PUSH(VYSE_OBJECT_VAL(func));
+			PUSH(VYSE_OBJECT(func));
 
 			for (u8 i = 0; i < num_upvals; ++i) {
 				bool is_local = NEXT_BYTE();
@@ -488,18 +488,18 @@ Value VM::concatenate(const String* left, const String* right) {
 
 	if (interned == nullptr) {
 		String* res = &make<String>(buf, length, hash);
-		Value vresult = VYSE_OBJECT_VAL(res);
-		interned_strings.set(vresult, VYSE_BOOL_VAL(true));
+		Value vresult = VYSE_OBJECT(res);
+		interned_strings.set(vresult, VYSE_BOOL(true));
 		return vresult;
 	} else {
 		delete[] buf;
-		return VYSE_OBJECT_VAL(interned);
+		return VYSE_OBJECT(interned);
 	}
 }
 
 Value VM::get_global(String* name) const {
 	auto search = m_global_vars.find(name);
-	if (search == m_global_vars.end()) return VYSE_UNDEF_VAL;
+	if (search == m_global_vars.end()) return VYSE_UNDEF;
 	return search->second;
 }
 
@@ -564,7 +564,7 @@ bool VM::init() {
 	// unprotect it.
 	gc_unprotect(code);
 
-	PUSH(VYSE_OBJECT_VAL(func));
+	PUSH(VYSE_OBJECT(func));
 	callfunc(func, 0);
 
 #ifdef VYSE_DEBUG_DISASSEMBLY
@@ -581,7 +581,7 @@ ExitCode VM::runcode(const std::string& code) {
 }
 
 void VM::add_stdlib_object(const char* name, Obj* o) {
-	auto vglobal = VYSE_OBJECT_VAL(o);
+	auto vglobal = VYSE_OBJECT(o);
 	// setting a global variable may trigger a garbage collection
 	// cycle (when allocating the [name] as vyse::String). At that
 	// point, vprint is only reachable on the C stack, so we protect
@@ -710,7 +710,7 @@ bool VM::callfunc(Closure* func, int argc) {
 	// arguments that aren't provded are replaced with nil.
 	if (extra < 0) {
 		while (extra < 0) {
-			PUSH(VYSE_NIL_VAL);
+			PUSH(VYSE_NIL);
 			argc++;
 			extra++;
 		}
@@ -747,7 +747,7 @@ String& VM::make_string(const char* chars, size_t length) {
 	if (interned != nullptr) return *interned;
 
 	String* string = &make<String>(chars, length, hash);
-	interned_strings.set(VYSE_OBJECT_VAL(string), VYSE_BOOL_VAL(true));
+	interned_strings.set(VYSE_OBJECT(string), VYSE_BOOL(true));
 
 	return *string;
 }

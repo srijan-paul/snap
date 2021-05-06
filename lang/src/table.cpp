@@ -12,7 +12,7 @@ using OT = ObjType;
 #define TABLE_GET_SLOT(k, h)			 search_entry<Table, Entry>(this, k, h)
 #define TABLE_GET_SLOT_CONST(k, h) search_entry<const Table, const Entry>(this, k, h)
 #define TABLE_PLACE_TOMBSTONE(e)                                                                   \
-	(VYSE_SET_TT(e.key, VT::Undefined), e.value = VYSE_NIL_VAL, ++m_num_tombstones)
+	(VYSE_SET_TT(e.key, VT::Undefined), e.value = VYSE_NIL, ++m_num_tombstones)
 
 // check if an entry is unoccupied.
 #define IS_ENTRY_FREE(e) (VYSE_IS_NIL(e.key))
@@ -49,7 +49,7 @@ void Table::ensure_capacity() {
 }
 
 Value Table::get(Value key) const {
-	if (VYSE_IS_NIL(key)) return VYSE_NIL_VAL;
+	if (VYSE_IS_NIL(key)) return VYSE_NIL;
 
 	size_t mask = m_cap - 1;
 	size_t hash = hash_value(key);
@@ -62,7 +62,7 @@ Value Table::get(Value key) const {
 		index = (index + 1) & mask;
 	}
 
-	return m_proto_table == nullptr ? VYSE_NIL_VAL : m_proto_table->get(key);
+	return m_proto_table == nullptr ? VYSE_NIL : m_proto_table->get(key);
 }
 
 /// TODO: handle the case for [set] where the [key] is a member of it's

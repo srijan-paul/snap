@@ -4,10 +4,10 @@
 #include "value.hpp"
 #include <table.hpp>
 
-#define NUM			 VYSE_NUM_VAL
-#define NIL			 VYSE_NIL_VAL
+#define NUM			 VYSE_NUM
+#define NIL			 VYSE_NIL
 #define STR(...) (new vyse::String(__VA_ARGS__))
-#define BOOL(t)	 VYSE_BOOL_VAL(t)
+#define BOOL(t)	 VYSE_BOOL(t)
 
 using unique_str_ptr = std::unique_ptr<vyse::String>;
 using shared_str_ptr = std::shared_ptr<vyse::String>;
@@ -29,7 +29,7 @@ void run_test() {
 	EXPECT(table.get(NUM(1)) == NIL, "Removing keys sets them to nil.");
 
 	unique_str_ptr s(STR("hello", 5));
-	table.set(VYSE_OBJECT_VAL(s.get()), NUM(1));
+	table.set(VYSE_OBJECT(s.get()), NUM(1));
 	EXPECT(table_has_cstring(table, "hello"), "Table::find_string works as expected.");
 }
 
@@ -75,12 +75,12 @@ void strkey_test() {
 	unique_str_ptr key(STR(sk, strlen(sk)));
 	unique_str_ptr value(STR(sv, strlen(sv)));
 
-	t.set(VYSE_OBJECT_VAL(key.get()), VYSE_OBJECT_VAL(value.get()));
-	EXPECT(t.get(VYSE_OBJECT_VAL(key.get())) == VYSE_OBJECT_VAL(value.get()),
+	t.set(VYSE_OBJECT(key.get()), VYSE_OBJECT(value.get()));
+	EXPECT(t.get(VYSE_OBJECT(key.get())) == VYSE_OBJECT(value.get()),
 				 "Key-value pairs where both key and value are strings");
 
 	unique_str_ptr key2(STR(sk, strlen(sk)));
-	EXPECT(t.get(VYSE_OBJECT_VAL(key2.get())) != VYSE_OBJECT_VAL(value.get()),
+	EXPECT(t.get(VYSE_OBJECT(key2.get())) != VYSE_OBJECT(value.get()),
 				 "Strings don't have reference equality when not interned.");
 }
 
@@ -88,7 +88,7 @@ vyse::String* make_interned_string(vyse::Table& intern_table, const char* cs, in
 	vyse::String* interned = intern_table.find_string(cs, len, vyse::hash_cstring(cs, len));
 	if (interned == nullptr) {
 		auto* s = new vyse::String(cs, len);
-		intern_table.set(VYSE_OBJECT_VAL(s), BOOL(true));
+		intern_table.set(VYSE_OBJECT(s), BOOL(true));
 		return s;
 	}
 	return interned;

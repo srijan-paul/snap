@@ -19,7 +19,7 @@ vyse::Value vyse::stdlib::print(VM& vm, int argc) {
 	String& vyse_str = vm.make_string(res.c_str(), res.size());
 	vm.print(vm, &vyse_str);
 
-	return VYSE_NIL_VAL;
+	return VYSE_NIL;
 }
 
 vyse::Value vyse::stdlib::setproto(VM& vm, int argc) {
@@ -27,7 +27,7 @@ vyse::Value vyse::stdlib::setproto(VM& vm, int argc) {
 
 	if (argc != 2) {
 		vm.runtime_error("'setproto' builtin expects exactly 2 arguments.");
-		return VYSE_NIL_VAL;
+		return VYSE_NIL;
 	}
 
 	Value& vtable = vm.get_arg(0);
@@ -35,21 +35,21 @@ vyse::Value vyse::stdlib::setproto(VM& vm, int argc) {
 
 	if (!VYSE_IS_TABLE(vtable)) {
 		bad_arg_error(vm, func_name, 1, "table", VYSE_TYPE_CSTR(vtable));
-		return VYSE_NIL_VAL;
+		return VYSE_NIL;
 	}
 
 	if (!VYSE_IS_TABLE(vproto)) {
 		bad_arg_error(vm, func_name, 2, "table", VYSE_TYPE_CSTR(vproto));
-		return VYSE_NIL_VAL;
+		return VYSE_NIL;
 	}
 
-	// Check for cyclic meta tables.
+	// Check for cyclic prototypes.
 	Table* table = VYSE_AS_TABLE(vtable);
 	const Table* prototype = VYSE_AS_TABLE(vproto);
 	while (prototype != nullptr) {
 		if (prototype == table) {
 			vm.runtime_error("cyclic prototype chains are not allowed.");
-			return VYSE_NIL_VAL;
+			return VYSE_NIL;
 		}
 		prototype = prototype->m_proto_table;
 	}

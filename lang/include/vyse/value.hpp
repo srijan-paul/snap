@@ -105,11 +105,11 @@ void print_value(Value v);
 #define VYSE_SET_BOOL(v, b)		((v).as.boolean = b)
 #define VYSE_SET_OBJECT(v, o) ((v).as.object = o)
 
-#define VYSE_NUM_VAL(n)		 (vyse::Value(static_cast<vyse::number>(n)))
-#define VYSE_BOOL_VAL(b)	 (vyse::Value(static_cast<bool>(b)))
-#define VYSE_OBJECT_VAL(o) (vyse::Value(static_cast<vyse::Obj*>(o)))
-#define VYSE_NIL_VAL			 (vyse::Value())
-#define VYSE_UNDEF_VAL		 (vyse::Value::undefined())
+#define VYSE_NUM(n)		 (vyse::Value(static_cast<vyse::number>(n)))
+#define VYSE_BOOL(b)	 (vyse::Value(static_cast<bool>(b)))
+#define VYSE_OBJECT(o) (vyse::Value(static_cast<vyse::Obj*>(o)))
+#define VYSE_NIL			 (vyse::Value())
+#define VYSE_UNDEF		 (vyse::Value::undefined())
 
 #define VYSE_SET_TT(v, tt)		((v).tag = tt)
 #define VYSE_GET_TT(v)				((v).tag)
