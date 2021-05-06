@@ -1,10 +1,10 @@
--- x : 5
--- y : 3
--- toplevel: 2 
---
-
-fn func() {
-	return 'aaa'  .. 'bbb'
+fn make_adder(x) {
+	return fn() {
+		let z = 1
+		let w = 2
+		return 3 + z + w
+	}
 }
 
-return func() 
+const add10 = make_adder()
+return add10()

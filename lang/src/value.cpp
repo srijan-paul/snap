@@ -59,6 +59,8 @@ std::string value_to_string(Value v) {
 		case OT::string: return VYSE_AS_CSTRING(v);
 		case OT::closure:
 			return std::string("[fn ") + static_cast<const Closure*>(obj)->name_cstr() + "]";
+		case OT::c_closure:
+			return  "[ native fn ]";
 		case OT::codeblock:
 			return std::string("[code ") + static_cast<const CodeBlock*>(obj)->name_cstr() + "]";
 		case OT::upvalue: {

@@ -11,10 +11,11 @@
 using namespace vyse;
 
 int main() {
+
 	// Temporarily we use this entry point to run
 	// a file main.snp, so we can use that as a
 	// 'scratchpad' of sorts to test some code.
-	const char* filepath = "./src/main.vy";
+	const char* filepath = "../src/main.vy";
 	std::ifstream file(filepath);
 	VYSE_ASSERT(file.good(), "Test file doesn't exist");
 
@@ -31,6 +32,6 @@ int main() {
 	std::cout << std::endl;
 
 	std::cout << "Snap programming language."
-			  << "\n";
+						<< "\n";
 	return 0;
 }

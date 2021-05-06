@@ -2,6 +2,7 @@
 #include "str_format.hpp"
 #include "value.hpp"
 #include <cmath>
+#include <cstddef>
 #include <std/base.hpp>
 #include <vm.hpp>
 
@@ -464,8 +465,8 @@ ExitCode VM::run() {
 		}
 		}
 #ifdef VYSE_DEBUG_RUNTIME
-		printf("[stack max: %zu]\t", m_stack.m_size);
-		print_stack(m_stack.m_values, m_stack.top - m_stack.m_values);
+		// printf("[stack max: %zu]\t", m_stack.size);
+		print_stack(m_stack.values, m_stack.top - m_stack.values);
 		printf("\n");
 #endif
 	}
@@ -703,7 +704,7 @@ bool VM::callfunc(Closure* func, int argc) {
 
 	// make sure there is enough room in the stack
 	// for this function call.
-	m_stack.ensure_cap(func->m_codeblock->stack_size());
+	ensure_slots(func->m_codeblock->stack_size());
 
 	// extra arguments are ignored and
 	// arguments that aren't provded are replaced with nil.
@@ -749,6 +750,33 @@ String& VM::make_string(const char* chars, size_t length) {
 	interned_strings.set(VYSE_OBJECT_VAL(string), VYSE_BOOL_VAL(true));
 
 	return *string;
+}
+
+void VM::ensure_slots(size_t slots_needed) {
+	std::ptrdiff_t num_values = m_stack.top - m_stack.values;
+	size_t num_free_slots = m_stack.size - num_values;
+
+	// Requested number of slots is already available.
+	if (num_free_slots > slots_needed) return;
+
+	size_t new_size = m_stack.size + (slots_needed - num_free_slots);
+	Value* old_stack = m_stack.values;
+	m_stack.values = static_cast<Value*>(realloc(m_stack.values, new_size * sizeof(Value)));
+
+	// Now that the stack has moved in memory, the CallFrames and the
+	// Upvalue chain still contain dangling pointers to the old stack,
+	// so we update those to the same relative distance from teh new
+	// stack's base address.
+	for (int i = m_frame_count - 1; i >= 0; --i) {
+		CallFrame& cf = m_frames[i];
+		cf.base = m_stack.values + (cf.base - old_stack);
+	}
+
+	for (Upvalue* upval = m_open_upvals; upval != nullptr; upval = upval->next_upval) {
+		upval->m_value = (upval->m_value - old_stack) + m_stack.values;
+	}
+
+	m_stack.top = m_stack.values + num_values;
 }
 
 // 	-- Garbage collection --
@@ -810,9 +838,6 @@ VM::~VM() {
 	if (m_gc.m_objects == nullptr) return;
 	for (Obj* object = m_gc.m_objects; object != nullptr;) {
 		Obj* next = object->next;
-		// printf("object: ");
-		// print_value(VYSE_OBJECT_VAL(object));
-		// printf("\n");
 		delete object;
 		object = next;
 	}

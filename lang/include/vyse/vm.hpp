@@ -170,6 +170,10 @@ public:
 	/// @return The number of bytes freed.
 	size_t collect_garbage();
 
+	/// @brief Makes sure there are at least [num_slots] stack slots
+	/// free to be used above the current stack-top.
+	void ensure_slots(size_t num_slots);
+
 	/// @brief Marks the object safe from garbage collection
 	/// until `VM::gc_unprotect` is called on the object.
 	void gc_protect(Obj* o) {
