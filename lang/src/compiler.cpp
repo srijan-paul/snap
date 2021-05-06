@@ -59,7 +59,7 @@ Compiler::Compiler(VM* vm, Compiler* parent, String* name) noexcept : m_vm{vm}, 
 
 Compiler::~Compiler() {
 	// If this is the top-level compiler then we can
-	// delete the scanner assosciated with it.
+	// free the scanner assosciated with it.
 	// TODO: use std::shared_ptr<> to auotmate this
 	// deallocation and get rid of the destructor.
 	if (m_parent == nullptr) {
@@ -81,6 +81,11 @@ CodeBlock* Compiler::compile_func() {
 	test(TT::LCurlBrace, "Expected '{' before function body.");
 
 	block_stmt();
+
+	// In case the function does not return anything, we
+	// add an implicit 'return nil'. If the closure *does*
+	// return explicitly then these 2 opcodes will never be
+	// reached anyway.
 	emit(Op::load_nil, Op::return_val);
 	m_codeblock->m_num_upvals = m_symtable.m_num_upvals;
 	m_vm->m_compiler = m_parent;
@@ -90,6 +95,8 @@ CodeBlock* Compiler::compile_func() {
 // top level statements are one of:
 // - var declaration
 // - function declaration
+// - if statement
+// - loop (while/for)
 // - expression statement
 // - export statement
 void Compiler::toplevel() {
@@ -124,9 +131,9 @@ void Compiler::var_decl() {
 void Compiler::declarator(bool is_const) {
 	expect(TT::Id, "Expected variable name.");
 	// add the new variable to the symbol table.
-	// default value is `nil`.
 	const Token name = token;
-
+	
+	// default value for variables is 'nil'.
 	match(TT::Eq) ? expr() : emit(Op::load_nil, token);
 	new_variable(name, is_const);
 }
@@ -144,10 +151,20 @@ void Compiler::block_stmt() {
 void Compiler::if_stmt() {
 	advance(); // consume 'if'
 	expr();		 // parse condition.
-	const size_t jmp = emit_jump(Op::pop_jmp_if_false);
+
+	// If the condition is false, we simply pop
+	// it and jump to the end of the if statement.
+	// This puts as after the closing '}', which
+	// might be an 'else' block sometimes.
+	size_t jmp = emit_jump(Op::pop_jmp_if_false);
 	toplevel();
 
 	if (match(TT::Else)) {
+		// If the 'if' block executed
+		// then the 'else' shouldn't run, to 
+		// do this, we jump straight to the end
+		// of the 'else' block after evaluating
+		// the 'if'.
 		size_t else_jmp = emit_jump(Op::jmp);
 		patch_jump(jmp);
 		toplevel();
@@ -160,9 +177,8 @@ void Compiler::if_stmt() {
 
 void Compiler::enter_loop(Loop& loop) {
 	loop.enclosing = m_loop;
-	// loop.start stores index of the first instruction
-	// in the loop. Which here is the next instruction to be
-	// emitted.
+	// loop.start stores index of the first instruction in the loop
+	// body/conditon. Which here is the next instruction to be emitted
 	loop.start = THIS_BLOCK.op_count();
 	loop.scope_depth = m_symtable.m_scope_depth;
 	m_loop = &loop;
@@ -205,6 +221,7 @@ void Compiler::exit_loop() {
 	m_loop = m_loop->enclosing;
 }
 
+/// TODO: refactor this and `Compiler::exit_block` into common calls
 void Compiler::discard_loop_locals(u32 depth) {
 	VYSE_ASSERT(m_symtable.m_scope_depth > depth, "Bad call to discard_locals.");
 
@@ -223,12 +240,12 @@ void Compiler::break_stmt() {
 	}
 
 	/// remove all the local variables inside the
-	/// loop's body before jumping out.
+	/// loop's body before jumping out of it.
 	discard_loop_locals(m_loop->scope_depth);
 
 	// A 'break' statement's jump instruction is
 	// characterized by a `no_op` instruction. So when
-	// the `loop_exit` method is patching old loops, it
+	// the `Compiler::loop_exit` method is patching old loops, it
 	// doesn't get confused between 'jmp' instructions from
 	// break statements and 'jmp' instructions from other
 	// statements like "if".
@@ -236,7 +253,7 @@ void Compiler::break_stmt() {
 
 	// A no_op instruction followed by a 0x00
 	// is recognized as a 'break' statement.
-	// Later the 0x00 and the next byte are
+	// Later the 0x00 and the following byte are
 	// changed into the actual jump offset.
 	THIS_BLOCK.code[jmp] = Op(0x00);
 }
@@ -364,13 +381,60 @@ void Compiler::ret_stmt() {
 
 void Compiler::expr_stmt() {
 	ExpKind prefix_type = prefix();
+	// If a toplevel assignment statement
+	// was already compiled then exit.
 	if (prefix_type == ExpKind::none) return;
+
+	// Otherwise keep parsing to get a valid
+	// assignment statement.
 	complete_expr_stmt(prefix_type);
 
 	/// TODO: The pop instruction here can be implicit
 	/// for 'set' and 'index' instructions.
 	emit(Op::pop);
 }
+
+/// Compiling expression statements ///
+// There are no 'expression statements' as such in vyse.
+// The only valid toplevel expression is a function call.
+// Assignment ('a=b') is strictly a statement and not allowed
+// in expression contexts.
+//
+// A call expression can be an arbitrarily long suffixed 
+// expression followed by a '()'. So all of the following
+// are valid call expressions:
+// 1. foo()
+// 2. foo.bar()
+// 3. t['k']()
+// 4. foo:bar().baz['key']()
+// 5. f()()()
+// 6. g()['k']()
+// 
+// Similarly, all of the following are valid assignment
+// statements:
+// 1. a = 1
+// 2. a.b = 1
+// 3. t['k'] = 1
+// 4. t['k'].bar().baz = 123 
+//
+// To make sure the all the above cases are covered, we clearly define
+// what is and isn't a valid LHS for assignment.
+// The following is the grammar for a valid assignment statement:
+//
+// ASSIGN            := LHS ASSIGN_TOK EXPRESSION
+// LHS               := ID | (SUFFIXED_EXP ASSIGNABLE_SUFFIX) 
+// SUFFIXED_EXP      := (PREFIX | SUFFIXED_EXP) SUFFIX 
+// PREFIX            := (ID | STRING | NUMBER | BOOLEAN)
+// SUFFIX            := ASSIGNABLE_SUFFIX | '('ARGS')' | METHOD_CALL
+// ASSIGNABLE_SUFFIX := '[' EXPRESSION ']' | '.'ID 
+// METHOD_CALL       := ':' ID '(' ARGS ')'
+// ASSIGN_TOK        := '=' | '+=' | '-=' | '*=' | '%=' | '/=' | '//='
+//
+// It may be noticed that parsing an assignment when the LHS can be an arbitrarily
+// long chain of '.', '[]', '()' etc will require indefinite backtracking, or some
+// form of an AST. To tackle this, we follow a simple idea:
+// 		Keep track of the current state / expr kind in while parsing, if we see an '=' and
+// 		the last state was a valid assignment LHS, then we compile an assignment.
 
 void Compiler::complete_expr_stmt(ExpKind prefix_type) {
 	ExpKind exp_kind = prefix_type;
@@ -430,6 +494,10 @@ void Compiler::complete_expr_stmt(ExpKind prefix_type) {
 
 		default: {
 			if (exp_kind == ExpKind::call) return;
+			// If the expression type that was compiled is not a
+			// method or closure call, and we haven't found
+			// a proper LHS for assignment yet, then this is
+			// incorrect source code.
 			ERROR("Unexpected expression.");
 			return;
 		}

@@ -765,7 +765,7 @@ void VM::ensure_slots(size_t slots_needed) {
 
 	// Now that the stack has moved in memory, the CallFrames and the
 	// Upvalue chain still contain dangling pointers to the old stack,
-	// so we update those to the same relative distance from teh new
+	// so we update those to the same relative distance from the new
 	// stack's base address.
 	for (int i = m_frame_count - 1; i >= 0; --i) {
 		CallFrame& cf = m_frames[i];
