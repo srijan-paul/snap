@@ -13,7 +13,7 @@ class Stack final {
 	VYSE_NO_MOVE(Stack);
 
 public:
-	static constexpr size_t InitialSize = 4;
+	static constexpr size_t InitialSize = 128;
 
 	Stack() = default;
 	~Stack() noexcept {
