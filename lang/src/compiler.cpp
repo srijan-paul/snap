@@ -221,7 +221,6 @@ void Compiler::exit_loop() {
 	m_loop = m_loop->enclosing;
 }
 
-/// TODO: refactor this and `Compiler::exit_block` into common calls
 void Compiler::discard_loop_locals(u32 depth) {
 	VYSE_ASSERT(m_symtable.m_scope_depth > depth, "Bad call to discard_locals.");
 
@@ -233,7 +232,7 @@ void Compiler::discard_loop_locals(u32 depth) {
 }
 
 void Compiler::break_stmt() {
-	advance(); // consume 'break'
+	advance(); // consume 'break' token.
 	if (m_loop == nullptr) {
 		ERROR("break statement outside a loop.");
 		return;
@@ -439,6 +438,9 @@ void Compiler::expr_stmt() {
 void Compiler::complete_expr_stmt(ExpKind prefix_type) {
 	ExpKind exp_kind = prefix_type;
 
+	// Keep compiling the rest of the prefix, however if a
+	// an '=' is seen, then compile a top level assignment
+	// and stop.
 	while (true) {
 		switch (peek.type) {
 		case TT::LSqBrace: {
@@ -494,7 +496,7 @@ void Compiler::complete_expr_stmt(ExpKind prefix_type) {
 
 		default: {
 			if (exp_kind == ExpKind::call) return;
-			// If the expression type that was compiled is not a
+			// If the expression type that was compiled last is not a
 			// method or closure call, and we haven't found
 			// a proper LHS for assignment yet, then this is
 			// incorrect source code.
@@ -505,6 +507,10 @@ void Compiler::complete_expr_stmt(ExpKind prefix_type) {
 	}
 }
 
+// Compile a prefix or a variable assignment.
+// A prefix can be (as described above):
+// (ID | STRING | NUMBER | BOOLEAN)
+// A var assignment is simply ID '=' EXPRESSION
 ExpKind Compiler::prefix() {
 	if (check(TT::LParen)) {
 		grouping();
@@ -514,8 +520,9 @@ ExpKind Compiler::prefix() {
 	if (match(TT::Id)) {
 		if (is_assign_tok(peek.type)) {
 			variable(true);
-			// Not an expression anymore, it is
-			// an assignment statment now
+			// Since we have successfully compiled a valid toplevel
+			// statement, it is longer an expression. We use 
+			// ExpKind::none to indicate this.
 			return ExpKind::none;
 		} else {
 			variable(false);
