@@ -9,53 +9,12 @@ namespace vyse {
 using Op = Opcode;
 using std::printf;
 
+// To keep a record of the names of all opcodes in the right order
+// we use the clever XMacro and the stringize operator (#).
 static constexpr std::array op_strs = {
-		"load_const",
-		"get_global",
-		"set_global",
-		"table_get",
-		"table_set",
-		"table_get_no_pop",
-		"set_var",
-		"get_var",
-		"set_upval",
-		"get_upval",
-		"make_func",
-		"prep_method_call",
-		"call_func",
-		"pop",
-		"add",
-		"concat",
-		"sub",
-		"mult",
-		"mod",
-		"div",
-		"eq",
-		"neq",
-		"lshift",
-		"rshift",
-		"band",
-		"bor",
-		"gt",
-		"lt",
-		"gte",
-		"lte",
-		"negate",
-		"lnot",
-		"load_nil",
-		"close_upval",
-		"return_val",
-		"new_table",
-		"index_set",
-		"table_add_field",
-		"index",
-		"index_no_pop",
-		"jmp",
-		"jmp_back",
-		"jmp_if_false_or_pop",
-		"jmp_if_true_or_pop",
-		"pop_jmp_if_false",
-		"no_op",
+#define OP(name, _, __) #name
+#include <x_opcode.hpp>
+#undef OP
 };
 
 const char* op2s(Op op) {
@@ -154,4 +113,4 @@ void disassemble_block(const char* name, const Block& block) {
 
 #undef op2s
 
-} // namespace vyse 
+} // namespace vyse

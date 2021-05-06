@@ -1,6 +1,17 @@
-// An XMacro
-// OP(name, arity, stack_effect),
+// Note: This file is an XMacro. ()
+// The purpose of this kind of file is to keep the
+// name-arity-stack effect of the opcodes all organized
+// in a single place that will be easy to gloss over and edit.
 
+// The way this file is used is simple.
+// We first define a macro with the name `OP` and then include
+// this file right under, expanding the macro with all the opcode
+// data.
+// I got this idea from here: https://github.com/wren-lang/wren/blob/main/src/vm/wren_opcodes.h
+// for usage, see debug.cpp, opcode.hpp and compiler.cpp
+
+
+// OP(name, arity, stack_effect),
 OP(load_const, 1, 1),
 OP(get_global, 1, 1),
 OP(set_global, 1, -1),

@@ -11,7 +11,7 @@ namespace vyse {
 ///  array in the file debug.cpp.
 enum class Opcode : u8 {
 #define OP(name, _, __) name
-#include <opcodex>
+#include "x_opcode.hpp"
 #undef OP
 };
 

@@ -1085,7 +1085,7 @@ int Compiler::op_arity(u32 op_index) const noexcept {
 int Compiler::op_stack_effect(Op op) const noexcept {
 #define OP(_, __, stack_effect) stack_effect
 	constexpr std::array<int, size_t(Op::no_op) + 1> stack_effects = {
-#include <opcodex>
+#include "x_opcode.hpp"
 	};
 #undef OP
 
