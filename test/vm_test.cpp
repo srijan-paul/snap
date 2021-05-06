@@ -130,7 +130,7 @@ static void expr_tests() {
 	)",
 							VYSE_BOOL(true));
 
-	test_file("compound-assign.vy", VYSE_NUM(8), "Compound assignment operators");
+	test_file("expr/compound-assign.vy", VYSE_NUM(8), "Compound assignment operators");
 
 	std::cout << "[Expression tests passed]\n";
 }
@@ -159,7 +159,8 @@ static void stmt_tests() {
 		return b)",
 							VYSE_NUM(7), "If statement with else-if branch");
 
-	test_file("var.vy", VYSE_NUM(13), "block scoped declarations.");
+	test_file("statements/var.vy", VYSE_NUM(13), "block scoped declarations.");
+	test_file("statements/global.vy", VYSE_NUM(6), "Global variables.");
 
 	std::cout << "Statement tests passed\n";
 }
@@ -214,8 +215,9 @@ void fn_tests() {
 	)",
 							VYSE_NUM(0), "make_adder closure");
 
-	test_file("llnode-cl.vy", VYSE_NUM(20), "Linked list closure test");
-	test_file("call.vy", VYSE_NUM(20), "Call stack");
+	test_file("closures/llnode-cl.vy", VYSE_NUM(20), "Linked list closure test");
+	test_file("closures/call.vy", VYSE_NUM(20), "Call stack");
+	test_file("closures/gc-closure.vy", VYSE_NUM(40), "Closures with stress GC");
 }
 
 void table_test() {
@@ -247,24 +249,23 @@ void table_test() {
 	)",
 							VYSE_NUM(10), "setting table field names");
 
-	test_file("table-1.vy", VYSE_NUM(3), "returning tables from a closure");
-	test_file("table-2.vy", VYSE_NUM(6), "Accessing table fields");
-	test_file("table-3.vy", VYSE_NUM(11), "Accessing table fields");
-	test_file("table-4.vy", VYSE_NUM(10), "Computed member assignment and access");
-	test_file("table-5.vy", VYSE_NUM(10),
-						"Computed member access and dot member access are equivalent for string keys");
-	test_file("table-6.vy", VYSE_NUM(25), "Compound assignment to computed members");
-	test_file("table-7.vy", VYSE_NUM(10), "Syntactic sugar for table methods");
-	test_file("table-8.vy", VYSE_NUM(1), "Empty tables.");
-	test_file("table-9.vy", VYSE_NUM(30), "Chained dot and subscript operators.");
-	test_file("keys.vy", VYSE_NUM(6), "Subscript operator in table key with interned strings");
-	test_file("point.vy", VYSE_NUM(50), "Constructor like functions. (point.vy)");
-	test_file("method-1.vy", VYSE_NUM(3), "Method call syntax.");
-	test_file("method-2.vy", VYSE_NUM(5), "Chained method calls.");
-	test_file("suffix-expr.vy", VYSE_NUM(123), "Chained suffix expressions.");
-	test_file("inherit.vy", VYSE_NUM(21), "Prototypical inheritance with setmeta builtin.");
-	test_file("self.vy", VYSE_NUM(6), "Prototypical inheritance with setmeta builtin.");
-	test_file("global.vy", VYSE_NUM(6), "Global variables.");
+	test_file("tables/table-1.vy", VYSE_NUM(3), "returning tables from a closure");
+	test_file("tables/table-2.vy", VYSE_NUM(6), "Accessing table fields");
+	test_file("tables/table-3.vy", VYSE_NUM(11), "Accessing table fields");
+	test_file("tables/table-4.vy", VYSE_NUM(10), "Computed member assignment and access");
+	test_file("tables/table-5.vy", VYSE_NUM(10),
+						"tables/Computed member access and dot member access are equivalent for string keys");
+	test_file("tables/table-6.vy", VYSE_NUM(25), "Compound assignment to computed members");
+	test_file("tables/table-7.vy", VYSE_NUM(10), "Syntactic sugar for table methods");
+	test_file("tables/table-8.vy", VYSE_NUM(1), "Empty tables.");
+	test_file("tables/table-9.vy", VYSE_NUM(30), "Chained dot and subscript operators.");
+	test_file("tables/keys.vy", VYSE_NUM(6), "Subscript operator in table key with interned strings");
+	test_file("tables/point.vy", VYSE_NUM(50), "Constructor like functions. (point.vy)");
+	test_file("tables/method-1.vy", VYSE_NUM(3), "Method call syntax.");
+	test_file("tables/method-2.vy", VYSE_NUM(5), "Chained method calls.");
+	test_file("tables/suffix-expr.vy", VYSE_NUM(123), "Chained suffix expressions.");
+	test_file("tables/inherit.vy", VYSE_NUM(21), "Prototypical inheritance with setmeta builtin.");
+	test_file("tables/self.vy", VYSE_NUM(6), "Prototypical inheritance with setmeta builtin.");
 
 	std::cout << "[Table tests passed]\n";
 }
@@ -276,18 +277,20 @@ void global_test() {
 }
 
 void string_test() {
-	test_string_return("string-concat.vy", "this is a string", "Chained string concatenation");
-	test_string_return("string.vy", "snap = good", "String cocatenation in blocks");
+	test_string_return("strings/string-concat.vy", "this is a string", "Chained string concatenation");
+	test_string_return("strings/string.vy", "snap = good", "String cocatenation in blocks");
+	test_string_return("strings/gc-strcat.vy", "xyz", "String cocatenation and GC");
 	std::cout << "[String tests passed]\n";
 }
 
 void loop_test() {
-	test_file("loop-while.vy", VYSE_NUM(45), "While loops (sum)");
-	test_file("nested-while.vy", VYSE_NUM(165), "Nested While loops");
-	test_file("while-break.vy", VYSE_NUM(25), "breaks in loops");
-	test_file("while-break-nest.vy", VYSE_NUM(2660), "breaks in loops");
-	test_file("continue.vy", VYSE_NUM(55), "continue statements in loops.");
-	test_file("while-closure.vy", VYSE_NUM(55), "closure inside a while loop.");
+	test_file("loop/while-loop.vy", VYSE_NUM(45), "While loops (sum)");
+	test_file("loop/nested-while.vy", VYSE_NUM(165), "Nested While loops");
+	test_file("loop/while-break.vy", VYSE_NUM(25), "breaks in loops");
+	test_file("loop/while-break-nest.vy", VYSE_NUM(2660), "breaks in loops");
+	test_file("loop/continue.vy", VYSE_NUM(55), "continue statements in loops.");
+	test_file("loop/closure-in-while.vy", VYSE_NUM(55), "closure inside a while loop.");
+	test_file("loop/fib-loop.vy", VYSE_NUM(89), "Fibonacci implementation using loop.");
 }
 
 int main() {

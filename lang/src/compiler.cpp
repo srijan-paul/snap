@@ -60,8 +60,6 @@ Compiler::Compiler(VM* vm, Compiler* parent, String* name) noexcept : m_vm{vm}, 
 Compiler::~Compiler() {
 	// If this is the top-level compiler then we can
 	// free the scanner assosciated with it.
-	// TODO: use std::shared_ptr<> to auotmate this
-	// deallocation and get rid of the destructor.
 	if (m_parent == nullptr) {
 		delete m_scanner;
 	}
