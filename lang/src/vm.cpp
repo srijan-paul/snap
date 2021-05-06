@@ -759,9 +759,9 @@ void VM::ensure_slots(size_t slots_needed) {
 	// Requested number of slots is already available.
 	if (num_free_slots > slots_needed) return;
 
-	size_t new_size = m_stack.size + (slots_needed - num_free_slots);
+	m_stack.size += (slots_needed - num_free_slots);
 	Value* old_stack = m_stack.values;
-	m_stack.values = static_cast<Value*>(realloc(m_stack.values, new_size * sizeof(Value)));
+	m_stack.values = static_cast<Value*>(realloc(m_stack.values, m_stack.size * sizeof(Value)));
 
 	// Now that the stack has moved in memory, the CallFrames and the
 	// Upvalue chain still contain dangling pointers to the old stack,

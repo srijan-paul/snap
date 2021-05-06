@@ -1,10 +1,14 @@
-fn make_adder(x) {
-	return fn() {
-		let z = 1
-		let w = 2
-		return 3 + z + w
-	}
+let k = 0
+
+let sum = 0
+while true {
+  const add_k = fn (x) {
+    return x + k
+  }
+  k += 1
+  sum = add_k(sum)
+  if k >= 10 break
 }
 
-const add10 = make_adder()
-return add10()
+-- expect: 55
+return sum

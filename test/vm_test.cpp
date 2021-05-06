@@ -286,8 +286,8 @@ void loop_test() {
 	test_file("nested-while.vy", VYSE_NUM_VAL(165), "Nested While loops");
 	test_file("while-break.vy", VYSE_NUM_VAL(25), "breaks in loops");
 	test_file("while-break-nest.vy", VYSE_NUM_VAL(2660), "breaks in loops");
+	test_file("continue.vy", VYSE_NUM_VAL(55), "continue statements in loops.");
 	test_file("while-closure.vy", VYSE_NUM_VAL(55), "closure inside a while loop.");
-	test_file("continue.vy", VYSE_NUM_VAL(52), "continue statements in loops.");
 }
 
 int main() {

@@ -1,12 +1,14 @@
-let sum = 0;
-let i   = 0;
+let k = 0
 
-while i < 10 {
-  i += 1;
-  if i == 3 continue;
-  sum += i;
+let sum = 0
+while true {
+  const add_k = fn (x) {
+    return x + k
+  }
+  k += 1
+  sum = add_k(sum)
+  if k >= 10 break
 }
 
--- expect: 53
+-- expect: 55
 return sum
-
