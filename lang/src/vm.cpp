@@ -759,7 +759,7 @@ void VM::ensure_slots(size_t slots_needed) {
 	// Requested number of slots is already available.
 	if (num_free_slots > slots_needed) return;
 
-	m_stack.size += (slots_needed - num_free_slots);
+	m_stack.size += (slots_needed - num_free_slots) + 1;
 	Value* old_stack = m_stack.values;
 	m_stack.values = static_cast<Value*>(realloc(m_stack.values, m_stack.size * sizeof(Value)));
 

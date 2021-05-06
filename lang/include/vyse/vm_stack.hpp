@@ -16,9 +16,14 @@ public:
 	static constexpr size_t InitialSize = 4;
 
 	Stack() = default;
+	~Stack() noexcept {
+		VYSE_ASSERT(values != nullptr, "stack is freed before destruction");
+		free(values);
+	}
 
 	/// @brief Pushes [value] on top of the stack.
 	inline void push(Value value) noexcept {
+		VYSE_ASSERT(top < (values + size), "Top points past the end of stack.");
 		*(top++) = value;
 	}
 
