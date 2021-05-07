@@ -231,6 +231,7 @@ private:
 	void logic_and(); // && and
 
 	void bit_or();	// |
+	void bit_xor();	// ^
 	void bit_and(); // &
 
 	void equality();	 // == !=

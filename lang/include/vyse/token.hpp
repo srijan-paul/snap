@@ -64,6 +64,7 @@ enum class TokenType {
 	BitOr,		 // |
 	BitLShift, // >>
 	BitRShift, // <<
+	BitXor,		 // ^
 
 	// Punctuation
 	Semi,				// ;
@@ -114,4 +115,4 @@ struct Token {
 	}
 };
 
-} // namespace vyse 
+} // namespace vyse

@@ -171,6 +171,11 @@ ExitCode VM::run() {
 			break;
 		}
 
+		case Op::bxor: {
+			BIT_BINOP(^);
+			break;
+		}
+
 		case Op::bor: {
 			BIT_BINOP(|);
 			break;

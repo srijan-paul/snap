@@ -103,6 +103,8 @@ static void expr_tests() {
 	test_return("return 10 - 5 - 2", VYSE_NUM(3.0));
 
 	test_return("return 9 & 7", VYSE_NUM(1));
+	test_return("return 9 ^ 9", VYSE_NUM(0));
+	test_return("return 13 | 42 & 24 ^ 31 | 12", VYSE_NUM(31));
 	test_return("return 4 | 9", VYSE_NUM(13));
 	test_return("return 4 << 9 >> 5", VYSE_NUM(64));
 	test_return("return 4 >> 5 >> 7 | 6", VYSE_NUM(6));

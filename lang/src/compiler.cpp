@@ -612,7 +612,8 @@ void Compiler::logic_and() {
 	}
 }
 
-DEFINE_PARSE_FN(Compiler::bit_or, match(TT::BitOr), bit_and)
+DEFINE_PARSE_FN(Compiler::bit_or, match(TT::BitOr), bit_xor)
+DEFINE_PARSE_FN(Compiler::bit_xor, match(TT::BitXor), bit_and)
 DEFINE_PARSE_FN(Compiler::bit_and, match(TT::BitAnd), equality)
 DEFINE_PARSE_FN(Compiler::equality, match(TT::EqEq) or match(TT::BangEq), comparison)
 DEFINE_PARSE_FN(Compiler::comparison,
@@ -1101,6 +1102,7 @@ Op Compiler::toktype_to_op(TT toktype) const noexcept {
 	case TT::BitRShift: return Op::rshift;
 	case TT::BitAnd: return Op::band;
 	case TT::BitOr: return Op::bor;
+	case TT::BitXor: return Op::bxor;
 	case TT::Gt: return Op::gt;
 	case TT::Lt: return Op::lt;
 	case TT::GtEq: return Op::gte;

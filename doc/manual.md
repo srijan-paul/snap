@@ -35,6 +35,8 @@ Vyse supports the following operators, from highest to lowest precedence:
 +----------+-------------------------------+---------------+
 | &        | Bit And                       | Left-to-right |
 +----------+-------------------------------+---------------+
+| |        | Bit Xor                       | Left-to-right |
++----------+-------------------------------+---------------+
 | |        | Bit Or                        | Left-to-right |
 +----------+-------------------------------+---------------+
 | &&       | Logic-and                     | Left-to-right |
