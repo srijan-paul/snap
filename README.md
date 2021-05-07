@@ -23,40 +23,46 @@
 Vyse is a dynamically typed, interpreted and fast scriptling language inspired by Lua for rapid prototyping of applications like video games.
 (Note that this is a work in progresss project and few of promised are currently under development, It is advised to not use vyse for any development purposes in it's current stage).
 
-# Table of Contents
+## Table of Contents
 
-- [Goal](#Goal)
-- [Overview](#Overview)
-- [Roadmap](#Roadmap)
-- [Implementation](#Implementation)
-- [Building](#Building)
-- [Editor Support](#Editor-Support)
-- [Development](#Development)
+-  [Goal](#Goal)
+-  [Overview](#Overview)
+-  [Roadmap](#Roadmap)
+-  [Implementation](#Implementation)
+-  [Building](#Building)
+-  [Editor Support](#Editor-Support)
+-  [Development](#Development)
 
-# Goal
+## Goal
 
 Vyse aims to pick up after the Lua programming language, by adding popularly desired features on top of it,
 whilst providing similar speed and minimalism as Lua.
 There exist some quirks in Lua that Vyse aims to change.
 
-- Variables are global by default
-- Long keywords like `local` and the use of `do .. end` to designate blocks instead of `{}` makes it unlikeable to
-  programmers coming from C.
-- The concept of metatables and metamethods is somewhat unintuitive to new programmers.
-- Tables being used as both arrays and maps can have unwanted side effects.
-- Lacks many features that are common in other languages such as :
-  - Compound assignment operators (`+=`, `-=`, `*=`) and decrement and increment operators (`++`, `--`) .
-  - `continue` statement for skipping over some loop iterations.
-  - `switch` statements.
+-  Variables are global by default
+
+-  Long keywords like `local` and the use of `do .. end` to designate blocks instead of `{}` makes it unlikeable to programmers coming from C.
+
+-  The concept of metatables and metamethods is somewhat unintuitive to new programmers.
+
+-  Tables being used as both arrays and maps can have unwanted side effects.
+
+-  Lacks many features that are common in other languages such as :
+
+  *  Compound assignment operators (`+=`, `-=`, `*=`) and decrement and increment operators (`++`, `--`) .
+
+  *  `continue` statement for skipping over some loop iterations.
+
+  *  `switch` statements.
+
 - Arrays starting at 1.
 
 Vyse aims to keep most of what Lua provides, but address the aforementioned issues and offer the following QoL feautures:
-
 - A Familiar syntax for programmers migrating from Javascript and C
 - An easy to integrate C++ API for easy embedding in applications
 - Syntactic sugar for JS like OOP that boils down to the very same metatable and metamethod heirarchy.
 
-# Overview
+## Overview
 
 Here is an overview of the language's syntax and features:
 
@@ -119,19 +125,19 @@ while true {
 
 For a more complete spec of the language, and all it's features visit [manual.md](./doc/manual.md).
 
-# Roadmap.
+## Roadmap
 
 Currently, vyse supports basic control flow, variable declaration, usage and basic collection data structures.
 To move towards a more complete implementation, the following tasks have to be attended to:
 
-1. [x] Implement parent tables (metatables in Lua). [**DONE**]
-2. [x] Add a complete list of collection types (Arrays and tables). [**DONE**]
-3. [x] Implement proper error reporting in all the passes. [**DONE**]
-4. [x] Full support for Lambdas and closures. [**DONE**]
-5. [ ] Implement optionally NaN boxed values.
-6. [ ] Move from the current mark sweep garbage collector to a Cheney's copying collector.
+1.  [x] Implement parent tables (metatables in Lua). (**DONE**)
+2.  [x] Add a complete list of collection types (Arrays and tables). (**DONE**)
+3.  [x] Implement proper error reporting in all the passes. (**DONE**)
+4.  [x] Full support for Lambdas and closures. (**DONE**)
+5.  [ ] Implement optionally NaN boxed values.
+6.  [ ] Move from the current mark sweep garbage collector to a Cheney's copying collector.
 
-# Implementation.
+## Implementation
 
 Vyse runs on the Vyse Virtual Machine (svm for short). The VM has a stack based architechture that operates on 1 byte long opcodes. To keep the implementation concise and simple, vyse uses a single pass compiler that directly consumes tokens
 and emits bytecode.
@@ -163,7 +169,7 @@ The build tool used here is Ninja, but you can use any other build tool of your 
 
 After downloading/cloning vyse into a directory, `cd` into it and run the following commands to run the tests:
 
-```
+```bash
 mkdir bin
 cd bin
 cmake -G .. Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -CMAKE_C_COMPILER=clang -CMAKE_CXX_COMPILER=clang++
@@ -176,10 +182,10 @@ Note that `-CMAKE_C_COMPILER=clang -CMAKE_CXX_COMPILER=clang++` are optional, an
 # Editor-Support
 
 Currently, syntax highlighting and code completion snippets are supported on the following code editors:
-- [x] [VS Code](https://github.com/srijan-paul/vscode-vyse)
-- [ ] Sublime text [In Progress]
-- [ ] Vim [Coming soon]
-- [ ] Atom [Coming soon]
+-  [x] [VS Code](https://github.com/srijan-paul/vscode-vyse)
+-  [ ] Sublime text [In Progress]
+-  [ ] Vim [Coming soon]
+-  [ ] Atom [Coming soon]
 
 # Development
 
