@@ -46,8 +46,8 @@ static size_t simple_instr(const Block& block, Op op, size_t index) {
 }
 
 static size_t instr_single_operand(const Block& block, size_t index) {
-	Op op = block.code[index];
-	Op operand = block.code[index + 1];
+	const Op op = block.code[index];
+	const Op operand = block.code[index + 1];
 
 	print_line(block, index);
 	printf("%-4zu  %-22s  %d\n", index, op2s(op), static_cast<int>(operand));
@@ -55,15 +55,15 @@ static size_t instr_single_operand(const Block& block, size_t index) {
 }
 
 static size_t instr_two_operand(const Block& block, size_t index) {
-	Op op = block.code[index];
+	const Op op = block.code[index];
 
-	u8 a = u8(block.code[index + 1]);
-	u8 b = u8(block.code[index + 2]);
+	const u8 a = u8(block.code[index + 1]);
+	const u8 b = u8(block.code[index + 2]);
 
-	u16 distance = u16((a << 8) | b);
+	const u16 distance = u16((a << 8) | b);
 
 	print_line(block, index);
-	size_t op_index = op == Op::jmp_back ? (index + 3) - distance : (index + 3) + distance;
+	const size_t op_index = op == Op::jmp_back ? (index + 3) - distance : (index + 3) + distance;
 	printf("%-4zu  %-22s  %d (%zu)\n", index, op2s(op), distance, op_index);
 
 	return 3;
@@ -72,19 +72,19 @@ static size_t instr_two_operand(const Block& block, size_t index) {
 size_t disassemble_instr(const Block& block, Op op, size_t offset) {
 
 	if (op == Op::make_func) {
-		int old_loc = offset;
+		const int old_loc = offset;
 
 		printf("%04d	", block.lines[offset]);
 		printf("%-4zu  %-22s  ", offset++, op2s(op));
 		print_value(block.constant_pool[(size_t)block.code[offset]]);
 		printf("\n");
 
-		u8 num_upvals = static_cast<u8>(block.code[++offset]);
+		const u8 num_upvals = static_cast<u8>(block.code[++offset]);
 		for (int i = 0; i < num_upvals; ++i) {
-			bool is_local = static_cast<bool>(block.code[offset++]);
+			bool is_local = int(block.code[offset++]);
 			if (is_local) {
 				int idx = static_cast<int>(block.code[++offset]);
-				printf("        %-4zu  %-22s  %s %d\n", offset - 1, " ", is_local ? "local" : "upvalue",
+				printf("        %-4zu  %-22s  %s %d\n", offset - 1, " ", (is_local == 0) ? "upvalue" : "local",
 							 idx);
 			}
 		}

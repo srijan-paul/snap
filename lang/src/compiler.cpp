@@ -184,10 +184,10 @@ void Compiler::enter_loop(Loop& loop) {
 void Compiler::exit_loop(Op op_loop) {
 	VYSE_ASSERT(m_loop != nullptr, "Attempt to exit loop in a top-level block.");
 
-	int n_ops = THIS_BLOCK.op_count();
+	const int n_ops = THIS_BLOCK.op_count();
 	// Emit the jmp_back instruction that connects the end of the
 	// loop to the beginning.
-	int back_jmp = emit_jump(op_loop);
+	const int back_jmp = emit_jump(op_loop);
 	patch_backwards_jump(back_jmp, m_loop->start);
 
 	for (int i = m_loop->start; i < n_ops;) {
@@ -245,7 +245,7 @@ void Compiler::break_stmt() {
 	// doesn't get confused between 'jmp' instructions from
 	// break statements and 'jmp' instructions from other
 	// statements like "if".
-	int jmp = emit_jump(Op::no_op);
+	const int jmp = emit_jump(Op::no_op);
 
 	// A no_op instruction followed by a 0x00
 	// is recognized as a 'break' statement.
@@ -276,7 +276,7 @@ void Compiler::while_stmt() {
 	enter_loop(loop);
 
 	expr(); // parse condition.
-	u32 jmp = emit_jump(Opcode::pop_jmp_if_false);
+	const u32 jmp = emit_jump(Opcode::pop_jmp_if_false);
 	toplevel();
 	exit_loop(Op::jmp_back);
 	patch_jump(jmp);
@@ -312,14 +312,14 @@ void Compiler::for_stmt() {
 	if (match(TT::Comma)) {
 		expr();
 	} else {
-		int idx = emit_value(VYSE_NUM(1));
+		const int idx = emit_value(VYSE_NUM(1));
 		emit_with_arg(Op::load_const, idx);
 	}
 
 	// Add the actual loop variable that is
 	// exposed to the user. (i)
 	new_variable(name);
-	size_t prep_jump = emit_jump(Op::for_prep);
+	const size_t prep_jump = emit_jump(Op::for_prep);
 
 	// Loop body
 	Loop loop(Loop::Type::For);
@@ -425,7 +425,7 @@ void Compiler::ret_stmt() {
 }
 
 void Compiler::expr_stmt() {
-	ExpKind prefix_type = prefix();
+	const ExpKind prefix_type = prefix();
 	// If a toplevel assignment statement
 	// was already compiled then exit.
 	if (prefix_type == ExpKind::none) return;
@@ -597,7 +597,7 @@ void Compiler::expr() {
 void Compiler::logic_or() {
 	logic_and();
 	if (match(TT::Or)) {
-		const std::size_t jump = emit_jump(Op::jmp_if_true_or_pop);
+		const size_t jump = emit_jump(Op::jmp_if_true_or_pop);
 		logic_or();
 		patch_jump(jump);
 	}
@@ -606,7 +606,7 @@ void Compiler::logic_or() {
 void Compiler::logic_and() {
 	bit_or();
 	if (match(TT::And)) {
-		std::size_t jump = emit_jump(Op::jmp_if_false_or_pop);
+		const size_t jump = emit_jump(Op::jmp_if_false_or_pop);
 		logic_and();
 		patch_jump(jump);
 	}
@@ -893,7 +893,7 @@ void Compiler::exit_block() {
 }
 
 size_t Compiler::emit_jump(Opcode op) {
-	size_t index = THIS_BLOCK.op_count();
+	const size_t index = THIS_BLOCK.op_count();
 	emit(op);
 	emit_arg(0xff);
 	emit_arg(0xff);
@@ -923,7 +923,7 @@ void Compiler::patch_jump(size_t index) {
 }
 
 void Compiler::patch_backwards_jump(size_t index, u32 dst_index) {
-	u32 distance = index - dst_index + 2;
+	const u32 distance = index - dst_index + 2;
 	if (distance > UINT16_MAX) {
 		ERROR("Too much code to jump over.");
 		return;
@@ -1048,7 +1048,7 @@ int Compiler::find_upvalue(const Token& token) {
 }
 
 size_t Compiler::emit_value(Value v) {
-	size_t index = THIS_BLOCK.add_value(v);
+	const size_t index = THIS_BLOCK.add_value(v);
 	if (index >= Compiler::MaxLocalVars) {
 		error_at_token("Too many constants in a single block.", token);
 	}
@@ -1056,7 +1056,7 @@ size_t Compiler::emit_value(Value v) {
 }
 
 inline void Compiler::emit(Op op) {
-	int stack_effect = op_stack_effect(op);
+	const int stack_effect = op_stack_effect(op);
 	m_stack_size += stack_effect;
 	if (m_stack_size > m_codeblock->max_stack_size) {
 		m_codeblock->max_stack_size = m_stack_size;

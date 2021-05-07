@@ -52,7 +52,7 @@ private:
 	u32 m_num_upvals = 0;
 	// the maximum stack size ever needed for the 
 	// execution of this function's call frame.
-	size_t max_stack_size = 0;
+	int max_stack_size = 0;
 	Block m_block;
 
 	void trace(GC& gc) override;
