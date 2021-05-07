@@ -1,4 +1,4 @@
-name: Compile and run tests.
+name: Tests
 on: push
 
 jobs:
