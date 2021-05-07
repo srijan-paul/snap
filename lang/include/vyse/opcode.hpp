@@ -15,10 +15,6 @@ enum class Opcode : u8 {
 #undef OP
 };
 
-constexpr std::array<int, size_t(Opcode::no_op)> StackEffects = {
-
-};
-
 /// numerically lowest opcode that takes no operands
 constexpr auto Op_0_operands_start = Opcode::pop;
 /// numerically highest opcode that takes no operands
