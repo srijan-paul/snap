@@ -195,14 +195,29 @@ void string_test() {
 	std::cout << "[String tests passed]\n";
 }
 
+
 void loop_test() {
+	// while loops
 	test_file("loop/while-loop.vy", VYSE_NUM(45), "While loops (sum)");
 	test_file("loop/nested-while.vy", VYSE_NUM(165), "Nested While loops");
 	test_file("loop/while-break.vy", VYSE_NUM(25), "breaks in loops");
 	test_file("loop/while-break-nest.vy", VYSE_NUM(2660), "breaks in loops");
-	test_file("loop/continue.vy", VYSE_NUM(55), "continue statements in loops.");
-	test_file("loop/closure-in-while.vy", VYSE_NUM(55), "closure inside a while loop.");
-	test_file("loop/fib-loop.vy", VYSE_NUM(89), "Fibonacci implementation using loop.");
+	test_file("loop/continue.vy", VYSE_NUM(55), "continue statements in loops");
+	test_file("loop/closure-in-while.vy", VYSE_NUM(55), "closure inside a while loop");
+	test_file("loop/fib-loop.vy", VYSE_NUM(89), "Fibonacci implementation using loop");
+
+	// for-loops
+	test_file("loop/for/loop-for.vy", VYSE_NUM(45), "for-loop only with counter and step");
+	test_file("loop/for/loop-locvar.vy", VYSE_NUM(12379), "for-loop with local vars");
+	test_file("loop/for/loop-step.vy", VYSE_NUM(20), "for-loop with explicit step");
+	test_file("loop/for/for-rev-1.vy", VYSE_NUM(55), "reverse for loop");
+	test_file("loop/for/for-rev.vy", VYSE_NUM(166), "for-loop that counts downwards");
+	test_file("loop/for/continue.vy", VYSE_NUM(25), "continue in for-loop");
+	test_file("loop/for/break.vy", VYSE_NUM(28), "break in for-loop");
+	test_file("loop/for/for-mut-counter.vy", VYSE_NUM(45), "for-loop that tries to change the counter inside loop body");
+	test_file("loop/for/nest.vy", VYSE_NUM(870), "nested for loops");
+	test_file("loop/for/in-closure.vy", VYSE_NUM(110), "for-loop inside closure.");
+
 }
 
 int main() {

@@ -241,7 +241,7 @@ ExitCode VM::run() {
 			CHECK_TYPE(PEEK(2), VT::Number, "'for' limit not a number.");
 			const Value& step = PEEK(1);
 			CHECK_TYPE(step, VT::Number, "'for' step not a number.");
-			VYSE_SET_NUM(counter, VYSE_AS_NUM(counter) - 1);
+			VYSE_SET_NUM(counter, VYSE_AS_NUM(counter) - VYSE_AS_NUM(step));
 			PUSH(counter); // load the user exposed loop counter (i).
 			ip += FETCH_SHORT();
 			break;

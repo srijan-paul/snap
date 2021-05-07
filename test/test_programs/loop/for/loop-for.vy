@@ -1,7 +1,4 @@
-let x = 1
-
-for i = 1, 10 {
-  x += i
-}
-
+let x = 0 
+for i = 0, 10 x += i
+-- expect: 45
 return x

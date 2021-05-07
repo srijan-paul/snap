@@ -1,1 +1,1 @@
-return 42
+let i = 0 for i = 10, 1, -1 print(i)
