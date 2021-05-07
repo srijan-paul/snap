@@ -51,18 +51,16 @@ There exist some quirks in Lua that Vyse aims to change.
 - The concept of metatables and metamethods is somewhat unintuitive to new programmers.
 - Tables being used as both arrays and maps can have unwanted side effects.
 - Lacks many features that are common in other languages such as :
-
-* Compound assignment operators (`+=`, `-=`, `*=`) and decrement and increment operators (`++`, `--`) .
-* `continue` statement for skipping over some loop iterations.
-* `switch` statements.
+  * Compound assignment operators (`+=`, `-=`, `*=`) and decrement and increment operators (`++`, `--`) .
+  * `continue` statement for skipping over some loop iterations.
+  * `switch` statements.
 
 - Arrays starting at 1.
 
 Vyse aims to keep most of what Lua provides, but address the aforementioned issues and offer the following QoL feautures:
-
-- A Familiar syntax for programmers migrating from Javascript and C
-- An easy to integrate C++ API for easy embedding in applications
-- Syntactic sugar for JS like OOP that boils down to the very same metatable and metamethod heirarchy.
+  - A Familiar syntax for programmers migrating from Javascript and C
+  - An easy to integrate C++ API for easy embedding in applications
+  - Syntactic sugar for JS like OOP that boils down to the very same metatable and metamethod heirarchy.
 
 ## Overview
 
