@@ -104,6 +104,9 @@ static void expr_tests() {
 
 	test_return("return 9 & 7", VYSE_NUM(1));
 	test_return("return 4 | 9", VYSE_NUM(13));
+	test_return("return 4 << 9 >> 5", VYSE_NUM(64));
+	test_return("return 4 >> 5 >> 7 | 6", VYSE_NUM(6));
+	test_return("return 4 >> 1 | 2 | 3 << 5", VYSE_NUM(98));
 
 	// test precedence
 

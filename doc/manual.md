@@ -15,7 +15,7 @@ Vyse supports the following operators, from highest to lowest precedence:
 | .        | Member access                 |               |
 +----------+-------------------------------+---------------+
 | +-       | Unary Plus/Minus              |               |
-| !~       | Not, Binary Not               |               |
+| !~       | Logical Not, Binary Not       |               |
 | typeof   | Type of                       |               |
 | #        | Length                        |               |
 +----------+-------------------------------+---------------+
@@ -134,7 +134,7 @@ for item in my_array {
 Functions are declared using the `fn` keyword and like most languages,
 called using the `()` operator.
 
-```js
+```rs
 fn fib(x) {
   if x <= 1 return fib_base
   return fib(x - 1) + fib(x - 2);
@@ -157,7 +157,7 @@ any other value.
 Functions are can capture their surrounding environment.
 In this sense, all functions are closures.
 
-```js
+```rs
 fn make_greeter(name) {
   const greeting = ". Good morning!"
   return fn() {
@@ -256,7 +256,7 @@ choose to call it by any name.
 const Cat = {
   name: "Tom",
   sound: "Meow"
-  meow(self) {
+  meow() {
     print(self.sound .. "!")
   }
 }
@@ -278,7 +278,7 @@ const t_parent = { a: 1, b: 2 };
 const t_child = { a: 3 };
 
 print(t_child.a, t_child.b); // 3, nil
-setparent(t_child, t_parent); // set t_parent as t_child's child
+setproto(t_child, t_parent); // set t_parent as t_child's child
 print(t_child.a, t_child.b); // 3, 2
 ```
 
@@ -294,8 +294,8 @@ Eg -
 ```js
 const Point = {
   init(x, y) {
-    const t_point = {x: x, y: y}
-    return setparent(t_point, this)
+    const t_point = { x: x, y: y }
+    return setproto(t_point, self)
   }
 }
 
@@ -308,7 +308,7 @@ let c = a + b // ERROR: Cannot use operator '+' on types 'object' and 'object'.
 The above code will throw an error since we can't add two tables.
 To remedy the error, we introduce a metamethod that overloads the `+` operator:
 
-```js
+```rs
 fn Point.__add(a, b) {
   return Point:init(a.x + b.x, a.y + b.y);
 }

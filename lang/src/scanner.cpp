@@ -27,7 +27,9 @@ Token Scanner::next_token() noexcept {
 	switch (c) {
 	case '+': return token_if_match('=', TT::PlusEq, TT::Plus);
 	case '-': return token_if_match('=', TT::MinusEq, TT::Minus);
-	case '*': return token_if_match('=', TT::MultEq, TT::Mult);
+	case '*': 
+		if (match('*'))	return make_token(TT::Exp);
+		return token_if_match('=', TT::MultEq, TT::Mult);
 	case '%': return token_if_match('=', TT::ModEq, TT::Mod);
 	case '/': return token_if_match('=', TT::DivEq, TT::Div);
 
@@ -36,12 +38,10 @@ Token Scanner::next_token() noexcept {
 
 	case '>':
 		if (match('=')) return make_token(TT::GtEq);
-		if (match('>')) return make_token(TT::BitRShift);
-		return make_token(TT::Gt);
+		return token_if_match('>', TT::BitRShift, TT::Gt);
 	case '<':
 		if (match('=')) return make_token(TT::LtEq);
-		if (match('<')) return make_token(TT::BitLShift);
-		return make_token(TT::Lt);
+		return token_if_match('<', TT::BitLShift, TT::Lt);
 
 	case '&': return token_if_match('&', TT::And, TT::BitAnd);
 	case '|': return token_if_match('|', TT::Or, TT::BitOr);
