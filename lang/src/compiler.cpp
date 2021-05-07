@@ -411,7 +411,7 @@ void Compiler::ret_stmt() {
 	// If the next token marks the start of an expression, then
 	// compile this statement as `return EXPR`, else it's just a `return`.
 	// where a `nil` after the return is implicit.
-	if (is_literal(peek.type) or check(TT::Id) or check(TT::Bang) or check(TT::Minus) or
+	if (peek.is_literal() or check(TT::Id) or peek.is_unary_op()  or
 			check(TT::LParen) or check(TT::Fn) or check(TT::LCurlBrace)) {
 		expr();
 	} else {
@@ -572,7 +572,7 @@ ExpKind Compiler::prefix() {
 		}
 	}
 
-	if (!is_literal(peek.type)) {
+	if (peek.is_literal()) {
 		ERROR("Unexpected '{}'.", peek.raw(*m_source));
 		return ExpKind::literal_value;
 	}
@@ -620,7 +620,9 @@ DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) or match(TT::Mod) or match(TT::
 DEFINE_PARSE_FN(Compiler::exp, match(TT::Exp), unary)
 
 void Compiler::unary() {
-	if (check(TT::Bang) or check(TT::Minus) or check(TT::Len)) {
+	/// TODO: group all unary oprators together in 'token.hpp'
+	/// and then change this if statement to a simple range check.
+	if (peek.is_unary_op()) {
 		advance();
 		const Token op_token = token;
 		unary();
@@ -628,6 +630,7 @@ void Compiler::unary() {
 		case TT::Bang: emit(Op::lnot, op_token); break;
 		case TT::Minus: emit(Op::negate, op_token); break;
 		case TT::Len: emit(Op::len, op_token); break;
+		case TT::BitNot: emit(Op::bnot, op_token); break;
 		default: VYSE_ERROR("Impossible unary token.");
 		}
 		return;
@@ -727,7 +730,7 @@ void Compiler::grouping() {
 }
 
 void Compiler::primary() {
-	if (is_literal(peek.type)) {
+	if (peek.is_literal()) {
 		literal();
 	} else if (match(TT::Fn)) {
 		static constexpr const char* name = "<anonymous>";

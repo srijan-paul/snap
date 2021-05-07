@@ -176,11 +176,6 @@ private:
 		return !eof() && peek.type == expected;
 	}
 
-	inline bool is_literal(TokenType type) const noexcept {
-		return type == TokenType::Integer || type == TokenType::String || type == TokenType::Float ||
-					 type == TokenType::False || type == TokenType::True || type == TokenType::Nil;
-	}
-
 	/// If the next token is of type `expected` then
 	/// consumes it and returns true.
 	bool match(TokenType expected) noexcept;

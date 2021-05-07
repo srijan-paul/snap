@@ -52,6 +52,7 @@ void print_ttype(vyse::TokenType type) {
 	  "BitLShift",
 	  "BitRShift",
 	  "BitXor",
+	  "BitNot",
 
 		"Semi",
 	  "Colon",

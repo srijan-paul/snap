@@ -50,6 +50,7 @@ Token Scanner::next_token() noexcept {
 	case '.': return token_if_match('.', TT::Concat, TT::Dot);
 
 	case '^': return make_token(TT::BitXor);
+	case '~': return make_token(TT::BitNot);
 	case '#': return make_token(TT::Len);
 	case ';': return make_token(TT::Semi);
 	case ':': return make_token(TT::Colon);

@@ -65,6 +65,7 @@ enum class TokenType {
 	BitLShift, // >>
 	BitRShift, // <<
 	BitXor,		 // ^
+	BitNot,		 // ~
 
 	// Punctuation
 	Semi,				// ;
@@ -110,8 +111,18 @@ struct Token {
 	const char* raw_cstr(const std::string& source) const;
 	SourcePosition source_pos() const;
 
-	inline u32 length() const {
+	inline u32 length() const noexcept {
 		return location.source_pos.length;
+	}
+
+	bool is_unary_op() const noexcept {
+		return type == TokenType::BitNot or type == TokenType::Len or type == TokenType::Bang or
+					 type == TokenType::Minus;
+	}
+
+	bool is_literal() const noexcept {
+		return type == TokenType::Integer or type == TokenType::String or type == TokenType::Float or
+					 type == TokenType::False or type == TokenType::True or type == TokenType::Nil;
 	}
 };
 

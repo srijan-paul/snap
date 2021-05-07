@@ -32,6 +32,8 @@ OP(prep_method_call, 1, 1),
 OP(call_func, 1, 0), /* special stack effect */
 
 OP(pop, 0, -1),
+
+// binary ops
 OP(add, 0, -1),
 OP(concat, 0, -1),
 OP(sub, 0, -1),
@@ -50,14 +52,17 @@ OP(gt, 0, -1),
 OP(lt, 0, -1),
 OP(gte, 0, -1),
 OP(lte, 0, -1),
+
+// unary ops
 OP(negate, 0, 0),
 OP(len, 0, 0),
+OP(bnot, 0, 0),
 OP(lnot, 0, 0),
+
+
 OP(load_nil, 0, 1),
 OP(close_upval, 0, -1),
 OP(return_val, 0, 0), /* special stack effect */
-
-
 
 
 // table indexing

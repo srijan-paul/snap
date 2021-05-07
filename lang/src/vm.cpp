@@ -222,6 +222,15 @@ ExitCode VM::run() {
 			break;
 		}
 
+		case Op::bnot: {
+			if (VYSE_IS_NUM(PEEK(1))) {
+				VYSE_SET_NUM(PEEK(1), ~s64(VYSE_AS_NUM(PEEK(1))));
+			} else {
+				return ERROR("Cannot use operator '~' on value of type '{}'", VYSE_TYPE_CSTR(PEEK(1)));
+			}
+			break;
+		}
+
 		case Op::jmp_if_true_or_pop: {
 			Value& top = PEEK(1);
 			if (IS_VAL_TRUTHY(top)) {

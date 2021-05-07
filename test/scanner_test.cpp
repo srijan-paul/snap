@@ -37,6 +37,10 @@ static bool run_tests() {
 	code = "'this is a string' .. 'this is also string'";
 	passed = passed && compare_ttypes(&code, {TT::String, TT::Concat, TT::String, TT::Eof});
 
+	code = "~ ! ## ** * *";
+	passed = passed && compare_ttypes(&code, {TT::BitNot, TT::Bang, TT::Len, TT::Len, TT::Exp,
+																						TT::Mult, TT::Mult, TT::Eof});
+
 	return passed;
 }
 

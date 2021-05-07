@@ -20,9 +20,7 @@
   </p>
 </p>
 
->
-
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/13bade553aab46f7a592dcb881c925d9)](https://www.codacy.com/gh/srijan-paul/snap/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=srijan-paul/snap&amp;utm_campaign=Badge_Grade)  
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/13bade553aab46f7a592dcb881c925d9)](https://www.codacy.com/gh/srijan-paul/snap/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=srijan-paul/snap&amp;utm_campaign=Badge_Grade) 
 ![CI Status](https://github.com/srijan-paul/snap/actions/workflows/test.yml/badge.svg)
 [![Discord](https://img.shields.io/discord/591914197219016707.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/qvtfJXJMRH)
 [![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/tterb/atomic-design-ui/blob/master/LICENSEs)
