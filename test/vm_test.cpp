@@ -108,6 +108,9 @@ static void expr_tests() {
 	test_return("return 4 >> 5 >> 7 | 6", VYSE_NUM(6));
 	test_return("return 4 >> 1 | 2 | 3 << 5", VYSE_NUM(98));
 
+	test_return("return 5 ** 2", VYSE_NUM(25));
+	test_return("return 3 ** 2 ** 3", VYSE_NUM(729));
+
 	// test precedence
 
 	test_return("return 5 > 2 && 3 > -10", VYSE_BOOL(true));

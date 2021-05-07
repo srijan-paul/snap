@@ -239,6 +239,7 @@ private:
 
 	void sum();					// + - ..
 	void mult();				// * / %
+	void exp(); 				// **
 	void unary();				// - + ! not
 	void atomic();			// (ID|'(' EXPR ')' ) SUFFIX*
 	void suffix_expr(); // '['EXPR']' | '.'ID | '('ARGS')' | :ID'('')'

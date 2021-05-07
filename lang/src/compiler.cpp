@@ -1,6 +1,4 @@
-#include "common.hpp"
 #include "debug.hpp"
-#include "opcode.hpp"
 #include "str_format.hpp"
 #include <compiler.hpp>
 #include <cstring>
@@ -621,7 +619,8 @@ DEFINE_PARSE_FN(Compiler::comparison,
 								match(TT::Gt) or match(TT::Lt) or match(TT::GtEq) or match(TT::LtEq), b_shift)
 DEFINE_PARSE_FN(Compiler::b_shift, match(TT::BitLShift) or match(TT::BitRShift), sum)
 DEFINE_PARSE_FN(Compiler::sum, (match(TT::Plus) or match(TT::Minus) or match(TT::Concat)), mult)
-DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) or match(TT::Mod) or match(TT::Div)), unary)
+DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) or match(TT::Mod) or match(TT::Div)), exp)
+DEFINE_PARSE_FN(Compiler::exp, match(TT::Exp), unary)
 
 void Compiler::unary() {
 	if (check(TT::Bang) or check(TT::Minus)) {
@@ -1106,6 +1105,7 @@ Op Compiler::toktype_to_op(TT toktype) const noexcept {
 	case TT::Lt: return Op::lt;
 	case TT::GtEq: return Op::gte;
 	case TT::LtEq: return Op::lte;
+	case TT::Exp: return Op::exp;
 	default: VYSE_UNREACHABLE();
 	}
 }

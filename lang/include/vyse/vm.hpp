@@ -286,7 +286,7 @@ private:
 	/// @param opstr a C string representing the binary operator. (eg - "+")
 	/// @param a The left operand
 	/// @param b The right operand
-	ExitCode binop_error(const char* opstr, Value& a, Value& b);
+	ExitCode binop_error(const char* opstr, const Value& a, const Value& b);
 };
 
 } // namespace vyse

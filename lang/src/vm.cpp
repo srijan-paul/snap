@@ -123,9 +123,21 @@ ExitCode VM::run() {
 					return runtime_error("Attempt to divide by 0.\n");
 				}
 				VYSE_SET_NUM(b, VYSE_AS_NUM(b) / VYSE_AS_NUM(a));
-				POP();
+				DISCARD();
 			} else {
 				return binop_error("/", b, a);
+			}
+			break;
+		}
+
+		case Op::exp: {
+			Value& base = PEEK(2);
+			Value& power = PEEK(1);
+			if (VYSE_IS_NUM(base) and VYSE_IS_NUM(power)) {
+					VYSE_SET_NUM(base, pow(VYSE_AS_NUM(base), VYSE_AS_NUM(power)));
+					DISCARD();
+			} else {
+				return binop_error("**", base, power);
 			}
 			break;
 		}
@@ -842,12 +854,12 @@ size_t VM::collect_garbage() {
 
 // -- Error reporting --
 
-ExitCode VM::binop_error(const char* opstr, Value& a, Value& b) {
+ExitCode VM::binop_error(const char* opstr, const Value& a, const Value& b) {
 	return ERROR("Cannot use operator '{}' on operands of type '{}' and '{}'.", opstr,
 							 VYSE_TYPE_CSTR(a), VYSE_TYPE_CSTR(b));
 }
 
-ExitCode VM::runtime_error(std::string const& message) {
+ExitCode VM::runtime_error(const std::string& message) {
 	m_has_error = true;
 
 	std::string error_str =
