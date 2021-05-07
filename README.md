@@ -25,13 +25,13 @@ Vyse is a dynamically typed, interpreted and fast scriptling language inspired b
 
 ## Table of Contents
 
--  [Goal](#Goal)
--  [Overview](#Overview)
--  [Roadmap](#Roadmap)
--  [Implementation](#Implementation)
--  [Building](#Building)
--  [Editor Support](#Editor-Support)
--  [Development](#Development)
+- [Goal](#Goal)
+- [Overview](#Overview)
+- [Roadmap](#Roadmap)
+- [Implementation](#Implementation)
+- [Building](#Building)
+- [Editor Support](#Editor-Support)
+- [Development](#Development)
 
 ## Goal
 
@@ -39,25 +39,20 @@ Vyse aims to pick up after the Lua programming language, by adding popularly des
 whilst providing similar speed and minimalism as Lua.
 There exist some quirks in Lua that Vyse aims to change.
 
--  Variables are global by default
+- Variables are global by default
+- Long keywords like `local` and the use of `do .. end` to designate blocks instead of `{}` makes it unlikeable to programmers coming from C.
+- The concept of metatables and metamethods is somewhat unintuitive to new programmers.
+- Tables being used as both arrays and maps can have unwanted side effects.
+- Lacks many features that are common in other languages such as :
 
--  Long keywords like `local` and the use of `do .. end` to designate blocks instead of `{}` makes it unlikeable to programmers coming from C.
-
--  The concept of metatables and metamethods is somewhat unintuitive to new programmers.
-
--  Tables being used as both arrays and maps can have unwanted side effects.
-
--  Lacks many features that are common in other languages such as :
-
-  *  Compound assignment operators (`+=`, `-=`, `*=`) and decrement and increment operators (`++`, `--`) .
-
-  *  `continue` statement for skipping over some loop iterations.
-
-  *  `switch` statements.
+* Compound assignment operators (`+=`, `-=`, `*=`) and decrement and increment operators (`++`, `--`) .
+* `continue` statement for skipping over some loop iterations.
+* `switch` statements.
 
 - Arrays starting at 1.
 
 Vyse aims to keep most of what Lua provides, but address the aforementioned issues and offer the following QoL feautures:
+
 - A Familiar syntax for programmers migrating from Javascript and C
 - An easy to integrate C++ API for easy embedding in applications
 - Syntactic sugar for JS like OOP that boils down to the very same metatable and metamethod heirarchy.
@@ -130,12 +125,12 @@ For a more complete spec of the language, and all it's features visit [manual.md
 Currently, vyse supports basic control flow, variable declaration, usage and basic collection data structures.
 To move towards a more complete implementation, the following tasks have to be attended to:
 
-1.  [x] Implement parent tables (metatables in Lua). (**DONE**)
-2.  [x] Add a complete list of collection types (Arrays and tables). (**DONE**)
-3.  [x] Implement proper error reporting in all the passes. (**DONE**)
-4.  [x] Full support for Lambdas and closures. (**DONE**)
-5.  [ ] Implement optionally NaN boxed values.
-6.  [ ] Move from the current mark sweep garbage collector to a Cheney's copying collector.
+1. [x] Implement parent tables (metatables in Lua). (**DONE**)
+2. [x] Add a complete list of collection types (Arrays and tables). (**DONE**)
+3. [x] Implement proper error reporting in all the passes. (**DONE**)
+4. [x] Full support for Lambdas and closures. (**DONE**)
+5. [ ] Implement optionally NaN boxed values.
+6. [ ] Move from the current mark sweep garbage collector to a Cheney's copying collector.
 
 ## Implementation
 
@@ -153,14 +148,14 @@ The Lexer is called from within the Compiler, but can also be instantiated and u
 ### Compiling (Tokens -> Bytecode)
 
 The Compiler compiles tokens to Bytecode following the Vyse Bytecode Instruction format (`lang/include/opcode.hpp`).
-Every instruction is 1 byte long. The compiler returns a function containing all the bytecode from the script, which is 
+Every instruction is 1 byte long. The compiler returns a function containing all the bytecode from the script, which is
 then loaded into the VM and called.
 
 ### SVM
 
 The design of the SVM is very similar to the Lua Virtual Machine despite the fact that it's Stack based as opposed to LuaVM's
 register based design (after version 5.1). It consists of a value stack and an accumulator register. It has full support
-for lambdas and closures following Lua's upvalue design. 
+for lambdas and closures following Lua's upvalue design.
 
 # Building
 
@@ -182,10 +177,11 @@ Note that `-CMAKE_C_COMPILER=clang -CMAKE_CXX_COMPILER=clang++` are optional, an
 # Editor-Support
 
 Currently, syntax highlighting and code completion snippets are supported on the following code editors:
--  [x] [VS Code](https://github.com/srijan-paul/vscode-vyse)
--  [ ] Sublime text [In Progress]
--  [ ] Vim [Coming soon]
--  [ ] Atom [Coming soon]
+
+- [x] [VS Code](https://github.com/srijan-paul/vscode-vyse)
+- [ ] Sublime text [In Progress]
+- [ ] Vim [Coming soon]
+- [ ] Atom [Coming soon]
 
 # Development
 
