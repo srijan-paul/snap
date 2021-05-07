@@ -33,6 +33,6 @@ constexpr auto Op_1_operands_start = Opcode::set_var;
 constexpr auto Op_1_operands_end = Opcode::call_func;
 
 constexpr auto Op_2_operands_start = Opcode::jmp;
-constexpr auto Op_2_operands_end = Opcode::pop_jmp_if_false;
+constexpr auto Op_2_operands_end = Opcode::for_loop;
 
 } // namespace vyse 

@@ -15,6 +15,9 @@
 #define INDEX_ERROR(v) ERROR("Attempt to index a '{}' value.", VYSE_TYPE_CSTR(v))
 #define CURRENT_LINE() (m_current_block->lines[ip - 1])
 
+#define CHECK_TYPE(v, typ, ...)                                                                    \
+	if (!VYSE_CHECK_TT(v, typ)) return ERROR(__VA_ARGS__)
+
 #define FETCH()			(m_current_block->code[ip++])
 #define NEXT_BYTE() (static_cast<u8>(m_current_block->code[ip++]))
 #define FETCH_SHORT()                                                                              \
@@ -28,6 +31,7 @@
 #define PEEK(depth) m_stack.top[-depth]
 #define POP()				(m_stack.pop())
 #define DISCARD()		(--m_stack.top)
+#define POPN(n)			(m_stack.top -= n)
 #define PUSH(value) m_stack.push(value)
 
 namespace vyse {
@@ -47,7 +51,7 @@ using OT = ObjType;
 		Value a = m_stack.pop();                                                                       \
                                                                                                    \
 		if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                       \
-			PUSH(VYSE_BOOL(VYSE_AS_NUM(a) op VYSE_AS_NUM(b)));                                       \
+			PUSH(VYSE_BOOL(VYSE_AS_NUM(a) op VYSE_AS_NUM(b)));                                           \
 		} else {                                                                                       \
 			return binop_error(#op, b, a);                                                               \
 		}                                                                                              \
@@ -219,6 +223,55 @@ ExitCode VM::run() {
 		case Op::jmp_back: {
 			u16 dist = FETCH_SHORT();
 			ip -= dist;
+			break;
+		}
+
+		// In a for loop, the variables are to be set up in the
+		// stack as such: [counter, limit, step, i]
+		// Here, 'i' is the user exposed counter. The user is free to modify
+		// this variable, however the 'for_loop' instruction at the end
+		// of a loop's body will change it back to `counter + limit`.
+		// counter = counter - 1;
+		// i = counter;
+		// jump to to coressponding for_loop opcode;
+		// make some type checks;
+		case Op::for_prep: {
+			Value& counter = PEEK(3);
+			CHECK_TYPE(counter, VT::Number, "'for' variable not a number.");
+			CHECK_TYPE(PEEK(2), VT::Number, "'for' limit not a number.");
+			const Value& step = PEEK(1);
+			CHECK_TYPE(step, VT::Number, "'for' step not a number.");
+			VYSE_SET_NUM(counter, VYSE_AS_NUM(counter) - 1);
+			PUSH(counter); // load the user exposed loop counter (i).
+			ip += FETCH_SHORT();
+			break;
+		}
+
+		// counter += step
+		// i = counter
+		// if (counter < limit) jump to start;
+		case Op::for_loop: {
+			Value& counter = PEEK(4);
+			const Value& limit = PEEK(3);
+			const Value& step = PEEK(2);
+
+			const number nstep = VYSE_AS_NUM(step);
+			// update loop counter.
+			VYSE_SET_NUM(counter, VYSE_AS_NUM(counter) + nstep);
+			// update user exposed loop variable (i)
+			PEEK(1) = counter;
+
+			if (nstep >= 0) {
+				if (VYSE_AS_NUM(counter) < VYSE_AS_NUM(limit)) {
+					ip -= FETCH_SHORT();
+					break;
+				} // else fall to 'ip += 2'
+			} else if (VYSE_AS_NUM(counter) >= VYSE_AS_NUM(limit)) {
+				ip -= FETCH_SHORT();
+				break;
+			}
+
+			ip += 2;
 			break;
 		}
 

@@ -23,7 +23,7 @@ using number = double;
 
 #define VYSE_DEBUG 
 // #define VYSE_DEBUG_RUNTIME		 1
-// #define VYSE_DEBUG_DISASSEMBLY 1 
+#define VYSE_DEBUG_DISASSEMBLY 1 
 
 #ifdef VYSE_DEBUG
 

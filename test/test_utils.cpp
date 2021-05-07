@@ -67,6 +67,8 @@ void print_ttype(vyse::TokenType type) {
 		"Let",
 	  "Const",
 	  "If",
+		"While",
+		"For",
 	  "Else",
 	  "Nil",
 	  "Fn",

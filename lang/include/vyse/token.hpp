@@ -81,6 +81,7 @@ enum class TokenType {
 	Const,
 	If,
 	While,
+	For,
 	Else,
 	Nil,
 	Fn,

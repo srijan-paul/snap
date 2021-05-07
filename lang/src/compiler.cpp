@@ -109,6 +109,7 @@ void Compiler::toplevel() {
 	case TT::LCurlBrace: block_stmt(); break;
 	case TT::If: if_stmt(); break;
 	case TT::While: while_stmt(); break;
+	case TT::For: for_stmt(); break;
 	case TT::Fn: fn_decl(); break;
 	case TT::Return: ret_stmt(); break;
 	case TT::Break: break_stmt(); break;
@@ -130,7 +131,7 @@ void Compiler::declarator(bool is_const) {
 	expect(TT::Id, "Expected variable name.");
 	// add the new variable to the symbol table.
 	const Token name = token;
-	
+
 	// default value for variables is 'nil'.
 	match(TT::Eq) ? expr() : emit(Op::load_nil, token);
 	new_variable(name, is_const);
@@ -159,7 +160,7 @@ void Compiler::if_stmt() {
 
 	if (match(TT::Else)) {
 		// If the 'if' block executed
-		// then the 'else' shouldn't run, to 
+		// then the 'else' shouldn't run, to
 		// do this, we jump straight to the end
 		// of the 'else' block after evaluating
 		// the 'if'.
@@ -182,13 +183,13 @@ void Compiler::enter_loop(Loop& loop) {
 	m_loop = &loop;
 }
 
-void Compiler::exit_loop() {
+void Compiler::exit_loop(Op op_loop) {
 	VYSE_ASSERT(m_loop != nullptr, "Attempt to exit loop in a top-level block.");
 
 	int n_ops = THIS_BLOCK.op_count();
 	// Emit the jmp_back instruction that connects the end of the
 	// loop to the beginning.
-	int back_jmp = emit_jump(Op::jmp_back);
+	int back_jmp = emit_jump(op_loop);
 	patch_backwards_jump(back_jmp, m_loop->start);
 
 	for (int i = m_loop->start; i < n_ops;) {
@@ -203,7 +204,7 @@ void Compiler::exit_loop() {
 				patch_jump(i + 1);
 			} else {
 				VYSE_ASSERT(u8(THIS_BLOCK.code[i + 1]) == 0xff, "Bad jump.");
-				THIS_BLOCK.code[i] = Op::jmp_back;
+				THIS_BLOCK.code[i] = (m_loop->loop_type == Loop::Type::While) ? Op::jmp_back : Op::for_loop;
 				patch_backwards_jump(i + 1, m_loop->start);
 			}
 		}
@@ -273,14 +274,63 @@ void Compiler::continue_stmt() {
 void Compiler::while_stmt() {
 	advance(); // consume 'while'
 
-	Loop while_loop;
-	enter_loop(while_loop);
+	Loop loop(Loop::Type::While);
+	enter_loop(loop);
 
 	expr(); // parse condition.
 	u32 jmp = emit_jump(Opcode::pop_jmp_if_false);
 	toplevel();
-	exit_loop();
+	exit_loop(Op::jmp_back);
 	patch_jump(jmp);
+}
+
+void Compiler::for_stmt() {
+	advance(); // consume the 'for'
+	expect(TT::Id, "Expected for-loop variable.");
+
+	const Token name = token;
+
+	// Enter the scope for the for loop
+	// Note that the loop iterator variable belongs
+	// inside this block.
+	enter_block();
+
+
+	new_variable("<for-start>", 11);
+	// Loop start
+	expect(TT::Eq, "Expected '=' after for-loop variable.");
+	expr();
+
+
+	// Loop limit
+	expect(TT::Comma, "Expected ',' to separate for-loop variable and limit.");
+	new_variable("<for-limit>", 11);
+	expr();
+
+
+
+	// Optional loop step, 1 by default.
+	new_variable("<for-step>", 10);
+	if (match(TT::Comma)) {
+		expr();
+	} else {
+		int idx = emit_value(VYSE_NUM(1));
+		emit_with_arg(Op::load_const, idx);
+	}
+
+	// Add the actual loop variable that is
+	// exposed to the user. (i)
+	new_variable(name);
+	size_t prep_jump = emit_jump(Op::for_prep);
+
+	// Loop body
+	Loop loop(Loop::Type::For);
+	enter_loop(loop);
+	toplevel();
+	patch_jump(prep_jump);
+	exit_loop(Op::for_loop);
+
+	exit_block();
 }
 
 void Compiler::fn_decl() {
@@ -397,7 +447,7 @@ void Compiler::expr_stmt() {
 // Assignment ('a=b') is strictly a statement and not allowed
 // in expression contexts.
 //
-// A call expression can be an arbitrarily long suffixed 
+// A call expression can be an arbitrarily long suffixed
 // expression followed by a '()'. So all of the following
 // are valid call expressions:
 // 1. foo()
@@ -406,24 +456,24 @@ void Compiler::expr_stmt() {
 // 4. foo:bar().baz['key']()
 // 5. f()()()
 // 6. g()['k']()
-// 
+//
 // Similarly, all of the following are valid assignment
 // statements:
 // 1. a = 1
 // 2. a.b = 1
 // 3. t['k'] = 1
-// 4. t['k'].bar().baz = 123 
+// 4. t['k'].bar().baz = 123
 //
 // To make sure the all the above cases are covered, we clearly define
 // what is and isn't a valid LHS for assignment.
 // The following is the grammar for a valid assignment statement:
 //
 // ASSIGN            := LHS ASSIGN_TOK EXPRESSION
-// LHS               := ID | (SUFFIXED_EXP ASSIGNABLE_SUFFIX) 
-// SUFFIXED_EXP      := (PREFIX | SUFFIXED_EXP) SUFFIX 
+// LHS               := ID | (SUFFIXED_EXP ASSIGNABLE_SUFFIX)
+// SUFFIXED_EXP      := (PREFIX | SUFFIXED_EXP) SUFFIX
 // PREFIX            := (ID | STRING | NUMBER | BOOLEAN)
 // SUFFIX            := ASSIGNABLE_SUFFIX | '('ARGS')' | METHOD_CALL
-// ASSIGNABLE_SUFFIX := '[' EXPRESSION ']' | '.'ID 
+// ASSIGNABLE_SUFFIX := '[' EXPRESSION ']' | '.'ID
 // METHOD_CALL       := ':' ID '(' ARGS ')'
 // ASSIGN_TOK        := '=' | '+=' | '-=' | '*=' | '%=' | '/=' | '//='
 //
@@ -519,7 +569,7 @@ ExpKind Compiler::prefix() {
 		if (is_assign_tok(peek.type)) {
 			variable(true);
 			// Since we have successfully compiled a valid toplevel
-			// statement, it is longer an expression. We use 
+			// statement, it is longer an expression. We use
 			// ExpKind::none to indicate this.
 			return ExpKind::none;
 		} else {
@@ -1094,13 +1144,22 @@ bool Compiler::is_assign_tok(TT type) const noexcept {
 	return (type == TT::Eq or (type >= TT::ModEq and type <= TT::PlusEq));
 }
 
+// We need two overloads for Compiler::new_variable.
+// On one hand, it's nice to be able to call new_variable(token)
+// and not extract the name and length of the name at the call site.
+// But sometimes we will want to add dummy variables (like for-loop limits).
+// And we don't have a token for those to take the name from.
+
 int Compiler::new_variable(const Token& varname, bool is_const) {
 	const char* name = varname.raw_cstr(*m_source);
 	const u32 length = varname.length();
+	return new_variable(name, length, is_const);
+}
 
+int Compiler::new_variable(const char* name, u32 length, bool is_const) {
 	// check of a variable with this name already exists in the current scope.
 	if (m_symtable.find_in_current_scope(name, length) != -1) {
-		ERROR("Attempt to redeclare existing variable '{}'.", varname.raw(*m_source));
+		ERROR("Attempt to redeclare existing variable '{}'.", std::string_view(name, length));
 		return -1;
 	}
 
@@ -1155,4 +1214,4 @@ int SymbolTable::add_upvalue(int index, bool is_local, bool is_const) {
 	return m_num_upvals++;
 }
 
-} // namespace vyse 
+} // namespace vyse

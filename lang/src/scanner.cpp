@@ -92,6 +92,7 @@ static constexpr KeywordData keywords[] = {
 		{"else", 4, TT::Else},	 {"while", 5, TT::While},
 		{"fn", 2, TT::Fn},			 {"return", 6, TT::Return},
 		{"break", 5, TT::Break}, {"continue", 8, TT::Continue},
+		{"for", 3, TT::For},
 };
 
 TT Scanner::kw_or_id_type() const {

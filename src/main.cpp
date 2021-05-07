@@ -31,7 +31,7 @@ int main() {
 	print_value(vm.return_value);
 	std::cout << std::endl;
 
-	std::cout << "Snap programming language."
+	std::cout << "Vyse programming language."
 						<< "\n";
 	return 0;
 }

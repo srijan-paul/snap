@@ -53,6 +53,11 @@ OP(lnot, 0, 0),
 OP(load_nil, 0, 1),
 OP(close_upval, 0, -1),
 OP(return_val, 0, 0), /* special stack effect */
+
+
+
+
+// table indexing
 OP(new_table, 0, 1),
 OP(index_set, 0, -2),
 OP(table_add_field, 0, -2),
@@ -61,9 +66,23 @@ OP(index_no_pop, 0, 1),
 
 OP(jmp, 2, 0),
 OP(jmp_back, 2, 0),
-OP(jmp_if_false_or_pop, 2, -1), /* -1 if TOS is truthy */
-OP(jmp_if_true_or_pop, 2, -1),  /* -1 if TOS is falsy */
+OP(jmp_if_false_or_pop, 2, 0), /* -1 if TOS is truthy */
+OP(jmp_if_true_or_pop, 2, 0),  /* -1 if TOS is falsy */
 OP(pop_jmp_if_false, 2, -1),
 
 
-OP(no_op, 0, 0),
+/// TODO: explain stuff
+OP(for_prep, 2, 1),
+
+/// Operands:  A, B (Jump distance)
+/// COUNTER  = TOS[-4]
+/// LOOP_VAR = TOS[-1]
+/// STEP     = TOS[-2]
+/// LIMIT    = TOS[-3]
+/// COUNTER += STEP
+/// LOOP_VAR = COUNTER
+/// if COUNTER < LIMIT ->
+///   ip -= AB
+OP(for_loop, 2, 0),
+
+OP(no_op, -1, 0),

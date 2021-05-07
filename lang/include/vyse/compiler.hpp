@@ -119,6 +119,14 @@ public:
 
 private:
 	struct Loop {
+		VYSE_NO_DEFAULT_CONSTRUCT(Loop);
+		enum class Type {
+			For,
+			While,
+		};
+		Loop(Type type) : loop_type(type){};
+
+		Type loop_type;
 		Loop* enclosing;
 		/// The first instruction of this loop.
 		u32 start;
@@ -203,6 +211,7 @@ private:
 	void block_stmt();							// {stmt*}
 	void if_stmt();									// if EXPR STMT (else STMT)?
 	void while_stmt();							// while EXPR STMT
+	void for_stmt();								// for ID = EXP, EXP (, EXP)? STMT
 	void break_stmt();							// BREAK
 	void continue_stmt();						// CONTINUE
 	void fn_decl();									// fn (ID|SUFFIXED_EXPR) BLOCK
@@ -242,7 +251,7 @@ private:
 	void variable(bool can_assign);												 // ID
 	void literal();																				 // NUM | STR | BOOL | nil
 	void func_expr(String* fname, bool is_method = false); // fn NAME? BLOCK
-	
+
 	/// @brief compiles a table, assuming the opening '{' has been
 	/// consumed.
 	void table();
@@ -277,12 +286,16 @@ private:
 	/// them from the symbol table. This is used to emit instructions for
 	/// 'break' and 'continue' statements.
 	void discard_loop_locals(u32 depth);
-	// Exit the current scope, emitting pop instructions 
+	// Exit the current scope, emitting pop instructions
 	// for all local variables and close instructions for upvalues.
 	void exit_block();
 
 	void enter_loop(Loop& loop);
-	void exit_loop();
+
+	/// Exits the innermost loop that we are inside of and
+	/// uses [jump_instr] to emit a jump from the end of the loop back
+	/// to the first instruction in the loop's boddy by backpatching it.
+	void exit_loop(Opcode jump_instr);
 
 	// Emits a jump instruction, followed by two opcodes
 	// that encode the jump location in big endian.
@@ -298,6 +311,7 @@ private:
 	/// @brief create a new variable and add it to the
 	/// current scope in the symbol table.
 	int new_variable(const Token& name, bool is_const = false);
+	int new_variable(const char* name, u32 len, bool is_const = false);
 
 	/// @brief If this compiler is compiling a function body, then
 	/// reserve a stack slot for the parameter, and add the parameter
@@ -343,4 +357,4 @@ private:
 	bool is_assign_tok(TokenType ttype) const noexcept;
 };
 
-} // namespace vyse 
+} // namespace vyse
