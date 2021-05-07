@@ -293,19 +293,15 @@ void Compiler::for_stmt() {
 	// inside this block.
 	enter_block();
 
-
 	new_variable("<for-start>", 11);
 	// Loop start
 	expect(TT::Eq, "Expected '=' after for-loop variable.");
 	expr();
 
-
 	// Loop limit
 	expect(TT::Comma, "Expected ',' to separate for-loop variable and limit.");
 	new_variable("<for-limit>", 11);
 	expr();
-
-
 
 	// Optional loop step, 1 by default.
 	new_variable("<for-step>", 10);
@@ -624,14 +620,15 @@ DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) or match(TT::Mod) or match(TT::
 DEFINE_PARSE_FN(Compiler::exp, match(TT::Exp), unary)
 
 void Compiler::unary() {
-	if (check(TT::Bang) or check(TT::Minus)) {
+	if (check(TT::Bang) or check(TT::Minus) or check(TT::Len)) {
 		advance();
 		const Token op_token = token;
-		atomic();
+		unary();
 		switch (op_token.type) {
 		case TT::Bang: emit(Op::lnot, op_token); break;
 		case TT::Minus: emit(Op::negate, op_token); break;
-		default: VYSE_ERROR("Impossible token.");
+		case TT::Len: emit(Op::len, op_token); break;
+		default: VYSE_ERROR("Impossible unary token.");
 		}
 		return;
 	}

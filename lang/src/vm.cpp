@@ -134,8 +134,8 @@ ExitCode VM::run() {
 			Value& base = PEEK(2);
 			Value& power = PEEK(1);
 			if (VYSE_IS_NUM(base) and VYSE_IS_NUM(power)) {
-					VYSE_SET_NUM(base, pow(VYSE_AS_NUM(base), VYSE_AS_NUM(power)));
-					DISCARD();
+				VYSE_SET_NUM(base, pow(VYSE_AS_NUM(base), VYSE_AS_NUM(power)));
+				DISCARD();
 			} else {
 				return binop_error("**", base, power);
 			}
@@ -207,6 +207,18 @@ ExitCode VM::run() {
 		case Op::lnot: {
 			Value a = POP();
 			PUSH(VYSE_BOOL(IS_VAL_FALSY(a)));
+			break;
+		}
+
+		case Op::len: {
+			Value v = POP();
+			if (VYSE_IS_TABLE(v)) {
+				PUSH(VYSE_NUM(VYSE_AS_TABLE(v)->length()));
+			} else if (VYSE_IS_STRING(v)) {
+				PUSH(VYSE_NUM(VYSE_AS_STRING(v)->m_length));
+			} else {
+				return ERROR("Attempt to get length of a {} value", VYSE_TYPE_CSTR(v));
+			}
 			break;
 		}
 

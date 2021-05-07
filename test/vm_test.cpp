@@ -114,13 +114,17 @@ static void expr_tests() {
 	test_return("return 3 ** 2 ** 3", VYSE_NUM(729));
 
 	// test precedence
-
 	test_return("return 5 > 2 && 3 > -10", VYSE_BOOL(true));
+	test_return("return -#'xxx'", VYSE_NUM(-3));
+	test_return("return - - - - #'xxxxx'", VYSE_NUM(5));
+	test_return("return !!{}", VYSE_BOOL(true));
 
 	// test string equality
 	test_return("return 'abc' == 'abc'", VYSE_BOOL(true));
 
 	test_file("expr/compound-assign.vy", VYSE_NUM(8), "Compound assignment operators");
+	test_file("expr/len.vy", VYSE_NUM(5), "Number of entries in a table using '#' operator.");
+	test_file("expr/len-str.vy", VYSE_NUM(9), "string length using '#' operator.");
 	test_file("statements/locals.vy", VYSE_NUM(9), "top level local variables");
 	test_file("expr/concat.vy", VYSE_BOOL(true));
 
