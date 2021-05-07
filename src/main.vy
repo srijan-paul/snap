@@ -1,11 +1,10 @@
-const t = {
-  a: 1,
-  b: 2,
-  c: 3
+fn bkdr_hash(str) {
+  const seed = 131
+  let hash = 0
+  for i = 0, #str {
+    hash = (hash * seed) + byte(str[i])
+  } 
+  return hash
 }
 
-print(#t)
-
-t.a = nil
-
-print(#t)
+print(bkdr_hash('1231sdas'))

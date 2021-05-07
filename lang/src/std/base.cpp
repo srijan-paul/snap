@@ -1,12 +1,8 @@
 #include "../str_format.hpp"
 #include <std/base.hpp>
 #include <vm.hpp>
+#include "lib_util.hpp"
 
-static void bad_arg_error(vyse::VM& vm, const char* fname, int argn, const char* expected_type,
-													const char* received_type) {
-	vm.runtime_error(kt::format_str("Bad argument #{} to '{}' expected {}, got {}.", argn, fname,
-																	expected_type, received_type));
-}
 
 /// TODO: benchmark and optimize this.
 vyse::Value vyse::stdlib::print(VM& vm, int argc) {

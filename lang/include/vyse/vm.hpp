@@ -254,6 +254,16 @@ private:
 	/// string if it isn't already interned.
 	Value concatenate(const String* left, const String* right);
 
+	/// @return string[number]
+	String* char_at(const String* string, u64 index);
+
+	/// @brief takes ownership of a string with char buffer 'chrs'
+	/// and length 'len'. Note that `chrs` now belongs to the VM,
+	/// and it may be freed inside this function if an interned copy
+	/// is found. The caller must not use the [chrs] buffer after
+	/// calling this.
+	String& take_string(char* chrs, size_t len);
+
 	/// Load a vyse::Object into the global variable list.
 	/// generally used for loading functions and objects from
 	/// the standard library.

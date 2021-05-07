@@ -50,12 +50,6 @@ bool operator==(const String& a, const String& b) {
 	return std::memcmp(a.c_str(), b.c_str(), alen) == 0;
 }
 
-char String::at(number index) const {
-	VYSE_ASSERT(index > 0 and index < m_length, "string index out of range.");
-	VYSE_ASSERT(index == size_t(index), "string index not a whole number.");
-	return m_chars[size_t(index)];
-}
-
 void String::trace([[maybe_unused]] GC& gc){};
 
 } // namespace vyse 

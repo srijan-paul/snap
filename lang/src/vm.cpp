@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include "std/vy_strlib.hpp"
 #include "str_format.hpp"
 #include "value.hpp"
 #include <cmath>
@@ -455,12 +456,21 @@ ExitCode VM::run() {
 			break;
 		}
 
-		// table_or_array[key]
+		// table_or_string_or_array[key]
 		case Op::index: {
 			Value key = POP();
-			Value tvalue = PEEK(1);
+			Value& tvalue = PEEK(1);
+
 			if (VYSE_IS_TABLE(tvalue)) {
-				m_stack.top[-1] = VYSE_AS_TABLE(tvalue)->get(key);
+				tvalue = VYSE_AS_TABLE(tvalue)->get(key);
+			} else if (VYSE_IS_STRING(tvalue)) {
+				CHECK_TYPE(key, VT::Number, "string index must be a number (got %s)", VYSE_TYPE_CSTR(key));
+				const String* str = VYSE_AS_STRING(tvalue);
+				const u64 index = VYSE_AS_NUM(key);
+				if (index < 0 or index >= str->m_length) {
+					return ERROR("string index out of range.");
+				}
+				VYSE_SET_OBJECT(tvalue, char_at(str, index));
 			} else {
 				return INDEX_ERROR(tvalue);
 			}
@@ -685,6 +695,7 @@ void VM::add_stdlib_object(const char* name, Obj* o) {
 void VM::load_stdlib() {
 	add_stdlib_object("print", &make<CClosure>(stdlib::print));
 	add_stdlib_object("setproto", &make<CClosure>(stdlib::setproto));
+	add_stdlib_object("byte", &make<CClosure>(stdlib::byte));
 }
 
 using OT = ObjType;
@@ -827,6 +838,30 @@ bool VM::call_cclosure(CClosure* cclosure, int argc) {
 	m_stack.top[-1] = ret;
 
 	return !m_has_error;
+}
+
+// String operation helpers.
+
+String* VM::char_at(const String* string, u64 index) {
+	char* charbuf = new char[2]{string->at(index), '\0'};
+	return &take_string(charbuf, 1);
+}
+
+String& VM::take_string(char* buf, size_t len) {
+	size_t hash = hash_cstring(buf, len);
+
+	// look for an existing interened copy of the string.
+	String* interend = interned_strings.find_string(buf, len, hash);
+	if (interend != nullptr) {
+		// we now 'own' the string, so we are free to
+		// get rid of this buffer if we don't need it.
+		delete[] buf;
+		return *interend;
+	}
+
+	String& string = make<String>(buf, len, hash);
+	interned_strings.set(VYSE_OBJECT(&string), VYSE_BOOL(true));
+	return string;
 }
 
 String& VM::make_string(const char* chars, size_t length) {

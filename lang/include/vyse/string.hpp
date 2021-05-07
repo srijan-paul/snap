@@ -24,7 +24,11 @@ public:
 		return m_chars;
 	}
 
-	char at(number index) const;
+	char at(u64 index) const {
+		VYSE_ASSERT(index >= 0 and index < m_length, "string index out of range.");
+		VYSE_ASSERT(index == size_t(index), "string index not a whole number.");
+		return m_chars[size_t(index)];
+	}
 
 	constexpr size_t len() const {
 		return m_length;
@@ -61,9 +65,11 @@ private:
 
 	/// @brief Creates a string that owns the characters `chrs`.
 	/// @param chrs pointer to the character buffer. Must be null terminated.
-	explicit String(char* chrs) noexcept
-			: Obj(ObjType::string), m_chars{chrs}, m_length{strlen(chrs)}, m_hash{hash_cstring(
-																																				 chrs, m_length)} {};
+	/// @param len length of the buffer. We could calculate this inside the constructor,
+	/// 	but the VM usually has this information at hand when creating strings, so we reuse that.
+	/// @param hash The strings hash. Correctness is to be verified by the caller.
+	explicit String(char* chrs, size_t len, size_t hash) noexcept
+			: Obj(ObjType::string), m_chars{chrs}, m_length{len}, m_hash{hash} {};
 
 	void trace(GC& gc) override;
 
@@ -75,4 +81,4 @@ private:
 };
 
 bool operator==(const String& a, const String& b);
-} // namespace vyse 
+} // namespace vyse
