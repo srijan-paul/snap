@@ -533,7 +533,7 @@ void Compiler::complete_expr_stmt(ExpKind prefix_type) {
 		case TT::Colon: {
 			advance();
 			expect(TT::Id, "Expected method name.");
-			u8 index = emit_id_string(token);
+			const u8 index = emit_id_string(token);
 			emit_with_arg(Op::prep_method_call, index);
 			compile_args(true);
 			exp_kind = ExpKind::call;
@@ -997,7 +997,7 @@ bool Compiler::ok() const noexcept {
 }
 
 u32 Compiler::emit_string(const Token& token) {
-	u32 length = token.length() - 2; // minus the quotes
+	const u32 length = token.length() - 2; // minus the quotes
 	// +1 to skip the openening quote.
 	String& string = m_vm->make_string(token.raw_cstr(*m_source) + 1, length);
 	return emit_value(VYSE_OBJECT(&string));
@@ -1010,7 +1010,7 @@ u32 Compiler::emit_id_string(const Token& token) {
 
 int Compiler::find_local_var(const Token& name_token) const noexcept {
 	const char* name = name_token.raw_cstr(*m_source);
-	int length = name_token.length();
+	const int length = name_token.length();
 	const int idx = m_symtable.find(name, length);
 	return idx;
 }
@@ -1114,7 +1114,7 @@ Op Compiler::toktype_to_op(TT toktype) const noexcept {
 
 #define CHECK_ARITY(x, y) ((x) >= (Op_##y##_operands_start) and ((x) <= (Op_##y##_operands_end)))
 int Compiler::op_arity(u32 op_index) const noexcept {
-	Op op = THIS_BLOCK.code[op_index];
+	const Op op = THIS_BLOCK.code[op_index];
 	if (op == Op::make_func) {
 		VYSE_ASSERT(op_index != THIS_BLOCK.op_count() - 1, "Op::make_func cannot be the last opcode");
 		int n_upvals = int(THIS_BLOCK.code[op_index + 1]);
