@@ -40,6 +40,7 @@ void GC::mark() {
 	// 4. Compiler roots, if the compiler is active.
 	// 5. The table of global variables.
 	// 6. The 'extra_roots' set.
+	// 7. The primitive prototypes in the VM.
 	for (Value* v = m_vm->m_stack.values; v < m_vm->m_stack.top; ++v) {
 		mark_value(*v);
 	}
@@ -60,6 +61,10 @@ void GC::mark() {
 		mark_object(entry.first);
 		mark_value(entry.second);
 	}
+
+	mark_object(m_vm->primitive_protos.string_proto);
+	mark_object(m_vm->primitive_protos.num_proto);
+	mark_object(m_vm->primitive_protos.bool_proto);
 
 	mark_compiler_roots();
 }

@@ -1,5 +1,6 @@
 #include "../../str_format.hpp"
 #include "../lib_util.hpp"
+#include <std/primitives/vy_string.hpp>
 #include <vm.hpp>
 
 namespace vyse::stdlib::primitives {
@@ -60,7 +61,8 @@ Value substr(VM& vm, int argc) {
 	return VYSE_OBJECT(sub);
 }
 
-void init_string_proto(VM& vm, Table& str_proto) {
+void load_string_proto(VM& vm) {
+	Table& str_proto = *vm.primitive_protos.string_proto;
 	add_libfn(vm, str_proto, "substr", substr);
 }
 

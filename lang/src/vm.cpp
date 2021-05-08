@@ -8,7 +8,6 @@
 #include <std/primitives/vy_string.hpp>
 #include <vm.hpp>
 
-
 #if defined(VYSE_DEBUG_RUNTIME) || defined(VYSE_DEBUG_DISASSEMBLY)
 #include <cstdio>
 #include <debug.hpp>
@@ -704,8 +703,14 @@ void VM::load_stdlib() {
 
 void VM::load_primitives() {
 	primitive_protos.string_proto = &make<Table>();
-	stdlib::primitives::init_string_proto(*this, *primitive_protos.string_proto);
+	stdlib::primitives::load_string_proto(*this);
 	set_global("String", VYSE_OBJECT(primitive_protos.string_proto));
+
+	primitive_protos.num_proto = &make<Table>();
+	set_global("Number", VYSE_OBJECT(primitive_protos.num_proto));
+
+	primitive_protos.bool_proto = &make<Table>();
+	set_global("Bool", VYSE_OBJECT(primitive_protos.bool_proto));
 }
 
 using OT = ObjType;
