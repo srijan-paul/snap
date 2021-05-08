@@ -708,15 +708,16 @@ void VM::load_stdlib() {
 }
 
 void VM::load_primitives() {
-	primitive_protos.string_proto = &make<Table>();
+	primitive_protos.string = &make<Table>();
+	set_global("String", VYSE_OBJECT(primitive_protos.string));
+
+	primitive_protos.number = &make<Table>();
+	set_global("Number", VYSE_OBJECT(primitive_protos.number));
+
+	primitive_protos.boolean = &make<Table>();
+	set_global("Bool", VYSE_OBJECT(primitive_protos.boolean));
+
 	stdlib::primitives::load_string_proto(*this);
-	set_global("String", VYSE_OBJECT(primitive_protos.string_proto));
-
-	primitive_protos.num_proto = &make<Table>();
-	set_global("Number", VYSE_OBJECT(primitive_protos.num_proto));
-
-	primitive_protos.bool_proto = &make<Table>();
-	set_global("Bool", VYSE_OBJECT(primitive_protos.bool_proto));
 }
 
 using OT = ObjType;
@@ -863,11 +864,11 @@ bool VM::call_cclosure(CClosure* cclosure, int argc) {
 
 Value VM::index_primitive(const Value& value, const Value& key) {
 	switch (VYSE_GET_TT(value)) {
-	case VT::Bool: return primitive_protos.string_proto->get(key);
-	case VT::Number: return primitive_protos.num_proto->get(key);
+	case VT::Bool: return primitive_protos.boolean->get(key);
+	case VT::Number: return primitive_protos.number->get(key);
 	default: {
 		if (VYSE_IS_STRING(value)) {
-			return primitive_protos.string_proto->get(key);
+			return primitive_protos.string->get(key);
 		}
 		return VYSE_NIL;
 	}

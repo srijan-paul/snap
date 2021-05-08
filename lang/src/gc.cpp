@@ -62,9 +62,9 @@ void GC::mark() {
 		mark_value(entry.second);
 	}
 
-	mark_object(m_vm->primitive_protos.string_proto);
-	mark_object(m_vm->primitive_protos.num_proto);
-	mark_object(m_vm->primitive_protos.bool_proto);
+	mark_object(m_vm->primitive_protos.string);
+	mark_object(m_vm->primitive_protos.number);
+	mark_object(m_vm->primitive_protos.boolean);
 
 	mark_compiler_roots();
 }

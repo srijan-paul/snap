@@ -242,9 +242,9 @@ public:
 
 	// Prototypes for primitive data types.
 	struct PrimitiveProtos {
-		Table* string_proto = nullptr;
-		Table* num_proto = nullptr;
-		Table* bool_proto = nullptr;
+		Table* string = nullptr;
+		Table* number = nullptr;
+		Table* boolean = nullptr;
 	} primitive_protos;
 
 private:

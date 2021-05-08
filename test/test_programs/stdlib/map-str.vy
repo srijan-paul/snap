@@ -9,4 +9,4 @@ map('abcdef', fn (char_code) {
   sum += char_code
 })
 
-print(sum)
+return sum
