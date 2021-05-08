@@ -1,12 +1,2 @@
-fn map(str, f) {
-  for i = 0, #str {
-    f(str:code_at(i))
-  } 
-}
+print(124.456:to_string())
 
-let sum = 0
-map('abcdef', fn (char_code) {
-  sum += char_code
-})
-
-print(sum)

@@ -20,8 +20,8 @@ Value substr(VM& vm, int argc) {
 	if (!check_arg_type(vm, 0, ObjType::string, fname)) return VYSE_NIL;
 	if (!check_arg_type(vm, 1, ValueType::Number, fname)) return VYSE_NIL;
 
-	Value const& vstring = vm.get_arg(0);
-	Value const& vfrom = vm.get_arg(1);
+	const Value& vstring = vm.get_arg(0);
+	const Value& vfrom = vm.get_arg(1);
 
 	const String* str = VYSE_AS_STRING(vstring);
 
@@ -97,11 +97,10 @@ Value code_at(VM& vm, int argc) {
 	return VYSE_NUM(c);
 }
 
-
 void load_string_proto(VM& vm) {
 	Table& str_proto = *vm.primitive_protos.string;
 	add_libfn(vm, str_proto, "substr", substr);
 	add_libfn(vm, str_proto, "code_at", code_at);
 }
 
-}
+} // namespace vyse::stdlib::primitives

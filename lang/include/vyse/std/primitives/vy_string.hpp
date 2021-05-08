@@ -1,5 +1,5 @@
 #pragma once
-#include "../../vm.hpp"
+#include "../../forward.hpp"
 
 namespace vyse::stdlib::primitives {
 

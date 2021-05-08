@@ -19,24 +19,33 @@ void print_value(Value v) {
 }
 
 /// Convert a vyse number to a cstring.
-static char* num_to_cstr(Value v) {
-	VYSE_ASSERT(VYSE_IS_NUM(v), "not a number.");
-	number num = VYSE_AS_NUM(v);
-	// If a whole number, then omit decimal part
-	bool is_whole = num == size_t(num);
-	const char* fmt = is_whole ? "%d" : "%f";
-	int bufsize = std::snprintf(nullptr, 0, fmt, num) + 1;
+char* num_to_cstring(number num) {
+	// If a whole number, then truncate decimal part (.0000)
+	bool is_whole = num == s64(num);
 
-	char* buf = new char[bufsize];
-	int res = std::sprintf(buf, fmt, num);
+	int bufsize;
+	if (is_whole) {
+		bufsize = snprintf(nullptr, 0, "%lld", s64(num));
+	} else {
+		bufsize = snprintf(nullptr, 0, "%f", num);
+	}
+
+	char* buf = new char[bufsize + 1];
+	buf[bufsize] = '\0';
+	int res;
+	if (is_whole) {
+		res = sprintf(buf, "%lld", s64(num));
+	} else {
+		res = sprintf(buf, "%f", num);
+	}
+
 	VYSE_ASSERT(res > 0, "sprintf failed!");
-
 	return buf;
 }
 
 char* value_to_cstring(Value v) {
 	switch (VYSE_GET_TT(v)) {
-	case VT::Number: return num_to_cstr(v);
+	case VT::Number: return num_to_cstring(VYSE_AS_NUM(v));
 	default: VYSE_UNREACHABLE();
 	}
 }

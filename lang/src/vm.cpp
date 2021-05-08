@@ -5,8 +5,10 @@
 #include <cmath>
 #include <cstddef>
 #include <std/base.hpp>
+#include <std/primitives/vy_number.hpp>
 #include <std/primitives/vy_string.hpp>
 #include <vm.hpp>
+
 
 #if defined(VYSE_DEBUG_RUNTIME) || defined(VYSE_DEBUG_DISASSEMBLY)
 #include <cstdio>
@@ -718,6 +720,7 @@ void VM::load_primitives() {
 	set_global("Bool", VYSE_OBJECT(primitive_protos.boolean));
 
 	stdlib::primitives::load_string_proto(*this);
+	stdlib::primitives::load_num_proto(*this);
 }
 
 using OT = ObjType;
