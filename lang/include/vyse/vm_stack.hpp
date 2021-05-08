@@ -51,4 +51,4 @@ private:
 	size_t size = InitialSize;
 };
 
-}; // namespace vyse
+} // namespace vyse
