@@ -13,6 +13,7 @@ namespace vyse {
 class Table final : public Obj {
 	friend GC;
 	friend Value stdlib::setproto(VM&, int);
+	friend Value stdlib::getproto(VM&, int);
 
 public:
 	explicit Table() noexcept : Obj{ObjType::table} {};

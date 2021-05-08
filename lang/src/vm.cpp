@@ -704,7 +704,9 @@ void VM::add_stdlib_object(const char* name, Obj* o) {
 void VM::load_stdlib() {
 	add_stdlib_object("print", &make<CClosure>(stdlib::print));
 	add_stdlib_object("setproto", &make<CClosure>(stdlib::setproto));
+	add_stdlib_object("getproto", &make<CClosure>(stdlib::getproto));
 	add_stdlib_object("byte", &make<CClosure>(stdlib::byte));
+	add_stdlib_object("assert", &make<CClosure>(stdlib::assert_));
 
 	load_primitives();
 }

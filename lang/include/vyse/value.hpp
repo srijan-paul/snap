@@ -124,11 +124,16 @@ void print_value(Value v);
 
 #define VYSE_IS_NUM(v)			 ((v).tag == vyse::ValueType::Number)
 #define VYSE_IS_BOOL(v)			 ((v).tag == vyse::ValueType::Bool)
+#define VYSE_IS_FALSE(v)		 (VYSE_IS_BOOL(v) and !VYSE_AS_BOOL(v))
+#define VYSE_IS_TRUE(v)			 (VYSE_IS_BOOL(v) and VYSE_AS_BOOL(v))
 #define VYSE_IS_NIL(v)			 ((v).tag == vyse::ValueType::Nil)
 #define VYSE_IS_UNDEFINED(v) ((v).tag == vyse::ValueType::Undefined)
 #define VYSE_IS_OBJECT(v)		 ((v).tag == vyse::ValueType::Object)
 #define VYSE_IS_STRING(v)		 (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::string)
 #define VYSE_IS_TABLE(v)		 (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::table)
+
+#define VYSE_IS_FALSY(v)	((VYSE_IS_BOOL(v) and !(VYSE_AS_BOOL(v))) or VYSE_IS_NIL(v))
+#define VYSE_IS_TRUTHY(v) (!VYSE_IS_FALSY(v))
 
 #define VYSE_AS_NUM(v)			((v).as.num)
 #define VYSE_AS_BOOL(v)			((v).as.boolean)
@@ -142,5 +147,13 @@ void print_value(Value v);
 #define VYSE_AS_TABLE(v)		(static_cast<Table*>(VYSE_AS_OBJECT(v)))
 
 #define VYSE_CAST_INT(v) (s64(VYSE_AS_NUM(v)))
+
+inline constexpr bool is_val_falsy(const Value& value) {
+	return VYSE_IS_FALSE(value) or VYSE_IS_NIL(value);
+}
+
+inline constexpr bool is_val_truthy(const Value& value) {
+	return !is_val_falsy(value);
+}
 
 } // namespace vyse

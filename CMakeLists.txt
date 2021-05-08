@@ -41,6 +41,7 @@ PREPARE_TEST(vm_test VMTest "vm_test.cpp")
 PREPARE_TEST(table_test TableTest "table_test.cpp")
 PREPARE_TEST(gc-test GCTest "gc-test.cpp")
 PREPARE_TEST(stdlib-test StdlibTest "stdlib-test.cpp")
+PREPARE_TEST(auto-tests AutoTests "auto-tests.cpp")
 
 # benchmarks
 set(BENCHMARK_SUITE "benchmark")

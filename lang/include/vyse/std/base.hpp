@@ -3,8 +3,10 @@
 
 namespace vyse::stdlib {
 
-Value print(VM& vm, int argc);
-Value require(VM& vm, int argc);
-Value setproto(VM& vm, int argc);
+Value print(VM&, int);
+Value setproto(VM&, int);
+Value getproto(VM&, int);
 
-}; // namespace snap
+Value assert_(VM&, int);
+
+}; // namespace vyse::stdlib

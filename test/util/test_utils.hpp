@@ -10,7 +10,7 @@ void print_disassembly(const char* code);
 
 void assert_val_eq(vyse::Value expected, vyse::Value actual, const char* message = "Test failed! ");
 
-std::string load_file(const char* filename);
+std::string load_file(const char* filename, bool is_relative = true);
 
 void test_file(const char* filename, vyse::Value expected, const char* message = "Failure");
 /// Given the name of a test file to run, checks the value returned by that file's evaluation.
@@ -24,3 +24,9 @@ void test_return(const std::string&& code, vyse::Value expected,
 /// it with `expected`.
 void test_string_return(const char* filename, const char* expected,
 															 const char* message = "Failed");
+
+/// @brief runs the code and makes sure there is no error.
+/// This is used to run automatic tests on files that use 'assert'
+/// builtin in vyse to assert program correctness.
+void runcode(std::string&& code);
+
