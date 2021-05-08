@@ -48,7 +48,7 @@ using number = double;
 #define VYSE_NO_MOVE(class)							 class(class && other) = delete
 #define VYSE_NO_DEFAULT_CONSTRUCT(class) class() = delete
 
-// #define VYSE_STRESS_GC 1
+#define VYSE_STRESS_GC 1
 // #define VYSE_LOG_GC		 1
 
 } // namespace vyse

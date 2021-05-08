@@ -12,9 +12,11 @@ void bad_arg_error(vyse::VM& vm, const char* fname, int argn, const char* expect
 }
 
 void add_libfn(VM& vm, Table& proto, const char* name, CFunction cfn) {
+	vm.gc_off();
 	String* sname = &vm.make_string(name);
 	CClosure* fn = &vm.make<CClosure>(cfn);
 	proto.set(VYSE_OBJECT(sname), VYSE_OBJECT(fn));
+	vm.gc_on();
 }
 
 static bool check_arg_type(VM& vm, int argn, ValueType expected_type, const char* expected_type_str,

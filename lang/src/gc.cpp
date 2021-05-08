@@ -10,7 +10,7 @@ void GC::mark_value(Value v) {
 void GC::mark_object(Obj* o) {
 	if (o == nullptr or o->marked) return;
 #ifdef VYSE_LOG_GC
-	printf("marked: %p [%s] \n", (void*)o, value_to_string(VYSE_OBJECT_VAL(o)).c_str());
+	printf("marked: %p [%s] \n", (void*)o, value_to_string(VYSE_OBJECT(o)).c_str());
 #endif
 	o->marked = true;
 	m_gray_objects.push(o);
@@ -80,7 +80,7 @@ void GC::trace() {
 
 #ifdef VYSE_LOG_GC
 		printf("Tracing: %p [%s] \n", (void*)gray_obj,
-					 value_to_string(VYSE_OBJECT_VAL(gray_obj)).c_str());
+					 value_to_string(VYSE_OBJECT(gray_obj)).c_str());
 #endif
 		gray_obj->trace(*this);
 	}
@@ -111,7 +111,7 @@ size_t GC::sweep() {
 			Obj* next = current->next;
 
 #ifdef VYSE_LOG_GC
-			printf("Freed: %s\n", value_to_string(VYSE_OBJECT_VAL(current)).c_str());
+			printf("Freed: %s\n", value_to_string(VYSE_OBJECT(current)).c_str());
 #endif
 
 			bytes_freed += current->size();

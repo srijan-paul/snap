@@ -504,9 +504,15 @@ ExitCode VM::run() {
 			Value vtable = PEEK(1);
 			Value vkey = READ_VALUE();
 			VYSE_ASSERT(VYSE_IS_STRING(vkey), "method name not a string.");
-			if (!VYSE_IS_TABLE(vtable)) return INDEX_ERROR(vtable);
-			m_stack.top[-1] = VYSE_AS_TABLE(vtable)->get(vkey);
+
+			if (VYSE_IS_NIL(vtable)) return INDEX_ERROR(vtable);
+			if (VYSE_IS_TABLE(vtable)) {
+				m_stack.top[-1] = VYSE_AS_TABLE(vtable)->get(vkey);
+			} else {
+				m_stack.top[-1] = index_primitive(vtable, vkey);
+			}
 			PUSH(vtable);
+
 			break;
 		}
 
@@ -855,6 +861,19 @@ bool VM::call_cclosure(CClosure* cclosure, int argc) {
 	return !m_has_error;
 }
 
+Value VM::index_primitive(const Value& value, const Value& key) {
+	switch (VYSE_GET_TT(value)) {
+	case VT::Bool: return primitive_protos.string_proto->get(key);
+	case VT::Number: return primitive_protos.num_proto->get(key);
+	default: {
+		if (VYSE_IS_STRING(value)) {
+			return primitive_protos.string_proto->get(key);
+		}
+		return VYSE_NIL;
+	}
+	}
+}
+
 // String operation helpers.
 
 String* VM::char_at(const String* string, u64 index) {
@@ -923,9 +942,12 @@ void VM::ensure_slots(size_t slots_needed) {
 // 	-- Garbage collection --
 
 size_t VM::collect_garbage() {
-	m_gc.mark();
-	m_gc.trace();
-	return m_gc.sweep();
+	if (can_collect) {
+		m_gc.mark();
+		m_gc.trace();
+		return m_gc.sweep();
+	}
+	return 0;
 }
 
 // -- Error reporting --

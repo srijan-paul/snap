@@ -186,6 +186,18 @@ public:
 	/// free to be used above the current stack-top.
 	void ensure_slots(size_t num_slots);
 
+	/// @brief turns off the garbage collector.
+	/// GC cycles won't be triggered regardless of
+	/// how much memory is allocated.
+	inline void gc_off() {
+		can_collect = false;
+	}
+
+	/// @brief turns on the garbage collector.
+	inline void gc_on() {
+		can_collect = true;
+	}
+
 	/// @brief Marks the object safe from garbage collection
 	/// until `VM::gc_unprotect` is called on the object.
 	void gc_protect(Obj* o) {
@@ -240,6 +252,11 @@ private:
 	bool m_has_error = false;
 	Compiler* m_compiler = nullptr;
 
+	/// @brief Whether or not the garbage collector
+	/// is allowed to collect garbage. This can be turned
+	/// on or off using `VM::gc_off`
+	bool can_collect = true;
+
 	// The instruction pointer.
 	// It stores the index of the next instruction
 	// to be executed. An "instruction" here is an Opcode
@@ -272,6 +289,9 @@ private:
 	Table interned_strings;
 
 	std::unordered_map<String*, Value> m_global_vars;
+
+	/// @brief 
+	Value index_primitive(const Value& value, const Value& key);
 
 	/// @brief concatenates two strings. Might intern the resulting
 	/// string if it isn't already interned.
