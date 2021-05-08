@@ -1,7 +1,8 @@
 #include "assert.hpp"
-#include "test_utils.hpp"
 #include "token.hpp"
+#include "util/test_utils.hpp"
 #include <scanner.hpp>
+
 
 using namespace vyse;
 using TT = TokenType;

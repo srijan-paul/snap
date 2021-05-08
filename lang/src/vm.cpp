@@ -1,11 +1,13 @@
 #include "common.hpp"
-#include "std/vy_strlib.hpp"
+#include "std/vystrlib.hpp"
 #include "str_format.hpp"
 #include "value.hpp"
 #include <cmath>
 #include <cstddef>
 #include <std/base.hpp>
+#include <std/primitives/vy_string.hpp>
 #include <vm.hpp>
+
 
 #if defined(VYSE_DEBUG_RUNTIME) || defined(VYSE_DEBUG_DISASSEMBLY)
 #include <cstdio>
@@ -696,6 +698,14 @@ void VM::load_stdlib() {
 	add_stdlib_object("print", &make<CClosure>(stdlib::print));
 	add_stdlib_object("setproto", &make<CClosure>(stdlib::setproto));
 	add_stdlib_object("byte", &make<CClosure>(stdlib::byte));
+
+	load_primitives();
+}
+
+void VM::load_primitives() {
+	primitive_protos.string_proto = &make<Table>();
+	stdlib::primitives::init_string_proto(*this, *primitive_protos.string_proto);
+	set_global("String", VYSE_OBJECT(primitive_protos.string_proto));
 }
 
 using OT = ObjType;

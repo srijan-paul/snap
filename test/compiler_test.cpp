@@ -1,4 +1,4 @@
-#include "test_utils.hpp"
+#include "util/test_utils.hpp"
 #include <debug.hpp>
 #include <opcode.hpp>
 
@@ -31,7 +31,7 @@ static void compiler_test() {
 
 	// // variable access
 	print_disassembly("let a = 1;"
-					  "let b = a + 1;");
+										"let b = a + 1;");
 
 	print_disassembly("let s = 'this is a string'");
 

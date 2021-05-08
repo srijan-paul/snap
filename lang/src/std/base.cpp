@@ -3,6 +3,7 @@
 #include <vm.hpp>
 #include "lib_util.hpp"
 
+using namespace vyse::stdlib::util;
 
 /// TODO: benchmark and optimize this.
 vyse::Value vyse::stdlib::print(VM& vm, int argc) {

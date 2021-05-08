@@ -1,6 +1,5 @@
 #pragma once
 #include "compiler.hpp"
-#include "function.hpp"
 #include "gc.hpp"
 #include "table.hpp"
 #include "vm_stack.hpp"
@@ -165,6 +164,19 @@ public:
 	/// reference to it.
 	String& make_string(const char* chars, size_t length);
 
+	/// @brief Makes a string from the provided char buffer.
+	/// @param chars A null terminated char buffer.
+	String& make_string(const char* chars) {
+		return make_string(chars, strlen(chars));
+	}
+
+	/// @brief takes ownership of a string with char buffer 'chrs'
+	/// and length 'len'. Note that `chrs` now belongs to the VM,
+	/// and it may be freed inside this function if an interned copy
+	/// is found. The caller must not use the [chrs] buffer after
+	/// calling this.
+	String& take_string(char* chrs, size_t len);
+
 	/// @brief Triggers a garbage collection cycle, does a
 	/// mark-trace-sweep.
 	/// @return The number of bytes freed.
@@ -206,11 +218,22 @@ public:
 	/// VM's global variables table.
 	void load_stdlib();
 
+	/// @brief loads the prototypes of all
+	/// primitive data types.
+	void load_primitives();
+
 	/// @brief Throws a runtime error by producing a stack trace, then
 	/// calling the `on_error` and shutting down the VM by returning an
 	/// ExitCode::RuntimeError
 	/// @param message The error message.
 	ExitCode runtime_error(std::string const& message);
+
+	// Prototypes for primitive data types.
+	struct PrimitiveProtos {
+		Table* string_proto = nullptr;
+		Table* num_proto = nullptr;
+		Table* bool_proto = nullptr;
+	} primitive_protos;
 
 private:
 	const std::string* m_source;
@@ -256,13 +279,6 @@ private:
 
 	/// @return string[number]
 	String* char_at(const String* string, u64 index);
-
-	/// @brief takes ownership of a string with char buffer 'chrs'
-	/// and length 'len'. Note that `chrs` now belongs to the VM,
-	/// and it may be freed inside this function if an interned copy
-	/// is found. The caller must not use the [chrs] buffer after
-	/// calling this.
-	String& take_string(char* chrs, size_t len);
 
 	/// Load a vyse::Object into the global variable list.
 	/// generally used for loading functions and objects from

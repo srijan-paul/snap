@@ -1,89 +1,12 @@
 #include "assert.hpp"
-#include "test_utils.hpp"
+#include "util/test_utils.hpp"
 #include "value.hpp"
 #include "vm.hpp"
 #include <fstream>
 #include <memory>
-#include <sstream>
 #include <stdlib.h>
 
 using namespace vyse;
-
-void assert_val_eq(Value expected, Value actual, const char* message = "Test failed! ") {
-	if (expected != actual) {
-		fprintf(stderr, "%s: ", message);
-		fprintf(stderr, "Expected value to be ");
-		print_value(expected);
-		fprintf(stderr, " But got ");
-		print_value(actual);
-		abort();
-	}
-}
-
-static void test_return(const std::string&& code, Value expected,
-												const char* message = "Test failed!") {
-	VM vm;
-	vm.load_stdlib();
-	vm.runcode(code);
-	assert_val_eq(expected, vm.return_value, message);
-}
-
-static std::string load_file(const char* filename) {
-	// Currently files can only be read relative to the path of the binary (which is
-	// in `bin/vm_test`).
-	// So to read the file just from it's name, we append the file beginning of the
-	// file path to it.
-	static const char* path_prefix = "../test/test_programs/";
-	std::string filepath{path_prefix};
-	filepath += filename;
-
-	std::ifstream file(filepath);
-
-	if (file) {
-		std::ostringstream stream;
-		stream << file.rdbuf();
-		return stream.str();
-	}
-
-	fprintf(stderr, "Could not open file '%s'", filepath.c_str());
-	abort();
-}
-
-/// Given the name of a test file to run, checks the value returned by that file's evaluation.
-/// @param filename name of the file, must be inside 'test/test_programs/'.
-/// @param expected Expected return value once the file is interpreted.
-/// @param message Message to be displayed on failure.
-static void test_file(const char* filename, Value expected, const char* message = "Failure") {
-	test_return(load_file(filename), expected, message);
-	return;
-}
-
-/// @brief Runs `filename` and asserts the return value as a cstring, comparing
-/// it with `expected`.
-static void test_string_return(const char* filename, const char* expected,
-															 const char* message = "Failed") {
-	std::string code{load_file(filename)};
-	VM vm;
-
-	if (vm.runcode(code) != ExitCode::Success) {
-		std::cout << message << "\n";
-		abort();
-	}
-
-	if (!VYSE_IS_STRING(vm.return_value)) {
-		std::cout << "[ Failed ]" << message << "Expected string but got ";
-		print_value(vm.return_value);
-		std::cout << "\n";
-		abort();
-	}
-
-	if (std::memcmp(VYSE_AS_CSTRING(vm.return_value), expected, strlen(expected)) != 0) {
-		std::cout << message << "[ STRINGS NOT EQUAL ] \n";
-		std::cout << "Expected: '" << expected << "'.\n";
-		std::cout << "Got: '" << VYSE_AS_CSTRING(vm.return_value) << "'\n";
-		abort();
-	}
-}
 
 static void expr_tests() {
 	test_return("return 5 / 2", VYSE_NUM(2.5));
@@ -209,7 +132,6 @@ void string_test() {
 	std::cout << "[String tests passed]\n";
 }
 
-
 void loop_test() {
 	// while loops
 	test_file("loop/while-loop.vy", VYSE_NUM(45), "While loops (sum)");
@@ -228,10 +150,10 @@ void loop_test() {
 	test_file("loop/for/for-rev.vy", VYSE_NUM(166), "for-loop that counts downwards");
 	test_file("loop/for/continue.vy", VYSE_NUM(25), "continue in for-loop");
 	test_file("loop/for/break.vy", VYSE_NUM(28), "break in for-loop");
-	test_file("loop/for/for-mut-counter.vy", VYSE_NUM(45), "for-loop that tries to change the counter inside loop body");
+	test_file("loop/for/for-mut-counter.vy", VYSE_NUM(45),
+						"for-loop that tries to change the counter inside loop body");
 	test_file("loop/for/nest.vy", VYSE_NUM(870), "nested for loops");
 	test_file("loop/for/in-closure.vy", VYSE_NUM(110), "for-loop inside closure.");
-
 }
 
 int main() {

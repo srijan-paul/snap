@@ -1,6 +1,6 @@
 #include "assert.hpp"
 #include "string.hpp"
-#include "test_utils.hpp"
+#include "util/test_utils.hpp"
 #include "value.hpp"
 #include <table.hpp>
 

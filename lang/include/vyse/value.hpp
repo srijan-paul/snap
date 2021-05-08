@@ -96,6 +96,8 @@ bool operator!=(const Value& a, const Value& b);
 // of methods, but once we have NaN tagging, we
 // would still like to have the same procedure
 // signatures used across the codebase.
+const char* vtype_to_string(ValueType tag);
+const char* otype_to_string(ObjType tag);
 std::string value_to_string(Value v);
 char* value_to_cstring(Value v);
 const char* value_type_name(Value v);

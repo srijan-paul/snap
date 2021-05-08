@@ -59,8 +59,7 @@ std::string value_to_string(Value v) {
 		case OT::string: return VYSE_AS_CSTRING(v);
 		case OT::closure:
 			return std::string("[fn ") + static_cast<const Closure*>(obj)->name_cstr() + "]";
-		case OT::c_closure:
-			return  "[ native fn ]";
+		case OT::c_closure: return "[ native fn ]";
 		case OT::codeblock:
 			return std::string("[code ") + static_cast<const CodeBlock*>(obj)->name_cstr() + "]";
 		case OT::upvalue: {
@@ -79,20 +78,36 @@ std::string value_to_string(Value v) {
 	}
 }
 
-const char* value_type_name(Value v) {
-	switch (VYSE_GET_TT(v)) {
+const char* vtype_to_string(VT tag) {
+	switch (tag) {
 	case VT::Number: return "number";
 	case VT::Bool: return "boolean";
-	case VT::Object: {
-		const Obj* obj = VYSE_AS_OBJECT(v);
-		if (VYSE_IS_STRING(v)) return "string";
-		if (obj->tag == OT::c_closure or obj->tag == OT::closure) return "function";
-		VYSE_ASSERT(obj->tag == OT::table, "Impossible type tag.");
-		return "table";
-	}
+	case VT::Object: return "object";
 	case VT::Nil: return "nil";
-	case VT::Undefined: return "empty";
+	case VT::Undefined: return "undefined";
+	default: return "unknown";
 	}
+}
+
+const char* otype_to_string(ObjType tag) {
+	switch (tag) {
+	case OT::string: return "string";
+	case OT::table: return "table";
+	case OT::closure: return "function";
+	case OT::c_closure: return "native function";
+	default: return "unknown";
+	}
+}
+
+const char* value_type_name(Value v) {
+	VT tag = VYSE_GET_TT(v);
+	VYSE_ASSERT(tag >= VT::Number and tag <= VT::Undefined, "Impossible type tag.");
+
+	if (VYSE_IS_OBJECT(v)) {
+		return otype_to_string(VYSE_AS_OBJECT(v)->tag);
+	}
+
+	return vtype_to_string(tag);
 }
 
 bool operator==(const Value& a, const Value& b) {
@@ -114,4 +129,4 @@ bool operator!=(const Value& a, const Value& b) {
 	return !(a == b);
 }
 
-} // namespace vyse 
+} // namespace vyse

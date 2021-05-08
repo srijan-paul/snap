@@ -1,6 +1,6 @@
 #include "assert.hpp"
 #include "function.hpp"
-#include "test_utils.hpp"
+#include "util/test_utils.hpp"
 
 using namespace vyse;
 
