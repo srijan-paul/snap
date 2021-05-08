@@ -24,9 +24,8 @@ public:
 		return m_chars;
 	}
 
-	[[nodiscard]] char at(u64 index) const {
-		VYSE_ASSERT(index >= 0 and index < m_length, "string index out of range.");
-		VYSE_ASSERT(index == size_t(index), "string index not a whole number.");
+	[[nodiscard]] char at(int index) const {
+		VYSE_ASSERT(index >= 0 and size_t(index) < m_length, "string index out of range.");
 		return m_chars[size_t(index)];
 	}
 
