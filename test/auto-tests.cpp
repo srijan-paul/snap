@@ -13,7 +13,7 @@ int main() {
 
 	for (const auto& entry : stdfs::directory_iterator(dir_path)) {
 		if (entry.is_regular_file()) {
-			std::ifstream stream{entry};
+			std::ifstream stream(entry);
 			std::ostringstream ostream;
 			ostream << stream.rdbuf();
 			runcode(ostream.str());

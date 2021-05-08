@@ -20,7 +20,7 @@ public:
 	/// @param len length of the string.
 	explicit String(const char* chrs, size_t len) noexcept;
 
-	inline constexpr const char* c_str() const {
+	[[nodiscard]] inline constexpr const char* c_str() const {
 		return m_chars;
 	}
 
@@ -30,19 +30,19 @@ public:
 		return m_chars[size_t(index)];
 	}
 
-	constexpr size_t len() const {
+	[[nodiscard]] constexpr size_t len() const {
 		return m_length;
 	}
 
-	constexpr size_t hash() const {
+	[[nodiscard]] constexpr size_t hash() const {
 		return m_hash;
 	}
 
-	char operator[](size_t index) const {
+	char operator[](s64 index) const {
 		return at(index);
 	}
 
-	size_t size() const override {
+	[[nodiscard]] size_t size() const override {
 		return m_length * sizeof(char) + sizeof(String);
 	}
 

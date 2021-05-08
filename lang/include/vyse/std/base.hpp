@@ -9,4 +9,4 @@ Value getproto(VM&, int);
 
 Value assert_(VM&, int);
 
-}; // namespace vyse::stdlib
+} // namespace vyse::stdlib
