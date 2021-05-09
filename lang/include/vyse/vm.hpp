@@ -184,7 +184,7 @@ public:
 
 	/// @brief Makes sure there are at least [num_slots] stack slots
 	/// free to be used above the current stack-top.
-	void ensure_slots(size_t num_slots);
+	void ensure_slots(uint num_slots);
 
 	/// @brief turns off the garbage collector.
 	/// GC cycles won't be triggered regardless of

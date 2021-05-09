@@ -1,14 +1,12 @@
-fn bottles() {
-  let total = 99
-  while total > 0 {
-    const word = (total == 1) && " bottle" || " bottles";
-    print(total:to_string() .. word .. " of beer on the wall !")
-    print("Take one down, pass it around!")
+fn bottles(n) {
+  for i = n, 0, -1 {
+    const word = i == 1 && ' bottle ' || ' bottles ';
+    print(i:to_string() .. word ..  ' of beer on the wall.')
+    print('take one down, pass it around.')
     print()
-    total -= 1
   }
 
-  print("No more bottles of beer on the wall!")
+  print('No more bottles of beer on the wall!')
 }
 
-bottles()
+bottles(99)

@@ -12,6 +12,7 @@ constexpr int VersionPatch = 1;
 constexpr const char* VersionCString = "0.0.1";
 
 using u32 = std::uint32_t;
+using uint = std::uint32_t;
 using s32 = std::int32_t;
 using u64 = std::uint64_t;
 using s64 = std::int64_t;
@@ -21,9 +22,9 @@ using u16 = std::uint16_t;
 using std::size_t;
 using number = double;
 
-#define VYSE_DEBUG 
+#define VYSE_DEBUG
 // #define VYSE_DEBUG_RUNTIME		 1
-// #define VYSE_DEBUG_DISASSEMBLY 1 
+#define VYSE_DEBUG_DISASSEMBLY 1
 
 #ifdef VYSE_DEBUG
 

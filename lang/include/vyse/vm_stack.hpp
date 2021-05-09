@@ -48,7 +48,7 @@ private:
 
 	/// @brief Points to the next free slot in the stack.
 	Value* top = values;
-	size_t size = InitialSize;
+	uint size = InitialSize;
 };
 
 } // namespace vyse

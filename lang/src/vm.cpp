@@ -8,6 +8,7 @@
 #include <std/primitives/vy_number.hpp>
 #include <std/primitives/vy_string.hpp>
 #include <vm.hpp>
+#include "util.hpp"
 
 
 #if defined(VYSE_DEBUG_RUNTIME) || defined(VYSE_DEBUG_DISASSEMBLY)
@@ -275,7 +276,7 @@ ExitCode VM::run() {
 		// of a loop's body will change it back to `counter + limit`.
 		// counter = counter - 1;
 		// i = counter;
-		// jump to to coressponding for_loop opcode;
+		// jump to to corresponding for_loop opcode;
 		// make some type checks;
 		case Op::for_prep: {
 			Value& counter = PEEK(3);
@@ -285,6 +286,7 @@ ExitCode VM::run() {
 			CHECK_TYPE(step, VT::Number, "'for' step not a number.");
 			VYSE_SET_NUM(counter, VYSE_AS_NUM(counter) - VYSE_AS_NUM(step));
 			PUSH(counter); // load the user exposed loop counter (i).
+			// jump to the corresponding for_loop instruction.
 			ip += FETCH_SHORT();
 			break;
 		}
@@ -918,14 +920,15 @@ String& VM::make_string(const char* chars, size_t length) {
 	return *string;
 }
 
-void VM::ensure_slots(size_t slots_needed) {
+void VM::ensure_slots(uint slots_needed) {
 	std::ptrdiff_t num_values = m_stack.top - m_stack.values;
-	size_t num_free_slots = m_stack.size - num_values;
+	uint num_free_slots = m_stack.size - num_values;
 
 	// Requested number of slots is already available.
 	if (num_free_slots > slots_needed) return;
 
 	m_stack.size += (slots_needed - num_free_slots) + 1;
+	m_stack.size = pow2ceil(m_stack.size);
 	Value* old_stack = m_stack.values;
 	m_stack.values = static_cast<Value*>(realloc(m_stack.values, m_stack.size * sizeof(Value)));
 

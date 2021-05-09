@@ -1,3 +1,1 @@
-for i = 1, 10 {
-  print ('hii')
-}
+return 43

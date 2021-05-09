@@ -113,10 +113,12 @@ TT Scanner::kw_or_id_type() const {
 Token Scanner::number() {
 	auto type = TT::Integer;
 	while (isdigit(peek())) next();
-	if (match('.')) {
+	if (check('.') and isdigit(peek_next())) {
+		next(); // consume the '.'
 		type = TT::Float;
 		while (isdigit(peek())) next();
 	}
+
 	return make_token(type);
 }
 
@@ -150,7 +152,7 @@ bool Scanner::eof() const noexcept {
 }
 
 bool Scanner::check(char expected) const noexcept {
-	return peek() == expected;
+	return !eof() and peek() == expected;
 }
 
 bool Scanner::match(char expected) {
