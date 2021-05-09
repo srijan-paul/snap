@@ -411,8 +411,8 @@ void Compiler::ret_stmt() {
 	// If the next token marks the start of an expression, then
 	// compile this statement as `return EXPR`, else it's just a `return`.
 	// where a `nil` after the return is implicit.
-	if (peek.is_literal() or check(TT::Id) or peek.is_unary_op()  or
-			check(TT::LParen) or check(TT::Fn) or check(TT::LCurlBrace)) {
+	if (peek.is_literal() or check(TT::Id) or peek.is_unary_op() or check(TT::LParen) or
+			check(TT::Fn) or check(TT::LCurlBrace)) {
 		expr();
 	} else {
 		emit(Op::load_nil);
@@ -572,7 +572,7 @@ ExpKind Compiler::prefix() {
 		}
 	}
 
-	if (peek.is_literal()) {
+	if (!peek.is_literal()) {
 		ERROR("Unexpected '{}'.", peek.raw(*m_source));
 		return ExpKind::literal_value;
 	}
@@ -858,7 +858,7 @@ void Compiler::literal() {
 		emit(Op::load_nil);
 		return;
 	}
-	default: VYSE_UNREACHABLE();
+	default: VYSE_ERROR(kt::format_str("Impossible literal token type {}", int(token.type)).c_str());
 	}
 
 	if (index > MaxLocalVars) {

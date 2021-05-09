@@ -15,7 +15,7 @@ public:
 	VYSE_NO_COPY(GC);
 	VYSE_NO_MOVE(GC);
 
-	static constexpr size_t InitialGCLimit = 1024 * 1024; 
+	static constexpr size_t InitialGCLimit = 1024 * 1024; // in bytes
 
 	GC(VM& vm) : m_vm{&vm} {};
 
@@ -66,4 +66,4 @@ private:
 	std::set<Obj*> m_extra_roots;
 };
 
-} // namespace vyse 
+} // namespace vyse

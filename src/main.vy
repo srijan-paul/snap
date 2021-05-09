@@ -1,9 +1,12 @@
-const t = {}
-assert(!t.x)
+fn bottles() {
+  for total = 99, 1, -1 {
+    const word = (total == 1) && " bottle" || " bottles";
+    print(total:to_string() .. word .. " of beer on the wall !")
+    print("Take one down, pass it around!")
+    print()
+  }
 
-const pt = { x: 1 }
-setproto(t, pt)
-assert(t.x == 1, "setproto builtin fails.")
+  print("No more bottles of beer on the wall!")
+}
 
-assert(getproto(t) == pt, "getproto builtin failse")
-assert(getproto(t).x == pt.x)
+bottles()
