@@ -102,7 +102,14 @@ bool Table::set(Value key, Value value) {
 			entry.hash = hash;
 			// Only increment number of entries
 			// if the slot was free.
-			if (is_free) ++m_num_entries;
+			if (is_free) {
+				++m_num_entries;
+			} else {
+				// If placed the entry in what used to be
+				// a tombstone, then it's no longer dead, so
+				// we decrement the number of tombstones.
+				--m_num_tombstones;
+			}
 			// Even if it was a tombstone,
 			// we still inserted a new key
 			// into the hashtable, so we
@@ -195,7 +202,7 @@ size_t Table::hash_value(Value key) const {
 	case VT::Bool: return VYSE_AS_BOOL(key) ? 7 : 15;
 	case VT::Number: return size_t(VYSE_AS_NUM(key)); // TODO: use a proper numeric hash
 	case VT::Object: return hash_object(VYSE_AS_OBJECT(key));
-	default: VYSE_UNREACHABLE(); 
+	default: VYSE_UNREACHABLE();
 	}
 }
 
@@ -234,4 +241,4 @@ bool operator==(const Table::Entry& a, const Table::Entry& b) {
 	return a.hash == b.hash and a.key == b.key;
 }
 
-} // namespace vyse 
+} // namespace vyse
