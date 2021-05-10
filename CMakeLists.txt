@@ -4,14 +4,19 @@ project(vyse VERSION ${APP_VERSION})
 set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lang/src")
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${SOURCE_DIR}/*.cpp")
 set(INCLUDE_DIR lang/include/vyse)
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Debug)
+endif()
 add_compile_options("-Wall" "-Wpedantic" "-Wextra" "-fexceptions")
+# set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 enable_testing()
 
 function(LINK_VYSE_DEPS EXEC)
     target_link_libraries(${EXEC} ${PROJECT_NAME})
     target_include_directories(${EXEC} PUBLIC ${INCLUDE_DIR})
 endfunction()
-
 
 # static library
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
@@ -20,7 +25,7 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
 # cli app
 set(CLI_NAME "vy")
-add_executable(${CLI_NAME} src/main.cpp)
+add_executable(${CLI_NAME} cli/main.cpp)
 LINK_VYSE_DEPS(${CLI_NAME})
 target_compile_features(${CLI_NAME} PRIVATE cxx_std_17)
 

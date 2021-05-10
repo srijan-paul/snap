@@ -1,14 +1,22 @@
-#include <vy_list.hpp>
 #include <gc.hpp>
+#include <vy_list.hpp>
+
 
 namespace vyse {
+
+List::List(size_t mincap)
+		: Obj(ObjType::list),
+			m_capacity(pow2ceil(mincap + 1)), m_values{(Value*)malloc(sizeof(Value) * m_capacity)} {
+	m_num_entries = mincap;
+	for (uint i = 0; i < m_num_entries; ++i) m_values[i] = VYSE_NIL;
+}
 
 List::~List() {
 	delete[] m_values;
 }
 
 void List::ensure_capacity() {
-  VYSE_ASSERT(m_capacity >= m_num_entries, "Impossible list capacity.");
+	VYSE_ASSERT(m_capacity >= m_num_entries, "Impossible list capacity.");
 	if (m_num_entries + 1 >= m_capacity) {
 		m_capacity *= GrowthFactor;
 		m_values = (Value*)realloc(m_values, m_capacity * sizeof(Value));
@@ -22,26 +30,26 @@ void List::append(Value value) {
 }
 
 Value List::pop() noexcept {
-  if (m_num_entries > 0) {
-    return m_values[--m_num_entries];
-  }
-  return VYSE_NIL;
+	if (m_num_entries > 0) {
+		return m_values[--m_num_entries];
+	}
+	return VYSE_NIL;
 }
 
 Value& List::operator[](size_t index) {
-  VYSE_ASSERT(index < m_num_entries, "List index out of range!");
-  return m_values[index];
+	VYSE_ASSERT(index < m_num_entries, "List index out of range!");
+	return m_values[index];
 }
 
 const Value& List::operator[](size_t index) const {
-  VYSE_ASSERT(index < m_num_entries, "List index out of range!");
-  return m_values[index];
+	VYSE_ASSERT(index < m_num_entries, "List index out of range!");
+	return m_values[index];
 }
 
 void List::trace(GC& gc) noexcept {
-  for (size_t i = 0; i < m_num_entries; ++i) {
-    gc.mark_value(m_values[i]);
-  }
+	for (size_t i = 0; i < m_num_entries; ++i) {
+		gc.mark_value(m_values[i]);
+	}
 }
 
 } // namespace vyse

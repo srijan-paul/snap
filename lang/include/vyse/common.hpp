@@ -24,7 +24,7 @@ using number = double;
 
 #define VYSE_DEBUG
 // #define VYSE_DEBUG_RUNTIME		 1
-#define VYSE_DEBUG_DISASSEMBLY 1
+// #define VYSE_DEBUG_DISASSEMBLY 1
 
 #ifdef VYSE_DEBUG
 
@@ -49,7 +49,7 @@ using number = double;
 #define VYSE_NO_MOVE(class)							 class(class && other) = delete
 #define VYSE_NO_DEFAULT_CONSTRUCT(class) class() = delete
 
-#define VYSE_STRESS_GC 1
+// #define VYSE_STRESS_GC 1
 // #define VYSE_LOG_GC		 1
 
 } // namespace vyse

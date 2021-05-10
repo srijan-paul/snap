@@ -1,4 +1,5 @@
 #pragma once
+#include "util.hpp"
 #include "value.hpp"
 
 namespace vyse {
@@ -9,6 +10,8 @@ public:
 	static constexpr uint GrowthFactor = 2;
 
 	List() : Obj(ObjType::list){};
+	List(size_t mincap);
+		
 	~List();
 
 	/// @brief appends an item to the end of the array.
@@ -28,6 +31,9 @@ public:
 
 	inline size_t cap() const noexcept {
 		return m_capacity;
+	}
+
+	void resize() {
 	}
 
 	virtual size_t size() const noexcept override {

@@ -9,3 +9,13 @@ b:foreach(fn () {
 })
 
 assert(s == '1234567812345678', 'list-foreach and string comparisons')
+
+const arr = List.make(100)
+assert(#arr == 100, "List.make() doesn't work as expected.")
+
+const lst = List.make(20)
+assert(#lst == 20, "List.make() doesn't work.")
+lst:fill(-1)
+lst:foreach(fn(x) {
+  assert(x == -1, "List.fill() doesn't work")
+})

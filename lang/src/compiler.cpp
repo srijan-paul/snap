@@ -413,7 +413,7 @@ void Compiler::ret_stmt() {
 	// compile this statement as `return EXPR`, else it's just a `return`.
 	// where a `nil` after the return is implicit.
 	if (peek.is_literal() or check(TT::Id) or peek.is_unary_op() or check(TT::LParen) or
-			check(TT::Fn) or check(TT::LCurlBrace)) {
+			check(TT::Fn) or check(TT::LCurlBrace) or check(TT::LSqBrace)) {
 		expr();
 	} else {
 		emit(Op::load_nil);
@@ -1189,7 +1189,14 @@ bool Compiler::is_assign_tok(TT type) const noexcept {
 int Compiler::new_variable(const Token& varname, bool is_const) {
 	const char* name = varname.raw_cstr(*m_source);
 	const u32 length = varname.length();
-	return new_variable(name, length, is_const);
+	if (m_symtable.find_in_current_scope(name, length) != -1) {
+		std::string errmsg = kt::format_str("Attempt to redeclare existing variable '{}'.",
+																				std::string_view(name, length));
+		error_at_token(errmsg.c_str(), varname);
+		return -1;
+	}
+
+	return m_symtable.add(name, length, is_const);
 }
 
 int Compiler::new_variable(const char* name, u32 length, bool is_const) {

@@ -43,9 +43,49 @@ Value foreach (VM& vm, int argc) {
 	return VYSE_NIL;
 }
 
+Value make(VM& vm, int argc) {
+	constexpr const char* fname = "make";
+	if (argc == 0) {
+		return VYSE_OBJECT(&vm.make<List>());
+	}
+
+	if (!check_arg_type(vm, 0, ValueType::Number, fname)) {
+		return VYSE_NIL;
+	}
+
+	number n = VYSE_AS_NUM(vm.get_arg(0));
+	if (n < 0) {
+		cfn_error(vm, fname, "List size cannot be negative.");
+		return VYSE_NIL;
+	}
+
+	return VYSE_OBJECT(&vm.make<List>(n));
+}
+
+Value fill(VM& vm, int argc) {
+	constexpr const char* fname = "fill";
+	if (argc != 2) {
+		cfn_error(vm, fname, "expected 2 arguments, list and value.");
+		return VYSE_NIL;
+	}
+
+	if (!check_arg_type(vm, 0, ObjType::list, fname)) return VYSE_NIL;
+	List& list = *VYSE_AS_LIST(vm.get_arg(0));
+	Value value = vm.get_arg(1);
+
+	size_t list_len = list.length();
+	for (uint i = 0; i < list_len; ++i) {
+		list[i] = value; 
+	}
+
+	return VYSE_NIL;
+}
+
 void load_list_proto(VM& vm) {
 	Table& list_proto = *vm.prototypes.list;
 	add_libfn(vm, list_proto, "foreach", foreach);
+	add_libfn(vm, list_proto, "make", make);
+	add_libfn(vm, list_proto, "fill", fill);
 }
 
 } // namespace vyse::stdlib::primitives
