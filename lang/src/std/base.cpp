@@ -4,14 +4,13 @@
 #include <std/base.hpp>
 #include <vm.hpp>
 
-
 using namespace vyse::stdlib::util;
 
 /// TODO: benchmark and optimize this.
 vyse::Value vyse::stdlib::print(VM& vm, int argc) {
 	std::string res = "";
 	for (int i = 0; i < argc; ++i) {
-		res += value_to_string(vm.get_arg(i)) + "\t";
+		res += value_to_string(vm.get_arg(i)) + "  ";
 	}
 
 	res += "\n";
@@ -19,6 +18,19 @@ vyse::Value vyse::stdlib::print(VM& vm, int argc) {
 	vm.print(vm, &vyse_str);
 
 	return VYSE_NIL;
+}
+
+vyse::Value vyse::stdlib::input(VM& vm, int argc) {
+	for (int i = 0; i < argc; ++i) {
+		const Value& v = vm.get_arg(i);
+		std::string s = value_to_string(v);
+		printf("%s\n", s.c_str());
+	}
+
+	if (!vm.read_line) return VYSE_NIL;
+	char* chars = vm.read_line(vm);
+	String* string = &vm.take_string(chars, strlen(chars));
+	return VYSE_OBJECT(string);
 }
 
 vyse::Value vyse::stdlib::setproto(VM& vm, int argc) {
@@ -57,7 +69,7 @@ vyse::Value vyse::stdlib::setproto(VM& vm, int argc) {
 	return vtable;
 }
 
-vyse::Value vyse::stdlib::getproto(VM &vm, int argc) {
+vyse::Value vyse::stdlib::getproto(VM& vm, int argc) {
 	static constexpr const char* fname = "assert";
 
 	if (argc != 1) {

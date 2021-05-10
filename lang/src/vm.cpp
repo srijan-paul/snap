@@ -756,6 +756,7 @@ void VM::load_stdlib() {
 	add_stdlib_object("getproto", &make<CClosure>(stdlib::getproto));
 	add_stdlib_object("byte", &make<CClosure>(stdlib::byte));
 	add_stdlib_object("assert", &make<CClosure>(stdlib::assert_));
+	add_stdlib_object("input", &make<CClosure>(stdlib::input));
 
 	load_primitives();
 }
@@ -880,7 +881,8 @@ void VM::push_callframe(Obj* callable, int argc) {
 	}
 }
 
-void VM::pop_callframe() {
+void VM::pop_callframe() noexcept {
+	VYSE_ASSERT(m_frame_count > 1, "Attempt to pop base callframe outside of VM loop.");
 	m_frame_count--;
 
 	/// If we are in the top level script,
@@ -1062,6 +1064,25 @@ ExitCode VM::runtime_error(const std::string& message) {
 // print it to the stderr.
 void default_error_fn([[maybe_unused]] const VM& vm, std::string& err_msg) {
 	fprintf(stderr, "%s\n", err_msg.c_str());
+}
+
+char* default_readline([[maybe_unused]] const VM& vm) {
+	size_t buf_size = 8;
+	char* buf = (char*)malloc(sizeof(char) * buf_size);
+
+	char c;
+	size_t nchars = 0;
+	while ((c = getc(stdin)) and c != EOF and c != '\n' and c) {
+		if (nchars >= buf_size) {
+			buf_size *= 2;
+			buf = (char*)realloc(buf, sizeof(char) * buf_size);
+		}
+		buf[nchars] = c;
+		++nchars;
+	}
+	buf = (char*)realloc(buf, sizeof(char) * (nchars + 1));
+	buf[nchars] = '\0';
+	return buf;
 }
 
 /// TODO: The user might need some objects even after the VM

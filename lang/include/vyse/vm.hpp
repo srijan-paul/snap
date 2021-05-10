@@ -14,6 +14,7 @@ enum class ExitCode : u8 {
 };
 
 using PrintFn = std::function<void(const VM& vm, const String* string)>;
+using ReadLineFn = std::function<char*(const VM& vm)>;
 using ErrorFn = std::function<void(const VM& vm, std::string& err_message)>;
 
 inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string) {
@@ -22,6 +23,7 @@ inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string
 }
 
 void default_error_fn(const VM& vm, std::string& err_msg);
+char* default_readline(const VM& vm);
 
 class VM {
 	friend GC;
@@ -52,6 +54,9 @@ public:
 	/// in the VM. It takes a reference to the VM, and the error
 	/// message as a c string.
 	ErrorFn on_error = default_error_fn;
+
+	/// The function to be used by the VM when reading a line from stdin.
+	ReadLineFn read_line = default_readline;
 
 	/// Maximum size of the call stack. If the call stack
 	/// size exceeds this, then there is a stack overflow.
@@ -346,7 +351,7 @@ private:
 	/// @brief Pops the currently active CallFrame off of the
 	/// call stack, and restores the state of the previous
 	/// CallFrame.
-	void pop_callframe();
+	void pop_callframe() noexcept;
 
 	/// Wrap a value present at stack slot [slot]
 	/// inside an Upvalue object and add it to the

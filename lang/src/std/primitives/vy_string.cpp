@@ -1,5 +1,6 @@
 #include "../../str_format.hpp"
 #include "../lib_util.hpp"
+#include <cstdlib>
 #include <std/primitives/vy_string.hpp>
 #include <vm.hpp>
 
@@ -97,10 +98,25 @@ Value code_at(VM& vm, int argc) {
 	return VYSE_NUM(c);
 }
 
+/// TODO: Handle different bases from 2 to 64
+Value to_number(VM& vm, int argc) {
+	constexpr const char* fname = "to_num";
+	if (argc != 1) {
+		cfn_error(vm, fname, "Expected one argument of type string");
+		return VYSE_NIL;
+	}
+
+	if (!check_arg_type(vm, 0, ObjType::string, fname))	 return VYSE_NIL;
+	const String* s = VYSE_AS_STRING(vm.get_arg(0));
+	number num  = std::stod(s->c_str());
+	return VYSE_NUM(num);
+}
+
 void load_string_proto(VM& vm) {
 	Table& str_proto = *vm.prototypes.string;
 	add_libfn(vm, str_proto, "substr", substr);
 	add_libfn(vm, str_proto, "code_at", code_at);
+	add_libfn(vm, str_proto, "to_num", to_number);
 }
 
 } // namespace vyse::stdlib::primitives
