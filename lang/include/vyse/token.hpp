@@ -67,6 +67,8 @@ enum class TokenType {
 	BitXor,		 // ^
 	BitNot,		 // ~
 
+	Append,    // <<<
+
 	// Punctuation
 	Semi,				// ;
 	Colon,			// :

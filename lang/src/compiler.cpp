@@ -1,3 +1,4 @@
+#include "common.hpp"
 #include "debug.hpp"
 #include "str_format.hpp"
 #include <compiler.hpp>
@@ -466,9 +467,10 @@ void Compiler::expr_stmt() {
 // LHS               := ID | (SUFFIXED_EXP ASSIGNABLE_SUFFIX)
 // SUFFIXED_EXP      := (PREFIX | SUFFIXED_EXP) SUFFIX
 // PREFIX            := (ID | STRING | NUMBER | BOOLEAN)
-// SUFFIX            := ASSIGNABLE_SUFFIX | '('ARGS')' | METHOD_CALL
+// SUFFIX            := ASSIGNABLE_SUFFIX | '('ARGS')' | METHOD_CALL | APPEND
 // ASSIGNABLE_SUFFIX := '[' EXPRESSION ']' | '.'ID
 // METHOD_CALL       := ':' ID '(' ARGS ')'
+// APPEND 					 := '<<<' EXPR_OR
 // ASSIGN_TOK        := '=' | '+=' | '-=' | '*=' | '%=' | '/=' | '//='
 //
 // It may be noticed that parsing an assignment when the LHS can be an arbitrarily
@@ -536,8 +538,18 @@ void Compiler::complete_expr_stmt(ExpKind prefix_type) {
 			break;
 		}
 
+		/// Appending to an array is also allowed
+		/// in a statement context.
+		case TT::Append: {
+			advance(); // eat the '<<<'
+			logic_or();
+			emit(Op::list_append);
+			exp_kind = ExpKind::append;
+			break;
+		}
+
 		default: {
-			if (exp_kind == ExpKind::call) return;
+			if (exp_kind == ExpKind::call or exp_kind == ExpKind::append) return;
 			// If the expression type that was compiled last is not a
 			// method or closure call, and we haven't found
 			// a proper LHS for assignment yet, then this is
@@ -587,7 +599,15 @@ ExpKind Compiler::prefix() {
 }
 
 void Compiler::expr() {
+	append();
+}
+
+void Compiler::append() {
 	logic_or();
+	while (match(TT::Append)) {
+		logic_or();
+		emit(Op::list_append);
+	}
 }
 
 void Compiler::logic_or() {
@@ -744,6 +764,8 @@ void Compiler::primary() {
 		variable(false);
 	} else if (match(TT::LCurlBrace)) {
 		table();
+	} else if (match(TT::LSqBrace)) {
+		array();
 	} else {
 		ERROR("Unexpected '{}'.", peek.raw(*m_source));
 		advance();
@@ -787,6 +809,18 @@ void Compiler::table() {
 	}
 
 	expect(TT::RCurlBrace, "Expected '}' to close table or ',' to separate entry.");
+}
+
+void Compiler::array() {
+	emit(Op::new_list);
+	if (match(TT::RSqBrace)) return; // empty array.
+	do {
+		expr();
+		emit(Op::list_append);
+		if (check(TT::RSqBrace)) break;
+		expect(TT::Comma, "Expected a ',' to separate array entry");
+	} while (!eof());
+	expect(TT::RSqBrace, "Expected a ']' to close array or ',' to separate entry.");
 }
 
 void Compiler::variable(bool can_assign) {

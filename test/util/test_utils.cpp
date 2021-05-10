@@ -56,6 +56,8 @@ void print_ttype(vyse::TokenType type) {
 	  "BitXor",
 	  "BitNot",
 
+		"Append",
+
 		"Semi",
 	  "Colon",
 	  "Comma",

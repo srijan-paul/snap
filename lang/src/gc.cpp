@@ -3,7 +3,7 @@
 
 namespace vyse {
 
-void GC::mark_value(Value v) {
+void GC::mark_value(Value& v) {
 	if (VYSE_IS_OBJECT(v)) mark_object(VYSE_AS_OBJECT(v));
 }
 

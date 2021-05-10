@@ -43,7 +43,11 @@ Token Scanner::next_token() noexcept {
 
 	case '<':
 		if (match('=')) return make_token(TT::LtEq);
-		return token_if_match('<', TT::BitLShift, TT::Lt);
+		if (match('<')) {
+			return token_if_match('<', TT::Append, TT::BitLShift);
+		} else {
+			return make_token(TT::Lt);
+		}
 
 	case '&': return token_if_match('&', TT::And, TT::BitAnd);
 	case '|': return token_if_match('|', TT::Or, TT::BitOr);

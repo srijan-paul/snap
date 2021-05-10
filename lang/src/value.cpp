@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstdio>
 #include <vm.hpp>
+#include <vy_list.hpp>
 
 #define CONST_CAST(typ, val) (static_cast<const typ*>(val))
 
@@ -79,6 +80,10 @@ std::string value_to_string(Value v) {
 			Table* tbl = VYSE_AS_TABLE(v);
 			return "[table " + std::to_string((size_t)tbl) + "]";
 		}
+		case OT::list: {
+			List* list = VYSE_AS_LIST(v);
+			return "[list " + std::to_string((size_t)list) + "]";
+		}
 
 		default: return "[ vyse object ]";
 		}
@@ -104,6 +109,7 @@ const char* otype_to_string(ObjType tag) {
 	case OT::table: return "table";
 	case OT::closure: return "function";
 	case OT::c_closure: return "native function";
+	case OT::list: return "list";
 	default: return "unknown";
 	}
 }

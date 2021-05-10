@@ -25,7 +25,7 @@ public:
 
 	/// @brief If `v` is an object, then marks it as 'alive', preventing
 	/// it from being garbage collected.
-	void mark_value(Value v);
+	void mark_value(Value& v);
 
 	/// @brief marks an object as 'alive', turning it gray.
 	void mark_object(Obj* o);

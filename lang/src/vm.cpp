@@ -1,6 +1,7 @@
 #include "common.hpp"
 #include "std/vystrlib.hpp"
 #include "str_format.hpp"
+#include "util.hpp"
 #include "value.hpp"
 #include <cmath>
 #include <cstddef>
@@ -8,8 +9,7 @@
 #include <std/primitives/vy_number.hpp>
 #include <std/primitives/vy_string.hpp>
 #include <vm.hpp>
-#include "util.hpp"
-
+#include <vy_list.hpp>
 
 #if defined(VYSE_DEBUG_RUNTIME) || defined(VYSE_DEBUG_DISASSEMBLY)
 #include <cstdio>
@@ -217,7 +217,9 @@ ExitCode VM::run() {
 
 		case Op::len: {
 			Value v = POP();
-			if (VYSE_IS_TABLE(v)) {
+			if (VYSE_IS_LIST(v)) {
+				PUSH(VYSE_NUM(VYSE_AS_LIST(v)->length()));
+			} else if (VYSE_IS_TABLE(v)) {
 				PUSH(VYSE_NUM(VYSE_AS_TABLE(v)->length()));
 			} else if (VYSE_IS_STRING(v)) {
 				PUSH(VYSE_NUM(VYSE_AS_STRING(v)->m_length));
@@ -392,6 +394,22 @@ ExitCode VM::run() {
 			break;
 		}
 
+		case Op::new_list: {
+			PUSH(VYSE_OBJECT(&make<List>()));
+			break;
+		}
+
+		case Op::list_append: {
+			Value& vlist = PEEK(2);
+			if (VYSE_IS_LIST(vlist)) {
+				VYSE_AS_LIST(vlist)->append(POP());
+			} else {
+				return ERROR("Attempt to append to a {} value. (Can only append to lists)",
+										 value_type_name(vlist));
+			}
+			break;
+		}
+
 		case Op::new_table: {
 			PUSH(VYSE_OBJECT(&make<Table>()));
 			break;
@@ -406,14 +424,27 @@ ExitCode VM::run() {
 			break;
 		}
 
+		/// TODO: refactor out to a member function.
 		// table[key] = value
 		case Op::index_set: {
 			Value value = POP();
 			Value key = POP();
-			if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
 
 			Value& tvalue = PEEK(1);
-			if (VYSE_IS_TABLE(tvalue)) {
+			if (VYSE_IS_LIST(tvalue)) {
+				List& list = *VYSE_AS_LIST(tvalue);
+				if (VYSE_IS_NUM(key)) {
+					number index = VYSE_AS_NUM(key);
+					if (index < 0 or index >= list.length()) {
+						return ERROR("List index out of bounds ({}).", index);
+					}
+					list[index] = value;
+					m_stack.top[-1] = value; // assignment returns it's RHS.
+				} else {
+					return ERROR("List index not a number.");
+				}
+			} else if (VYSE_IS_TABLE(tvalue)) {
+				if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
 				VYSE_AS_TABLE(tvalue)->set(key, value);
 				m_stack.top[-1] = value; // assignment returns it's RHS.
 			} else {
@@ -466,7 +497,16 @@ ExitCode VM::run() {
 			Value key = POP();
 			Value& tvalue = PEEK(1);
 
-			if (VYSE_IS_TABLE(tvalue)) {
+			if (VYSE_IS_LIST(tvalue)) {
+				List& list = *VYSE_AS_LIST(tvalue);
+				if (VYSE_IS_NUM(key)) {
+					number index = VYSE_AS_NUM(key);
+					if (index < 0 or index >= list.length()) return ERROR("List index out of bounds.");
+					tvalue = list[index];
+				} else {
+					return ERROR("List index not a number.");
+				}
+			} else if (VYSE_IS_TABLE(tvalue)) {
 				tvalue = VYSE_AS_TABLE(tvalue)->get(key);
 			} else if (VYSE_IS_STRING(tvalue)) {
 				CHECK_TYPE(key, VT::Number, "string index must be a number (got %s)", VYSE_TYPE_CSTR(key));
@@ -482,7 +522,7 @@ ExitCode VM::run() {
 			break;
 		}
 
-		// table_or_array[key]
+		// table[key]
 		case Op::index_no_pop: {
 			Value& vtable = PEEK(2);
 			const Value& key = PEEK(1);
@@ -837,8 +877,11 @@ bool VM::callfunc(Closure* func, int argc) {
 	// for this function call.
 	ensure_slots(func->m_codeblock->stack_size());
 
-	// extra arguments are ignored and
-	// arguments that aren't provded are replaced with nil.
+	/// extra arguments are ignored and
+	/// arguments that aren't provded are replaced with nil.
+	/// TODO: avoid this by either intializing all stack slots
+	/// to zero or by not allowing calls with incorrect argument
+	/// count. (Make an except for varargs.)
 	if (extra < 0) {
 		while (extra < 0) {
 			PUSH(VYSE_NIL);
@@ -869,22 +912,9 @@ bool VM::call_cclosure(CClosure* cclosure, int argc) {
 	return !m_has_error;
 }
 
-Value VM::index_primitive(const Value& value, const Value& key) {
-	switch (VYSE_GET_TT(value)) {
-	case VT::Bool: return primitive_protos.boolean->get(key);
-	case VT::Number: return primitive_protos.number->get(key);
-	default: {
-		if (VYSE_IS_STRING(value)) {
-			return primitive_protos.string->get(key);
-		}
-		return VYSE_NIL;
-	}
-	}
-}
-
 // String operation helpers.
 
-String* VM::char_at(const String* string, u64 index) {
+String* VM::char_at(const String* string, uint index) {
 	char* charbuf = new char[2]{string->at(index), '\0'};
 	return &take_string(charbuf, 1);
 }

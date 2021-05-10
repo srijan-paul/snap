@@ -290,15 +290,28 @@ private:
 
 	std::unordered_map<String*, Value> m_global_vars;
 
-	/// @brief 
-	Value index_primitive(const Value& value, const Value& key);
+	/// @brief return the `table[key]` where table is the prototype
+	/// of [value].
+	inline Value index_primitive(const Value& value, const Value& key) noexcept {
+		switch (VYSE_GET_TT(value)) {
+		case ValueType::Bool: return primitive_protos.boolean->get(key);
+		case ValueType::Number: return primitive_protos.number->get(key);
+		default: {
+			if (VYSE_IS_STRING(value)) {
+				return primitive_protos.string->get(key);
+			}
+			return VYSE_NIL;
+		}
+		}
+	}
 
-	/// @brief concatenates two strings. Might intern the resulting
+	/// @brief concatenates two strings. Will intern the resulting
 	/// string if it isn't already interned.
 	Value concatenate(const String* left, const String* right);
 
-	/// @return string[number]
-	String* char_at(const String* string, u64 index);
+	/// @return return the [index]th character in a string.
+	/// String characters are 0 indexed. So 'abc'[0] is a.
+	String* char_at(const String* string, uint index);
 
 	/// Load a vyse::Object into the global variable list.
 	/// generally used for loading functions and objects from

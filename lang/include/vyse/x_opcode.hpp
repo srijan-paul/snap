@@ -53,6 +53,13 @@ OP(lt, 0, -1),
 OP(gte, 0, -1),
 OP(lte, 0, -1),
 
+/// Insert the value at PEEK(1) into the array PEEK(2)
+/// and pop top
+/// el = POP()
+/// arr = PEEK(1) 
+/// arr:push(el)
+OP(list_append, 0, -1),
+
 // unary ops
 OP(negate, 0, 0),
 OP(len, 0, 0),
@@ -67,6 +74,7 @@ OP(return_val, 0, 0), /* special stack effect */
 
 // table indexing
 OP(new_table, 0, 1),
+OP(new_list, 0, 1),
 OP(index_set, 0, -2),
 OP(table_add_field, 0, -2),
 OP(index, 0, -1),

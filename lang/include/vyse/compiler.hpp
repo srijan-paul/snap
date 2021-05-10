@@ -67,6 +67,7 @@ enum class ExpKind {
 	prefix,
 	call,
 	index,
+	append,
 	member_access,
 	none,
 };
@@ -222,11 +223,13 @@ private:
 
 	void expr();
 
+	void append(); // <<<
+
 	void logic_or();	// || or
 	void logic_and(); // && and
 
 	void bit_or();	// |
-	void bit_xor();	// ^
+	void bit_xor(); // ^
 	void bit_and(); // &
 
 	void equality();	 // == !=
@@ -235,7 +238,7 @@ private:
 
 	void sum();					// + - ..
 	void mult();				// * / %
-	void exp(); 				// **
+	void exp();					// **
 	void unary();				// - + ! not
 	void atomic();			// (ID|'(' EXPR ')' ) SUFFIX*
 	void suffix_expr(); // '['EXPR']' | '.'ID | '('ARGS')' | :ID'('')'
@@ -252,6 +255,10 @@ private:
 	/// @brief compiles a table, assuming the opening '{' has been
 	/// consumed.
 	void table();
+
+	/// @brief compiles an array, asuming the opening '[' has been
+	/// consumed.
+	void array();
 
 	/// @brief Compiles a variable assignment RHS, assumes the
 	/// the very next token is an assignment or compound assign token.

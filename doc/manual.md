@@ -43,6 +43,8 @@ Vyse supports the following operators, from highest to lowest precedence:
 +----------+-------------------------------+---------------+
 | ||       | Logic-or                      | Left-to-right |
 +----------+-------------------------------+---------------+
+| <<<      | Append                        | Left-to-right |
++----------+-------------------------------+---------------+
 | ?:       | Ternary Operator (misfix)     | Right-to-left |
 +----------+-------------------------------+---------------+
 | =        | Assignment and compound       | Right-to-left |
@@ -57,11 +59,10 @@ Vyse supports the following operators, from highest to lowest precedence:
 Variables behave very similar to javascript. Can be declared with `let` and `const`,
 and can hold values of any type.
 
-```js
-let mynum = 123; // mutable variables declared with 'let'
-mynum = 456; // assignment with `=`.
-
-const fib_base = 1; // variables declared with `const` cannot be mutated
+```lua
+let mynum = 123; -- mutable declaration is done with 'let'
+mynum = 456; -- assignment with '='
+const my_other_num = 1; -- variables declared with `const` cannot be reassigned to.
 ```
 
 ## Control Flow.
@@ -74,7 +75,7 @@ If statements are very straightforward:
 ```lua
 if condition1 {
   print("1")
-} elif condition2 {
+} else if condition2 {
   print("2")
 } else {
   print("3")
@@ -86,14 +87,14 @@ general for loops look like this:
 
 ```lua
 for i = 1, 10 {
-  print("i = " .. i)
+  print("i = ", i)
 }
 ```
 
 You can compare this loop with the following C code that does the very same
 thing:
 
-```c
+```cpp
 for (int i = 0; i < 10; i++) {
   printf("i = %d\n", i);
 }
@@ -146,11 +147,13 @@ fn fib(x) {
 Alternatively, once can declare them like variables using `let` or `const`
 keywords.
 
-```js
-let greet = fn(name) {
-  return "Hello !" .. name; // strings can be concatenated with the `..` operator
+```rs
+let greet = fn (name) {
+  return "Hello !" .. name; 
 }
 ```
+
+The `..` operator is used to concatenate strings.
 
 All functions are first class values in Vyse
 This means functions can be passed around and used just like
@@ -168,8 +171,10 @@ fn make_greeter(name) {
 }
 
 const bob_greeter = make_greeter("Bob");
-bob_greeter(); // Hello, Bob. Good morning!
+bob_greeter(); 
 ```
+
+Output: `Hello, Bob. Good morning!`
 
 ## On extra prameters.
 
@@ -182,14 +187,14 @@ than mentioned in the definition.
 
 For example:
 
-```rs
+```lua
 fn log(x) {
   print(x)
 }
 
-log(10); // 10
-log(); // nil
-log(5, 10); // 5
+log(10); -- 10
+log(); -- nil
+log(5, 10); -- 5
 ```
 
 ## Rest parameter.
@@ -205,7 +210,13 @@ fn log(...xs) {
   }
 }
 
-log(1, 2, 3) // 1, 2, 3
+log(1, 2, 3) 
+```
+Output:
+```
+1
+2
+3
 ```
 
 ## Objects.
@@ -236,15 +247,12 @@ Tom[my_obj] = 123;
 
 print(Tom[my_obj]); // 123
 ```
-
-To remove a value from a table, use the `delete` keyword.
-Alternatively, set the value of the key you want to delete to `nil`.
-
-```js
-delete Tom my_obj // or delete(Tom, my_obj)
-print(Tom[my_obj]) // nil
-
-Tom.age = nil // alternative to delete
+To remove an key value from a table, simply set
+it's value to `nil`.
+```lua
+print(Tom.age) -- 19
+Tom.age = nil -- delete key 'age'
+print(Tom.age) -- nil
 ```
 
 ### Method calls.
@@ -275,13 +283,13 @@ exactly identical to saying `Cat.meow(Cat)`.
 An object can have parent objects, when a certain property is not found
 in an object itself, the parent is queried for the property.
 
-```js
+```lua
 const t_parent = { a: 1, b: 2 };
 const t_child = { a: 3 };
 
-print(t_child.a, t_child.b); // 3, nil
-setproto(t_child, t_parent); // set t_parent as t_child's child
-print(t_child.a, t_child.b); // 3, 2
+print(t_child.a, t_child.b); -- 3, nil
+setproto(t_child, t_parent); -- set t_child's prototype to t_parent
+print(t_child.a, t_child.b); -- 3, 2
 ```
 
 This design is inspired by Lua and can be used to simulate some OOP features,
@@ -304,7 +312,12 @@ const Point = {
 const a = Point:init(10, 10)
 const b = Point:init(3, 4)
 
-let c = a + b // ERROR: Cannot use operator '+' on types 'object' and 'object'.
+let c = a + b 
+```
+
+Upon running the above code, we get:
+```
+ERROR: cannot use operator '+' on operands of type 'table' and 'table'.
 ```
 
 The above code will throw an error since we can't add two tables.
@@ -315,11 +328,11 @@ fn Point.__add(a, b) {
   return Point:init(a.x + b.x, a.y + b.y);
 }
 
-// and now if we try again:
-
 const c = a + b;
-print(c.x, c.y) // 13, 14
+print(c.x, c.y)
 ```
+
+This time, the code successfully outputs `13, 14`.
 
 A table representing all the overloadable operators
 and the method names is listed below for reference:
