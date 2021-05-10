@@ -111,9 +111,7 @@ public:
 	}
 
 	bool init();
-	bool call(Value value, u8 argc);
-	bool callfunc(Closure* func, int argc);
-	bool call_cclosure(CClosure* cclosure, int argc);
+
 
 	ExitCode runcode(const std::string& code);
 	ExitCode runfile(const std::string& filepath);
@@ -220,6 +218,13 @@ public:
 		return m_gc.bytes_allocated;
 	}
 
+	/// @brief calls a callable object that is present at a depth
+	/// of [argc] - 1 in the stack, followed by argc arguments.
+	/// @param argc number of a arguments.
+	/// @return true if the function call was sucessfull, false if it
+	///	resulted in an error.
+	bool call(int argc);
+
 	Value get_global(String* name) const;
 	Value get_global(const char* name);
 
@@ -245,7 +250,8 @@ public:
 		Table* string = nullptr;
 		Table* number = nullptr;
 		Table* boolean = nullptr;
-	} primitive_protos;
+		Table* list = nullptr;
+	} prototypes;
 
 private:
 	const std::string* m_source;
@@ -290,18 +296,31 @@ private:
 
 	std::unordered_map<String*, Value> m_global_vars;
 
+
+	/// @brief call any callable value from within the VM.
+	/// Note that this is only used to call instructions from
+	/// inside a vyse script. To call anything from a C/C++
+	/// program, the call method is used instead.
+	bool op_call(Value value, u8 argc);
+	bool call_closure(Closure* func, int argc);
+	bool call_cclosure(CClosure* cclosure, int argc);
+
 	/// @brief return the `table[key]` where table is the prototype
 	/// of [value].
-	inline Value index_primitive(const Value& value, const Value& key) noexcept {
+	inline Value index_value(const Value& value, const Value& key) noexcept {
 		switch (VYSE_GET_TT(value)) {
-		case ValueType::Bool: return primitive_protos.boolean->get(key);
-		case ValueType::Number: return primitive_protos.number->get(key);
-		default: {
-			if (VYSE_IS_STRING(value)) {
-				return primitive_protos.string->get(key);
+		case ValueType::Bool: return prototypes.boolean->get(key);
+		case ValueType::Number: return prototypes.number->get(key);
+		case ValueType::Object: {
+			const Obj* o = VYSE_AS_OBJECT(value);
+			switch (o->tag) {
+			case ObjType::string: return prototypes.string->get(key);
+			case ObjType::list: return prototypes.list->get(key);
+			case ObjType::table: return static_cast<const Table*>(o)->get(key);
+			default: return VYSE_NIL;
 			}
-			return VYSE_NIL;
 		}
+		default: return VYSE_NIL;
 		}
 	}
 

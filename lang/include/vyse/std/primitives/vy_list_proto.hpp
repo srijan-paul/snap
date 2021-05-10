@@ -3,7 +3,7 @@
 
 namespace vyse::stdlib::primitives {
 
-void load_list_proto();
+void load_list_proto(VM& vm);
 
 Value foreach (VM&, int);
 Value slice(VM&, int);

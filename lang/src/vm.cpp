@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include "std/primitives/vy_list_proto.hpp"
 #include "std/vystrlib.hpp"
 #include "str_format.hpp"
 #include "util.hpp"
@@ -424,8 +425,7 @@ ExitCode VM::run() {
 			break;
 		}
 
-		/// TODO: refactor out to a member function.
-		// table[key] = value
+		// table_or_list[key] = value
 		case Op::index_set: {
 			Value value = POP();
 			Value key = POP();
@@ -433,16 +433,13 @@ ExitCode VM::run() {
 			Value& tvalue = PEEK(1);
 			if (VYSE_IS_LIST(tvalue)) {
 				List& list = *VYSE_AS_LIST(tvalue);
-				if (VYSE_IS_NUM(key)) {
-					number index = VYSE_AS_NUM(key);
-					if (index < 0 or index >= list.length()) {
-						return ERROR("List index out of bounds ({}).", index);
-					}
-					list[index] = value;
-					m_stack.top[-1] = value; // assignment returns it's RHS.
-				} else {
-					return ERROR("List index not a number.");
+				CHECK_TYPE(key, VT::Number, "List index not a number.");
+				number index = VYSE_AS_NUM(key);
+				if (index < 0 or index >= list.length()) {
+					return ERROR("List index out of bounds (index: {}, length: {}).", index, list.length());
 				}
+				list[index] = value;
+				m_stack.top[-1] = value; // assignment returns it's RHS.
 			} else if (VYSE_IS_TABLE(tvalue)) {
 				if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
 				VYSE_AS_TABLE(tvalue)->set(key, value);
@@ -497,25 +494,29 @@ ExitCode VM::run() {
 			Value key = POP();
 			Value& tvalue = PEEK(1);
 
-			if (VYSE_IS_LIST(tvalue)) {
-				List& list = *VYSE_AS_LIST(tvalue);
-				if (VYSE_IS_NUM(key)) {
+			if (VYSE_IS_OBJECT(tvalue)) {
+				Obj* object = VYSE_AS_OBJECT(tvalue);
+				if (object->tag == OT::list) {
+					List& list = *static_cast<List*>(object);
+					CHECK_TYPE(key, VT::Number, "List index not a number.");
 					number index = VYSE_AS_NUM(key);
-					if (index < 0 or index >= list.length()) return ERROR("List index out of bounds.");
+					if (index < 0 or index >= list.length()) {
+						return ERROR("List index out of bounds (index: {}, length: {}).", index, list.length());
+					}
 					tvalue = list[index];
-				} else {
-					return ERROR("List index not a number.");
+					break;
+				} else if (object->tag == OT::table) {
+					tvalue = VYSE_AS_TABLE(tvalue)->get(key);
+				} else if (object->tag == OT::string) {
+					CHECK_TYPE(key, VT::Number, "string index must be a number (got {})",
+										 value_type_name(key));
+					const String* str = VYSE_AS_STRING(tvalue);
+					const uint index = VYSE_AS_NUM(key);
+					if (index < 0 or index >= str->m_length) {
+						return ERROR("string index out of range.");
+					}
+					VYSE_SET_OBJECT(tvalue, char_at(str, index));
 				}
-			} else if (VYSE_IS_TABLE(tvalue)) {
-				tvalue = VYSE_AS_TABLE(tvalue)->get(key);
-			} else if (VYSE_IS_STRING(tvalue)) {
-				CHECK_TYPE(key, VT::Number, "string index must be a number (got %s)", VYSE_TYPE_CSTR(key));
-				const String* str = VYSE_AS_STRING(tvalue);
-				const u64 index = VYSE_AS_NUM(key);
-				if (index < 0 or index >= str->m_length) {
-					return ERROR("string index out of range.");
-				}
-				VYSE_SET_OBJECT(tvalue, char_at(str, index));
 			} else {
 				return INDEX_ERROR(tvalue);
 			}
@@ -553,7 +554,7 @@ ExitCode VM::run() {
 			if (VYSE_IS_TABLE(vtable)) {
 				m_stack.top[-1] = VYSE_AS_TABLE(vtable)->get(vkey);
 			} else {
-				m_stack.top[-1] = index_primitive(vtable, vkey);
+				m_stack.top[-1] = index_value(vtable, vkey);
 			}
 			PUSH(vtable);
 
@@ -563,7 +564,7 @@ ExitCode VM::run() {
 		case Op::call_func: {
 			u8 argc = NEXT_BYTE();
 			Value value = PEEK(argc - 1);
-			if (!call(value, argc)) return ExitCode::RuntimeError;
+			if (!op_call(value, argc)) return ExitCode::RuntimeError;
 			break;
 		}
 
@@ -582,9 +583,15 @@ ExitCode VM::run() {
 			}
 
 			m_current_frame = &m_frames[m_frame_count - 1];
+
+			// returning control from a Vyse function to a
+			// C function.
+			if (m_current_frame->func->tag == OT::c_closure) {
+				return ExitCode::Success;
+			}
+
 			m_current_block = &static_cast<Closure*>(m_current_frame->func)->m_codeblock->block();
 			ip = m_current_frame->ip;
-
 			break;
 		}
 
@@ -717,7 +724,7 @@ bool VM::init() {
 	gc_unprotect(code);
 
 	PUSH(VYSE_OBJECT(func));
-	callfunc(func, 0);
+	call_closure(func, 0);
 
 #ifdef VYSE_DEBUG_DISASSEMBLY
 	disassemble_block(func->name()->c_str(), *m_current_block);
@@ -754,17 +761,24 @@ void VM::load_stdlib() {
 }
 
 void VM::load_primitives() {
-	primitive_protos.string = &make<Table>();
-	set_global("String", VYSE_OBJECT(primitive_protos.string));
-
-	primitive_protos.number = &make<Table>();
-	set_global("Number", VYSE_OBJECT(primitive_protos.number));
-
-	primitive_protos.boolean = &make<Table>();
-	set_global("Bool", VYSE_OBJECT(primitive_protos.boolean));
-
+	// load string prototype.
+	prototypes.string = &make<Table>();
+	set_global("String", VYSE_OBJECT(prototypes.string));
 	stdlib::primitives::load_string_proto(*this);
+
+	/// load number prototype.
+	prototypes.number = &make<Table>();
+	set_global("Number", VYSE_OBJECT(prototypes.number));
 	stdlib::primitives::load_num_proto(*this);
+
+	/// load boolean prototype.
+	prototypes.boolean = &make<Table>();
+	set_global("Bool", VYSE_OBJECT(prototypes.boolean));
+
+	/// load list prototype.
+	prototypes.list = &make<Table>();
+	set_global("List", VYSE_OBJECT(prototypes.list));
+	stdlib::primitives::load_list_proto(*this);
 }
 
 using OT = ObjType;
@@ -815,12 +829,28 @@ void VM::close_upvalues_upto(Value* last) {
 	}
 }
 
-bool VM::call(Value value, u8 argc) {
-	if (!VYSE_CHECK_TT(value, VT::Object))
+bool VM::call(int argc) {
+	VYSE_ASSERT(argc < (m_stack.top - m_stack.values), "Invalid stack state or incorrect arg count.");
+
+	Value value = m_stack.peek(argc + 1);
+	bool ok = op_call(value, argc);
+
+	// if the called object was a CClosure then
+	// execution has already finished and no need
+	// to call run() from here.
+	if (VYSE_IS_CCLOSURE(value)) return ok;
+	ExitCode ec = run();
+	return ec == ExitCode::Success;
+}
+
+bool VM::op_call(Value value, u8 argc) {
+	if (!VYSE_IS_OBJECT(value)) {
 		ERROR("Attempt to call a {} value.", VYSE_TYPE_CSTR(value));
+		return false;
+	}
 
 	switch (VYSE_AS_OBJECT(value)->tag) {
-	case OT::closure: return callfunc(VYSE_AS_CLOSURE(value), argc);
+	case OT::closure: return call_closure(VYSE_AS_CLOSURE(value), argc);
 	case OT::c_closure: return call_cclosure(VYSE_AS_CCLOSURE(value), argc);
 	default: ERROR("Attempt to call a {} value.", VYSE_TYPE_CSTR(value)); return false;
 	}
@@ -870,7 +900,7 @@ void VM::pop_callframe() {
 	}
 }
 
-bool VM::callfunc(Closure* func, int argc) {
+bool VM::call_closure(Closure* func, int argc) {
 	int extra = argc - func->m_codeblock->param_count();
 
 	// make sure there is enough room in the stack

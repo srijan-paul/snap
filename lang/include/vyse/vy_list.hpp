@@ -1,3 +1,4 @@
+#pragma once
 #include "value.hpp"
 
 namespace vyse {

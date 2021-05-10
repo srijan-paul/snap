@@ -98,7 +98,7 @@ Value code_at(VM& vm, int argc) {
 }
 
 void load_string_proto(VM& vm) {
-	Table& str_proto = *vm.primitive_protos.string;
+	Table& str_proto = *vm.prototypes.string;
 	add_libfn(vm, str_proto, "substr", substr);
 	add_libfn(vm, str_proto, "code_at", code_at);
 }

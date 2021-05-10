@@ -26,7 +26,7 @@ Value to_str(VM& vm, int argc) {
 }
 
 void load_num_proto(VM &vm) {
-	Table& num_proto = *vm.primitive_protos.number;
+	Table& num_proto = *vm.prototypes.number;
 	add_libfn(vm, num_proto, "to_string", to_str);
 }
 

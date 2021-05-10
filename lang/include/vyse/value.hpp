@@ -130,9 +130,13 @@ void print_value(Value v);
 #define VYSE_IS_NIL(v)			 ((v).tag == vyse::ValueType::Nil)
 #define VYSE_IS_UNDEFINED(v) ((v).tag == vyse::ValueType::Undefined)
 #define VYSE_IS_OBJECT(v)		 ((v).tag == vyse::ValueType::Object)
-#define VYSE_IS_STRING(v)		 (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::string)
-#define VYSE_IS_TABLE(v)		 (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::table)
-#define VYSE_IS_LIST(v)			 (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::list)
+
+#define VYSE_IS_STRING(v)	 (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::string)
+#define VYSE_IS_TABLE(v)	 (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::table)
+#define VYSE_IS_LIST(v)		 (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::list)
+#define VYSE_IS_CLOSURE(v) (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::closure)
+#define VYSE_IS_CCLOSURE(v)                                                                        \
+	(VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::c_closure)
 
 #define VYSE_IS_FALSY(v)	((VYSE_IS_BOOL(v) and !(VYSE_AS_BOOL(v))) or VYSE_IS_NIL(v))
 #define VYSE_IS_TRUTHY(v) (!VYSE_IS_FALSY(v))
