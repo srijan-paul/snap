@@ -22,7 +22,7 @@ using u16 = std::uint16_t;
 using std::size_t;
 using number = double;
 
-#define VYSE_DEBUG
+// #define VYSE_DEBUG
 
 #ifdef VYSE_DEBUG
 
@@ -39,8 +39,8 @@ using number = double;
 
 #define VYSE_UNREACHABLE() VYSE_ERROR("Unreachable code point reached.")
 
-// #define VYSE_STRESS_GC 1
-// #define VYSE_LOG_GC		 1
+#define VYSE_STRESS_GC 1
+#define VYSE_LOG_GC		 1
 
 #else
 
