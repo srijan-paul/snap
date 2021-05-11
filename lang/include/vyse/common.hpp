@@ -22,11 +22,12 @@ using u16 = std::uint16_t;
 using std::size_t;
 using number = double;
 
-#define VYSE_DEBUG
-// #define VYSE_DEBUG_RUNTIME		 1
-// #define VYSE_DEBUG_DISASSEMBLY 1
+// #define VYSE_DEBUG
 
 #ifdef VYSE_DEBUG
+
+#define VYSE_DEBUG_RUNTIME		 1
+#define VYSE_DEBUG_DISASSEMBLY 1
 
 #define VYSE_ASSERT(cond, message)                                                                 \
 	((cond) ? 0                                                                                      \
@@ -38,10 +39,14 @@ using number = double;
 
 #define VYSE_UNREACHABLE() VYSE_ERROR("Unreachable code point reached.")
 
+// #define VYSE_STRESS_GC 1
+// #define VYSE_LOG_GC		 1
+
 #else
 
-#define VYSE_ASSERT(cond, message) 0
-#define VYSE_ERROR(message)				 0
+#define VYSE_ASSERT(cond, message) // empty
+#define VYSE_ERROR(message)				 // empty
+#define VYSE_UNREACHABLE()				 // empty
 
 #endif
 
@@ -49,7 +54,6 @@ using number = double;
 #define VYSE_NO_MOVE(class)							 class(class && other) = delete
 #define VYSE_NO_DEFAULT_CONSTRUCT(class) class() = delete
 
-// #define VYSE_STRESS_GC 1
-// #define VYSE_LOG_GC		 1
+
 
 } // namespace vyse

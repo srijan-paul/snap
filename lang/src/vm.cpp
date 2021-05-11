@@ -352,14 +352,14 @@ ExitCode VM::run() {
 
 		case Op::set_global: {
 			Value name = READ_VALUE();
-			VYSE_ASSERT(VYSE_IS_STRING(name), "Variable name not a string.");
+			VYSE_ASSERT(VYSE_IS_STRING(name), "global name not a string.");
 			set_global(VYSE_AS_STRING(name), POP());
 			break;
 		}
 
 		case Op::get_global: {
 			Value name = READ_VALUE();
-			VYSE_ASSERT_OT(name, OT::string);
+			VYSE_ASSERT(VYSE_IS_STRING(name), "global name not a string.");
 			Value value = get_global(VYSE_AS_STRING(name));
 			if (VYSE_IS_UNDEFINED(value)) {
 				return ERROR("Undefined variable '{}'.", VYSE_AS_STRING(name)->c_str());
@@ -511,8 +511,8 @@ ExitCode VM::run() {
 					CHECK_TYPE(key, VT::Number, "string index must be a number (got {})",
 										 value_type_name(key));
 					const String* str = VYSE_AS_STRING(tvalue);
-					const uint index = VYSE_AS_NUM(key);
-					if (index < 0 or index >= str->m_length) {
+					const s64 index = VYSE_AS_NUM(key);
+					if (index < 0 or index >= static_cast<s64>(str->m_length)) {
 						return ERROR("string index out of range.");
 					}
 					VYSE_SET_OBJECT(tvalue, char_at(str, index));
@@ -582,14 +582,17 @@ ExitCode VM::run() {
 				return ExitCode::Success;
 			}
 
-			m_current_frame = &m_frames[m_frame_count - 1];
+			m_current_frame = m_current_frame->prev;
+			VYSE_ASSERT(m_current_frame != nullptr, "Invalid call stack state.");
 
-			// returning control from a Vyse function to a
-			// C function.
+			// If the call site of this Vyse function was in C
+			// then we return  control to the C function.
 			if (m_current_frame->func->tag == OT::c_closure) {
 				return ExitCode::Success;
 			}
 
+			VYSE_ASSERT(m_current_frame->func->tag == OT::closure,
+									"Invalid callable object at callframe base.");
 			m_current_block = &static_cast<Closure*>(m_current_frame->func)->m_codeblock->block();
 			ip = m_current_frame->ip;
 			break;
@@ -597,7 +600,7 @@ ExitCode VM::run() {
 
 		case Op::make_func: {
 			Value vcode = READ_VALUE();
-			VYSE_ASSERT_OT(vcode, OT::codeblock);
+			VYSE_ASSERT(VYSE_IS_CODEBLOCK(vcode), "make_func arg not a codeblock.");
 			u32 num_upvals = NEXT_BYTE();
 			Closure* func = &make<Closure>(VYSE_AS_PROTO(vcode), num_upvals);
 
@@ -862,13 +865,25 @@ bool VM::op_call(Value value, u8 argc) {
 void VM::push_callframe(Obj* callable, int argc) {
 	VYSE_ASSERT(callable->tag == OT::c_closure or callable->tag == OT::closure,
 							"Non callable callframe pushed.");
+	VYSE_ASSERT(argc >= 0, "Negative argument count.");
 
 	// Save the current instruction pointer
 	// in the call frame so we can resume
 	// execution when the function returns.
 	m_current_frame->ip = ip;
+
 	// prepare the next call frame
-	m_current_frame = &m_frames[m_frame_count++];
+	if (m_current_frame->next) {
+		m_current_frame = m_current_frame->next;
+	} else {
+		CallFrame* const next_cf = new CallFrame;
+		m_current_frame->next = next_cf;
+		next_cf->prev = m_current_frame;
+		m_current_frame = next_cf;
+	}
+
+	++m_frame_count;
+
 	m_current_frame->func = callable;
 	m_current_frame->base = m_stack.top - argc - 1;
 
@@ -876,26 +891,27 @@ void VM::push_callframe(Obj* callable, int argc) {
 	m_current_frame->ip = ip = 0;
 
 	if (callable->tag == OT::closure) {
-		Closure* cl = static_cast<Closure*>(callable);
+		Closure* const cl = static_cast<Closure*>(callable);
 		m_current_block = &cl->m_codeblock->block();
 	}
 }
 
 void VM::pop_callframe() noexcept {
 	VYSE_ASSERT(m_frame_count > 1, "Attempt to pop base callframe outside of VM loop.");
-	m_frame_count--;
+	--m_frame_count;
 
 	/// If we are in the top level script,
 	/// then there is no older call frame.
 	if (m_frame_count == 0) return;
 
-	m_current_frame = &m_frames[m_frame_count - 1];
+	m_current_frame = m_current_frame->prev;
+	VYSE_ASSERT(m_current_frame != nullptr, "Invalid Call stack state.");
 
 	/// restore the instruction pointer to continue
 	/// from where we left off.
 	ip = m_current_frame->ip;
 
-	Obj* callable = m_current_frame->func;
+	Obj* const callable = m_current_frame->func;
 	if (callable->tag == OT::closure) {
 		Closure* cl = static_cast<Closure*>(callable);
 		m_current_block = &cl->m_codeblock->block();
@@ -998,9 +1014,8 @@ void VM::ensure_slots(uint slots_needed) {
 	// Upvalue chain still contain dangling pointers to the old stack,
 	// so we update those to the same relative distance from the new
 	// stack's base address.
-	for (int i = m_frame_count - 1; i >= 0; --i) {
-		CallFrame& cf = m_frames[i];
-		cf.base = m_stack.values + (cf.base - old_stack);
+	for (CallFrame* cf = m_current_frame; cf; cf = cf->prev) {
+		cf->base = m_stack.values + (cf->base - old_stack);
 	}
 
 	for (Upvalue* upval = m_open_upvals; upval != nullptr; upval = upval->next_upval) {
@@ -1036,20 +1051,19 @@ ExitCode VM::runtime_error(const std::string& message) {
 					? kt::format_str("{}\nstack trace:\n", message)
 					: kt::format_str("[line {}]: {}\nstack trace:\n", CURRENT_LINE(), message);
 
-	for (int i = m_frame_count - 1; i >= 0; --i) {
-		const CallFrame& frame = m_frames[i];
+	for (CallFrame* frame = m_current_frame; frame; frame = frame->prev) {
 
 		/// TODO: Handle CFunction strack traces.
-		if (frame.is_cclosure()) continue;
+		if (frame->is_cclosure()) continue;
 
-		const Closure& func = *static_cast<Closure*>(frame.func);
+		const Closure& func = *static_cast<Closure*>(frame->func);
 
 		const Block& block = func.m_codeblock->block();
-		VYSE_ASSERT(frame.ip >= 0 and frame.ip < block.lines.size(),
+		VYSE_ASSERT(frame->ip >= 0 and frame->ip < block.lines.size(),
 								"IP not in range for std::vector<u32> block.lines.");
 
-		int line = block.lines[frame.ip];
-		if (i == 0) {
+		int line = block.lines[frame->ip];
+		if (frame == m_frames) {
 			error_str += kt::format_str("\t[line {}] in {}", line, func.name_cstr());
 		} else {
 			error_str += kt::format_str("\t[line {}] in function {}.\n", line, func.name_cstr());
@@ -1093,6 +1107,12 @@ VM::~VM() {
 		Obj* next = object->next;
 		delete object;
 		object = next;
+	}
+
+	for (CallFrame* cf = m_current_frame; cf != nullptr;) {
+		CallFrame* const prev = cf->prev;
+		delete cf;
+		cf = prev;
 	}
 }
 

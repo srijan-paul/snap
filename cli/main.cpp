@@ -16,10 +16,6 @@ ExitCode runcode(std::string const& code) {
 	vm.load_stdlib();
 	ExitCode ec = vm.runcode(code);
 
-	// std::cout << "VM returned: ";
-	// print_value(vm.return_value);
-	// std::cout << '\n';
-
 	return ec;
 }
 
@@ -33,7 +29,7 @@ std::optional<std::string> readfile(const char* filepath) {
 
 int main(int argc, char** argv) {
 	if (argc != 2) {
-		printf("The Vyse Programming Language. PreprepreprepreprepreAlpha build.\n");
+		printf("The Vyse Programming Language. v 0.0.1 Pre-alpha .\n");
 		printf("Usage: vy <filename>\n");
 		return 0;
 	}
@@ -44,12 +40,6 @@ int main(int argc, char** argv) {
 	} else {
 		printf("Could not read file '%s'\n", filepath);
 	}
-
-	// std::cout << "VM returned: ";
-	// std::cout << std::endl;
-
-	// std::cout << "Vyse programming language."
-	// 					<< "\n";
 
 	return 0;
 }

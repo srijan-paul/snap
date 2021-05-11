@@ -135,6 +135,7 @@ void print_value(Value v);
 #define VYSE_IS_TABLE(v)	 (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::table)
 #define VYSE_IS_LIST(v)		 (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::list)
 #define VYSE_IS_CLOSURE(v) (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::closure)
+#define VYSE_IS_CODEBLOCK(v) (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::codeblock)
 #define VYSE_IS_CCLOSURE(v)                                                                        \
 	(VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::c_closure)
 

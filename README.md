@@ -179,7 +179,7 @@ After downloading/cloning vyse into a directory, `cd` into it and run the follow
 ```bash
 mkdir bin
 cd bin
-cmake -G .. Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+cmake .. -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 ninja
 ./vy <filename>
 ```

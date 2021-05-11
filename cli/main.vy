@@ -1,1 +1,0 @@
-print({x(y) {return y}}:x(2))

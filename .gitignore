@@ -1,5 +1,7 @@
 bin/*
+out/*
 compile_commands.json
 .clangd/*
 .vscode/*
 .cache/*
+scratchpad

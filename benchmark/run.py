@@ -72,7 +72,7 @@ parser.add_argument('--bench', help='Run a specific benchmark.')
 args = parser.parse_args()
 
 # Disable ANSI color codes
-if args.nocolor: colored = lambda s, _ : s
+if args.nocolor: colored = lambda s, _ : str(s)
 
 # Run a specific benchmark.
 if args.bench:

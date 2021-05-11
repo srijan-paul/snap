@@ -77,17 +77,22 @@ public:
 		///  or Closure. However, since it can be
 		///  any of the two, we store a pointer to
 		///  to it's base class and check which one it
-		///  really is at runtime. (using the [tag] field, or
-		///  dynamic_cast)
+		///  really is at runtime. (using the [tag] field)
 		Obj* func = nullptr;
 
+		/// The next instruction to be executed
+		/// In this function.
 		size_t ip = 0;
-		// the base of the Callframe in the VM's
-		// value stack. This denotes the first
-		// slot usable by the CallFrame. All local variables
-		// are represented as a stack offset from this
-		// base.
+
+		/// the base of the Callframe in the VM's
+		/// value stack. This denotes the first
+		/// slot usable by the CallFrame. All local variables
+		/// are represented as a stack offset from this
+		/// base.
 		Value* base = nullptr;
+
+		CallFrame* next = nullptr;
+		CallFrame* prev = nullptr;
 
 		bool is_cclosure() const noexcept {
 			return func->tag == ObjType::c_closure;
@@ -284,7 +289,13 @@ private:
 	// highest value on the stack.
 	Upvalue* m_open_upvals = nullptr;
 
-	CallFrame m_frames[MaxCallStack];
+	/// the call stack is internally a linked list,
+	/// the base call frame is always fixed and initalized
+	/// when the VM is constructed.
+	CallFrame* const m_frames = new CallFrame;
+
+	/// The topmost callframe that the VM is 
+	/// currently executing in.
 	CallFrame* m_current_frame = m_frames;
 	// total number of call frames that have been allocated.
 	u32 m_frame_count = 0;
