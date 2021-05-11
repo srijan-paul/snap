@@ -11,7 +11,9 @@
   <p align="center">
    An elegant and embeddable programming language
     <br />
-    <a href="https://github.com/srijan-paul/vyse/blob/main/doc.md"><b>Visit the language spec »</b></a>
+    <a href="https://github.com/srijan-paul/vyse/blob/main/doc/manual.md"><b>Visit the language spec »</b></a>
+    <a href="https://srijan-paul.github.io/vyse"><b>Website »</b>
+    </a>
     <br />
     <br />
     <a href="https://github.com/srijan-paul/vyse/issues">Report Bug</a>
