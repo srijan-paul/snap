@@ -55,7 +55,7 @@ std::string value_to_string(Value v) {
 	switch (VYSE_GET_TT(v)) {
 	case VT::Number: {
 		number num = VYSE_AS_NUM(v);
-		if (u64(num) == num) return std::to_string(u64(num));
+		if (s64(num) == num) return std::to_string(s64(num));
 		return std::to_string(num);
 	}
 

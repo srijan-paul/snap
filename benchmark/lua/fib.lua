@@ -1,24 +1,6 @@
-local s = os.clock()
-
-local function run_test()
-
-	local fib
-
-	fib = function(n)
-		if n <= 1 then
-			return 1
-		end
-		return fib(n - 1) + fib(n - 2)
-	end
-
-	for _ = 1, 10000 do
-		fib(10)
-	end
+function fib(n)
+	if n <= 2 then return n end
+	return fib(n - 1) + fib(n - 2)
 end
 
-run_test()
-
-local e = os.clock()
-
--- doesn't work because of low precision.
-print(1000 * ((e - s) / 10000))
+print(fib(40))

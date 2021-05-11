@@ -40,7 +40,7 @@ void run_file(const char* filename, std::string&& message, std::size_t times = 1
 
 void run_benchmarks() {
 	run_code("binary operators (+ - * /)", R"(
-    1 + 2 + 3 * 4412 / 4 / 2
+    return 1 + 2 + 3 * 4412 / 4 / 2
   )");
 
 	run_code("string creation and operations", R"(

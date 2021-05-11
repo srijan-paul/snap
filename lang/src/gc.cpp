@@ -127,6 +127,7 @@ size_t GC::sweep() {
 	}
 
 	bytes_allocated -= bytes_freed;
+	next_gc = bytes_allocated * (1 + GCHeapGrowth);
 #ifdef VYSE_LOG_GC
 	printf("-- [GC END] Freed %zu bytes --\n\n", bytes_freed);
 #endif

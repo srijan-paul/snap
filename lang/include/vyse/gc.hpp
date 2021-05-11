@@ -15,7 +15,11 @@ public:
 	VYSE_NO_COPY(GC);
 	VYSE_NO_MOVE(GC);
 
-	static constexpr size_t InitialGCLimit = 1024 * 1024; // in bytes
+	// first GC is triggered when 1MB is allocated.
+	static constexpr size_t InitialGCLimit = 1024 * 1024;
+
+	/// TODO: make this configurable by the user if they demand it.
+	static constexpr float GCHeapGrowth = 0.5;
 
 	GC(VM& vm) : m_vm{&vm} {};
 

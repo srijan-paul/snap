@@ -1,28 +1,25 @@
 local function BottomUpTree(item, depth)
-  if depth > 0 then
-    local i = item + item
-    depth = depth - 1
-    local left, right = BottomUpTree(i-1, depth), BottomUpTree(i, depth)
-    return { item, left, right }
-  else
-    return { item }
-  end
+	if depth > 0 then
+		local i = item + item
+		depth = depth - 1
+		local left = BottomUpTree(i - 1, depth)
+		local right = BottomUpTree(i, depth)
+		return {item, left, right}
+	else
+		return {item}
+	end
 end
 
 local function ItemCheck(tree)
-  if tree[2] then
-    return tree[1] + ItemCheck(tree[2]) - ItemCheck(tree[3])
-  else
-    return tree[1]
-  end
+	if tree[2] then
+		return tree[1] + ItemCheck(tree[2]) - ItemCheck(tree[3])
+	else
+		return tree[1]
+	end
 end
 
-local N = 12
 local mindepth = 4
-local maxdepth = mindepth + 2
-if maxdepth < N then maxdepth = N end
-
-local start = os.clock()
+local maxdepth = 12
 
 do
   local stretchdepth = maxdepth + 1
@@ -46,5 +43,3 @@ end
 
 io.write(string.format("long lived tree of depth %d check: %d\n",
   maxdepth, ItemCheck(longlivedtree)))
-
-io.write(string.format("elapsed: %.8f\n", os.clock() - start))
