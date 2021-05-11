@@ -30,14 +30,15 @@ const max_depth = 12
 
 const long_lived_tree = make_tree(0, max_depth)
 
+let iterations = 2 ** max_depth
 for depth = min_depth, max_depth + 1, 2 {
-  const iterations = 2 ** (max_depth - depth + min_depth)
   let check = 0
   for i = 0, iterations {
     check = check + check_tree(make_tree(1, depth)) + 
       check_tree(make_tree(-1, depth))
   }
   print(iterations*2, 'trees of depth', depth, 'check:', check)
+  iterations /= 4
 }
 
 print('long lived tree of depth', max_depth,

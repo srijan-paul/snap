@@ -24,7 +24,7 @@ def check_tree(node):
     return item + check_tree(left) - check_tree(right)
 
 min_depth = 4
-max_depth = 10
+max_depth = 12
 stretch_depth = max_depth + 1
 
 print("stretch tree of depth %d check:" % stretch_depth, check_tree(make_tree(0, stretch_depth)))
@@ -39,5 +39,6 @@ for depth in range(min_depth, stretch_depth, 2):
         check += check_tree(make_tree(i, depth)) + check_tree(make_tree(-i, depth))
 
     print("%d trees of depth %d check:" % (iterations * 2, depth), check)
+    iterations //= 4
 
 print("long lived tree of depth %d check:" % max_depth, check_tree(long_lived_tree))
