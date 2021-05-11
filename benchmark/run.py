@@ -21,7 +21,7 @@ class BenchMark:
 			start = datetime.now()
 			lang.run(self.filename)
 			end = datetime.now()
-			print(f'Time taken: ', colored((end - start).total_seconds(), 'green'))
+			print(f'Time taken: ', colored((end - start).total_seconds(), 'green') + 's')
 			print('\n')
 
 class Lang:

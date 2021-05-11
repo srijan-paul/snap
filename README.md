@@ -35,6 +35,7 @@ Vyse is a dynamically typed, interpreted and fast scriptling language inspired b
 - [Roadmap](#Roadmap)
 - [Implementation](#Implementation)
 - [Building](#Building)
+- [Running Benchmarks](#Benchmarks)
 - [Editor Support](#Editor-Support)
 - [Development](#Development)
 
@@ -53,7 +54,7 @@ There exist some quirks in Lua that Vyse aims to change.
   * `continue` statement for skipping over some loop iterations.
   * `switch` statements.
 
-- Arrays starting at 1.
+- Arrays starting at 1 is a a minor issue to some.
 
 Vyse aims to keep most of what Lua provides, but address the aforementioned issues and offer the following QoL feautures:
   - A Familiar syntax for programmers migrating from Javascript and C
@@ -62,21 +63,21 @@ Vyse aims to keep most of what Lua provides, but address the aforementioned issu
 
 ## Overview
 
-Here is an overview of the language's syntax and features:
+Here is a rough overview of the language's syntax and features:
 
-```js
-// variable declaration and assignment
-const PI = 3.141659 // variables declared with const are immutable
+```lua
+--  variable declaration and assignment
+const PI = 3.141659  -- variables declared with const are immutable
 let radius = 10
 
-// Function declaration
+--  Function declaration
 fn calculate_area(r) {
-  return PI * r ** 2 // '**' operator is used for exponentiation.
+  return PI * r ** 2 -- '**' operator is used for exponentiation.
 }
 
-let area = calculate_area(radius) // function calling
+let area = calculate_area(radius) -- function calling
 
-// constructing objects is very similar to Javascript.
+--  constructing objects is very similar to Javascript.
 
 let goblin = {
   name: "Bobo",
@@ -88,26 +89,30 @@ let goblin = {
   },
 };
 
-// calling methods is done with the `:` operator.
+--  methods is done with the `:` operator.
 let wolf = { health: 20 }
 goblin:attack(wolf)
 
-// Arrays are intuitive too
+--  Arrays are intuitive too
 let numbers = [1, 3, 5, 7, 9]
 
-// the '#' operator returns length of arrays
+-- the '#' operator returns length of lists or strings.
 print('I have ' .. #numbers .. 'numbers!') // '..' is the concat operator
 
-// looping is very similar to lua.
+-- the `<<<` operator can be used to push to arrays
+numbers << 10 << 11
+
+-- looping is very similar to lua.
 for i = 1, #numbers  {
 	print(numbers[i])
 }
 
-// conditionals
-math.randseed(time.now());
-let number = math.random(0, 100);
 
-let guess = int(input()); // read user input and parse as integer.
+--  conditionals
+math.randseed(time.now());
+const number = math.random(0, 100);
+
+let guess = input():to_number(); -- read user input and parse as a number
 
 while true {
 	if guess < number {
@@ -122,6 +127,7 @@ while true {
 ```
 
 For a more complete spec of the language, and all it's features visit [manual.md](./doc/manual.md).
+Alternatively, read the documentation on [this](https://srijan-paul.github.io/vyse/book/) page.
 
 ## Roadmap
 
@@ -132,8 +138,10 @@ To move towards a more complete implementation, the following tasks have to be a
 2. [x] Add a complete list of collection types (Arrays and tables). (**DONE**)
 3. [x] Implement proper error reporting in all the passes. (**DONE**)
 4. [x] Full support for Lambdas and closures. (**DONE**)
-5. [ ] Implement optionally NaN boxed values.
-6. [ ] Move from the current mark sweep garbage collector to a Cheney's copying collector.
+5. [ ] Optimze value representation to optionally NaN boxed values.
+6. [ ] Optimize the garbage collector for incremental collection.
+7. [ ] Optimize the VM's loop-dispatch to computed jumps.
+8. [ ] Add more compiler passes for better optimization.
 
 ## Implementation
 
@@ -142,9 +150,9 @@ and emits bytecode.
 
 The stages involved are :
 
-### Lexing / Tokenizing (String -> Token)
+### Lexing / Tokenizing (Source string -> Token)
 
-The vyse lexer resides in the `src/syntax/scanner.hpp` file, A simple hand written lexer that accepts a string returns a
+The vyse lexer resides in the `lang/include/vyse/scanner.hpp` file, A simple hand written lexer that accepts a string returns a
 token whenever the method `next_token()` is called.
 The Lexer is called from within the Compiler, but can also be instantiated and used stand-alone for testing purposes.
 
@@ -154,28 +162,61 @@ The Compiler compiles tokens to Bytecode following the Vyse Bytecode Instruction
 Every instruction is 1 byte long. The compiler returns a function containing all the bytecode from the script, which is
 then loaded into the VM and called.
 
-### SVM
+### VyVM
 
-The design of the SVM is very similar to the Lua Virtual Machine despite the fact that it's Stack based as opposed to LuaVM's
-register based design (after version 5.1). It consists of a value stack and an accumulator register. It has full support
-for lambdas and closures following Lua's upvalue design.
+The design of the VyVM is very similar to the Lua Virtual Machine despite the fact that it's Stack based as opposed to LuaVM's register based design (after version 5.1). It consists of a value stack and an accumulator register.
+It has full support for lambdas and closures following Lua's upvalue design.
 
 # Building
 
 To build vyse from source, it is recommended that you use CMake (version 3.13 or higher).
-The build tool used here is Ninja, but you can use any other build tool of your preference (eg- make).
+The build tool used here is Ninja, but you can use any other build tool of your preference (eg- `'Unix Makefiles'`).
 
 After downloading/cloning vyse into a directory, `cd` into it and run the following commands to run the tests:
 
 ```bash
 mkdir bin
 cd bin
-cmake -G .. Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -CMAKE_C_COMPILER=clang -CMAKE_CXX_COMPILER=clang++
+cmake -G .. Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 ninja
-./vyse
+./vy <filename>
 ```
 
-Note that `-CMAKE_C_COMPILER=clang -CMAKE_CXX_COMPILER=clang++` are optional, and you can use any C++ compiler toolchain of your liking.
+Note that `-CMAKE_C_COMPILER=clang -CMAKE_CXX_COMPILER=clang++` are optional, and you can use any C++ compiler toolchain of your liking. The above will build the compiler in **Debug** mode.
+To build in release mode, add the `-DCMAKE_BUILD_TYPE=Release` argument.
+
+# Benchmarks
+
+The benchmarks for vyuse are present in the `benchmark` directory.
+The `benchmark/run.py` script can be used to compare Vyse against other languages.
+You can either run all benchmarks, or run specific benchmarks.
+
+To run all benchmarks, enter the following into your shell:
+```sh
+cd benchmarks
+py run.py
+```
+
+To run, a specific benchmark, use the `--bench` option:
+
+```sh
+py run.py --bench=fib
+```
+
+# Tests
+
+For testing, the `ctest` utility is used along with some hand written helper headers.
+To run existing tests, run `ctest` inside the build directory (`bin` or `out`).
+Tests of all kinds can be found under the `test` directory.
+
+
+![Fibonacci benchmark](./media/fib-bench.png)
+
+(Note: time is in seconds)
+
+If your terminal does not have ASNI support, or you want to pipe the benchmarks to a
+file for reporting, then you can use the `--nocolor` flag.
+
 
 # Editor-Support
 
@@ -188,7 +229,6 @@ Currently, syntax highlighting and code completion snippets are supported on the
 
 # Development
 
-If you're looking to fork contribute to vyse, It is recommended to have clang-format for formatting and clangd language server for
-your text editor. On VSCode, the `C/C++` extension can be used to debug the executable.
+If you're looking to fork contribute to vyse, It is recommended to have clang-format for formatting and clangd language server for your text editor. On VSCode, the `C/C++` extension can be used to debug the executable. Alternatively, you can use GDC/LLDB or other debuggers to your liking.
 
 All the source and header files for vyse are present in the `lang` directory in the project's root folder.
