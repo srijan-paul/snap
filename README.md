@@ -100,7 +100,7 @@ let numbers = [1, 3, 5, 7, 9]
 print('I have ' .. #numbers .. 'numbers!') // '..' is the concat operator
 
 -- the `<<<` operator can be used to push to arrays
-numbers << 10 << 11
+numbers <<< 10 <<< 11
 
 -- looping is very similar to lua.
 for i = 1, #numbers  {
