@@ -715,26 +715,42 @@ bool VM::init() {
 	if (!compiler.ok()) return false;
 
 	// There are no reachable references to [code]
-	// when we allocate `func`. Since allocating a func
+	// when we allocate `script`. Since allocating a func
 	// can trigger a garbage collection cycle, we protect
 	// the code block.
 	gc_protect(code);
-	Closure* func = &make<Closure>(code, 0);
+	Closure* script = &make<Closure>(code, 0);
 
 	// Once the function has been made, [code] can
-	// be reached via `func->m_codeblock`, so we can
+	// be reached via `script->m_codeblock`, so we can
 	// unprotect it.
 	gc_unprotect(code);
 
-	PUSH(VYSE_OBJECT(func));
-	call_closure(func, 0);
+	invoke_script(script);
 
 #ifdef VYSE_DEBUG_DISASSEMBLY
-	disassemble_block(func->name()->c_str(), *m_current_block);
+	disassemble_block(script->name()->c_str(), *m_current_block);
 	printf("\n");
 #endif
 	m_compiler = nullptr;
 	return true;
+}
+
+void VM::invoke_script(Closure* script) {
+	// clear the stack in case there is some leftover
+	// junk from previous invocations.
+	m_stack.clear();
+	// make sure there is enough room in the stack
+	// for this function call.
+	ensure_slots(script->m_codeblock->stack_size());
+	PUSH(VYSE_OBJECT(script));
+	m_frames->base = m_stack.top - 1;
+	m_frames->ip = 0;
+	ip = 0;
+	m_frames->func = script;
+	m_frame_count = 1;
+	m_current_frame = m_frames;
+	m_current_block = &script->m_codeblock->block();
 }
 
 ExitCode VM::runcode(const std::string& code) {
@@ -853,6 +869,11 @@ bool VM::op_call(Value value, u8 argc) {
 		return false;
 	}
 
+	if (m_frame_count >= MaxCallStack) {
+		ERROR("Stack overflow.");
+		return false;
+	}
+
 	switch (VYSE_AS_OBJECT(value)->tag) {
 	case OT::closure: return call_closure(VYSE_AS_CLOSURE(value), argc);
 	case OT::c_closure: return call_cclosure(VYSE_AS_CCLOSURE(value), argc);
@@ -897,7 +918,7 @@ void VM::push_callframe(Obj* callable, int argc) {
 }
 
 void VM::pop_callframe() noexcept {
-	VYSE_ASSERT(m_frame_count > 1, "Attempt to pop base callframe outside of VM loop.");
+	VYSE_ASSERT(m_frame_count > 1, "Attempt to pop base callframe.");
 	--m_frame_count;
 
 	/// If we are in the top level script,
@@ -928,8 +949,8 @@ bool VM::call_closure(Closure* func, int argc) {
 	/// extra arguments are ignored and
 	/// arguments that aren't provded are replaced with nil.
 	/// TODO: avoid this by either intializing all stack slots
-	/// to zero or by not allowing calls with incorrect argument
-	/// count. (Make an except for varargs.)
+	/// to nil or by not allowing calls with incorrect argument
+	/// count. (Make an exception for varargs.)
 	if (extra < 0) {
 		while (extra < 0) {
 			PUSH(VYSE_NIL);

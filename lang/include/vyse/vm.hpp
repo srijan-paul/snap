@@ -60,7 +60,7 @@ public:
 
 	/// Maximum size of the call stack. If the call stack
 	/// size exceeds this, then there is a stack overflow.
-	static constexpr size_t MaxCallStack = 256;
+	static constexpr size_t MaxCallStack = 1024;
 
 	/// @brief The VM's value stack. All operations in Vyse
 	/// are done by popping from and pushing to this data
@@ -353,7 +353,11 @@ private:
 	/// the standard library.
 	void add_stdlib_object(const char* name, Obj* o);
 
-	/// @brief prepares for a functionc call by pushing a new
+	/// @brief Prepares the VM CallStack for the very first
+	/// function call, which is the toplevel userscript.
+	void invoke_script(Closure* closure);
+
+	/// @brief prepares for a function call by pushing a new
 	/// CallFrame onto the call stack. The new frame's func field
 	/// is set to [callable], and the ip of the current call frame
 	/// is cached.

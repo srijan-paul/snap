@@ -43,6 +43,10 @@ public:
 		top -= n;
 	}
 
+	inline void clear() noexcept {
+		top = values;
+	}
+
 private:
 	Value* values = static_cast<Value*>(malloc(sizeof(Value) * InitialSize));
 

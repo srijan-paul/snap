@@ -22,7 +22,7 @@ using u16 = std::uint16_t;
 using std::size_t;
 using number = double;
 
-// #define VYSE_DEBUG
+#define VYSE_DEBUG
 
 #ifdef VYSE_DEBUG
 
