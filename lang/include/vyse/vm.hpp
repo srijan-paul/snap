@@ -62,6 +62,11 @@ public:
 	/// size exceeds this, then there is a stack overflow.
 	static constexpr size_t MaxCallStack = 1024;
 
+	/// Maximum depth of the stack trace show in error messages.
+	/// We put a cap on this to avoid extrememly long stack traces
+	/// caused by infinite recursion.
+	static constexpr size_t MaxStackTraceDepth = 11;
+
 	/// @brief The VM's value stack. All operations in Vyse
 	/// are done by popping from and pushing to this data
 	/// structure.
@@ -121,7 +126,6 @@ public:
 	}
 
 	bool init();
-
 
 	ExitCode runcode(const std::string& code);
 	ExitCode runfile(const std::string& filepath);
@@ -292,11 +296,11 @@ private:
 	/// the call stack is internally a linked list,
 	/// the base call frame is always fixed and initalized
 	/// when the VM is constructed.
-	CallFrame* const m_frames = new CallFrame;
+	CallFrame* const base_frame = new CallFrame;
 
-	/// The topmost callframe that the VM is 
+	/// The topmost callframe that the VM is
 	/// currently executing in.
-	CallFrame* m_current_frame = m_frames;
+	CallFrame* m_current_frame = base_frame;
 	// total number of call frames that have been allocated.
 	u32 m_frame_count = 0;
 
@@ -311,7 +315,6 @@ private:
 	Table interned_strings;
 
 	std::unordered_map<String*, Value> m_global_vars;
-
 
 	/// @brief call any callable value from within the VM.
 	/// Note that this is only used to call instructions from

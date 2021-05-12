@@ -744,12 +744,12 @@ void VM::invoke_script(Closure* script) {
 	// for this function call.
 	ensure_slots(script->m_codeblock->stack_size());
 	PUSH(VYSE_OBJECT(script));
-	m_frames->base = m_stack.top - 1;
-	m_frames->ip = 0;
+	base_frame->base = m_stack.top - 1;
+	base_frame->ip = 0;
 	ip = 0;
-	m_frames->func = script;
+	base_frame->func = script;
 	m_frame_count = 1;
-	m_current_frame = m_frames;
+	m_current_frame = base_frame;
 	m_current_block = &script->m_codeblock->block();
 }
 
@@ -1072,8 +1072,12 @@ ExitCode VM::runtime_error(const std::string& message) {
 					? kt::format_str("{}\nstack trace:\n", message)
 					: kt::format_str("[line {}]: {}\nstack trace:\n", CURRENT_LINE(), message);
 
+	size_t trace_depth = 0;
 	for (CallFrame* frame = m_current_frame; frame; frame = frame->prev) {
-
+		++trace_depth;
+		if (trace_depth >= MaxStackTraceDepth) {
+			continue;
+		}
 		/// TODO: Handle CFunction strack traces.
 		if (frame->is_cclosure()) continue;
 
@@ -1084,11 +1088,19 @@ ExitCode VM::runtime_error(const std::string& message) {
 								"IP not in range for std::vector<u32> block.lines.");
 
 		int line = block.lines[frame->ip];
-		if (frame == m_frames) {
+		if (frame == base_frame) {
 			error_str += kt::format_str("\t[line {}] in {}", line, func.name_cstr());
 		} else {
 			error_str += kt::format_str("\t[line {}] in function {}.\n", line, func.name_cstr());
 		}
+	}
+
+	if (trace_depth >= MaxStackTraceDepth) {
+		size_t diff = trace_depth - MaxStackTraceDepth;
+		error_str += "\t.\n\t.\n\t.\n\t" + std::to_string(diff) + " not shown.\n";
+		Closure* scriptfn = static_cast<Closure*>(base_frame->func);
+		int line = scriptfn->m_codeblock->block().lines[base_frame->ip];
+		error_str += kt::format_str("\t[line {}] in function {}.\n", line, scriptfn->name_cstr());
 	}
 
 	on_error(*this, error_str);
@@ -1130,10 +1142,10 @@ VM::~VM() {
 		object = next;
 	}
 
-	for (CallFrame* cf = m_current_frame; cf != nullptr;) {
-		CallFrame* const prev = cf->prev;
+	for (CallFrame* cf = base_frame; cf != nullptr;) {
+		CallFrame* const next = cf->next;
 		delete cf;
-		cf = prev;
+		cf = next;
 	}
 }
 

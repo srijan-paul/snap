@@ -45,7 +45,7 @@ void GC::mark() {
 		mark_value(*v);
 	}
 
-	for (VM::CallFrame* frame = m_vm->m_current_frame; frame; frame = frame->next) {
+	for (VM::CallFrame* frame = m_vm->m_current_frame; frame; frame = frame->prev) {
 		mark_object(frame->func);
 	}
 
