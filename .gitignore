@@ -1,5 +1,6 @@
 bin/*
 out/*
+debug/*
 compile_commands.json
 .clangd/*
 .vscode/*
