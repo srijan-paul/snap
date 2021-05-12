@@ -26,7 +26,7 @@ Token Scanner::next_token() noexcept {
 
 	switch (c) {
 	case '+': return token_if_match('=', TT::PlusEq, TT::Plus);
-	case '-': 
+	case '-':
 		if (match('>')) return make_token(TT::Arrow);
 		return token_if_match('=', TT::MinusEq, TT::Minus);
 	case '*':
@@ -130,7 +130,13 @@ Token Scanner::number() {
 
 /// TODO: escape characters.
 Token Scanner::make_string(char quote) {
-	while (!(eof() or check(quote))) next();
+	while (!(eof() or check(quote))) {
+		char c = next();
+		if (c == '\n') {
+			line_pos.line++;
+			line_pos.column = 1;
+		}
+	}
 	if (eof()) {
 		return make_token(TT::Error);
 	} else {
