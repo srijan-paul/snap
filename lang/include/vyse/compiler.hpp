@@ -193,7 +193,7 @@ private:
 	void error(std::string&& message);
 
 	// Compile a function's body (if this is a child compiler).
-	CodeBlock* compile_func();
+	CodeBlock* compile_func(bool is_arrowfn = false);
 
 	// keep eating tokens until a token
 	// that may indicate the end of a block or statement
@@ -250,7 +250,7 @@ private:
 	void primary();																				 // LITERAL | ID
 	void variable(bool can_assign);												 // ID
 	void literal();																				 // NUM | STR | BOOL | nil
-	void func_expr(String* fname, bool is_method = false); // fn NAME? BLOCK
+	void func_expr(String* fname, bool is_method = false, bool is_arrow = false); // fn NAME? BLOCK
 
 	/// @brief compiles a table, assuming the opening '{' has been
 	/// consumed.

@@ -70,6 +70,8 @@ void print_ttype(vyse::TokenType type) {
 		"LSqBrace",
 	  "RSqBrace",
 
+		"Arrow",
+
 		"Let",
 	  "Const",
 	  "If",

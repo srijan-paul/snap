@@ -45,8 +45,8 @@ void GC::mark() {
 		mark_value(*v);
 	}
 
-	for (int i = m_vm->m_frame_count - 1; i >= 0; --i) {
-		mark_object(m_vm->m_frames[i].func);
+	for (VM::CallFrame* frame = m_vm->m_current_frame; frame; frame = frame->next) {
+		mark_object(frame->func);
 	}
 
 	for (Upvalue* uv = m_vm->m_open_upvals; uv != nullptr; uv = uv->next_upval) {
@@ -80,8 +80,7 @@ void GC::trace() {
 		m_gray_objects.pop();
 
 #ifdef VYSE_LOG_GC
-		printf("Tracing: %p [%s] \n", (void*)gray_obj,
-					 value_to_string(VYSE_OBJECT(gray_obj)).c_str());
+		printf("Tracing: %p [%s] \n", (void*)gray_obj, value_to_string(VYSE_OBJECT(gray_obj)).c_str());
 #endif
 		gray_obj->trace(*this);
 	}
@@ -112,7 +111,7 @@ size_t GC::sweep() {
 			Obj* next = current->next;
 
 #ifdef VYSE_LOG_GC
-			printf("Freed: %s\n", value_to_string(VYSE_OBJECT(current)).c_str());
+			printf("Freed: %s", value_to_string(VYSE_OBJECT(current)).c_str());
 #endif
 
 			bytes_freed += current->size();
@@ -129,7 +128,7 @@ size_t GC::sweep() {
 	bytes_allocated -= bytes_freed;
 	next_gc = bytes_allocated * (1 + GCHeapGrowth);
 #ifdef VYSE_LOG_GC
-	printf("-- [GC END] Freed %zu bytes --\n\n", bytes_freed);
+	printf("-- [GC END] Freed %zu bytes | Next: %zu --\n\n", bytes_freed, next_gc);
 #endif
 	return bytes_freed;
 }

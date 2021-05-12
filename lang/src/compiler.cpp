@@ -74,16 +74,29 @@ CodeBlock* Compiler::compile() {
 	return m_codeblock;
 }
 
-CodeBlock* Compiler::compile_func() {
-	test(TT::LCurlBrace, "Expected '{' before function body.");
+CodeBlock* Compiler::compile_func(bool is_arrowfn) {
+	/// If this a compiler for an arrow function, then test
+	/// for an implicitly returned expression right after the
+	/// '->'. If there is a `{` however, we treat it as a function
+	/// body instead.
+	if (is_arrowfn) {
+		if (match(TT::LCurlBrace)) {
+			block_stmt();
+			emit(Op::load_nil);
+		} else {
+			expr();
+		}
+		emit(Op::return_val);
+	} else {
+		test(TT::LCurlBrace, "Expected '{' before function body.");
+		block_stmt();
+		// In case the function does not return anything, we
+		// add an implicit 'return nil'. If the closure *does*
+		// return explicitly then these 2 opcodes will never be
+		// reached anyway.
+		emit(Op::load_nil, Op::return_val);
+	}
 
-	block_stmt();
-
-	// In case the function does not return anything, we
-	// add an implicit 'return nil'. If the closure *does*
-	// return explicitly then these 2 opcodes will never be
-	// reached anyway.
-	emit(Op::load_nil, Op::return_val);
 	m_codeblock->m_num_upvals = m_symtable.m_num_upvals;
 	m_vm->m_compiler = m_parent;
 	return m_codeblock;
@@ -341,7 +354,7 @@ void Compiler::fn_decl() {
 
 // Compile the body of a function or method assuming everything until the
 // the opening parenthesis has been consumed.
-void Compiler::func_expr(String* fname, bool is_method) {
+void Compiler::func_expr(String* fname, bool is_method, bool is_arrow) {
 	// When compiling the body of the function, we allocate
 	// a code block; at that point in time, the name of the
 	// function is not reachable by the Garbage Collector,
@@ -351,7 +364,7 @@ void Compiler::func_expr(String* fname, bool is_method) {
 
 	compiler.expect(TT::LParen, "Expected '(' before function parameters.");
 
-	int param_count = 0;
+	uint param_count = 0;
 
 	// Methods have an implicit 'self' parameter, used to
 	// reference the object itself.
@@ -370,11 +383,13 @@ void Compiler::func_expr(String* fname, bool is_method) {
 
 	if (param_count > MaxFuncParams) {
 		compiler.error_at_token("Function cannot have more than 200 parameters", compiler.token);
+		return;
 	}
 
 	compiler.expect(TT::RParen, "Expected ')' after function parameters.");
+	if (is_arrow) compiler.expect(TT::Arrow, "Expected '->' before lambda body.");
 
-	CodeBlock* code = compiler.compile_func();
+	CodeBlock* const code = compiler.compile_func(is_arrow);
 	if (compiler.has_error) has_error = true;
 	const u8 idx = emit_value(VYSE_OBJECT(code));
 
@@ -766,6 +781,10 @@ void Compiler::primary() {
 		table();
 	} else if (match(TT::LSqBrace)) {
 		array();
+	} else if (match(TT::Div)) {
+		static constexpr const char* name = "<arrow-fn>";
+		String* fname = &m_vm->make_string(name, strlen(name));
+		func_expr(fname, false, true); // is_method = false, is_arrow = true
 	} else {
 		ERROR("Unexpected '{}'.", peek.raw(*m_source));
 		advance();
@@ -789,7 +808,7 @@ void Compiler::table() {
 			const int key_idx = emit_value(VYSE_OBJECT(key_string));
 			emit_with_arg(Op::load_const, key_idx);
 			if (check(TT::LParen)) {
-				func_expr(key_string, true);
+				func_expr(key_string, true); // is_methpd = true, is_arrow = false
 				emit(Op::table_add_field);
 				if (check(TT::RCurlBrace)) break;
 				continue;

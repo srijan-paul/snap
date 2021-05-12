@@ -31,14 +31,8 @@ void test_gc() {
 	vm.collect_garbage();
 
 	vm.runcode("const s = 'abcdefg'");
-	ASSERT_MEM(vm.memory(), base_size + string_size(7), "String allocation test");
-	vm.collect_garbage();
-
-	vm.runcode(R"(
-		let s = 'a' .. 'b' .. 'c'
-	)");
-	ASSERT_MEM(vm.memory(), base_size + string_size(1) * 3 + string_size(3) + string_size(2),
-						 "string allocation test");
+	ASSERT_MEM(vm.memory(), base_size + closure_size + proto_size + string_size(7),
+						 "String allocation test");
 	vm.collect_garbage();
 }
 

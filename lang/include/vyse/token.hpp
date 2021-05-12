@@ -67,7 +67,7 @@ enum class TokenType {
 	BitXor,		 // ^
 	BitNot,		 // ~
 
-	Append,    // <<<
+	Append, // <<<
 
 	// Punctuation
 	Semi,				// ;
@@ -79,6 +79,8 @@ enum class TokenType {
 	RCurlBrace, // }
 	LSqBrace,		// [
 	RSqBrace,		// ]
+
+	Arrow, // ->
 
 	// Keywords
 	Let,

@@ -21,7 +21,7 @@ class BenchMark:
 			start = datetime.now()
 			lang.run(self.filename)
 			end = datetime.now()
-			print(f'Time taken: ', colored((end - start).total_seconds(), 'green') + 's')
+			print(f'Time taken: ', colored(str((end - start).total_seconds()) + 's', 'green'))
 			print('\n')
 
 class Lang:
@@ -53,7 +53,10 @@ langs = [
 
 benches = [
 	BenchMark('Binary Trees', 'binary-trees'),
-	BenchMark('Fibonacci', 'fib'),
+	BenchMark('Fibonacci Recursive', 'fib-recurs'),
+	BenchMark('Fibonacci Iterative', 'fib'),
+	BenchMark('For Loop', 'for'),
+	BenchMark('Strings', 'string-equals'),
 	BenchMark('Method Calls', 'method-call')
 ]
 

@@ -26,7 +26,9 @@ Token Scanner::next_token() noexcept {
 
 	switch (c) {
 	case '+': return token_if_match('=', TT::PlusEq, TT::Plus);
-	case '-': return token_if_match('=', TT::MinusEq, TT::Minus);
+	case '-': 
+		if (match('>')) return make_token(TT::Arrow);
+		return token_if_match('=', TT::MinusEq, TT::Minus);
 	case '*':
 		if (match('*')) return make_token(TT::Exp);
 		return token_if_match('=', TT::MultEq, TT::Mult);

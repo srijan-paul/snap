@@ -158,7 +158,7 @@ ExitCode VM::run() {
 				return binop_error("%", b, a);
 			}
 
-			POP();
+			DISCARD();
 			break;
 		}
 
