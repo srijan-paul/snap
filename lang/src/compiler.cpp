@@ -666,7 +666,7 @@ void Compiler::unary() {
 		case TT::Minus: emit(Op::negate, op_token); break;
 		case TT::Len: emit(Op::len, op_token); break;
 		case TT::BitNot: emit(Op::bnot, op_token); break;
-		default: VYSE_ERROR("Impossible unary token.");
+		default: VYSE_ERROR("Impossible unary token."); break;
 		}
 		return;
 	}
@@ -911,7 +911,9 @@ void Compiler::literal() {
 		emit(Op::load_nil);
 		return;
 	}
-	default: VYSE_ERROR(kt::format_str("Impossible literal token type {}", int(token.type)).c_str());
+	default:
+		VYSE_ERROR(kt::format_str("Impossible literal token type {}", int(token.type)).c_str());
+		break;
 	}
 
 	if (index > MaxLocalVars) {
@@ -1161,7 +1163,7 @@ Op Compiler::toktype_to_op(TT toktype) const noexcept {
 	case TT::GtEq: return Op::gte;
 	case TT::LtEq: return Op::lte;
 	case TT::Exp: return Op::exp;
-	default: VYSE_UNREACHABLE();
+	default: VYSE_UNREACHABLE(); break;
 	}
 }
 
