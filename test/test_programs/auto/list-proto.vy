@@ -19,3 +19,10 @@ lst:fill(-1)
 lst:foreach(fn(x) {
   assert(x == -1, "List.fill() doesn't work")
 })
+
+const xs = [1, 2, 3, 4, 5, 6, 7]
+const xsplice = xs:slice(2, 5)
+assert(#xsplice == 3, "slice size incorrect.")
+for i = 0, #xsplice {
+  assert(xsplice[i] == xs[2 + i], "spice doesn't work")
+}

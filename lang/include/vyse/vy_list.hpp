@@ -11,7 +11,7 @@ public:
 
 	List() : Obj(ObjType::list){};
 	List(size_t mincap);
-		
+
 	~List();
 
 	/// @brief appends an item to the end of the array.
@@ -33,7 +33,8 @@ public:
 		return m_capacity;
 	}
 
-	void resize() {
+	inline bool in_range(number index) const noexcept {
+		return index >= 0 and index < m_num_entries;
 	}
 
 	virtual size_t size() const noexcept override {
