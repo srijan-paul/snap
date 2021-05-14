@@ -128,13 +128,17 @@ Token Scanner::number() {
 	return make_token(type);
 }
 
-/// TODO: escape characters.
+/// TODO: handle unterminated strings.
 Token Scanner::make_string(char quote) {
 	while (!(eof() or check(quote))) {
 		char c = next();
 		if (c == '\n') {
 			line_pos.line++;
 			line_pos.column = 1;
+		} else if (c == '\\') {
+			// unconditionally consume the next
+			// character since it's an escape sequence.
+			next();
 		}
 	}
 	if (eof()) {

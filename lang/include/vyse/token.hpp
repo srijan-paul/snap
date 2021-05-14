@@ -14,6 +14,7 @@ enum class TokenType {
 
 	Id,
 	Error,
+	ErrStringTerminate,
 	Eof,
 
 	// Operators

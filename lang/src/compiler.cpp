@@ -1053,8 +1053,42 @@ bool Compiler::ok() const noexcept {
 
 u32 Compiler::emit_string(const Token& token) {
 	const u32 length = token.length() - 2; // minus the quotes
+
+	// the actual length of the string may be different
+	// from what we see in the source code because of
+	// escape characters.
+
 	// +1 to skip the openening quote.
-	String& string = m_vm->make_string(token.raw_cstr(*m_source) + 1, length);
+	const char* srcbuf = token.raw_cstr(*m_source) + 1;
+	char* strbuf = (char*)malloc(sizeof(char) * (length + 1));
+	strbuf[length] = '\0';
+
+	uint pos = 0;
+	for (uint i = 0; i < length; ++i) {
+		// count escape characters as single chars.
+		if (srcbuf[i] == '\\') {
+			VYSE_ASSERT(i + 1 < length, "Malformed string token with '\\' as last character.");
+			char next_char = srcbuf[i + 1];
+			switch (next_char) {
+			case 'n': strbuf[pos] = '\n'; break;
+			case 't': strbuf[pos] = '\t'; break;
+			case 'r': strbuf[pos] = '\r'; break;
+			case 'b': strbuf[pos] = '\b'; break;
+			case 'v': strbuf[pos] = '\v'; break;
+			default: strbuf[pos] = next_char; break;
+			}
+			++i;
+		} else {
+			strbuf[pos] = srcbuf[i];
+		}
+		++pos;
+	}
+
+	uint str_len = pos;
+	strbuf = (char*)realloc(strbuf, sizeof(char) * (str_len + 1));
+	strbuf[str_len] = '\0';
+
+	String& string = m_vm->take_string(strbuf, str_len);
 	return emit_value(VYSE_OBJECT(&string));
 }
 

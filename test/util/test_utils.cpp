@@ -17,8 +17,10 @@ void print_ttype(vyse::TokenType type) {
 		"String",
 		"True",
 		"False",
+
 		"Id",		
 		"Error",	  
+		"ErrStringTerminate",	  
 		"Eof",
 
 		"Plus",		
@@ -81,6 +83,8 @@ void print_ttype(vyse::TokenType type) {
 	  "Nil",
 	  "Fn",
 	  "Return",
+		"Break",
+		"Continue",
 	};
 	// clang-format on
 	const std::string& str = type_strs[static_cast<size_t>(type)];

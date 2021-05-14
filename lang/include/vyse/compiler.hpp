@@ -245,11 +245,11 @@ private:
 
 	/// @brief Compiles the arguments for a call expression. The current token
 	/// must be the opening '(' for the argument
-	void compile_args(bool is_method = false);						 // EXPR (',' EXPR)*
-	void grouping();																			 // '('expr')'
-	void primary();																				 // LITERAL | ID
-	void variable(bool can_assign);												 // ID
-	void literal();																				 // NUM | STR | BOOL | nil
+	void compile_args(bool is_method = false); // EXPR (',' EXPR)*
+	void grouping();													 // '('expr')'
+	void primary();														 // LITERAL | ID
+	void variable(bool can_assign);						 // ID
+	void literal();														 // NUM | STR | BOOL | nil
 	void func_expr(String* fname, bool is_method = false, bool is_arrow = false); // fn NAME? BLOCK
 
 	/// @brief compiles a table, assuming the opening '{' has been
@@ -348,6 +348,14 @@ private:
 	inline void emit_with_arg(Opcode opm, u8 arg);
 
 	size_t emit_value(Value value);
+
+	/// @brief returns the length of a string after considering the
+	/// escape characters.
+	/// @param srcbuf Position of the first character of the string
+	/// in the source buffer
+	/// @param srclen length of the string when the escape sequences are not
+	/// considered as single chars.
+	int src_string_len(const char* srcbuf, int srclen);
 	u32 emit_string(const Token& token);
 	u32 emit_id_string(const Token& token);
 
