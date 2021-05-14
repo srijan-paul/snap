@@ -47,3 +47,18 @@ const add = /(x, y) -> x + y
 assert(xs:reduce(add) == 15)
 assert(List.reduce(xs, add) == 15)
 assert(xs:reduce(/(x, y, index) -> x + y, 15) == 30)
+
+-- List.filter
+xs = [1, 2, 3, 4, 5]
+let fxs = xs:filter(/(x) -> x % 2 == 0)
+assert(#fxs == 2)
+assert(fxs[0] == 2 && fxs[1] == 4)
+
+-- mapreducefilter
+
+const even_sqr_sum = xs
+  :filter(/(x) -> x % 2 == 0)
+  :map(/(x) -> x ** 2)
+  :reduce(/(x, y) -> x + y)
+
+assert(even_sqr_sum == 20, "filter-map-reduce error")

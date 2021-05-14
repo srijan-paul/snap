@@ -145,7 +145,10 @@ Value map(VM& vm, int argc) {
 		vm.m_stack.push(list[i]);
 		vm.m_stack.push(VYSE_NUM(i));
 		bool ok = vm.call(2);
-		if (!ok) return VYSE_NIL;
+		if (!ok) {
+			vm.gc_unprotect(&ret);
+			return VYSE_NIL;
+		}
 		ret.append(vm.m_stack.pop());
 	}
 
@@ -192,11 +195,49 @@ Value reduce(VM& vm, int argc) {
 		vm.m_stack.push(init);
 		vm.m_stack.push(list[i]);
 		vm.m_stack.push(VYSE_NUM(i));
-		if(!vm.call(3)) return VYSE_NIL;
+		if (!vm.call(3)) return VYSE_NIL;
 		init = vm.m_stack.pop();
 	}
 
 	return init;
+}
+
+Value filter(VM& vm, int argc) {
+	constexpr const char* fname = "List.filter";
+	if (argc != 2) {
+		cfn_error(vm, fname, "Expected 2 arguments (list, filter_fn).");
+		return VYSE_NIL;
+	}
+
+	CHECK_ARG_TYPE(0, ObjType::list);
+	const List& list = *VYSE_AS_LIST(vm.get_arg(0));
+
+	Value& vfunc = vm.get_arg(1);
+	if (!(VYSE_IS_CLOSURE(vfunc) or VYSE_IS_CCLOSURE(vfunc))) {
+		cfn_error(vm, fname,
+							kt::format_str("Bad arg #2. Expected function, got {}.", value_type_name(vfunc)));
+		return VYSE_NIL;
+	}
+
+	List& ret = vm.make<List>();
+	vm.gc_protect(&ret);
+
+	for (uint i = 0; i < list.length(); ++i) {
+		vm.m_stack.push(vfunc);
+		vm.m_stack.push(list[i]);
+		vm.m_stack.push(VYSE_NUM(i));
+		if (!vm.call(2)) {
+			vm.gc_unprotect(&ret);
+			return VYSE_NIL;
+		}
+		Value res = vm.m_stack.pop();
+		if (is_val_truthy(res)) {
+			ret.append(list[i]);
+		}
+	}
+
+	vm.gc_unprotect(&ret);
+	return VYSE_OBJECT(&ret);
 }
 
 void load_list_proto(VM& vm) {
@@ -207,6 +248,7 @@ void load_list_proto(VM& vm) {
 	add_libfn(vm, list_proto, "slice", slice);
 	add_libfn(vm, list_proto, "map", map);
 	add_libfn(vm, list_proto, "reduce", reduce);
+	add_libfn(vm, list_proto, "filter", filter);
 }
 
 } // namespace vyse::stdlib::primitives
