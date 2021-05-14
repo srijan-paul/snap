@@ -20,9 +20,19 @@ lst:foreach(fn(x) {
   assert(x == -1, "List.fill() doesn't work")
 })
 
-const xs = [1, 2, 3, 4, 5, 6, 7]
+let xs = [1, 2, 3, 4, 5, 6, 7]
 const xsplice = xs:slice(2, 5)
 assert(#xsplice == 3, "slice size incorrect.")
 for i = 0, #xsplice {
   assert(xsplice[i] == xs[2 + i], "spice doesn't work")
 }
+
+xs = [1, 2, 3, 4, 5]
+let xs2 = xs:map(/(x) -> 2 * x)
+assert(#xs2 == #xs, "map unequal length")
+for i = 0, #xs {
+  assert(xs2[i] == 2 * xs[i], "map")
+}
+
+xs2 = xs:map(/(x, i) -> i * x)
+xs:foreach(/(x, i) -> assert(x * i == xs2[i],"map"))

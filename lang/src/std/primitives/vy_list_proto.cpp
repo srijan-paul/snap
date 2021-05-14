@@ -117,12 +117,51 @@ Value slice(VM& vm, int argc) {
 	return VYSE_OBJECT(&slice);
 }
 
+Value map(VM& vm, int argc) {
+	constexpr const char* fname = "List.map";
+	if (argc != 2) {
+		cfn_error(vm, fname, "Expected at least 2 arguments (list, map_fn");
+		return VYSE_NIL;
+	}
+
+	CHECK_ARG_TYPE(0, ObjType::list);
+
+	Value& vfunc = vm.get_arg(1);
+	if (!(VYSE_IS_CLOSURE(vfunc) or VYSE_IS_CCLOSURE(vfunc))) {
+		cfn_error(vm, fname,
+							kt::format_str("Bad arg #2. Expected function, got {}.", value_type_name(vfunc)));
+		return VYSE_NIL;
+	}
+
+	const List& list = *VYSE_AS_LIST(vm.get_arg(0));
+	List& ret = vm.make<List>();
+
+	/// The list we just created isn't reachable by
+	/// the garbage collector from any root set, so
+	/// we protect it.
+	vm.gc_protect(&ret);
+	for (uint i = 0; i < list.length(); ++i) {
+		vm.m_stack.push(vfunc);
+		vm.m_stack.push(list[i]);
+		vm.m_stack.push(VYSE_NUM(i));
+		bool ok = vm.call(2);
+		if (!ok) return VYSE_NIL;
+		ret.append(vm.m_stack.pop());
+	}
+
+	/// once we return it, it's going to get
+	/// pushed onto the stack and become reachable.
+	vm.gc_unprotect(&ret);
+	return VYSE_OBJECT(&ret);
+}
+
 void load_list_proto(VM& vm) {
 	Table& list_proto = *vm.prototypes.list;
 	add_libfn(vm, list_proto, "foreach", foreach);
 	add_libfn(vm, list_proto, "make", make);
 	add_libfn(vm, list_proto, "fill", fill);
 	add_libfn(vm, list_proto, "slice", slice);
+	add_libfn(vm, list_proto, "map", map);
 }
 
 } // namespace vyse::stdlib::primitives
