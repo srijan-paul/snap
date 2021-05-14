@@ -1,14 +1,43 @@
 #include "../../str_format.hpp"
 #include "../lib_util.hpp"
+#include "value.hpp"
 #include <cstdlib>
 #include <std/primitives/vy_string.hpp>
 #include <vm.hpp>
+
+#define CHECK_ARG_TYPE(n, type)                                                                    \
+	if (!check_arg_type(vm, n, type, fname)) return VYSE_NIL;
 
 namespace vyse::stdlib::primitives {
 
 using namespace util;
 
 #define FMT(...) kt::format_str(__VA_ARGS__)
+
+/// @brief finds all occurrences of [find] in [src]
+std::vector<size_t> find_ocurrences(const char* src, size_t srclen, const char* find,
+																		size_t findlen) {
+	std::vector<size_t> indices;
+	for (uint i = 0; i < srclen; ) {
+		bool match = true;
+		uint j;
+		for (j = 0; j < findlen; ++j) {
+			if (src[i + j] != find[j]) {
+				match = false;
+				break;
+			}
+		}
+
+		if (match) {
+			indices.push_back(i);
+			i += j;
+		} else {
+			++i;
+		}
+	}
+
+	return indices;
+}
 
 Value substr(VM& vm, int argc) {
 	static constexpr const char* fname = "String.substr";
@@ -106,10 +135,64 @@ Value to_number(VM& vm, int argc) {
 		return VYSE_NIL;
 	}
 
-	if (!check_arg_type(vm, 0, ObjType::string, fname))	 return VYSE_NIL;
+	if (!check_arg_type(vm, 0, ObjType::string, fname)) return VYSE_NIL;
 	const String* s = VYSE_AS_STRING(vm.get_arg(0));
-	number num  = std::stod(s->c_str());
+	number num = std::stod(s->c_str());
 	return VYSE_NUM(num);
+}
+
+Value replace(VM& vm, int argc) {
+	static constexpr const char* fname = "replace";
+	if (argc != 3) {
+		cfn_error(vm, fname, "expected 3 arguments (string, to_replace, replace_with).");
+		return VYSE_NIL;
+	}
+
+	CHECK_ARG_TYPE(0, ObjType::string);
+	CHECK_ARG_TYPE(1, ObjType::string);
+	CHECK_ARG_TYPE(2, ObjType::string);
+
+	const String& src = *VYSE_AS_STRING(vm.get_arg(0));
+	const String& to_replace = *VYSE_AS_STRING(vm.get_arg(1));
+	const String& replace_with = *VYSE_AS_STRING(vm.get_arg(2));
+
+	const char* const str = src.c_str();
+	const char* const find = to_replace.c_str();
+	const char* const replace = replace_with.c_str();
+
+	const size_t str_len = src.len();
+	const size_t find_len = to_replace.len();
+	const size_t replace_len = replace_with.len();
+
+	/// A list of indices where [find] occurs in [str]
+	const std::vector<size_t> indices = find_ocurrences(str, str_len, find, find_len);
+	/// length of the final string after replacement.
+	const size_t bufsize = str_len + (indices.size() * (int(replace_len) - int(find_len)));
+	char* const buf = new char[bufsize + 1];
+	buf[bufsize] = '\0';
+
+	// current position in the source and destination
+	// buffers.
+	uint src_pos = 0, dst_pos = 0;
+	uint next_replace_idx = 0; // index of the next replacement pos
+	while (src_pos < str_len) {
+		// break out of the loop if there are no more
+		// replacements to be made.
+		if (next_replace_idx >= indices.size()) break;
+		if (indices[next_replace_idx] == src_pos) {
+			// We've reached a location where [find] exists
+			// and needs to be replaced with [replace].
+			std::memcpy(buf + dst_pos, replace, replace_len);
+			dst_pos += replace_len;
+			src_pos += find_len;
+			++next_replace_idx;
+		} else {
+			buf[dst_pos++] = src[src_pos++];
+		}
+	}
+
+	std::memcpy(buf + dst_pos, str + src_pos, str_len - src_pos);
+	return VYSE_OBJECT(&vm.take_string(buf, bufsize));
 }
 
 void load_string_proto(VM& vm) {
@@ -117,6 +200,7 @@ void load_string_proto(VM& vm) {
 	add_libfn(vm, str_proto, "substr", substr);
 	add_libfn(vm, str_proto, "code_at", code_at);
 	add_libfn(vm, str_proto, "to_num", to_number);
+	add_libfn(vm, str_proto, "replace", replace);
 }
 
 } // namespace vyse::stdlib::primitives
