@@ -155,6 +155,50 @@ Value map(VM& vm, int argc) {
 	return VYSE_OBJECT(&ret);
 }
 
+Value reduce(VM& vm, int argc) {
+	constexpr const char* fname = "reduce";
+	if (argc != 3 and argc != 2) {
+		cfn_error(vm, fname, "Expected 2 or 3 arguments (list, reduce_fn, [init]).");
+		return VYSE_NIL;
+	}
+
+	CHECK_ARG_TYPE(0, ObjType::list);
+
+	Value& vfunc = vm.get_arg(1);
+	if (!(VYSE_IS_CLOSURE(vfunc) or VYSE_IS_CCLOSURE(vfunc))) {
+		cfn_error(vm, fname,
+							kt::format_str("Bad arg #2. Expected function, got {}.", value_type_name(vfunc)));
+		return VYSE_NIL;
+	}
+
+	const List& list = *VYSE_AS_LIST(vm.get_arg(0));
+
+	// If no initial value is provided then consider the first
+	// element of the array to be the initial value, and start
+	// using the reducer function from the first value onwards.
+	Value init;
+	uint start_index;
+
+	if (argc == 3) {
+		init = vm.get_arg(2);
+		start_index = 0;
+	} else {
+		init = list[0];
+		start_index = 1;
+	}
+
+	for (uint i = start_index; i < list.length(); ++i) {
+		vm.m_stack.push(vfunc);
+		vm.m_stack.push(init);
+		vm.m_stack.push(list[i]);
+		vm.m_stack.push(VYSE_NUM(i));
+		if(!vm.call(3)) return VYSE_NIL;
+		init = vm.m_stack.pop();
+	}
+
+	return init;
+}
+
 void load_list_proto(VM& vm) {
 	Table& list_proto = *vm.prototypes.list;
 	add_libfn(vm, list_proto, "foreach", foreach);
@@ -162,6 +206,7 @@ void load_list_proto(VM& vm) {
 	add_libfn(vm, list_proto, "fill", fill);
 	add_libfn(vm, list_proto, "slice", slice);
 	add_libfn(vm, list_proto, "map", map);
+	add_libfn(vm, list_proto, "reduce", reduce);
 }
 
 } // namespace vyse::stdlib::primitives

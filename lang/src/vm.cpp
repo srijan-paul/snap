@@ -34,7 +34,7 @@
 #define SET_VAR(index, value) (m_current_frame->base[index] = value)
 
 // PEEK(1) fetches the topmost value in the stack.
-#define PEEK(depth) m_stack.top[-depth]
+#define PEEK(depth) m_stack.top[-(depth)]
 #define POP()				(m_stack.pop())
 #define DISCARD()		(--m_stack.top)
 #define POPN(n)			(m_stack.top -= n)
@@ -563,7 +563,7 @@ ExitCode VM::run() {
 
 		case Op::call_func: {
 			u8 argc = NEXT_BYTE();
-			Value value = PEEK(argc - 1);
+			Value value = PEEK(argc + 1);
 			if (!op_call(value, argc)) return ExitCode::RuntimeError;
 			break;
 		}

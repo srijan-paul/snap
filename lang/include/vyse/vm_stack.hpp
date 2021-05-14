@@ -27,8 +27,8 @@ public:
 		*(top++) = value;
 	}
 
-	inline Value peek(u8 depth = 0) const {
-		return *(top - 1 - depth);
+	inline Value peek(int depth = 1) const {
+		return *(top - depth);
 	}
 
 	/// @brief Pops a value from the stack and returns it
