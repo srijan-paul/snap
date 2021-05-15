@@ -12,8 +12,6 @@ namespace vyse {
 // and linear probing.
 class Table final : public Obj {
 	friend GC;
-	friend Value stdlib::setproto(VM&, int);
-	friend Value stdlib::getproto(VM&, int);
 
 public:
 	explicit Table() noexcept : Obj{ObjType::table} {};
@@ -25,6 +23,11 @@ public:
 	static constexpr size_t DefaultCapacity = 16;
 	static constexpr u8 GrowthFactor = 2;
 	static constexpr float LoadFactor = 0.85;
+
+	/// @brief The prototype for this table.
+	/// If a property is not found in this table
+	/// then a lookup is done on the prototype.
+	Table* m_proto_table = nullptr;
 
 	/// @return The value assosciated with `key`.
 	Value get(Value key) const;
@@ -85,11 +88,6 @@ private:
 	size_t m_num_tombstones = 0;
 	size_t m_cap = DefaultCapacity;
 
-	/// @brief The prototype for this table.
-	/// If a property is not found in this table
-	/// then a lookup is done on the prototype.
-	Table* m_proto_table = nullptr;
-
 	size_t hash_value(Value value) const;
 	size_t hash_object(Obj* object) const;
 
@@ -140,4 +138,4 @@ private:
 
 bool operator==(const Table::Entry& a, const Table::Entry& b);
 
-} // namespace vyse 
+} // namespace vyse

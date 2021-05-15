@@ -105,7 +105,7 @@ specify a third parameter:
 
 ```lua
 for i = 1, 10, 2 {
-  print("i = " .. i)
+  print("i = ", i)
 }
 ```
 

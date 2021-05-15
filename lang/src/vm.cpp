@@ -63,16 +63,16 @@ using OT = ObjType;
 		}                                                                                              \
 	} while (false);
 
-#define BINOP(op)                                                                                  \
+#define BINOP(op, proto_method_name)                                                               \
 	do {                                                                                             \
-		Value& a = PEEK(1);                                                                            \
-		Value& b = PEEK(2);                                                                            \
+		Value& right = PEEK(1);                                                                        \
+		Value& left = PEEK(2);                                                                         \
                                                                                                    \
-		if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                       \
-			VYSE_SET_NUM(b, VYSE_AS_NUM(b) op VYSE_AS_NUM(a));                                           \
+		if (VYSE_IS_NUM(left) and VYSE_IS_NUM(right)) {                                                \
+			VYSE_SET_NUM(left, VYSE_AS_NUM(left) op VYSE_AS_NUM(right));                                 \
 			DISCARD();                                                                                   \
-		} else {                                                                                       \
-			return binop_error(#op, b, a);                                                               \
+		} else if (!call_binary_overload(#op, proto_method_name)) {                                    \
+			return ExitCode::RuntimeError;                                                               \
 		}                                                                                              \
 	} while (false);
 
@@ -111,9 +111,9 @@ ExitCode VM::run() {
 		case Op::load_nil: PUSH(VYSE_NIL); break;
 
 		case Op::pop: m_stack.pop(); break;
-		case Op::add: BINOP(+); break;
-		case Op::sub: BINOP(-); break;
-		case Op::mult: BINOP(*); break;
+		case Op::add: BINOP(+, "__add"); break;
+		case Op::sub: BINOP(-, "__sub"); break;
+		case Op::mult: BINOP(*, "__mult"); break;
 
 		case Op::gt: CMP_OP(>); break;
 		case Op::lt: CMP_OP(<); break;
@@ -554,7 +554,7 @@ ExitCode VM::run() {
 			if (VYSE_IS_TABLE(vtable)) {
 				m_stack.top[-1] = VYSE_AS_TABLE(vtable)->get(vkey);
 			} else {
-				m_stack.top[-1] = index_value(vtable, vkey);
+				m_stack.top[-1] = index_proto(vtable, vkey);
 			}
 			PUSH(vtable);
 
@@ -979,6 +979,27 @@ bool VM::call_cclosure(CClosure* cclosure, int argc) {
 	m_stack.top[-1] = ret;
 
 	return !m_has_error;
+}
+
+bool VM::call_binary_overload(const char* op_str, const char* method_name) {
+	/// look for an overloaded method on each of the operands.
+	const Value mname = VYSE_OBJECT(&make_string(method_name));
+	const Value right = m_stack.pop();
+	const Value left = m_stack.pop();
+
+	Value method = index_proto(left, mname);
+	if (VYSE_IS_NIL(method)) method = index_proto(right, mname);
+	if (VYSE_IS_NIL(method)) {
+		binop_error(op_str, left, right);
+		return false;
+	}
+
+	m_stack.push(method);
+	m_stack.push(left);
+	m_stack.push(right);
+
+	bool ok = op_call(method, 2);
+	return ok;
 }
 
 // String operation helpers.

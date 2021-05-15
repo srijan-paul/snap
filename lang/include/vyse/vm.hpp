@@ -324,24 +324,35 @@ private:
 	bool call_closure(Closure* func, int argc);
 	bool call_cclosure(CClosure* cclosure, int argc);
 
-	/// @brief return the `table[key]` where table is the prototype
-	/// of [value].
-	inline Value index_value(const Value& value, const Value& key) noexcept {
+	inline Table* get_proto(const Value& value) {
 		switch (VYSE_GET_TT(value)) {
-		case ValueType::Bool: return prototypes.boolean->get(key);
-		case ValueType::Number: return prototypes.number->get(key);
+		case ValueType::Bool: return prototypes.boolean;
+		case ValueType::Number: return prototypes.number;
 		case ValueType::Object: {
-			const Obj* o = VYSE_AS_OBJECT(value);
+			Obj* o = VYSE_AS_OBJECT(value);
 			switch (o->tag) {
-			case ObjType::string: return prototypes.string->get(key);
-			case ObjType::list: return prototypes.list->get(key);
-			case ObjType::table: return static_cast<const Table*>(o)->get(key);
-			default: return VYSE_NIL;
+			case ObjType::string: return prototypes.string;
+			case ObjType::list: return prototypes.list;
+			case ObjType::table: return static_cast<Table*>(o)->m_proto_table;
+			default: return nullptr;
 			}
 		}
-		default: return VYSE_NIL;
+		default: return nullptr;
 		}
 	}
+
+	/// @brief return the `table[key]` where table is the prototype
+	/// of [value].
+	inline Value index_proto(const Value& value, const Value& key) noexcept {
+		const Table* proto = get_proto(value);
+		if (proto != nullptr) return proto->get(key);
+		return VYSE_NIL;
+	}
+
+	/// @brief calls the overloaded operator whose protomethod name is [method_name]
+	/// The arguments must be in the stack in order.
+	/// @return true if the call succeeded, false if there was an error.
+	bool call_binary_overload(const char* op_str, const char* method_name);
 
 	/// @brief concatenates two strings. Will intern the resulting
 	/// string if it isn't already interned.
