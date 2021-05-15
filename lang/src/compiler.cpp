@@ -80,7 +80,7 @@ CodeBlock* Compiler::compile_func(bool is_arrowfn) {
 	/// '->'. If there is a `{` however, we treat it as a function
 	/// body instead.
 	if (is_arrowfn) {
-		if (match(TT::LCurlBrace)) {
+		if (check(TT::LCurlBrace)) {
 			block_stmt();
 			emit(Op::load_nil);
 		} else {
