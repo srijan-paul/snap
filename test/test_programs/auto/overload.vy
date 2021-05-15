@@ -42,11 +42,46 @@ const T = {
 
   __mult(other) {
     return self:new(self.x * other.x)
+  },
+
+  __lte(other) {
+    return self.x <= other.x
+  },
+
+  __gte(other) {
+    return self.x >= other.x
+  },
+
+  __lt(other) {
+    return self.x < other.x
+  },
+
+  __gt(other) { 
+    return self.x > other.x
+  },
+
+  __exp(other) {
+    return self:new(self.x ** other.x)
+  },
+
+  __mod(other) {
+    return self:new(self.x % other.x)
   }
 }
 
 let t1 = T:new(1)
 let t2 = T:new(2)
+
 assert((t1 + t2).x == 3)
 assert((t1 - t2).x == -1)
 assert((t1 * t2).x == 2)
+
+-- == true and == false to check for identity
+-- equality.
+assert(t1 <= t2 == true)
+assert(t1 < t2 == true)
+assert(t1 >= t2 == false)
+assert(t1 > t2 == false)
+
+assert((T:new(5) ** T:new(2)).x == 25)
+assert((T:new(5) % T:new(2)).x == 1) 

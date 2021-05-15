@@ -51,15 +51,16 @@ using OT = ObjType;
 
 #define UNOP_ERROR(op, v) ERROR("Cannot use operator '{}' on type '{}'.", op, VYSE_TYPE_CSTR(v))
 
-#define CMP_OP(op)                                                                                 \
+#define CMP_OP(op, proto_method)                                                                   \
 	do {                                                                                             \
-		Value b = m_stack.pop();                                                                       \
-		Value a = m_stack.pop();                                                                       \
+		Value& b = PEEK(1);                                                                            \
+		Value& a = PEEK(2);                                                                            \
                                                                                                    \
 		if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                       \
-			PUSH(VYSE_BOOL(VYSE_AS_NUM(a) op VYSE_AS_NUM(b)));                                           \
-		} else {                                                                                       \
-			return binop_error(#op, b, a);                                                               \
+			m_stack.top[-2] = (VYSE_BOOL(VYSE_AS_NUM(a) op VYSE_AS_NUM(b)));                             \
+			DISCARD();                                                                                   \
+		} else if (!call_binary_overload(#op, proto_method)) {                                         \
+			return binop_error(#op, a, b);                                                               \
 		}                                                                                              \
 	} while (false);
 
@@ -115,10 +116,10 @@ ExitCode VM::run() {
 		case Op::sub: BINOP(-, "__sub"); break;
 		case Op::mult: BINOP(*, "__mult"); break;
 
-		case Op::gt: CMP_OP(>); break;
-		case Op::lt: CMP_OP(<); break;
-		case Op::gte: CMP_OP(>=); break;
-		case Op::lte: CMP_OP(<=); break;
+		case Op::gt: CMP_OP(>, "__gt"); break;
+		case Op::lt: CMP_OP(<, "__lt"); break;
+		case Op::gte: CMP_OP(>=, "__gte"); break;
+		case Op::lte: CMP_OP(<=, "__lte"); break;
 
 		case Op::div: {
 			Value& a = PEEK(1);
@@ -130,7 +131,7 @@ ExitCode VM::run() {
 				}
 				VYSE_SET_NUM(b, VYSE_AS_NUM(b) / VYSE_AS_NUM(a));
 				DISCARD();
-			} else {
+			} else if (!call_binary_overload("/", "__div")) {
 				return binop_error("/", b, a);
 			}
 			break;
@@ -142,23 +143,22 @@ ExitCode VM::run() {
 			if (VYSE_IS_NUM(base) and VYSE_IS_NUM(power)) {
 				VYSE_SET_NUM(base, pow(VYSE_AS_NUM(base), VYSE_AS_NUM(power)));
 				DISCARD();
-			} else {
+			} else if (!call_binary_overload("/", "__exp")) {
 				return binop_error("**", base, power);
 			}
 			break;
 		}
 
 		case Op::mod: {
-			Value& a = PEEK(1);
-			Value& b = PEEK(2);
+			Value& left = PEEK(2);
+			Value& right = PEEK(1);
 
-			if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {
-				VYSE_SET_NUM(b, fmod(VYSE_AS_NUM(b), VYSE_AS_NUM(a)));
-			} else {
-				return binop_error("%", b, a);
+			if (VYSE_IS_NUM(left) and VYSE_IS_NUM(right)) {
+				VYSE_SET_NUM(left, fmod(VYSE_AS_NUM(left), VYSE_AS_NUM(right)));
+				DISCARD();
+			} else if (!call_binary_overload("%", "__mod")) {
+				return binop_error("%", left, right);
 			}
-
-			DISCARD();
 			break;
 		}
 
