@@ -60,7 +60,7 @@ using OT = ObjType;
 			m_stack.top[-2] = (VYSE_BOOL(VYSE_AS_NUM(a) op VYSE_AS_NUM(b)));                             \
 			DISCARD();                                                                                   \
 		} else if (!call_binary_overload(#op, proto_method)) {                                         \
-			return binop_error(#op, a, b);                                                               \
+			return ExitCode::RuntimeError;                                                               \
 		}                                                                                              \
 	} while (false);
 

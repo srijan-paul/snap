@@ -1,6 +1,7 @@
 #include "../../str_format.hpp"
 #include "../lib_util.hpp"
 #include "value.hpp"
+#include <cmath>
 #include <cstdlib>
 #include <std/primitives/vy_string.hpp>
 #include <vm.hpp>
@@ -18,7 +19,7 @@ using namespace util;
 std::vector<size_t> find_ocurrences(const char* src, size_t srclen, const char* find,
 																		size_t findlen) {
 	std::vector<size_t> indices;
-	for (uint i = 0; i < srclen; ) {
+	for (uint i = 0; i < srclen;) {
 		bool match = true;
 		uint j;
 		for (j = 0; j < findlen; ++j) {
@@ -127,6 +128,27 @@ Value code_at(VM& vm, int argc) {
 	return VYSE_NUM(c);
 }
 
+/// @brief convert a vyse string to a double.
+/// returns 'nan' if it can't be parsed as a double.
+static number str2num_base10(const String* str) {
+	const char* cstr = str->c_str();
+	bool seen_period = false;
+
+	for (const char* ch = cstr; *ch; ++ch) {
+		if (!isdigit(*ch)) {
+			if (*ch == '.') {
+				if (seen_period) return NAN;
+				seen_period = true;
+			} else {
+				return NAN;
+			}
+		}
+	}
+	/// TODO: remove this call to std::stod and do the parsing
+	/// in the loop above.
+	return std::stod(cstr);
+}
+
 /// TODO: Handle different bases from 2 to 64
 Value to_number(VM& vm, int argc) {
 	constexpr const char* fname = "to_num";
@@ -137,8 +159,7 @@ Value to_number(VM& vm, int argc) {
 
 	if (!check_arg_type(vm, 0, ObjType::string, fname)) return VYSE_NIL;
 	const String* s = VYSE_AS_STRING(vm.get_arg(0));
-	number num = std::stod(s->c_str());
-	return VYSE_NUM(num);
+	return VYSE_NUM(str2num_base10(s));
 }
 
 Value replace(VM& vm, int argc) {

@@ -16,33 +16,33 @@ public:
 
 	~CodeBlock(){};
 
-	const String* name() const {
+	[[nodiscard]] constexpr const String* name() const noexcept {
 		return m_name;
 	}
 
-	const char* name_cstr() const {
+	[[nodiscard]] constexpr const char* name_cstr() const noexcept {
 		return m_name->c_str();
 	}
 
-	Block& block() {
+	[[nodiscard]] constexpr Block& block() noexcept {
 		return m_block;
 	}
 
-	const Block& block() const {
+	[[nodiscard]] constexpr const Block& block() const noexcept {
 		return m_block;
 	}
 
 	u32 add_param();
 
-	u32 param_count() const {
+	[[nodiscard]] constexpr u32 param_count() const noexcept {
 		return m_num_params;
 	}
 
-	size_t size() const override {
+	[[nodiscard]] size_t size() const override {
 		return sizeof(CodeBlock);
 	}
 
-	size_t stack_size() const noexcept {
+	[[nodiscard]] constexpr size_t stack_size() const noexcept {
 		return max_stack_size;
 	}
 
@@ -72,17 +72,17 @@ public:
 	explicit Closure(CodeBlock* proto, u32 upval_count) noexcept;
 	~Closure() override{};
 
-	constexpr const String* name() const noexcept {
+	[[nodiscard]] constexpr const String* name() const noexcept {
 		return m_codeblock->name();
 	}
 
-	constexpr const char* name_cstr() const noexcept {
+	[[nodiscard]] constexpr const char* name_cstr() const noexcept {
 		return m_codeblock->name_cstr();
 	}
 
 	/// @brief returns the Upvalue at index [idx] in the
 	/// upvalue list.
-	Upvalue* get_upval(u32 idx) noexcept {
+	[[nodiscard]] Upvalue* get_upval(u32 idx) noexcept {
 		VYSE_ASSERT(idx < m_upvals.size(), "Invalid upvalue index.");
 		return m_upvals[idx];
 	}
@@ -91,7 +91,7 @@ public:
 	/// list to the given Upvalue.
 	void set_upval(u32 idx, Upvalue* uv);
 
-	size_t size() const override {
+	[[nodiscard]] size_t size() const override {
 		return sizeof(Closure);
 	}
 
@@ -107,11 +107,11 @@ public:
 	explicit CClosure(NativeFn fn) noexcept : Obj(ObjType::c_closure), m_func{fn} {};
 	~CClosure() override = default;
 
-	size_t size() const override {
+	[[nodiscard]] size_t size() const override {
 		return sizeof(CClosure);
 	}
 
-	NativeFn cfunc() const noexcept {
+	[[nodiscard]] NativeFn cfunc() const noexcept {
 		return m_func;
 	}
 

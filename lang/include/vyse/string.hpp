@@ -20,7 +20,7 @@ public:
 	/// @param len length of the string.
 	explicit String(const char* chrs, size_t len) noexcept;
 
-	[[nodiscard]] inline constexpr const char* c_str() const {
+	[[nodiscard]] inline constexpr const char* c_str() const noexcept {
 		return m_chars;
 	}
 
