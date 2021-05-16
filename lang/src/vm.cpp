@@ -77,15 +77,15 @@ using OT = ObjType;
 		}                                                                                              \
 	} while (false);
 
-#define BIT_BINOP(op)                                                                              \
+#define BIT_BINOP(op, proto_method_name)                                                           \
 	Value& b = PEEK(1);                                                                              \
 	Value& a = PEEK(2);                                                                              \
                                                                                                    \
 	if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                         \
 		VYSE_SET_NUM(a, VYSE_CAST_INT(a) op VYSE_CAST_INT(b));                                         \
 		DISCARD();                                                                                     \
-	} else {                                                                                         \
-		return binop_error(#op, a, b);                                                                 \
+	} else if (!call_binary_overload(#op, proto_method_name)) {                                      \
+		return ExitCode::RuntimeError;                                                                 \
 	}
 
 #ifdef VYSE_DEBUG_RUNTIME
@@ -163,27 +163,27 @@ ExitCode VM::run() {
 		}
 
 		case Op::lshift: {
-			BIT_BINOP(<<);
+			BIT_BINOP(<<, "__bsl");
 			break;
 		}
 
 		case Op::rshift: {
-			BIT_BINOP(>>);
+			BIT_BINOP(>>, "__bsr");
 			break;
 		}
 
 		case Op::band: {
-			BIT_BINOP(&);
+			BIT_BINOP(&, "__band");
 			break;
 		}
 
 		case Op::bxor: {
-			BIT_BINOP(^);
+			BIT_BINOP(^, "__bxor");
 			break;
 		}
 
 		case Op::bor: {
-			BIT_BINOP(|);
+			BIT_BINOP(|, "__bor");
 			break;
 		}
 
@@ -585,8 +585,8 @@ ExitCode VM::run() {
 			m_current_frame = m_current_frame->prev;
 			VYSE_ASSERT(m_current_frame != nullptr, "Invalid call stack state.");
 
-			// If the call site of this Vyse function was in C
-			// then we return  control to the C function.
+			// If the call site of this Vyse function was in C++
+			// then we return control to the C++ function.
 			if (m_current_frame->func->tag == OT::c_closure) {
 				return ExitCode::Success;
 			}
