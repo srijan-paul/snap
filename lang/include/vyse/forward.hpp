@@ -21,6 +21,6 @@ class Closure;
 
 /// Functions that are called from a snap script
 /// but are implemented in C++.
-using CFunction = Value (*)(VM& vm, int argc);
+using NativeFn = Value (*)(VM& vm, int argc);
 
 } // namespace vyse 

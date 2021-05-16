@@ -5,10 +5,10 @@ namespace vyse {
 
 struct Upvalue final : public Obj {
 public:
-	explicit Upvalue(Value* v) noexcept : Obj(ObjType::upvalue), m_value{v} {};
+	explicit constexpr Upvalue(Value* v) noexcept : Obj(ObjType::upvalue), m_value{v} {};
 	~Upvalue() = default;
 	Value* m_value;								 // points to a stack slot until closed.
-	Value closed = VYSE_NIL;	 // The value is stored here upon closing.
+	Value closed = VYSE_NIL;			 // The value is stored here upon closing.
 	Upvalue* next_upval = nullptr; // next upvalue in the VM's upvalue list.
 
 private:

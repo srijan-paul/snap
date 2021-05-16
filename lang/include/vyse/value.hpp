@@ -31,9 +31,9 @@ class Obj {
 public:
 	const ObjType tag;
 
-	explicit Obj(ObjType tt) noexcept : tag{tt} {};
-	Obj(Obj&& o) = default;
-	Obj(Obj const& o) = default;
+	explicit constexpr Obj(ObjType tt) noexcept : tag{tt} {};
+	constexpr Obj(Obj&& o) = default;
+	constexpr Obj(Obj const& o) = default;
 	virtual ~Obj() = default;
 
 	virtual const char* to_cstring() const;
@@ -69,20 +69,20 @@ struct Value {
 		number num;
 		bool boolean;
 		Obj* object;
-		Data(){};
-		Data(number v) noexcept : num(v){};
-		Data(bool b) noexcept : boolean(b){};
-		Data(Obj* o) noexcept : object(o){};
+		constexpr Data() noexcept : num(0){};
+		constexpr Data(number v) noexcept : num(v){};
+		constexpr Data(bool b) noexcept : boolean(b){};
+		constexpr Data(Obj* o) noexcept : object(o){};
 	} as;
 
-	explicit Value(number n) noexcept : tag{ValueType::Number}, as{n} {};
-	explicit Value(bool b) noexcept : tag{ValueType::Bool}, as{b} {};
-	explicit Value() noexcept : tag{ValueType::Nil} {};
-	explicit Value(Obj* o) noexcept : tag{ValueType::Object}, as{o} {
+	explicit constexpr Value(number n) noexcept : tag{ValueType::Number}, as{n} {};
+	explicit constexpr Value(bool b) noexcept : tag{ValueType::Bool}, as{b} {};
+	explicit constexpr Value() noexcept : tag{ValueType::Nil} {};
+	explicit constexpr Value(Obj* o) noexcept : tag{ValueType::Object}, as{o} {
 		VYSE_ASSERT(o != nullptr, "Unexpected nullptr object");
 	}
 
-	static inline Value undefined() {
+	static inline constexpr Value undefined() noexcept {
 		Value undef;
 		undef.tag = ValueType::Undefined;
 		return undef;
@@ -135,7 +135,8 @@ void print_value(Value v);
 #define VYSE_IS_TABLE(v)	 (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::table)
 #define VYSE_IS_LIST(v)		 (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::list)
 #define VYSE_IS_CLOSURE(v) (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::closure)
-#define VYSE_IS_CODEBLOCK(v) (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::codeblock)
+#define VYSE_IS_CODEBLOCK(v)                                                                       \
+	(VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::codeblock)
 #define VYSE_IS_CCLOSURE(v)                                                                        \
 	(VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::c_closure)
 

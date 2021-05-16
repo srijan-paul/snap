@@ -14,15 +14,21 @@ class BenchMark:
 		self.name = name
 		self.filename = filename
 
-	def run(self, langs):
+	def run(self, langs, times = 1):
 		print(f'--- Running benchmark: {self.name} ---')
 		for lang in langs:
 			print(f'Running on lang: {colored(lang.name, lang.color)}')
-			start = datetime.now()
-			lang.run(self.filename)
-			end = datetime.now()
-			print(f'Time taken: ', colored(str((end - start).total_seconds()) + 's', 'green'))
+			elapsed = 0.0
+			for _ in range(times):
+				elapsed += self.run_once(lang)
+			print(f'Average time taken ({times} runs): ', colored(str(elapsed / times) + 's', 'green'))
 			print('\n')
+
+	def run_once(self, lang) -> float:
+		start = datetime.now()
+		lang.run(self.filename)
+		end = datetime.now()
+		return (end - start).total_seconds()
 
 class Lang:
 	"""
@@ -60,9 +66,12 @@ benches = [
 	BenchMark('Method Calls', 'method-call')
 ]
 
-def run_all():
+def run_all(langs, times):
+	if not langs: 
+		print("No such langauge.")
+		return
 	for bench in benches:
-		bench.run(langs)
+		bench.run(langs, times)
 
 def find_bench(name):
 	for b in benches:
@@ -72,10 +81,26 @@ def find_bench(name):
 parser = argparse.ArgumentParser()
 parser.add_argument('--nocolor', help="Don't render any colors.", action='store_true')
 parser.add_argument('--bench', help='Run a specific benchmark.')
+parser.add_argument('--lang', help='only run the benchmark on a specific language.')
+parser.add_argument('--times', help='number of times to run the benchmark')
 args = parser.parse_args()
 
 # Disable ANSI color codes
 if args.nocolor: colored = lambda s, _ : str(s)
+
+def get_langs():
+	if args.lang:
+		for lang in langs:
+			if lang.name.lower() == args.lang.lower():
+				return [lang]
+		else:
+			return None
+	return langs
+
+total_times = 1
+if args.times:
+	total_times = int(args.times) 
+	if total_times < 0: total_times = 1
 
 # Run a specific benchmark.
 if args.bench:
@@ -83,7 +108,11 @@ if args.bench:
 	if not bench:
 		print(colored('Error', 'red'), f'No benchmark named {args.bench}')
 	else:
-		bench.run(langs)
+		run_langs = get_langs()
+		if not run_langs:
+			print(f'No language called {args.lang}')
+		else:
+			bench.run(run_langs, total_times)
 # Run all the benchmarks
 else:
-	run_all()
+	run_all(get_langs(), total_times)

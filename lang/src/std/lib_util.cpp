@@ -11,7 +11,7 @@ void bad_arg_error(vyse::VM& vm, const char* fname, int argn, const char* expect
 																	expected_type, received_type));
 }
 
-void add_libfn(VM& vm, Table& proto, const char* name, CFunction cfn) {
+void add_libfn(VM& vm, Table& proto, const char* name, NativeFn cfn) {
 	vm.gc_off();
 	String* sname = &vm.make_string(name);
 	CClosure* fn = &vm.make<CClosure>(cfn);

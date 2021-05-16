@@ -971,7 +971,7 @@ bool VM::call_closure(Closure* func, int argc) {
 
 bool VM::call_cclosure(CClosure* cclosure, int argc) {
 	push_callframe(cclosure, argc);
-	CFunction c_func = cclosure->cfunc();
+	NativeFn c_func = cclosure->cfunc();
 	Value ret = c_func(*this, argc);
 	pop_callframe();
 
@@ -1130,7 +1130,7 @@ ExitCode VM::runtime_error(const std::string& message) {
 
 // The default behavior on an error is to simply
 // print it to the stderr.
-void default_error_fn([[maybe_unused]] const VM& vm, std::string& err_msg) {
+void default_error_fn([[maybe_unused]] const VM& vm, const std::string& err_msg) {
 	fprintf(stderr, "%s\n", err_msg.c_str());
 }
 

@@ -7,23 +7,38 @@
 
 namespace vyse {
 
-enum class ExitCode : u8 {
-	Success,
-	CompileError,
-	RuntimeError,
-};
-
 using PrintFn = std::function<void(const VM& vm, const String* string)>;
 using ReadLineFn = std::function<char*(const VM& vm)>;
-using ErrorFn = std::function<void(const VM& vm, std::string& err_message)>;
+using ErrorFn = std::function<void(const VM& vm, const std::string& err_message)>;
+using ModuleLoader = std::function<std::string(const VM& vm, const char* module_name)>;
 
 inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string) {
 	VYSE_ASSERT(string != nullptr, "string to print is null.");
 	printf("%s", string->c_str());
 }
 
-void default_error_fn(const VM& vm, std::string& err_msg);
+void default_error_fn(const VM& vm, const std::string& err_msg);
 char* default_readline(const VM& vm);
+
+struct VMConfig {
+	/// @brief function used by the VM to print a string to console.
+	PrintFn print = default_print_fn;
+	/// @brief function used by the VM to read a line from the console.
+	ReadLineFn read = default_readline;
+	/// @brief function used by the VM to throw display an error.
+	ErrorFn error = default_error_fn;
+
+	/// @brief function used by the VM to load a module's source code.
+	/// this is called whenever the [import] global function is invoked
+	/// in a Vyse script.
+	ModuleLoader load_module = nullptr;
+};
+
+enum class ExitCode {
+	Success,
+	CompileError,
+	RuntimeError,
+};
 
 class VM {
 	friend GC;
@@ -128,7 +143,6 @@ public:
 	bool init();
 
 	ExitCode runcode(const std::string& code);
-	ExitCode runfile(const std::string& filepath);
 	ExitCode run();
 
 	const Block* block() const noexcept {

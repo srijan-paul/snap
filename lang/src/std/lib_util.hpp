@@ -10,7 +10,7 @@ void bad_arg_error(VM& vm, const char* fname, int argn, const char* expected_typ
 									 const char* received_type);
 
 /// @brief add a key with name [name] and value of type cfunction [cfn] to the table [proto]
-void add_libfn(VM& vm, Table& proto, const char* name, CFunction cfn);
+void add_libfn(VM& vm, Table& proto, const char* name, NativeFn cfn);
 
 /// @brief checks the [argn]th argument and throws an error if it's type isn't [expected_type]
 /// Note that the arguments are indexed from 0. So argn for the first argument is 0.

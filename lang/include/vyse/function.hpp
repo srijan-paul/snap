@@ -50,7 +50,7 @@ private:
 	String* const m_name;
 	u32 m_num_params = 0;
 	u32 m_num_upvals = 0;
-	// the maximum stack size ever needed for the 
+	// the maximum stack size ever needed for the
 	// execution of this function's call frame.
 	int max_stack_size = 0;
 	Block m_block;
@@ -72,11 +72,11 @@ public:
 	explicit Closure(CodeBlock* proto, u32 upval_count) noexcept;
 	~Closure() override{};
 
-	const String* name() const {
+	constexpr const String* name() const noexcept {
 		return m_codeblock->name();
 	}
 
-	const char* name_cstr() const {
+	constexpr const char* name_cstr() const noexcept {
 		return m_codeblock->name_cstr();
 	}
 
@@ -104,20 +104,20 @@ private:
 
 class CClosure final : public Obj {
 public:
-	explicit CClosure(CFunction fn) noexcept : Obj(ObjType::c_closure), m_func{fn} {};
-	~CClosure() override{};
+	explicit CClosure(NativeFn fn) noexcept : Obj(ObjType::c_closure), m_func{fn} {};
+	~CClosure() override = default;
 
 	size_t size() const override {
 		return sizeof(CClosure);
 	}
 
-	CFunction cfunc() const noexcept {
+	NativeFn cfunc() const noexcept {
 		return m_func;
 	}
 
 private:
-	CFunction m_func;
+	NativeFn m_func;
 	void trace(GC& gc) override;
 };
 
-} // namespace vyse 
+} // namespace vyse
