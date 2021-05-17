@@ -141,11 +141,9 @@ Token Scanner::make_string(char quote) {
 			next();
 		}
 	}
-	if (eof()) {
-		return make_token(TT::Error);
-	} else {
-		next(); // eat the closing quote.
-	}
+
+	if (eof()) return make_token(TT::Error);
+	next(); // eat the closing quote.
 	return make_token(TT::String);
 }
 

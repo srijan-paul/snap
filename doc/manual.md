@@ -262,16 +262,16 @@ For any method bound to an object, there should always be an extra first
 parameter. By convention, the first parameter is called `self`. But you may
 choose to call it by any name.
 
-```js
+```lua
 const Cat = {
   name: "Tom",
-  sound: "Meow"
+  sound: "Meow",
   meow() {
     print(self.sound .. "!")
   }
 }
 
-Cat:meow() // Meow!
+Cat:meow() -- Meow!
 ```
 
 Note that calling a method with the `:` operator simply means the first

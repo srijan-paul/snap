@@ -22,6 +22,9 @@ endfunction()
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIR})
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+# exclude windows' stupid lowercase macros like 'min' and 'max'
+# to stop them from interfering with vyse code.
+target_compile_definitions(${PROJECT_NAME} PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
 target_compile_options(${PROJECT_NAME} PUBLIC "-Wall" "-Wpedantic" "-Wextra" "-fexceptions")
 
 # cli app

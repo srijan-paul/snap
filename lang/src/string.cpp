@@ -5,19 +5,6 @@
 
 namespace vyse {
 
-// this hash function is from: https://craftinginterpreters.com/hash-tables.html
-u32 hash_cstring(const char* key, int len) {
-	// hash upto 32 characters max.
-	len = std::min(len, 32);
-	u32 hash = 2166136261u;
-
-	for (int i = 0; i < len; i++) {
-		hash ^= key[i];
-		hash *= 16777619;
-	}
-
-	return hash;
-}
 
 using OT = ObjType;
 

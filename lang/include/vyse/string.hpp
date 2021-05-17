@@ -4,7 +4,19 @@
 
 namespace vyse {
 
-u32 hash_cstring(const char* chars, int len);
+// this hash function is from: https://craftinginterpreters.com/hash-tables.html
+constexpr u32 hash_cstring(const char* key, uint len) {
+	// hash upto 32 characters max.
+	len = std::min(len, 32u);
+	u32 hash = 2166136261u;
+
+	for (uint i = 0; i < len; i++) {
+		hash ^= key[i];
+		hash *= 16777619;
+	}
+
+	return hash;
+}
 /// Strings in vyse are heap allocated, and contain 3 important fields:
 /// `m_chars`  -> Pointer to the C string on the heap (null terminated).
 /// `m_length` -> Length of the string.
@@ -37,7 +49,7 @@ public:
 		return m_hash;
 	}
 
-	char operator[](s64 index) const {
+	[[nodiscard]] char operator[](s64 index) const {
 		return at(index);
 	}
 

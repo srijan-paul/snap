@@ -57,7 +57,7 @@ void GC::mark() {
 		mark_object(o);
 	}
 
-	for (auto entry : m_vm->m_global_vars) {
+	for (auto& entry : m_vm->m_global_vars) {
 		mark_object(entry.first);
 		mark_value(entry.second);
 	}
