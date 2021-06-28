@@ -4,8 +4,6 @@
 #include <vm.hpp>
 #include <vy_list.hpp>
 
-#define CONST_CAST(typ, val) (static_cast<const typ*>(val))
-
 namespace vyse {
 
 using VT = ValueType;

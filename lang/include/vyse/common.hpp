@@ -30,9 +30,9 @@ using number = double;
 // #define VYSE_DEBUG_DISASSEMBLY 1
 
 #define VYSE_ASSERT(cond, message)                                                                 \
-	((cond) ? 0                                                                                      \
-					: (fprintf(stderr, "[%s:%d]: ASSERTION FAILED!: %s", __func__, __LINE__, message),       \
-						 abort(), 0))
+	((cond) ? 0                                                                                    \
+			: (fprintf(stderr, "[%s:%d]: ASSERTION FAILED!: %s", __func__, __LINE__, message),     \
+			   abort(), 0))
 
 #define VYSE_ERROR(message)                                                                        \
 	(fprintf(stderr, "[%s:%d]: Interal Error: %s", __func__, __LINE__, message), abort())
@@ -45,15 +45,13 @@ using number = double;
 #else
 
 #define VYSE_ASSERT(cond, message) // empty
-#define VYSE_ERROR(message)				 // empty
-#define VYSE_UNREACHABLE()				 // empty
+#define VYSE_ERROR(message)		   // empty
+#define VYSE_UNREACHABLE()		   // empty
 
 #endif
 
-#define VYSE_NO_COPY(class)							 class(class const& other) = delete
-#define VYSE_NO_MOVE(class)							 class(class && other) = delete
+#define VYSE_NO_COPY(class)				 class(class const& other) = delete
+#define VYSE_NO_MOVE(class)				 class(class && other) = delete
 #define VYSE_NO_DEFAULT_CONSTRUCT(class) class() = delete
-
-
 
 } // namespace vyse

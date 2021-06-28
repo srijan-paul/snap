@@ -203,10 +203,11 @@ ExitCode VM::run() {
 
 		case Op::negate: {
 			Value& operand = PEEK(1);
-			if (VYSE_IS_NUM(operand))
+			if (VYSE_IS_NUM(operand)) {
 				VYSE_SET_NUM(operand, -VYSE_AS_NUM(operand));
-			else
+			} else if (!call_unary_overload("-", "__negate")) {
 				UNOP_ERROR("-", operand);
+			}
 			break;
 		}
 
@@ -990,6 +991,7 @@ bool VM::call_cclosure(CClosure* cclosure, int argc) {
 
 bool VM::call_binary_overload(const char* op_str, const char* method_name) {
 	/// look for an overloaded method on each of the operands.
+	/// TODO: get rid of the temporary string object here
 	const Value mname = VYSE_OBJECT(&make_string(method_name));
 	const Value right = m_stack.pop();
 	const Value left = m_stack.pop();
@@ -1005,8 +1007,24 @@ bool VM::call_binary_overload(const char* op_str, const char* method_name) {
 	m_stack.push(left);
 	m_stack.push(right);
 
-	bool ok = op_call(method, 2);
-	return ok;
+	return op_call(method, 2);
+}
+
+bool VM::call_unary_overload(const char* op_str, const char* method_name) {
+	const Value mname = VYSE_OBJECT(&make_string(method_name));
+	const Value value = m_stack.pop();
+
+	const Value method = index_proto(value, mname);
+	if (VYSE_IS_NIL(method)) {
+		auto msg = kt::format_str("Cannot apply operator '{}' to type: '{}' ", op_str, method_name);
+		runtime_error(std::move(msg));
+		return false;
+	}
+
+	m_stack.push(method);
+	m_stack.push(value);
+
+	return op_call(method, 1);
 }
 
 // String operation helpers.

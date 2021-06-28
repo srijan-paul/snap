@@ -70,6 +70,10 @@ const T = {
 
   __bxor(other) {
     return self:new(self.x ^ other.x)
+  },
+
+  __negate() {
+    return -self.x
   }
 }
 
@@ -89,4 +93,7 @@ assert(t1 > t2 == false)
 assert((t1 ^ t2).x == 3, "XOR overload")
 
 assert((T:new(5) ** T:new(2)).x == 25)
-assert((T:new(5) % T:new(2)).x == 1) 
+assert((T:new(5) % T:new(2)).x == 1)
+
+t1 = T:new(100)
+assert(-t1 == -100)

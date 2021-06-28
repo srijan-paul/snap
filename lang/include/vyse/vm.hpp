@@ -364,6 +364,11 @@ private:
 	/// @return true if the call succeeded, false if there was an error.
 	bool call_binary_overload(const char* op_str, const char* method_name);
 
+	/// @brief calls the overloaded unary operator whose protomethod name is [method]
+	/// The operand must be on top of the stack when this function is called.
+	/// @return true of the call succeeded, false otherwise
+	bool call_unary_overload(const char* op_str, const char* method_name);
+
 	/// @brief concatenates two strings. Will intern the resulting
 	/// string if it isn't already interned.
 	Value concatenate(const String* left, const String* right);
