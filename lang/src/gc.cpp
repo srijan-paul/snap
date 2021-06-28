@@ -80,7 +80,8 @@ void GC::trace() {
 		m_gray_objects.pop();
 
 #ifdef VYSE_LOG_GC
-		printf("Tracing: %p [%s] \n", (void*)gray_obj, value_to_string(VYSE_OBJECT(gray_obj)).c_str());
+		printf("Tracing: %p [%s] \n", (void*)gray_obj,
+			   value_to_string(VYSE_OBJECT(gray_obj)).c_str());
 #endif
 		gray_obj->trace(*this);
 	}

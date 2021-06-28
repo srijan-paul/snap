@@ -57,10 +57,6 @@ public:
 	// the end of it's lifespan.
 	Value return_value = VYSE_NIL;
 
-	/// TODO: Dynamically grow the stack by statically
-	/// determining the max stack size at compile time
-	/// inside a function body.
-
 	/// the function that vyse uses to print stuff onto the console.
 	/// It is called whenever the `print` function is called in vyse source code.
 	PrintFn print = default_print_fn;

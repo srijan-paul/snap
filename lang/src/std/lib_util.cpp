@@ -6,9 +6,9 @@
 namespace vyse::stdlib::util {
 
 void bad_arg_error(vyse::VM& vm, const char* fname, int argn, const char* expected_type,
-									 const char* received_type) {
+				   const char* received_type) {
 	vm.runtime_error(kt::format_str("Bad argument #{} to '{}' expected {}, got {}.", argn, fname,
-																	expected_type, received_type));
+									expected_type, received_type));
 }
 
 void add_libfn(VM& vm, Table& proto, const char* name, NativeFn cfn) {
@@ -20,7 +20,7 @@ void add_libfn(VM& vm, Table& proto, const char* name, NativeFn cfn) {
 }
 
 static bool check_arg_type(VM& vm, int argn, ValueType expected_type, const char* expected_type_str,
-													 const char* fname) {
+						   const char* fname) {
 	const Value& v_arg = vm.get_arg(argn);
 	if (VYSE_CHECK_TT(v_arg, expected_type)) return true;
 	bad_arg_error(vm, fname, argn + 1, expected_type_str, value_type_name(v_arg));
@@ -43,4 +43,4 @@ void cfn_error(VM& vm, const char* fname, std::string&& message) {
 	vm.runtime_error(kt::format_str("In call to {}: {}", fname, message));
 }
 
-} // namespace vyse
+} // namespace vyse::stdlib::util

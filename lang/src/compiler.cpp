@@ -11,13 +11,13 @@
 #define ERROR(...) (error_at_token(kt::format_str(__VA_ARGS__).c_str(), token))
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
-	void name() {                                                                                    \
-		next_fn();                                                                                     \
-		while (cond) {                                                                                 \
-			const Token op_token = token;                                                                \
-			next_fn();                                                                                   \
-			emit(toktype_to_op(op_token.type), op_token);                                                \
-		}                                                                                              \
+	void name() {                                                                                  \
+		next_fn();                                                                                 \
+		while (cond) {                                                                             \
+			const Token op_token = token;                                                          \
+			next_fn();                                                                             \
+			emit(toktype_to_op(op_token.type), op_token);                                          \
+		}                                                                                          \
 	}
 
 namespace vyse {
@@ -161,7 +161,7 @@ void Compiler::block_stmt() {
 
 void Compiler::if_stmt() {
 	advance(); // consume 'if'
-	expr();		 // parse condition.
+	expr();	   // parse condition.
 
 	// If the condition is false, we simply pop
 	// it and jump to the end of the if statement.
@@ -216,7 +216,8 @@ void Compiler::exit_loop(Op op_loop) {
 				patch_jump(i + 1);
 			} else {
 				VYSE_ASSERT(u8(THIS_BLOCK.code[i + 1]) == 0xff, "Bad jump.");
-				THIS_BLOCK.code[i] = (m_loop->loop_type == Loop::Type::While) ? Op::jmp_back : Op::for_loop;
+				THIS_BLOCK.code[i] =
+					(m_loop->loop_type == Loop::Type::While) ? Op::jmp_back : Op::for_loop;
 				patch_backwards_jump(i + 1, m_loop->start);
 			}
 		}
@@ -428,7 +429,7 @@ void Compiler::ret_stmt() {
 	// compile this statement as `return EXPR`, else it's just a `return`.
 	// where a `nil` after the return is implicit.
 	if (peek.is_literal() or check(TT::Id) or peek.is_unary_op() or check(TT::LParen) or
-			check(TT::Fn) or check(TT::LCurlBrace) or check(TT::LSqBrace)) {
+		check(TT::Fn) or check(TT::LCurlBrace) or check(TT::LSqBrace)) {
 		expr();
 	} else {
 		emit(Op::load_nil);
@@ -648,7 +649,7 @@ DEFINE_PARSE_FN(Compiler::bit_xor, match(TT::BitXor), bit_and)
 DEFINE_PARSE_FN(Compiler::bit_and, match(TT::BitAnd), equality)
 DEFINE_PARSE_FN(Compiler::equality, match(TT::EqEq) or match(TT::BangEq), comparison)
 DEFINE_PARSE_FN(Compiler::comparison,
-								match(TT::Gt) or match(TT::Lt) or match(TT::GtEq) or match(TT::LtEq), b_shift)
+				match(TT::Gt) or match(TT::Lt) or match(TT::GtEq) or match(TT::LtEq), b_shift)
 DEFINE_PARSE_FN(Compiler::b_shift, match(TT::BitLShift) or match(TT::BitRShift), sum)
 DEFINE_PARSE_FN(Compiler::sum, (match(TT::Plus) or match(TT::Minus) or match(TT::Concat)), mult)
 DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) or match(TT::Mod) or match(TT::Div)), exp)
@@ -868,8 +869,8 @@ void Compiler::variable(bool can_assign) {
 	if (can_assign) {
 		VYSE_ASSERT(is_assign_tok(peek.type), "Not in an assignment context.");
 		if (is_const) {
-			std::string message =
-					kt::format_str("Cannot assign to variable '{}' marked const.", token.raw(*m_source));
+			std::string message = kt::format_str("Cannot assign to variable '{}' marked const.",
+												 token.raw(*m_source));
 			error_at_token(message.c_str(), token);
 			panic = false; // Don't send the compiler into error recovery mode.
 		}
@@ -1037,7 +1038,7 @@ void Compiler::error_at(const char* message, u32 line) {
 
 void Compiler::error_at_token(const char* message, const Token& token) {
 	error(kt::format_str("[line {}]: near '{}': {}", token.location.line, token.raw(*m_source),
-											 message));
+						 message));
 }
 
 void Compiler::error(std::string&& message) {
@@ -1205,7 +1206,8 @@ Op Compiler::toktype_to_op(TT toktype) const noexcept {
 int Compiler::op_arity(u32 op_index) const noexcept {
 	const Op op = THIS_BLOCK.code[op_index];
 	if (op == Op::make_func) {
-		VYSE_ASSERT(op_index != THIS_BLOCK.op_count() - 1, "Op::make_func cannot be the last opcode");
+		VYSE_ASSERT(op_index != THIS_BLOCK.op_count() - 1,
+					"Op::make_func cannot be the last opcode");
 		int n_upvals = int(THIS_BLOCK.code[op_index + 1]);
 		return 1 + n_upvals * 2;
 	}
@@ -1246,7 +1248,7 @@ int Compiler::new_variable(const Token& varname, bool is_const) {
 	const u32 length = varname.length();
 	if (m_symtable.find_in_current_scope(name, length) != -1) {
 		std::string errmsg = kt::format_str("Attempt to redeclare existing variable '{}'.",
-																				std::string_view(name, length));
+											std::string_view(name, length));
 		error_at_token(errmsg.c_str(), varname);
 		return -1;
 	}

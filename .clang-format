@@ -1,6 +1,6 @@
 BasedOnStyle: LLVM
-IndentWidth: 2 
-TabWidth: 2
+IndentWidth: 4
+TabWidth: 4
 UseTab: Always
 
 ---
@@ -10,7 +10,7 @@ AlignConsecutiveMacros: true
 AlignEscapedNewlines: Right
 AlignOperands: true
 AlignTrailingComments: true
-AlignConsecutiveAssignments: false 
+AlignConsecutiveAssignments: false
 AllowShortFunctionsOnASingleLine: None
 AllowShortLoopsOnASingleLine: true
 BreakBeforeBraces: Attach

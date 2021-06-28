@@ -17,27 +17,27 @@
 #include <debug.hpp>
 #endif
 
-#define ERROR(...)		 runtime_error(kt::format_str(__VA_ARGS__))
+#define ERROR(...)	   runtime_error(kt::format_str(__VA_ARGS__))
 #define INDEX_ERROR(v) ERROR("Attempt to index a '{}' value.", VYSE_TYPE_CSTR(v))
 #define CURRENT_LINE() (m_current_block->lines[ip - 1])
 
 #define CHECK_TYPE(v, typ, ...)                                                                    \
 	if (!VYSE_CHECK_TT(v, typ)) return ERROR(__VA_ARGS__)
 
-#define FETCH()			(m_current_block->code[ip++])
+#define FETCH()		(m_current_block->code[ip++])
 #define NEXT_BYTE() (static_cast<u8>(m_current_block->code[ip++]))
 #define FETCH_SHORT()                                                                              \
-	(ip += 2, (u16)((static_cast<u8>(m_current_block->code[ip - 2]) << 8) |                          \
-									static_cast<u8>(m_current_block->code[ip - 1])))
-#define READ_VALUE()					(m_current_block->constant_pool[NEXT_BYTE()])
-#define GET_VAR(index)				(m_current_frame->base[index])
+	(ip += 2, (u16)((static_cast<u8>(m_current_block->code[ip - 2]) << 8) |                        \
+					static_cast<u8>(m_current_block->code[ip - 1])))
+#define READ_VALUE()		  (m_current_block->constant_pool[NEXT_BYTE()])
+#define GET_VAR(index)		  (m_current_frame->base[index])
 #define SET_VAR(index, value) (m_current_frame->base[index] = value)
 
 // PEEK(1) fetches the topmost value in the stack.
 #define PEEK(depth) m_stack.top[-(depth)]
-#define POP()				(m_stack.pop())
-#define DISCARD()		(--m_stack.top)
-#define POPN(n)			(m_stack.top -= n)
+#define POP()		(m_stack.pop())
+#define DISCARD()	(--m_stack.top)
+#define POPN(n)		(m_stack.top -= n)
 #define PUSH(value) m_stack.push(value)
 
 namespace vyse {
@@ -52,40 +52,40 @@ using OT = ObjType;
 #define UNOP_ERROR(op, v) ERROR("Cannot use operator '{}' on type '{}'.", op, VYSE_TYPE_CSTR(v))
 
 #define CMP_OP(op, proto_method)                                                                   \
-	do {                                                                                             \
-		Value& b = PEEK(1);                                                                            \
-		Value& a = PEEK(2);                                                                            \
+	do {                                                                                           \
+		Value& b = PEEK(1);                                                                        \
+		Value& a = PEEK(2);                                                                        \
                                                                                                    \
-		if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                       \
-			m_stack.top[-2] = (VYSE_BOOL(VYSE_AS_NUM(a) op VYSE_AS_NUM(b)));                             \
-			DISCARD();                                                                                   \
-		} else if (!call_binary_overload(#op, proto_method)) {                                         \
-			return ExitCode::RuntimeError;                                                               \
-		}                                                                                              \
+		if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                   \
+			m_stack.top[-2] = (VYSE_BOOL(VYSE_AS_NUM(a) op VYSE_AS_NUM(b)));                       \
+			DISCARD();                                                                             \
+		} else if (!call_binary_overload(#op, proto_method)) {                                     \
+			return ExitCode::RuntimeError;                                                         \
+		}                                                                                          \
 	} while (false);
 
 #define BINOP(op, proto_method_name)                                                               \
-	do {                                                                                             \
-		Value& right = PEEK(1);                                                                        \
-		Value& left = PEEK(2);                                                                         \
+	do {                                                                                           \
+		Value& right = PEEK(1);                                                                    \
+		Value& left = PEEK(2);                                                                     \
                                                                                                    \
-		if (VYSE_IS_NUM(left) and VYSE_IS_NUM(right)) {                                                \
-			VYSE_SET_NUM(left, VYSE_AS_NUM(left) op VYSE_AS_NUM(right));                                 \
-			DISCARD();                                                                                   \
-		} else if (!call_binary_overload(#op, proto_method_name)) {                                    \
-			return ExitCode::RuntimeError;                                                               \
-		}                                                                                              \
+		if (VYSE_IS_NUM(left) and VYSE_IS_NUM(right)) {                                            \
+			VYSE_SET_NUM(left, VYSE_AS_NUM(left) op VYSE_AS_NUM(right));                           \
+			DISCARD();                                                                             \
+		} else if (!call_binary_overload(#op, proto_method_name)) {                                \
+			return ExitCode::RuntimeError;                                                         \
+		}                                                                                          \
 	} while (false);
 
 #define BIT_BINOP(op, proto_method_name)                                                           \
-	Value& b = PEEK(1);                                                                              \
-	Value& a = PEEK(2);                                                                              \
+	Value& b = PEEK(1);                                                                            \
+	Value& a = PEEK(2);                                                                            \
                                                                                                    \
-	if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                         \
-		VYSE_SET_NUM(a, VYSE_CAST_INT(a) op VYSE_CAST_INT(b));                                         \
-		DISCARD();                                                                                     \
-	} else if (!call_binary_overload(#op, proto_method_name)) {                                      \
-		return ExitCode::RuntimeError;                                                                 \
+	if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                       \
+		VYSE_SET_NUM(a, VYSE_CAST_INT(a) op VYSE_CAST_INT(b));                                     \
+		DISCARD();                                                                                 \
+	} else if (!call_binary_overload(#op, proto_method_name)) {                                    \
+		return ExitCode::RuntimeError;                                                             \
 	}
 
 #ifdef VYSE_DEBUG_RUNTIME
@@ -234,7 +234,8 @@ ExitCode VM::run() {
 			if (VYSE_IS_NUM(PEEK(1))) {
 				VYSE_SET_NUM(PEEK(1), ~s64(VYSE_AS_NUM(PEEK(1))));
 			} else {
-				return ERROR("Cannot use operator '~' on value of type '{}'", VYSE_TYPE_CSTR(PEEK(1)));
+				return ERROR("Cannot use operator '~' on value of type '{}'",
+							 VYSE_TYPE_CSTR(PEEK(1)));
 			}
 			break;
 		}
@@ -370,7 +371,7 @@ ExitCode VM::run() {
 
 		case Op::close_upval: {
 			close_upvalues_upto(m_stack.top - 1);
-			POP();
+			DISCARD();
 			break;
 		}
 
@@ -406,7 +407,7 @@ ExitCode VM::run() {
 				VYSE_AS_LIST(vlist)->append(POP());
 			} else {
 				return ERROR("Attempt to append to a {} value. (Can only append to lists)",
-										 value_type_name(vlist));
+							 value_type_name(vlist));
 			}
 			break;
 		}
@@ -436,7 +437,8 @@ ExitCode VM::run() {
 				CHECK_TYPE(key, VT::Number, "List index not a number.");
 				number index = VYSE_AS_NUM(key);
 				if (index < 0 or index >= list.length()) {
-					return ERROR("List index out of bounds (index: {}, length: {}).", index, list.length());
+					return ERROR("List index out of bounds (index: {}, length: {}).", index,
+								 list.length());
 				}
 				list[index] = value;
 				m_stack.top[-1] = value; // assignment returns it's RHS.
@@ -501,7 +503,8 @@ ExitCode VM::run() {
 					CHECK_TYPE(key, VT::Number, "List index not a number.");
 					number index = VYSE_AS_NUM(key);
 					if (index < 0 or index >= list.length()) {
-						return ERROR("List index out of bounds (index: {}, length: {}).", index, list.length());
+						return ERROR("List index out of bounds (index: {}, length: {}).", index,
+									 list.length());
 					}
 					tvalue = list[index];
 					break;
@@ -509,7 +512,7 @@ ExitCode VM::run() {
 					tvalue = VYSE_AS_TABLE(tvalue)->get(key);
 				} else if (object->tag == OT::string) {
 					CHECK_TYPE(key, VT::Number, "string index must be a number (got {})",
-										 value_type_name(key));
+							   value_type_name(key));
 					const String* str = VYSE_AS_STRING(tvalue);
 					const s64 index = VYSE_AS_NUM(key);
 					if (index < 0 or index >= static_cast<s64>(str->m_length)) {
@@ -592,7 +595,7 @@ ExitCode VM::run() {
 			}
 
 			VYSE_ASSERT(m_current_frame->func->tag == OT::closure,
-									"Invalid callable object at callframe base.");
+						"Invalid callable object at callframe base.");
 			m_current_block = &static_cast<Closure*>(m_current_frame->func)->m_codeblock->block();
 			ip = m_current_frame->ip;
 			break;
@@ -690,6 +693,9 @@ void VM::set_global(const char* name, Value value) {
 #undef IS_VAL_TRUTHY
 #undef CMP_OP
 #undef PEEK
+#undef PUSH
+#undef DISCARD
+#undef POP
 
 ExitCode VM::interpret() {
 	bool ok = init();
@@ -741,9 +747,9 @@ void VM::invoke_script(Closure* script) {
 	// junk from previous invocations.
 	m_stack.clear();
 	// make sure there is enough room in the stack
-	// for this function call.
-	ensure_slots(script->m_codeblock->stack_size());
-	PUSH(VYSE_OBJECT(script));
+	// for this function call. +1 for the script itself
+	ensure_slots(script->m_codeblock->stack_size() + 1);
+	m_stack.push(VYSE_OBJECT(script));
 	base_frame->base = m_stack.top - 1;
 	base_frame->ip = 0;
 	ip = 0;
@@ -764,9 +770,9 @@ void VM::add_stdlib_object(const char* name, Obj* o) {
 	// cycle (when allocating the [name] as vyse::String). At that
 	// point, vprint is only reachable on the C stack, so we protect
 	// it by pushing it on to the VM stack.
-	PUSH(vglobal);
+	m_stack.push(vglobal);
 	set_global(name, vglobal);
-	DISCARD();
+	m_stack.pop();
 }
 
 void VM::load_stdlib() {
@@ -850,7 +856,8 @@ void VM::close_upvalues_upto(Value* last) {
 }
 
 bool VM::call(int argc) {
-	VYSE_ASSERT(argc < (m_stack.top - m_stack.values), "Invalid stack state or incorrect arg count.");
+	VYSE_ASSERT(argc < (m_stack.top - m_stack.values),
+				"Invalid stack state or incorrect arg count.");
 
 	Value value = m_stack.peek(argc + 1);
 	bool ok = op_call(value, argc);
@@ -885,7 +892,7 @@ bool VM::op_call(Value value, u8 argc) {
 
 void VM::push_callframe(Obj* callable, int argc) {
 	VYSE_ASSERT(callable->tag == OT::c_closure or callable->tag == OT::closure,
-							"Non callable callframe pushed.");
+				"Non callable callframe pushed.");
 	VYSE_ASSERT(argc >= 0, "Negative argument count.");
 
 	// Save the current instruction pointer
@@ -953,13 +960,13 @@ bool VM::call_closure(Closure* func, int argc) {
 	/// count. (Make an exception for varargs.)
 	if (extra < 0) {
 		while (extra < 0) {
-			PUSH(VYSE_NIL);
+			m_stack.push(VYSE_NIL);
 			argc++;
 			extra++;
 		}
 	} else {
 		while (extra > 0) {
-			DISCARD();
+			m_stack.pop();
 			argc--;
 			extra--;
 		}
@@ -1082,16 +1089,16 @@ size_t VM::collect_garbage() {
 
 ExitCode VM::binop_error(const char* opstr, const Value& a, const Value& b) {
 	return ERROR("Cannot use operator '{}' on operands of type '{}' and '{}'.", opstr,
-							 VYSE_TYPE_CSTR(a), VYSE_TYPE_CSTR(b));
+				 VYSE_TYPE_CSTR(a), VYSE_TYPE_CSTR(b));
 }
 
 ExitCode VM::runtime_error(const std::string& message) {
 	m_has_error = true;
 
 	std::string error_str =
-			(m_current_frame->is_cclosure())
-					? kt::format_str("{}\nstack trace:\n", message)
-					: kt::format_str("[line {}]: {}\nstack trace:\n", CURRENT_LINE(), message);
+		(m_current_frame->is_cclosure())
+			? kt::format_str("{}\nstack trace:\n", message)
+			: kt::format_str("[line {}]: {}\nstack trace:\n", CURRENT_LINE(), message);
 
 	size_t trace_depth = 0;
 	for (CallFrame* frame = m_current_frame; frame; frame = frame->prev) {
@@ -1106,7 +1113,7 @@ ExitCode VM::runtime_error(const std::string& message) {
 
 		const Block& block = func.m_codeblock->block();
 		VYSE_ASSERT(frame->ip >= 0 and frame->ip < block.lines.size(),
-								"IP not in range for std::vector<u32> block.lines.");
+					"IP not in range for std::vector<u32> block.lines.");
 
 		int line = block.lines[frame->ip];
 		if (frame == base_frame) {

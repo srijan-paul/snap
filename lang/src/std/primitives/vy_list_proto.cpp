@@ -26,7 +26,7 @@ Value foreach (VM& vm, int argc) {
 	Value& vfunc = vm.get_arg(1);
 	if (!(VYSE_IS_CLOSURE(vfunc) or VYSE_IS_CCLOSURE(vfunc))) {
 		cfn_error(vm, fname,
-							kt::format_str("Bad arg #2. Expected function got {}.", value_type_name(vfunc)));
+				  kt::format_str("Bad arg #2. Expected function got {}.", value_type_name(vfunc)));
 		return VYSE_NIL;
 	}
 
@@ -129,7 +129,7 @@ Value map(VM& vm, int argc) {
 	Value& vfunc = vm.get_arg(1);
 	if (!(VYSE_IS_CLOSURE(vfunc) or VYSE_IS_CCLOSURE(vfunc))) {
 		cfn_error(vm, fname,
-							kt::format_str("Bad arg #2. Expected function, got {}.", value_type_name(vfunc)));
+				  kt::format_str("Bad arg #2. Expected function, got {}.", value_type_name(vfunc)));
 		return VYSE_NIL;
 	}
 
@@ -170,7 +170,7 @@ Value reduce(VM& vm, int argc) {
 	Value& vfunc = vm.get_arg(1);
 	if (!(VYSE_IS_CLOSURE(vfunc) or VYSE_IS_CCLOSURE(vfunc))) {
 		cfn_error(vm, fname,
-							kt::format_str("Bad arg #2. Expected function, got {}.", value_type_name(vfunc)));
+				  kt::format_str("Bad arg #2. Expected function, got {}.", value_type_name(vfunc)));
 		return VYSE_NIL;
 	}
 
@@ -215,7 +215,7 @@ Value filter(VM& vm, int argc) {
 	Value& vfunc = vm.get_arg(1);
 	if (!(VYSE_IS_CLOSURE(vfunc) or VYSE_IS_CCLOSURE(vfunc))) {
 		cfn_error(vm, fname,
-							kt::format_str("Bad arg #2. Expected function, got {}.", value_type_name(vfunc)));
+				  kt::format_str("Bad arg #2. Expected function, got {}.", value_type_name(vfunc)));
 		return VYSE_NIL;
 	}
 

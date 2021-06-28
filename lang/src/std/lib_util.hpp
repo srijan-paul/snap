@@ -7,7 +7,7 @@ namespace vyse::stdlib::util {
 /// @brief throws an error having the message [message] inside the function having name[fname].
 void cfn_error(VM& vm, const char* fname, std::string&& message);
 void bad_arg_error(VM& vm, const char* fname, int argn, const char* expected_type,
-									 const char* received_type);
+				   const char* received_type);
 
 /// @brief add a key with name [name] and value of type cfunction [cfn] to the table [proto]
 void add_libfn(VM& vm, Table& proto, const char* name, NativeFn cfn);
@@ -26,4 +26,4 @@ bool check_arg_type(VM& vm, int argn, ValueType expected_type, const char* fname
 /// @param fname name of the function in which the argument is being checked
 bool check_arg_type(VM& vm, int argn, ObjType expected_type, const char* fname);
 
-}
+} // namespace vyse::stdlib::util

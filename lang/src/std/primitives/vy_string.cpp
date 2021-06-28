@@ -17,7 +17,7 @@ using namespace util;
 
 /// @brief finds all occurrences of [find] in [src]
 std::vector<size_t> find_ocurrences(const char* src, size_t srclen, const char* find,
-																		size_t findlen) {
+									size_t findlen) {
 	std::vector<size_t> indices;
 	for (uint i = 0; i < srclen;) {
 		bool match = true;
@@ -70,7 +70,8 @@ Value substr(VM& vm, int argc) {
 		len_arg = VYSE_AS_NUM(vm.get_arg(2));
 
 		if (len_arg < 0 or len_arg != u64(len_arg)) {
-			cfn_error(vm, fname, "argument #3 ('substr_length') must be a non-negative whole number");
+			cfn_error(vm, fname,
+					  "argument #3 ('substr_length') must be a non-negative whole number");
 			return VYSE_NIL;
 		}
 

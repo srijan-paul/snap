@@ -1,6 +1,6 @@
-#include <token.hpp>
 #include <iostream>
 #include <string>
+#include <token.hpp>
 
 namespace vyse {
 
@@ -17,4 +17,4 @@ SourcePosition Token::source_pos() const {
 	return location.source_pos;
 }
 
-} // namespace vyse 
+} // namespace vyse

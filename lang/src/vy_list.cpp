@@ -1,12 +1,11 @@
 #include <gc.hpp>
 #include <vy_list.hpp>
 
-
 namespace vyse {
 
 List::List(size_t mincap)
-		: Obj(ObjType::list),
-			m_capacity(pow2ceil(mincap + 1)), m_values{(Value*)malloc(sizeof(Value) * m_capacity)} {
+	: Obj(ObjType::list),
+	  m_capacity(pow2ceil(mincap + 1)), m_values{(Value*)malloc(sizeof(Value) * m_capacity)} {
 	m_num_entries = mincap;
 	for (uint i = 0; i < m_num_entries; ++i) m_values[i] = VYSE_NIL;
 }
