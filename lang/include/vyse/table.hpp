@@ -13,7 +13,7 @@ namespace vyse {
 class Table final : public Obj {
 	friend GC;
 
-public:
+  public:
 	explicit Table() noexcept : Obj{ObjType::table} {};
 	~Table();
 
@@ -41,6 +41,10 @@ public:
 	/// @return true if a new entry was created, otherwise
 	/// return false.
 	bool set(Value key, Value value);
+
+	/// @brief Makes a vyse value out of [key] and set's table[key] = value
+	/// @return True if a new entry was added, False if an existing entry was modified
+	bool set(String& key, Value value);
 
 	/// @return The number of key-value pairs that
 	/// are active in this table.
@@ -76,7 +80,7 @@ public:
 		size_t probe_distance = 0;
 	};
 
-private:
+  private:
 	Entry* m_entries = new Entry[DefaultCapacity];
 	/// @brief Total number of entries.
 	/// This includes all tombstones (values that have been

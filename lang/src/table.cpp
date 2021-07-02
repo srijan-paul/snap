@@ -65,6 +65,10 @@ Value Table::get(Value key) const {
 	return m_proto_table == nullptr ? VYSE_NIL : m_proto_table->get(key);
 }
 
+bool Table::set(String& key, Value value) {
+	return set(VYSE_OBJECT(&key), value);
+}
+
 /// TODO: handle the case for [set] where the [key] is a member of it's
 /// prototype.
 bool Table::set(Value key, Value value) {

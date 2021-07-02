@@ -1,7 +1,7 @@
 #include "../str_format.hpp"
-#include "lib_util.hpp"
 #include "value.hpp"
 #include <std/base.hpp>
+#include <std/lib_util.hpp>
 #include <vm.hpp>
 
 using namespace vyse::stdlib::util;
@@ -105,4 +105,18 @@ vyse::Value vyse::stdlib::assert_(VM& vm, int argc) {
 
 	vm.runtime_error(message);
 	return VYSE_NIL;
+}
+
+vyse::Value vyse::stdlib::import(VM& vm, int argc) {
+	static constexpr const char* fname = "import";
+	if (argc != 1) {
+		cfn_error(vm, fname, "Expected 1 argument to 'import'.");
+		return VYSE_NIL;
+	}
+
+	if (!check_arg_type(vm, 0, ObjType::string, fname)) {
+		return VYSE_NIL;
+	}
+
+	return vm.import_module(*VYSE_AS_STRING(vm.get_arg(0)));
 }

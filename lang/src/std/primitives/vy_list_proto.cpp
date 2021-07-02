@@ -1,5 +1,5 @@
 #include "../../str_format.hpp"
-#include "../lib_util.hpp"
+#include <std/lib_util.hpp>
 #include "value.hpp"
 #include <std/primitives/vy_list_proto.hpp>
 #include <vm.hpp>

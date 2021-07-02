@@ -10,7 +10,7 @@ namespace vyse {
 using PrintFn = std::function<void(const VM& vm, const String* string)>;
 using ReadLineFn = std::function<char*(const VM& vm)>;
 using ErrorFn = std::function<void(const VM& vm, const std::string& err_message)>;
-using ModuleLoader = std::function<std::string(const VM& vm, const char* module_name)>;
+using ModuleLoader = std::function<std::string(VM& vm, const char* module_name)>;
 
 inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string) {
 	VYSE_ASSERT(string != nullptr, "string to print is null.");
@@ -19,6 +19,7 @@ inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string
 
 void default_error_fn(const VM& vm, const std::string& err_msg);
 char* default_readline(const VM& vm);
+std::string default_find_module(VM& vm, const char* module_name);
 
 struct VMConfig {
 	/// @brief function used by the VM to print a string to console.
@@ -44,7 +45,7 @@ class VM {
 	friend GC;
 	friend Compiler;
 
-public:
+  public:
 	VYSE_NO_COPY(VM);
 	VYSE_NO_MOVE(VM);
 
@@ -69,6 +70,8 @@ public:
 	/// The function to be used by the VM when reading a line from stdin.
 	ReadLineFn read_line = default_readline;
 
+	ModuleLoader find_module = default_find_module;
+
 	/// Maximum size of the call stack. If the call stack
 	/// size exceeds this, then there is a stack overflow.
 	static constexpr size_t MaxCallStack = 1024;
@@ -83,6 +86,8 @@ public:
 	/// structure.
 	Stack m_stack;
 
+	static std::set<const char*> builtin_modules;
+
 	VM(const std::string* src) noexcept : m_source{src}, m_gc(*this){};
 	VM() : m_source{nullptr}, m_gc(*this){};
 	~VM();
@@ -96,15 +101,13 @@ public:
 		///  really is at runtime. (using the [tag] field)
 		Obj* func = nullptr;
 
-		/// The next instruction to be executed
-		/// In this function.
+		/// The next instruction to be executed in this function.
 		size_t ip = 0;
 
-		/// the base of the Callframe in the VM's
+		/// The base of the Callframe in the VM's
 		/// value stack. This denotes the first
 		/// slot usable by the CallFrame. All local variables
-		/// are represented as a stack offset from this
-		/// base.
+		/// are represented as a stack offsets from this base.
 		Value* base = nullptr;
 
 		CallFrame* next = nullptr;
@@ -115,24 +118,25 @@ public:
 		}
 	};
 
-	/// @brief Get the [num]th argument of the
-	/// current function. get_arg(0) returns the
-	/// first argument.
+	/// @brief Get the [num]th argument of the current function.
+	/// `get_arg(0)` returns the first argument.
 	inline Value& get_arg(u8 idx) const {
 		return m_current_frame->base[idx + 1];
 	}
 
 	/// @brief Returns the currently exceuting function
 	/// wrapped in a value.
-	Value current_fn() const {
+	inline Value current_fn() const {
 		return VYSE_OBJECT(m_current_frame->func);
 	}
 
-	Value const* base() const noexcept {
+	/// @brief Returns the base of the current call frame.
+	inline Value const* base() const noexcept {
 		return m_current_frame->base;
 	}
 
-	Value* base() noexcept {
+	/// @brief Returns the base of the current callframe
+	inline Value* base() noexcept {
 		return m_current_frame->base;
 	}
 
@@ -140,18 +144,23 @@ public:
 
 	ExitCode runcode(const std::string& code);
 	ExitCode run();
+	Closure* compile(const std::string& code);
+
+	/// @return finds a module by it's name, interprets it's code and returns
+	/// the result.
+	Value import_module(String& modname);
 
 	const Block* block() const noexcept {
 		return m_current_block;
 	}
 
-	/// @brief makes an object of type [T],
-	/// registers it with the VM and return a reference to
+	/// @brief constructs an object of type [T], registers it with the VM and returns a reference to
 	/// the newly created object.
-	/// The object is registered simply by attaching
-	/// it to the head of the VM's object linked list.
 	template <typename T, typename... Args>
 	T& make(Args&&... args) {
+		static_assert(
+			std::is_base_of_v<Obj, T>,
+			"VM::make can only produce instances of vyse::Object and it's deriving classes.");
 		T* object = new T(std::forward<Args>(args)...);
 		register_object(object);
 		return *object;
@@ -167,7 +176,7 @@ public:
 
 #ifdef VYSE_LOG_GC
 			printf("< GC cycle invoked while attempting to allocate %s >\n",
-						 value_to_string(VYSE_OBJECT(o)).c_str());
+				   value_to_string(VYSE_OBJECT(o)).c_str());
 #endif
 			collect_garbage();
 
@@ -277,7 +286,9 @@ public:
 		Table* list = nullptr;
 	} prototypes;
 
-private:
+  private:
+	VMConfig m_config;
+
 	const std::string* m_source;
 	bool m_has_error = false;
 	Compiler* m_compiler = nullptr;

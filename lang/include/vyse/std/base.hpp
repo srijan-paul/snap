@@ -12,5 +12,6 @@ Value setproto(VM&, int);
 Value getproto(VM&, int);
 
 Value assert_(VM&, int);
+Value import(VM&, int);
 
 } // namespace vyse::stdlib

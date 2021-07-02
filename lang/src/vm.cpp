@@ -99,6 +99,8 @@ void print_stack(Value* stack, size_t sp) {
 }
 #endif
 
+std::set<const char*> VM::builtin_modules = {"math"};
+
 ExitCode VM::run() {
 
 	while (true) {
@@ -275,10 +277,10 @@ ExitCode VM::run() {
 		}
 
 		// In a for loop, the variables are to be set up in the stack as such: [counter, limit,
-		// step, i]. Here, 'i' is the user exposed counter. The user is free to modify this variable,
-		// however the 'for_loop' instruction at the end of a loop's body will change it back to
-		// `counter + limit`. counter = counter - 1; i = counter; jump to to corresponding for_loop
-		// opcode; make some type checks;
+		// step, i]. Here, 'i' is the user exposed counter. The user is free to modify this
+		// variable, however the 'for_loop' instruction at the end of a loop's body will change it
+		// back to `counter + limit`. counter = counter - 1; i = counter; jump to to corresponding
+		// for_loop opcode; make some type checks;
 		case Op::for_prep: {
 			Value& counter = PEEK(3);
 			CHECK_TYPE(counter, VT::Number, "'for' variable not a number.");
@@ -710,30 +712,39 @@ bool VM::init() {
 		return false;
 	}
 
-	Compiler compiler{this, m_source};
-	m_compiler = &compiler;
-
-	CodeBlock* code = m_compiler->compile();
-	// If the compilation failed, return false and signal a compile time error.
-	if (!compiler.ok()) return false;
-
-	// There are no reachable references to [code] when we allocate `script`. Since allocating a
-	// function can trigger a garbage collection cycle, we protect the code block.
-	gc_protect(code);
-	Closure* script = &make<Closure>(code, 0);
-
-	// Once the function has been made, [code] can be reached via `script->m_codeblock`, so we can
-	// unprotect it.
-	gc_unprotect(code);
-
+	Closure* script = compile(*m_source);
+	if (script == nullptr) return false;
 	invoke_script(script);
 
 #ifdef VYSE_DEBUG_DISASSEMBLY
 	disassemble_block(script->name()->c_str(), *m_current_block);
 	printf("\n");
 #endif
-	m_compiler = nullptr;
+
 	return true;
+}
+
+Closure* VM::compile(const std::string& src) {
+	Compiler compiler{this, &src};
+	m_compiler = &compiler;
+
+	CodeBlock* code = m_compiler->compile();
+
+	if (!compiler.ok()) {
+		m_compiler = nullptr;
+		return nullptr;
+	}
+
+	// There are no reachable references to [code] when we allocate `script`. Since allocating a
+	// function can trigger a garbage collection cycle, we protect the code block.
+	gc_protect(code);
+	Closure* closure = &make<Closure>(code, 0);
+
+	// Once the function has been made, [code] can be reached via `script->m_codeblock`, so we can
+	// unprotect it.
+	gc_unprotect(code);
+	m_compiler = nullptr;
+	return closure;
 }
 
 void VM::invoke_script(Closure* script) {
@@ -773,6 +784,7 @@ void VM::load_stdlib() {
 	add_stdlib_object("byte", &make<CClosure>(stdlib::byte));
 	add_stdlib_object("assert", &make<CClosure>(stdlib::assert_));
 	add_stdlib_object("input", &make<CClosure>(stdlib::input));
+	add_stdlib_object("import", &make<CClosure>(stdlib::import));
 
 	load_primitives();
 }
@@ -1087,8 +1099,8 @@ size_t VM::collect_garbage() {
 // -- Error reporting --
 
 ExitCode VM::binop_error(const char* opstr, const Value& a, const Value& b) {
-	return ERROR("Cannot use operator '{}' on operands of type '{}' and '{}'.", opstr,
-				 VYSE_TYPE_CSTR(a), VYSE_TYPE_CSTR(b));
+	return ERROR("Bad types for operator '{}': '{}' and '{}'.", opstr, VYSE_TYPE_CSTR(a),
+				 VYSE_TYPE_CSTR(b));
 }
 
 ExitCode VM::runtime_error(const std::string& message) {
@@ -1156,6 +1168,22 @@ char* default_readline([[maybe_unused]] const VM& vm) {
 	buf = (char*)realloc(buf, sizeof(char) * (nchars + 1));
 	buf[nchars] = '\0';
 	return buf;
+}
+
+Value VM::import_module(String& modname) {
+	std::string code = find_module(*this, modname.c_str());
+	Closure* func = compile(code);
+	if (func == nullptr) return VYSE_NIL;
+
+	m_stack.push(VYSE_OBJECT(func));
+	bool ok = call(0);
+
+	if (!ok) return VYSE_NIL;
+	return m_stack.pop();
+}
+
+std::string default_find_module(VM&, const char*) {
+	return "return { x: 1 }";
 }
 
 /// TODO: The user might need some objects even after the VM has been destructed. Add support for

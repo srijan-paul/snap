@@ -28,7 +28,7 @@ class Obj {
 	friend GC;
 	friend Table;
 
-public:
+  public:
 	const ObjType tag;
 
 	explicit constexpr Obj(ObjType tt) noexcept : tag{tt} {};
@@ -38,7 +38,7 @@ public:
 
 	virtual const char* to_cstring() const;
 
-protected:
+  protected:
 	/// @brief pointer to the next object in the VM's GC linked list.
 	Obj* next = nullptr;
 	/// @brief Whether this object has been 'marked' as alive in the most
@@ -105,55 +105,55 @@ char* num_to_cstring(number n);
 const char* value_type_name(Value v);
 void print_value(Value v);
 
-#define VYSE_SET_NUM(v, i)		((v).as.num = i)
-#define VYSE_SET_BOOL(v, b)		((v).as.boolean = b)
+#define VYSE_SET_NUM(v, i)	  ((v).as.num = i)
+#define VYSE_SET_BOOL(v, b)	  ((v).as.boolean = b)
 #define VYSE_SET_OBJECT(v, o) ((v).as.object = o)
 
-#define VYSE_NUM(n)		 (vyse::Value(static_cast<vyse::number>(n)))
-#define VYSE_BOOL(b)	 (vyse::Value(static_cast<bool>(b)))
+#define VYSE_NUM(n)	   (vyse::Value(static_cast<vyse::number>(n)))
+#define VYSE_BOOL(b)   (vyse::Value(static_cast<bool>(b)))
 #define VYSE_OBJECT(o) (vyse::Value(static_cast<vyse::Obj*>(o)))
-#define VYSE_NIL			 (vyse::Value())
-#define VYSE_UNDEF		 (vyse::Value::undefined())
+#define VYSE_NIL	   (vyse::Value())
+#define VYSE_UNDEF	   (vyse::Value::undefined())
 
-#define VYSE_SET_TT(v, tt)		((v).tag = tt)
-#define VYSE_GET_TT(v)				((v).tag)
-#define VYSE_CHECK_TT(v, tt)	((v).tag == tt)
+#define VYSE_SET_TT(v, tt)	  ((v).tag = tt)
+#define VYSE_GET_TT(v)		  ((v).tag)
+#define VYSE_CHECK_TT(v, tt)  ((v).tag == tt)
 #define VYSE_ASSERT_TT(v, tt) (VYSE_ASSERT(VYSE_CHECK_TT((v), tt), "Mismatched type tags."))
 #define VYSE_ASSERT_OT(v, ot)                                                                      \
 	(VYSE_ASSERT((VYSE_AS_OBJECT(v)->tag == ot), "Mismatched object types."))
 #define VYSE_TYPE_CSTR(v) (value_type_name(v))
 
-#define VYSE_IS_NUM(v)			 ((v).tag == vyse::ValueType::Number)
-#define VYSE_IS_BOOL(v)			 ((v).tag == vyse::ValueType::Bool)
-#define VYSE_IS_FALSE(v)		 (VYSE_IS_BOOL(v) and !VYSE_AS_BOOL(v))
-#define VYSE_IS_TRUE(v)			 (VYSE_IS_BOOL(v) and VYSE_AS_BOOL(v))
-#define VYSE_IS_NIL(v)			 ((v).tag == vyse::ValueType::Nil)
+#define VYSE_IS_NUM(v)		 ((v).tag == vyse::ValueType::Number)
+#define VYSE_IS_BOOL(v)		 ((v).tag == vyse::ValueType::Bool)
+#define VYSE_IS_FALSE(v)	 (VYSE_IS_BOOL(v) and !VYSE_AS_BOOL(v))
+#define VYSE_IS_TRUE(v)		 (VYSE_IS_BOOL(v) and VYSE_AS_BOOL(v))
+#define VYSE_IS_NIL(v)		 ((v).tag == vyse::ValueType::Nil)
 #define VYSE_IS_UNDEFINED(v) ((v).tag == vyse::ValueType::Undefined)
-#define VYSE_IS_OBJECT(v)		 ((v).tag == vyse::ValueType::Object)
+#define VYSE_IS_OBJECT(v)	 ((v).tag == vyse::ValueType::Object)
 
-#define VYSE_IS_STRING(v)	 (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::string)
-#define VYSE_IS_TABLE(v)	 (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::table)
-#define VYSE_IS_LIST(v)		 (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::list)
+#define VYSE_IS_STRING(v)  (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::string)
+#define VYSE_IS_TABLE(v)   (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::table)
+#define VYSE_IS_LIST(v)	   (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::list)
 #define VYSE_IS_CLOSURE(v) (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::closure)
 #define VYSE_IS_CODEBLOCK(v)                                                                       \
 	(VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::codeblock)
 #define VYSE_IS_CCLOSURE(v)                                                                        \
 	(VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vyse::ObjType::c_closure)
 
-#define VYSE_IS_FALSY(v)	((VYSE_IS_BOOL(v) and !(VYSE_AS_BOOL(v))) or VYSE_IS_NIL(v))
+#define VYSE_IS_FALSY(v)  ((VYSE_IS_BOOL(v) and !(VYSE_AS_BOOL(v))) or VYSE_IS_NIL(v))
 #define VYSE_IS_TRUTHY(v) (!VYSE_IS_FALSY(v))
 
-#define VYSE_AS_NUM(v)			((v).as.num)
-#define VYSE_AS_BOOL(v)			((v).as.boolean)
-#define VYSE_AS_NIL(v)			((v).as.double)
-#define VYSE_AS_OBJECT(v)		((v).as.object)
+#define VYSE_AS_NUM(v)		((v).as.num)
+#define VYSE_AS_BOOL(v)		((v).as.boolean)
+#define VYSE_AS_NIL(v)		((v).as.double)
+#define VYSE_AS_OBJECT(v)	((v).as.object)
 #define VYSE_AS_CLOSURE(v)	(static_cast<vyse::Closure*>(VYSE_AS_OBJECT(v)))
 #define VYSE_AS_CCLOSURE(v) (static_cast<vyse::CClosure*>(VYSE_AS_OBJECT(v)))
-#define VYSE_AS_PROTO(v)		(static_cast<vyse::CodeBlock*>(VYSE_AS_OBJECT(v)))
-#define VYSE_AS_STRING(v)		(static_cast<vyse::String*>(VYSE_AS_OBJECT(v)))
+#define VYSE_AS_PROTO(v)	(static_cast<vyse::CodeBlock*>(VYSE_AS_OBJECT(v)))
+#define VYSE_AS_STRING(v)	(static_cast<vyse::String*>(VYSE_AS_OBJECT(v)))
 #define VYSE_AS_CSTRING(v)	(VYSE_AS_STRING(v)->c_str())
-#define VYSE_AS_TABLE(v)		(static_cast<Table*>(VYSE_AS_OBJECT(v)))
-#define VYSE_AS_LIST(v)			(static_cast<List*>(VYSE_AS_OBJECT(v)))
+#define VYSE_AS_TABLE(v)	(static_cast<Table*>(VYSE_AS_OBJECT(v)))
+#define VYSE_AS_LIST(v)		(static_cast<List*>(VYSE_AS_OBJECT(v)))
 
 #define VYSE_CAST_INT(v) (s64(VYSE_AS_NUM(v)))
 
