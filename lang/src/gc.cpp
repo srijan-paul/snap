@@ -1,3 +1,4 @@
+#include "gc.hpp"
 #include "value.hpp"
 #include <vm.hpp>
 
@@ -27,6 +28,7 @@ void GC::mark_compiler_roots() {
 }
 
 void GC::mark() {
+	assert(m_vm != nullptr);
 
 #ifdef VYSE_LOG_GC
 	printf("-- [GC start] --\n");
@@ -92,14 +94,14 @@ size_t GC::sweep() {
 	printf("-- Sweep --\n");
 #endif
 
-	/// Delete all the interned strings that haven't been reached
-	/// by now.
+	// Delete all the interned strings that haven't been reached by now.
 	m_vm->interned_strings.delete_white_string_keys();
 
 	size_t bytes_freed = 0;
 
-	// Walk over the [m_objects] linked list
-	// and free any objects that aren't marked
+	// By this point, the reachable parts of the heap has been scanned once and all objects that
+	// were reachable from the root set have been marked as alive. Now we can re-scan the entire
+	// heap by going over the `m_objects` linked list and delete all objects that are not marked as
 	// alive.
 	Obj* prev = nullptr;
 	Obj* current = m_objects;
@@ -140,6 +142,17 @@ void GC::protect(Obj* o) {
 
 void GC::unprotect(Obj* o) {
 	m_extra_roots.erase(o);
+}
+
+GCLock::GCLock(GC& gc, Obj* obj) : m_gc(&gc), m_object(obj) {
+	VYSE_ASSERT(obj != nullptr, "Object provided to GC protect lock is already deleted");
+	m_gc->protect(m_object);
+}
+
+GCLock::~GCLock() {
+	VYSE_ASSERT(m_object != nullptr, "Object protected by GC lock deleted.");
+	assert(m_gc != nullptr);
+	m_gc->unprotect(m_object);
 }
 
 } // namespace vyse

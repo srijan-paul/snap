@@ -274,15 +274,11 @@ ExitCode VM::run() {
 			break;
 		}
 
-		// In a for loop, the variables are to be set up in the
-		// stack as such: [counter, limit, step, i]
-		// Here, 'i' is the user exposed counter. The user is free to modify
-		// this variable, however the 'for_loop' instruction at the end
-		// of a loop's body will change it back to `counter + limit`.
-		// counter = counter - 1;
-		// i = counter;
-		// jump to to corresponding for_loop opcode;
-		// make some type checks;
+		// In a for loop, the variables are to be set up in the stack as such: [counter, limit,
+		// step, i]. Here, 'i' is the user exposed counter. The user is free to modify this variable,
+		// however the 'for_loop' instruction at the end of a loop's body will change it back to
+		// `counter + limit`. counter = counter - 1; i = counter; jump to to corresponding for_loop
+		// opcode; make some type checks;
 		case Op::for_prep: {
 			Value& counter = PEEK(3);
 			CHECK_TYPE(counter, VT::Number, "'for' variable not a number.");
@@ -580,6 +576,7 @@ ExitCode VM::run() {
 			DISCARD();
 			PUSH(result);
 
+			// No more code to run, the script has executed successfully.
 			m_frame_count--;
 			if (m_frame_count == 0) {
 				return_value = result;
@@ -589,8 +586,8 @@ ExitCode VM::run() {
 			m_current_frame = m_current_frame->prev;
 			VYSE_ASSERT(m_current_frame != nullptr, "Invalid call stack state.");
 
-			// If the call site of this Vyse function was in C++
-			// then we return control to the C++ function.
+			// If the call site of this Vyse function was in C++ then we return control to the C++
+			// function.
 			if (m_current_frame->func->tag == OT::c_closure) {
 				return ExitCode::Success;
 			}
@@ -717,19 +714,15 @@ bool VM::init() {
 	m_compiler = &compiler;
 
 	CodeBlock* code = m_compiler->compile();
-	// If the compilation failed, return false
-	// and signal a compile time error.
+	// If the compilation failed, return false and signal a compile time error.
 	if (!compiler.ok()) return false;
 
-	// There are no reachable references to [code]
-	// when we allocate `script`. Since allocating a func
-	// can trigger a garbage collection cycle, we protect
-	// the code block.
+	// There are no reachable references to [code] when we allocate `script`. Since allocating a
+	// function can trigger a garbage collection cycle, we protect the code block.
 	gc_protect(code);
 	Closure* script = &make<Closure>(code, 0);
 
-	// Once the function has been made, [code] can
-	// be reached via `script->m_codeblock`, so we can
+	// Once the function has been made, [code] can be reached via `script->m_codeblock`, so we can
 	// unprotect it.
 	gc_unprotect(code);
 
@@ -744,11 +737,9 @@ bool VM::init() {
 }
 
 void VM::invoke_script(Closure* script) {
-	// clear the stack in case there is some leftover
-	// junk from previous invocations.
+	// clear the stack in case there is some leftover junk from previous invocations.
 	m_stack.clear();
-	// make sure there is enough room in the stack
-	// for this function call. +1 for the script itself
+	// make sure there is enough room in the stack for this function call. +1 for the script itself.
 	ensure_slots(script->m_codeblock->stack_size() + 1);
 	m_stack.push(VYSE_OBJECT(script));
 	base_frame->base = m_stack.top - 1;
@@ -767,10 +758,9 @@ ExitCode VM::runcode(const std::string& code) {
 
 void VM::add_stdlib_object(const char* name, Obj* o) {
 	auto vglobal = VYSE_OBJECT(o);
-	// setting a global variable may trigger a garbage collection
-	// cycle (when allocating the [name] as vyse::String). At that
-	// point, vprint is only reachable on the C stack, so we protect
-	// it by pushing it on to the VM stack.
+	// setting a global variable may trigger a garbage collection cycle (when allocating the [name]
+	// as vyse::String). At that point, vprint is only reachable on the C stack, so we protect it by
+	// pushing it on to the VM stack.
 	m_stack.push(vglobal);
 	set_global(name, vglobal);
 	m_stack.pop();
@@ -815,23 +805,20 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 	Upvalue* current = m_open_upvals;
 	Upvalue* prev = nullptr;
 
-	// keep going until we reach a slot whose
-	// depth is lower than what we've been looking
-	// for, or until we reach the end of the list.
+	// keep going until we reach a slot whose depth is lower than what we've been looking for, or
+	// until we reach the end of the list.
 	while (current != nullptr and current->m_value < slot) {
 		prev = current;
 		current = current->next_upval;
 	}
 
-	// We've found an upvalue that was
-	// already capturing a value at this stack
-	// slot, so we reuse the existing upvalue
+	// We've found an upvalue that was already capturing a value at this stack slot, so we reuse the
+	// existing upvalue
 	if (current != nullptr and current->m_value == slot) return current;
 
-	// We've reached a node in the list where the previous node is above the
-	// slot we wanted to capture, but the current node is deeper.
-	// Meaning `slot` points to a new value that hasn't been captured before.
-	// So we add it between `prev` and `current`.
+	// We've reached a node in the list where the previous node is above the slot we wanted to
+	// capture, but the current node is deeper. Meaning `slot` points to a new value that hasn't
+	// been captured before. So we add it between `prev` and `current`.
 	Upvalue* upval = &make<Upvalue>(slot);
 	upval->next_upval = current;
 
@@ -863,9 +850,8 @@ bool VM::call(int argc) {
 	Value value = m_stack.peek(argc + 1);
 	bool ok = op_call(value, argc);
 
-	// if the called object was a CClosure then
-	// execution has already finished and no need
-	// to call run() from here.
+	// If the called object was a CClosure then execution has already finished and no need to call
+	// run() from here.
 	if (VYSE_IS_CCLOSURE(value)) return ok;
 	ExitCode ec = run();
 	return ec == ExitCode::Success;
@@ -896,9 +882,8 @@ void VM::push_callframe(Obj* callable, int argc) {
 				"Non callable callframe pushed.");
 	VYSE_ASSERT(argc >= 0, "Negative argument count.");
 
-	// Save the current instruction pointer
-	// in the call frame so we can resume
-	// execution when the function returns.
+	// Save the current instruction pointer in the call frame so we can resume execution when the
+	// function returns.
 	m_current_frame->ip = ip;
 
 	// prepare the next call frame
@@ -954,11 +939,8 @@ bool VM::call_closure(Closure* func, int argc) {
 	// for this function call.
 	ensure_slots(func->m_codeblock->stack_size());
 
-	/// extra arguments are ignored and
-	/// arguments that aren't provded are replaced with nil.
-	/// TODO: avoid this by either intializing all stack slots
-	/// to nil or by not allowing calls with incorrect argument
-	/// count. (Make an exception for varargs.)
+	/// extra arguments are ignored and arguments that aren't provded are replaced with nil.
+	/// TODO: allow variadic functions
 	if (extra < 0) {
 		while (extra < 0) {
 			m_stack.push(VYSE_NIL);
@@ -1077,10 +1059,9 @@ void VM::ensure_slots(uint slots_needed) {
 	Value* old_stack = m_stack.values;
 	m_stack.values = static_cast<Value*>(realloc(m_stack.values, m_stack.size * sizeof(Value)));
 
-	// Now that the stack has moved in memory, the CallFrames and the
-	// Upvalue chain still contain dangling pointers to the old stack,
-	// so we update those to the same relative distance from the new
-	// stack's base address.
+	// Now that the stack has moved in memory, the CallFrames and the Upvalue chain still contain
+	// dangling pointers to the old stack, so we update those to the same relative distance from the
+	// new stack's base address.
 	for (CallFrame* cf = m_current_frame; cf; cf = cf->prev) {
 		cf->base = m_stack.values + (cf->base - old_stack);
 	}
@@ -1153,8 +1134,7 @@ ExitCode VM::runtime_error(const std::string& message) {
 	return ExitCode::RuntimeError;
 }
 
-// The default behavior on an error is to simply
-// print it to the stderr.
+// The default behavior on an error is to simply print it to the stderr.
 void default_error_fn([[maybe_unused]] const VM& vm, const std::string& err_msg) {
 	fprintf(stderr, "%s\n", err_msg.c_str());
 }
@@ -1178,8 +1158,8 @@ char* default_readline([[maybe_unused]] const VM& vm) {
 	return buf;
 }
 
-/// TODO: The user might need some objects even after the VM
-/// has been destructed. Add support for this.
+/// TODO: The user might need some objects even after the VM has been destructed. Add support for
+/// this.
 VM::~VM() {
 	if (m_gc.m_objects == nullptr) return;
 	for (Obj* object = m_gc.m_objects; object != nullptr;) {

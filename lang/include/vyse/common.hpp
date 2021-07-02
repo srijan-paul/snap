@@ -50,8 +50,14 @@ using number = double;
 
 #endif
 
-#define VYSE_NO_COPY(class)				 class(class const& other) = delete
-#define VYSE_NO_MOVE(class)				 class(class && other) = delete
+#define VYSE_NO_COPY(class)                                                                        \
+	class(class const& other) = delete;                                                            \
+	class& operator=(const class&) = delete
+
+#define VYSE_NO_MOVE(class)                                                                        \
+	class(class &&) = delete;                                                                      \
+	class& operator=(class&&) = delete
+
 #define VYSE_NO_DEFAULT_CONSTRUCT(class) class() = delete
 
 } // namespace vyse
