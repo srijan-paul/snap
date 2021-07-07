@@ -11,6 +11,9 @@ jobs:
 
       - uses: seanmiddleditch/gha-setup-ninja@master
 
+      - name: Install submodule dependencies 
+        run:  git submodule update --init --recursive
+
       - name: create build scripts
         run:  mkdir bin && cd bin && cmake -G Ninja ..
 
