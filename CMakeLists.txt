@@ -39,6 +39,7 @@ target_compile_options(${PROJECT_NAME} PUBLIC "-Wall" "-Wpedantic" "-Wextra" "-f
 function(BUILD_VYSE_LIB LIB_NAME)
   add_library(${LIB_NAME} SHARED ${SOURCE_DIR}/std/${LIB_NAME}.cpp)
   target_link_libraries(${LIB_NAME} PRIVATE ${PROJECT_NAME})
+  set_property(TARGET ${LIB_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
   target_include_directories(${LIB_NAME} PRIVATE ${INCLUDE_DIR})
   target_compile_features(${LIB_NAME} PRIVATE cxx_std_17)
 endfunction(BUILD_VYSE_LIB)
