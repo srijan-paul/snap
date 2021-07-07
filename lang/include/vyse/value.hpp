@@ -20,10 +20,8 @@ enum class ObjType : u8 {
 /// Objects always live on the heap. A value which is an object contains a pointer
 /// to this data on the heap. The `tag` specifies what kind of object this is.
 class Obj {
-	// The VM and the Garbage Collector
-	// need access to the mark bit and the
-	// next pointer. So we'll declare them
-	// as friend classes.
+	// The VM and the Garbage Collector need access to the mark bit and the `next` pointer. So we'll
+	// declare them as friend classes.
 	friend VM;
 	friend GC;
 	friend Table;
@@ -56,23 +54,22 @@ class Obj {
 
 enum class ValueType { Number, Bool, Object, Nil, Undefined };
 
-// Without NaN tagging, values are represented
-// as structs weighing 16 bytes. 1 word for the
-// type tag and one for the union representing the
-// possible states. This is a bit wasteful but
-// not that bad.
+// Without NaN tagging, values are represented as structs weighing 16 bytes. 1 word for the type tag
+// and one for the union representing the possible states. This is a bit wasteful but not that bad.
+
 /// TODO: Implement optional NaN tagging when a macro
 /// VYSE_NAN_TAGGING is defined.
+
 struct Value {
 	ValueType tag;
 	union Data {
 		number num;
 		bool boolean;
 		Obj* object;
-		constexpr Data() noexcept : num(0){};
-		constexpr Data(number v) noexcept : num(v){};
-		constexpr Data(bool b) noexcept : boolean(b){};
-		constexpr Data(Obj* o) noexcept : object(o){};
+		constexpr Data() noexcept : num(0) {}
+		constexpr Data(number v) noexcept : num(v) {}
+		constexpr Data(bool b) noexcept : boolean(b) {}
+		constexpr Data(Obj* o) noexcept : object(o) {}
 	} as;
 
 	explicit constexpr Value(number n) noexcept : tag{ValueType::Number}, as{n} {};
@@ -92,11 +89,9 @@ struct Value {
 bool operator==(const Value& a, const Value& b);
 bool operator!=(const Value& a, const Value& b);
 
-// It might seem redundant to represent
-// these procedures as free functions instead
-// of methods, but once we have NaN tagging, we
-// would still like to have the same procedure
-// signatures used across the codebase.
+// It might seem redundant to represent these procedures as free functions instead of methods, but
+// once we have NaN tagging, we would still like to have the same procedure signatures used across
+// the codebase.
 const char* vtype_to_string(ValueType tag);
 const char* otype_to_string(ObjType tag);
 std::string value_to_string(Value v);

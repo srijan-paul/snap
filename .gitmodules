@@ -1,0 +1,3 @@
+[submodule "ext/dino"]
+	path = ext/dino
+	url = https://github.com/karnkaul/dino

@@ -11,7 +11,7 @@ AlignEscapedNewlines: Right
 AlignOperands: true
 AlignTrailingComments: true
 AlignConsecutiveAssignments: false
-AllowShortFunctionsOnASingleLine: None
+AllowShortFunctionsOnASingleLine: Empty
 AllowShortLoopsOnASingleLine: true
 BreakBeforeBraces: Attach
 AllowShortCaseLabelsOnASingleLine: true

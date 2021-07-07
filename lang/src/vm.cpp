@@ -1,4 +1,4 @@
-#include "common.hpp"
+#include "loadlib.hpp"
 #include "std/primitives/vy_list_proto.hpp"
 #include "std/vystrlib.hpp"
 #include "str_format.hpp"
@@ -98,8 +98,6 @@ void print_stack(Value* stack, size_t sp) {
 	printf("]\n");
 }
 #endif
-
-std::set<const char*> VM::builtin_modules = {"math"};
 
 ExitCode VM::run() {
 
@@ -652,7 +650,7 @@ Value VM::concatenate(const String* left, const String* right) {
 	String* interned = interned_strings.find_string(buf, length, hash);
 
 	if (interned == nullptr) {
-		String* res = &make<String>(buf, length, hash);
+		String* res = &make_string_no_intern(buf, length, hash);
 		Value vresult = VYSE_OBJECT(res);
 		interned_strings.set(vresult, VYSE_BOOL(true));
 		return vresult;
@@ -678,7 +676,12 @@ void VM::set_global(String* name, Value value) {
 }
 
 void VM::set_global(const char* name, Value value) {
+	/// When allocating space for the [name] string, a GC cycle may be triggered, so
+	/// we have to protect the object from getting collected while that happens.
+	if (VYSE_IS_OBJECT(value)) m_stack.push(value);
 	String& sname = make_string(name, strlen(name));
+	if (VYSE_IS_OBJECT(value)) m_stack.pop();
+
 	m_global_vars[&sname] = value;
 }
 
@@ -768,13 +771,8 @@ ExitCode VM::runcode(const std::string& code) {
 }
 
 void VM::add_stdlib_object(const char* name, Obj* o) {
-	auto vglobal = VYSE_OBJECT(o);
-	// setting a global variable may trigger a garbage collection cycle (when allocating the [name]
-	// as vyse::String). At that point, vprint is only reachable on the C stack, so we protect it by
-	// pushing it on to the VM stack.
-	m_stack.push(vglobal);
+	Value vglobal = VYSE_OBJECT(o);
 	set_global(name, vglobal);
-	m_stack.pop();
 }
 
 void VM::load_stdlib() {
@@ -785,6 +783,9 @@ void VM::load_stdlib() {
 	add_stdlib_object("assert", &make<CClosure>(stdlib::assert_));
 	add_stdlib_object("input", &make<CClosure>(stdlib::input));
 	add_stdlib_object("import", &make<CClosure>(stdlib::import));
+
+	/// Initialize the default package loader functions used by the `import` builtin.
+	dynloader.init_loaders(*this);
 
 	load_primitives();
 }
@@ -847,8 +848,7 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 void VM::close_upvalues_upto(Value* last) {
 	while (m_open_upvals != nullptr and m_open_upvals->m_value >= last) {
 		Upvalue* current = m_open_upvals;
-		// these two lines are the last rites of an
-		// upvalue, closing it.
+		// these two lines are the last rites of an upvalue, closing it.
 		current->closed = *current->m_value;
 		current->m_value = &current->closed;
 		m_open_upvals = current->next_upval;
@@ -926,15 +926,13 @@ void VM::pop_callframe() noexcept {
 	VYSE_ASSERT(m_frame_count > 1, "Attempt to pop base callframe.");
 	--m_frame_count;
 
-	/// If we are in the top level script,
-	/// then there is no older call frame.
+	/// If we are in the top level script, then there is no older call frame.
 	if (m_frame_count == 0) return;
 
 	m_current_frame = m_current_frame->prev;
 	VYSE_ASSERT(m_current_frame != nullptr, "Invalid Call stack state.");
 
-	/// restore the instruction pointer to continue
-	/// from where we left off.
+	/// restore the instruction pointer to continue from where we left off.
 	ip = m_current_frame->ip;
 
 	Obj* const callable = m_current_frame->func;
@@ -947,8 +945,7 @@ void VM::pop_callframe() noexcept {
 bool VM::call_closure(Closure* func, int argc) {
 	int extra = argc - func->m_codeblock->param_count();
 
-	// make sure there is enough room in the stack
-	// for this function call.
+	// make sure there is enough room in the stack for this function call.
 	ensure_slots(func->m_codeblock->stack_size());
 
 	/// extra arguments are ignored and arguments that aren't provded are replaced with nil.
@@ -1034,13 +1031,12 @@ String& VM::take_string(char* buf, size_t len) {
 	// look for an existing interened copy of the string.
 	String* interend = interned_strings.find_string(buf, len, hash);
 	if (interend != nullptr) {
-		// we now 'own' the string, so we are free to
-		// get rid of this buffer if we don't need it.
+		// we now 'own' the string, so we are free to get rid of this buffer if we don't need it.
 		delete[] buf;
 		return *interend;
 	}
 
-	String& string = make<String>(buf, len, hash);
+	String& string = make_string_no_intern(buf, len, hash);
 	interned_strings.set(VYSE_OBJECT(&string), VYSE_BOOL(true));
 	return string;
 }
@@ -1048,12 +1044,12 @@ String& VM::take_string(char* buf, size_t len) {
 String& VM::make_string(const char* chars, size_t length) {
 	size_t hash = hash_cstring(chars, length);
 
-	// If an identical string has already been created, then
-	// return a reference to the existing string instead.
+	// If an identical string has already been created, then return a reference to the existing
+	// string instead.
 	String* interned = interned_strings.find_string(chars, length, hash);
 	if (interned != nullptr) return *interned;
 
-	String* string = &make<String>(chars, length, hash);
+	String* string = &make_string_no_intern(chars, length, hash);
 	interned_strings.set(VYSE_OBJECT(string), VYSE_BOOL(true));
 
 	return *string;
@@ -1123,7 +1119,7 @@ ExitCode VM::runtime_error(const std::string& message) {
 		const Closure& func = *static_cast<Closure*>(frame->func);
 
 		const Block& block = func.m_codeblock->block();
-		VYSE_ASSERT(frame->ip >= 0 and frame->ip < block.lines.size(),
+		VYSE_ASSERT(frame->ip < block.lines.size(),
 					"IP not in range for std::vector<u32> block.lines.");
 
 		int line = block.lines[frame->ip];
@@ -1171,6 +1167,7 @@ char* default_readline([[maybe_unused]] const VM& vm) {
 }
 
 Value VM::import_module(String& modname) {
+	return VYSE_NIL;
 	std::string code = find_module(*this, modname.c_str());
 	Closure* func = compile(code);
 	if (func == nullptr) return VYSE_NIL;

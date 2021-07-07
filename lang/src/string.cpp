@@ -36,6 +36,6 @@ bool operator==(const String& a, const String& b) {
 	return std::memcmp(a.c_str(), b.c_str(), alen) == 0;
 }
 
-void String::trace([[maybe_unused]] GC& gc){};
+void String::trace([[maybe_unused]] GC& gc) {}
 
 } // namespace vyse

@@ -60,4 +60,6 @@ using number = double;
 
 #define VYSE_NO_DEFAULT_CONSTRUCT(class) class() = delete
 
+#define VYSE_API extern "C"
+
 } // namespace vyse

@@ -1,13 +1,16 @@
 #include "../str_format.hpp"
 #include "value.hpp"
+#include "vy_list.hpp"
+#include <loadlib.hpp>
 #include <std/base.hpp>
 #include <std/lib_util.hpp>
 #include <vm.hpp>
 
 using namespace vyse::stdlib::util;
+using namespace vyse;
 
 /// TODO: benchmark and optimize this.
-vyse::Value vyse::stdlib::print(VM& vm, int argc) {
+Value vyse::stdlib::print(VM& vm, int argc) {
 	std::string res = "";
 	for (int i = 0; i < argc; ++i) {
 		res += value_to_string(vm.get_arg(i)) + "  ";
@@ -20,7 +23,7 @@ vyse::Value vyse::stdlib::print(VM& vm, int argc) {
 	return VYSE_NIL;
 }
 
-vyse::Value vyse::stdlib::input(VM& vm, int argc) {
+Value stdlib::input(VM& vm, int argc) {
 	for (int i = 0; i < argc; ++i) {
 		const Value& v = vm.get_arg(i);
 		std::string s = value_to_string(v);
@@ -33,7 +36,7 @@ vyse::Value vyse::stdlib::input(VM& vm, int argc) {
 	return VYSE_OBJECT(string);
 }
 
-vyse::Value vyse::stdlib::setproto(VM& vm, int argc) {
+Value stdlib::setproto(VM& vm, int argc) {
 	static const char* func_name = "setproto";
 
 	if (argc != 2) {
@@ -86,7 +89,7 @@ vyse::Value vyse::stdlib::getproto(VM& vm, int argc) {
 	return VYSE_OBJECT(table->m_proto_table);
 }
 
-vyse::Value vyse::stdlib::assert_(VM& vm, int argc) {
+Value stdlib::assert_(VM& vm, int argc) {
 	static constexpr const char* fname = "assert";
 
 	if (argc < 1 or argc > 2) {
@@ -107,8 +110,9 @@ vyse::Value vyse::stdlib::assert_(VM& vm, int argc) {
 	return VYSE_NIL;
 }
 
-vyse::Value vyse::stdlib::import(VM& vm, int argc) {
+Value stdlib::import(VM& vm, int argc) {
 	static constexpr const char* fname = "import";
+
 	if (argc != 1) {
 		cfn_error(vm, fname, "Expected 1 argument to 'import'.");
 		return VYSE_NIL;
@@ -118,5 +122,40 @@ vyse::Value vyse::stdlib::import(VM& vm, int argc) {
 		return VYSE_NIL;
 	}
 
-	return vm.import_module(*VYSE_AS_STRING(vm.get_arg(0)));
+	Value vloaders = vm.get_global(VMLoadersName);
+	if (not VYSE_IS_LIST(vloaders)) {
+		cfn_error(vm, fname, "Global loader list ('__loaders__') not found.");
+		return VYSE_NIL;
+	}
+
+	Value mod_name = vm.get_arg(0);
+	const List& loaders = *VYSE_AS_LIST(vloaders);
+	for (uint i = 0; i < loaders.length(); ++i) {
+		Value loader = loaders[i];
+		/// Skip any non-callable loaders
+		/// TODO: Objects with an overloaded '__call' should be used as loaders.
+		if (not(VYSE_IS_CLOSURE(loader) or VYSE_IS_CCLOSURE(loader))) continue;
+
+		vm.m_stack.push(loader);
+		vm.m_stack.push(mod_name);
+
+		bool ok = vm.call(1);
+		if (not ok) return VYSE_NIL;
+
+		Value result = vm.m_stack.pop();
+
+		if (not VYSE_IS_NIL(result)) {
+			Value module_cache = vm.get_global(ModuleCacheName);
+			if (VYSE_IS_TABLE(module_cache)) {
+				VYSE_AS_TABLE(module_cache)->set(mod_name, result);
+			}
+
+			return result;
+		}
+	}
+
+	cfn_error(vm, fname,
+			  kt::format_str("Cannot find module '{}'", VYSE_AS_STRING(mod_name)->c_str()));
+
+	return VYSE_NIL;
 }

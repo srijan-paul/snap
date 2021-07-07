@@ -1,5 +1,4 @@
-/// Forward declarations to avoid name resolution
-/// conflicts.
+/// Forward declarations to avoid name resolution conflicts.
 
 namespace vyse {
 
@@ -19,8 +18,10 @@ class Table;
 class CodeBlock;
 class Closure;
 
-/// Functions that are called from a snap script
-/// but are implemented in C++.
+/// @brief Functions that are called from a snap script but are implemented in C++.
 using NativeFn = Value (*)(VM& vm, int argc);
 
-} // namespace vyse 
+/// @brief Functions that load a library authored in C++
+using LibInitFn = Table& (*)(VM& vm);
+
+} // namespace vyse

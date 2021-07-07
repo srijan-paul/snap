@@ -25,7 +25,7 @@ namespace vyse {
 using Op = Opcode;
 using TT = TokenType;
 
-Compiler::Compiler(VM* vm, const std::string* src) noexcept : m_vm{vm}, m_source{src} {
+Compiler::Compiler(VM* vm, const std::string* src) : m_vm{vm}, m_source{src} {
 	m_scanner = new Scanner{src};
 	advance(); // set `peek` to the first token in the token stream.
 	String* fname = &vm->make_string("<script>", 8);
@@ -42,7 +42,7 @@ Compiler::Compiler(VM* vm, const std::string* src) noexcept : m_vm{vm}, m_source
 	m_vm->gc_unprotect(fname);
 }
 
-Compiler::Compiler(VM* vm, Compiler* parent, String* name) noexcept : m_vm{vm}, m_parent{parent} {
+Compiler::Compiler(VM* vm, Compiler* parent, String* name) : m_vm{vm}, m_parent{parent} {
 	m_scanner = m_parent->m_scanner;
 	m_codeblock = &m_vm->make<CodeBlock>(name);
 

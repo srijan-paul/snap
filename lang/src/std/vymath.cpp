@@ -1,3 +1,4 @@
+#include "value.hpp"
 #include <cmath>
 #include <common.hpp>
 #include <std/lib_util.hpp>
@@ -22,8 +23,7 @@ Value vy_sqrt(VM& vm, int argc) {
 	return VYSE_NUM(sqrt(arg));
 }
 
-Table& load_math(VM& vm) {
-	Table& module = vm.make<Table>();
-	add_libfn(vm, module, "sqrt", vy_sqrt);
-	return module;
+VYSE_API void load_math(VM* vm, Table* module) {
+	assert(vm != nullptr and module != nullptr);
+	add_libfn(*vm, *module, "sqrt", vy_sqrt);
 }

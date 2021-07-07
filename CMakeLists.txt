@@ -18,14 +18,33 @@ function(LINK_VYSE_DEPS EXEC)
     target_include_directories(${EXEC} PUBLIC ${INCLUDE_DIR})
 endfunction()
 
+# The dino helper is used for dynamic library loading.
+add_subdirectory("ext/dino")
+
 # static library
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIR})
+target_include_directories(${PROJECT_NAME} PUBLIC "ext/dino/include")
+target_link_libraries(${PROJECT_NAME} PRIVATE dino::dino)
+
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
+
 # exclude windows' stupid lowercase macros like 'min' and 'max'
 # to stop them from interfering with vyse code.
 target_compile_definitions(${PROJECT_NAME} PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
 target_compile_options(${PROJECT_NAME} PUBLIC "-Wall" "-Wpedantic" "-Wextra" "-fexceptions")
+
+
+# Builds a shared object file from a vyse standard library source file
+function(BUILD_VYSE_LIB LIB_NAME)
+  add_library(${LIB_NAME} SHARED ${SOURCE_DIR}/std/${LIB_NAME}.cpp)
+  target_link_libraries(${LIB_NAME} PRIVATE ${PROJECT_NAME})
+  target_include_directories(${LIB_NAME} PRIVATE ${INCLUDE_DIR})
+  target_compile_features(${LIB_NAME} PRIVATE cxx_std_17)
+endfunction(BUILD_VYSE_LIB)
+
+# shared libraries for the vyse stdlib
+BUILD_VYSE_LIB(vymath)
 
 # cli app
 set(CLI_NAME "vy")

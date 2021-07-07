@@ -31,8 +31,8 @@ struct LocalVar {
 
 	explicit LocalVar() noexcept {};
 	explicit LocalVar(const char* varname, u32 name_len, u8 scope_depth = 0,
-										bool isconst = false) noexcept
-			: name{varname}, length{name_len}, depth{scope_depth}, is_const{isconst} {};
+					  bool isconst = false) noexcept
+		: name{varname}, length{name_len}, depth{scope_depth}, is_const{isconst} {};
 };
 
 struct UpvalDesc {
@@ -75,7 +75,7 @@ enum class ExpKind {
 class Compiler {
 	friend GC;
 
-public:
+  public:
 	static constexpr u8 MaxLocalVars = UINT8_MAX;
 	static constexpr u8 MaxUpValues = UINT8_MAX;
 	static constexpr u8 MaxConstants = UINT8_MAX;
@@ -87,7 +87,7 @@ public:
 
 	// Creates a fresh new compiler that will
 	// parse the toplevel script `src`.
-	explicit Compiler(VM* vm, const std::string* src) noexcept;
+	explicit Compiler(VM* vm, const std::string* src);
 
 	/// @brief Create a child compiler used for
 	/// compiling function bodies. This assumes
@@ -95,7 +95,7 @@ public:
 	/// the everything up to the functions body.
 	/// @param parent The parent compiler that created this compiler. Used for looking up upvalues.
 	/// @param fname name of the function that this compiler is commpiling into.
-	explicit Compiler(VM* vm, Compiler* parent, String* fname) noexcept;
+	explicit Compiler(VM* vm, Compiler* parent, String* fname);
 
 	~Compiler();
 
@@ -118,7 +118,7 @@ public:
 	/// off the stack.
 	int op_stack_effect(Opcode op) const noexcept;
 
-private:
+  private:
 	struct Loop {
 		VYSE_NO_DEFAULT_CONSTRUCT(Loop);
 		enum class Type {
@@ -202,17 +202,17 @@ private:
 
 	void toplevel();
 
-	void var_decl();								// (let|const) DECL+
+	void var_decl();				// (let|const) DECL+
 	void declarator(bool is_const); // ID (= EXPR)?
-	void block_stmt();							// {stmt*}
-	void if_stmt();									// if EXPR STMT (else STMT)?
-	void while_stmt();							// while EXPR STMT
-	void for_stmt();								// for ID = EXP, EXP (, EXP)? STMT
-	void break_stmt();							// BREAK
-	void continue_stmt();						// CONTINUE
-	void fn_decl();									// fn (ID|SUFFIXED_EXPR) BLOCK
-	void ret_stmt();								// return EXPR?
-	void expr_stmt();								// FUNCALL | ASSIGN
+	void block_stmt();				// {stmt*}
+	void if_stmt();					// if EXPR STMT (else STMT)?
+	void while_stmt();				// while EXPR STMT
+	void for_stmt();				// for ID = EXP, EXP (, EXP)? STMT
+	void break_stmt();				// BREAK
+	void continue_stmt();			// CONTINUE
+	void fn_decl();					// fn (ID|SUFFIXED_EXPR) BLOCK
+	void ret_stmt();				// return EXPR?
+	void expr_stmt();				// FUNCALL | ASSIGN
 	void complete_expr_stmt(ExpKind prefix_type);
 
 	// parses a expression statement's prefix.
@@ -225,31 +225,31 @@ private:
 
 	void append(); // <<<
 
-	void logic_or();	// || or
+	void logic_or();  // || or
 	void logic_and(); // && and
 
 	void bit_or();	// |
 	void bit_xor(); // ^
 	void bit_and(); // &
 
-	void equality();	 // == !=
+	void equality();   // == !=
 	void comparison(); // > >= < <=
-	void b_shift();		 // >> <<
+	void b_shift();	   // >> <<
 
-	void sum();					// + - ..
-	void mult();				// * / %
-	void exp();					// **
-	void unary();				// - + ! not
-	void atomic();			// (ID|'(' EXPR ')' ) SUFFIX*
+	void sum();			// + - ..
+	void mult();		// * / %
+	void exp();			// **
+	void unary();		// - + ! not
+	void atomic();		// (ID|'(' EXPR ')' ) SUFFIX*
 	void suffix_expr(); // '['EXPR']' | '.'ID | '('ARGS')' | :ID'('')'
 
 	/// @brief Compiles the arguments for a call expression. The current token
 	/// must be the opening '(' for the argument
 	void compile_args(bool is_method = false); // EXPR (',' EXPR)*
-	void grouping();													 // '('expr')'
-	void primary();														 // LITERAL | ID
-	void variable(bool can_assign);						 // ID
-	void literal();														 // NUM | STR | BOOL | nil
+	void grouping();						   // '('expr')'
+	void primary();							   // LITERAL | ID
+	void variable(bool can_assign);			   // ID
+	void literal();							   // NUM | STR | BOOL | nil
 	void func_expr(String* fname, bool is_method = false, bool is_arrow = false); // fn NAME? BLOCK
 
 	/// @brief compiles a table, assuming the opening '{' has been
