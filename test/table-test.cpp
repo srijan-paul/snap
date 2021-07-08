@@ -4,8 +4,8 @@
 #include "value.hpp"
 #include <table.hpp>
 
-#define NUM			 VYSE_NUM
-#define NIL			 VYSE_NIL
+#define NUM		 VYSE_NUM
+#define NIL		 VYSE_NIL
 #define STR(...) (new vyse::String(__VA_ARGS__))
 #define BOOL(t)	 VYSE_BOOL(t)
 
@@ -56,15 +56,15 @@ void removal_test() {
 	for (int i = 900; i < 1000; ++i) t.remove(NUM(i));
 	for (int i = 0; i < 900; ++i)
 		EXPECT(t.get(NUM(i)) == NUM(i * 3),
-					 "'Table::get' after removal of 10% of the values. (Failed at: " << i << ")");
+			   "'Table::get' after removal of 10% of the values. (Failed at: " << i << ")");
 	for (int i = 900; i < 1000; ++i)
 		EXPECT(VYSE_IS_NIL(t.get(NUM(i))), "Deleted keys when queried for, return nil @" << i);
 
 	for (int i = 900; i < 1000; ++i) t.set(NUM(i), NUM(i * 4));
 	for (int i = 900; i < 1000; ++i)
 		EXPECT(t.get(NUM(i)) == NUM(i * 4),
-					 "Table::get -> Quering for keys works on deleting, and then reinserting. (Failure @"
-							 << i << ")");
+			   "Table::get -> Quering for keys works on deleting, and then reinserting. (Failure @"
+				   << i << ")");
 }
 
 void strkey_test() {
@@ -77,11 +77,11 @@ void strkey_test() {
 
 	t.set(VYSE_OBJECT(key.get()), VYSE_OBJECT(value.get()));
 	EXPECT(t.get(VYSE_OBJECT(key.get())) == VYSE_OBJECT(value.get()),
-				 "Key-value pairs where both key and value are strings");
+		   "Key-value pairs where both key and value are strings");
 
 	unique_str_ptr key2(STR(sk, strlen(sk)));
 	EXPECT(t.get(VYSE_OBJECT(key2.get())) != VYSE_OBJECT(value.get()),
-				 "Strings don't have reference equality when not interned.");
+		   "Strings don't have reference equality when not interned.");
 }
 
 vyse::String* make_interned_string(vyse::Table& intern_table, const char* cs, int len) {
@@ -99,16 +99,16 @@ void intern_test() {
 	const char* s1 = "a short string.";
 	vyse::String* s = make_interned_string(t, s1, strlen(s1));
 	EXPECT(t.length() == 1,
-				 "Table::length() - is 1 when there is one string entry in the Intern table. (got: "
-						 << t.length() << ")");
+		   "Table::length() - is 1 when there is one string entry in the Intern table. (got: "
+			   << t.length() << ")");
 
 	int s1len = strlen(s1);
 	EXPECT(t.find_string(s1, strlen(s1), vyse::hash_cstring(s1, s1len)) != nullptr,
-				 "Table::find_string test.");
+		   "Table::find_string test.");
 
 	vyse::String* s_ = make_interned_string(t, s1, strlen(s1));
 	EXPECT(s_ == s, "String comparison can be done using pointers when interned (got "
-											<< std::hex << s_ << " != " << s << ").");
+						<< std::hex << s_ << " != " << s << ").");
 
 	// If this test passes, then s and s_ refer to the same string in memory,
 	// in which case, deleting via any one pointer is sufficient, if the test

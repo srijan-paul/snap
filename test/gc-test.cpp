@@ -32,7 +32,7 @@ void test_gc() {
 
 	vm.runcode("const s = 'abcdefg'");
 	ASSERT_MEM(vm.memory(), base_size + closure_size + proto_size + string_size(7),
-						 "String allocation test");
+			   "String allocation test");
 	vm.collect_garbage();
 }
 
