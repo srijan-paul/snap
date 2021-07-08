@@ -62,3 +62,8 @@ const even_sqr_sum = xs
   :reduce(/(x, y) -> x + y)
 
 assert(even_sqr_sum == 20, "filter-map-reduce error")
+
+-- pop
+
+xs = [1, 2, 3, 4]
+assert(xs:pop() == 4)

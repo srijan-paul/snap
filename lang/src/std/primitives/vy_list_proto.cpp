@@ -240,6 +240,24 @@ Value filter(VM& vm, int argc) {
 	return VYSE_OBJECT(&ret);
 }
 
+Value pop(VM& vm, int argc) {
+    constexpr const char* fname = "pop";
+    if (argc != 1) {
+        cfn_error(vm, fname, kt::format_str("Expected exactly one argument to List.pop"));
+        return VYSE_NIL;
+    }
+
+    CHECK_ARG_TYPE(0, ObjType::list);
+
+    List& list = *VYSE_AS_LIST(vm.get_arg(0));
+    if (list.length() == 0) {
+        cfn_error(vm, fname, "Attempt to pop from an empty list");
+        return VYSE_NIL;
+    }
+
+    return list.pop();
+}
+
 void load_list_proto(VM& vm) {
 	Table& list_proto = *vm.prototypes.list;
 	add_libfn(vm, list_proto, "foreach", foreach);
@@ -249,6 +267,7 @@ void load_list_proto(VM& vm) {
 	add_libfn(vm, list_proto, "map", map);
 	add_libfn(vm, list_proto, "reduce", reduce);
 	add_libfn(vm, list_proto, "filter", filter);
+	add_libfn(vm, list_proto, "pop", pop);
 }
 
 } // namespace vyse::stdlib::primitives

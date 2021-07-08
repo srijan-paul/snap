@@ -10,14 +10,14 @@
 #define THIS_BLOCK (m_codeblock->block())
 #define ERROR(...) (error_at_token(kt::format_str(__VA_ARGS__).c_str(), token))
 
-#define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
-	void name() {                                                                                  \
-		next_fn();                                                                                 \
-		while (cond) {                                                                             \
-			const Token op_token = token;                                                          \
-			next_fn();                                                                             \
-			emit(toktype_to_op(op_token.type), op_token);                                          \
-		}                                                                                          \
+#define DEFINE_PARSE_FN(name, cond, next_fn)													   \
+	void name() {																				  \
+		next_fn();																				 \
+		while (cond) {																			 \
+			const Token op_token = token;														  \
+			next_fn();																			 \
+			emit(toktype_to_op(op_token.type), op_token);										  \
+		}																						  \
 	}
 
 namespace vyse {
@@ -479,15 +479,15 @@ void Compiler::expr_stmt() {
 // what is and isn't a valid LHS for assignment.
 // The following is the grammar for a valid assignment statement:
 //
-// ASSIGN            := LHS ASSIGN_TOK EXPRESSION
-// LHS               := ID | (SUFFIXED_EXP ASSIGNABLE_SUFFIX)
-// SUFFIXED_EXP      := (PREFIX | SUFFIXED_EXP) SUFFIX
-// PREFIX            := (ID | STRING | NUMBER | BOOLEAN)
-// SUFFIX            := ASSIGNABLE_SUFFIX | '('ARGS')' | METHOD_CALL | APPEND
-// ASSIGNABLE_SUFFIX := '[' EXPRESSION ']' | '.'ID
-// METHOD_CALL       := ':' ID '(' ARGS ')'
-// APPEND 					 := '<<<' EXPR_OR
-// ASSIGN_TOK        := '=' | '+=' | '-=' | '*=' | '%=' | '/=' | '//='
+// ASSIGN			:= LHS ASSIGN_TOK EXPRESSION
+// LHS			    := ID | (SUFFIXED_EXP ASSIGNABLE_SUFFIX)
+// SUFFIXED_EXP	    := (PREFIX | SUFFIXED_EXP) SUFFIX
+// PREFIX			:= (ID | STRING | NUMBER | BOOLEAN)
+// SUFFIX			:= ASSIGNABLE_SUFFIX | '('ARGS')' | METHOD_CALL | APPEND
+// ASSIGNABLE_SUFFIX  := '[' EXPRESSION ']' | '.'ID
+// METHOD_CALL	      := ':' ID '(' ARGS ')'
+// APPEND 			  := '<<<' EXPR_OR
+// ASSIGN_TOK		  := '=' | '+=' | '-=' | '*=' | '%=' | '/=' | '//='
 //
 // It may be noticed that parsing an assignment when the LHS can be an arbitrarily
 // long chain of '.', '[]', '()' etc will require indefinite backtracking, or some
@@ -869,8 +869,7 @@ void Compiler::variable(bool can_assign) {
 	if (can_assign) {
 		VYSE_ASSERT(is_assign_tok(peek.type), "Not in an assignment context.");
 		if (is_const) {
-			std::string message = kt::format_str("Cannot assign to variable '{}' marked const.",
-												 token.raw(*m_source));
+			std::string message = kt::format_str("Cannot assign to variable '{}' marked const.", token.raw(*m_source));
 			error_at_token(message.c_str(), token);
 			panic = false; // Don't send the compiler into error recovery mode.
 		}
@@ -1037,8 +1036,8 @@ void Compiler::error_at(const char* message, u32 line) {
 }
 
 void Compiler::error_at_token(const char* message, const Token& token) {
-	error(kt::format_str("[line {}]: near '{}': {}", token.location.line, token.raw(*m_source),
-						 message));
+	static constexpr const char* fmt = "[line {}]: near '{}': {}";
+	error(kt::format_str(fmt, token.location.line, token.raw(*m_source), message));
 }
 
 void Compiler::error(std::string&& message) {

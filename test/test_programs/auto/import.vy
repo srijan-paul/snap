@@ -1,5 +1,11 @@
-const math = import('math')
+assert(__loaders__ && __modulecache__)
 
-assert(math.sqrt(100) == 10)
+__loaders__ <<< fn (name) {
+    return { modname: name }
+}
 
-assert(__modulecache__.math)
+
+const module = import("stuff")
+
+assert(__modulecache__.stuff)
+assert(module.modname == "stuff")
