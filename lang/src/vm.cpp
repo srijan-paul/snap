@@ -17,27 +17,27 @@
 #include <debug.hpp>
 #endif
 
-#define ERROR(...)	   runtime_error(kt::format_str(__VA_ARGS__))
+#define ERROR(...) runtime_error(kt::format_str(__VA_ARGS__))
 #define INDEX_ERROR(v) ERROR("Attempt to index a '{}' value.", VYSE_TYPE_CSTR(v))
 #define CURRENT_LINE() (m_current_block->lines[ip - 1])
 
 #define CHECK_TYPE(v, typ, ...)                                                                    \
 	if (!VYSE_CHECK_TT(v, typ)) return ERROR(__VA_ARGS__)
 
-#define FETCH()		(m_current_block->code[ip++])
+#define FETCH() (m_current_block->code[ip++])
 #define NEXT_BYTE() (static_cast<u8>(m_current_block->code[ip++]))
 #define FETCH_SHORT()                                                                              \
 	(ip += 2, (u16)((static_cast<u8>(m_current_block->code[ip - 2]) << 8) |                        \
 					static_cast<u8>(m_current_block->code[ip - 1])))
-#define READ_VALUE()		  (m_current_block->constant_pool[NEXT_BYTE()])
-#define GET_VAR(index)		  (m_current_frame->base[index])
+#define READ_VALUE() (m_current_block->constant_pool[NEXT_BYTE()])
+#define GET_VAR(index) (m_current_frame->base[index])
 #define SET_VAR(index, value) (m_current_frame->base[index] = value)
 
 // PEEK(1) fetches the topmost value in the stack.
 #define PEEK(depth) m_stack.top[-(depth)]
-#define POP()		(m_stack.pop())
-#define DISCARD()	(--m_stack.top)
-#define POPN(n)		(m_stack.top -= n)
+#define POP() (m_stack.pop())
+#define DISCARD() (--m_stack.top)
+#define POPN(n) (m_stack.top -= n)
 #define PUSH(value) m_stack.push(value)
 
 namespace vyse {
@@ -46,7 +46,7 @@ using Op = Opcode;
 using VT = ValueType;
 using OT = ObjType;
 
-#define IS_VAL_FALSY(v)	 ((VYSE_IS_BOOL(v) and !(VYSE_AS_BOOL(v))) or VYSE_IS_NIL(v))
+#define IS_VAL_FALSY(v) ((VYSE_IS_BOOL(v) and !(VYSE_AS_BOOL(v))) or VYSE_IS_NIL(v))
 #define IS_VAL_TRUTHY(v) (!IS_VAL_FALSY(v))
 
 #define UNOP_ERROR(op, v) ERROR("Cannot use operator '{}' on type '{}'.", op, VYSE_TYPE_CSTR(v))

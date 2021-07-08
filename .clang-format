@@ -6,7 +6,6 @@ UseTab: Always
 ---
 Language: Cpp
 PointerAlignment: Left
-AlignConsecutiveMacros: true
 AlignEscapedNewlines: Right
 AlignOperands: true
 AlignTrailingComments: true
@@ -18,3 +17,4 @@ AllowShortCaseLabelsOnASingleLine: true
 AllowShortIfStatementsOnASingleLine: true
 AlwaysBreakTemplateDeclarations: Yes
 ColumnLimit: 100
+

@@ -9,7 +9,7 @@ namespace vyse {
 using VT = ValueType;
 using OT = ObjType;
 
-#define TABLE_GET_SLOT(k, h)	   search_entry<Table, Entry>(this, k, h)
+#define TABLE_GET_SLOT(k, h) search_entry<Table, Entry>(this, k, h)
 #define TABLE_GET_SLOT_CONST(k, h) search_entry<const Table, const Entry>(this, k, h)
 #define TABLE_PLACE_TOMBSTONE(e)                                                                   \
 	(VYSE_SET_TT(e.key, VT::Undefined), e.value = VYSE_NIL, ++m_num_tombstones)
@@ -17,7 +17,7 @@ using OT = ObjType;
 // check if an entry is unoccupied.
 #define IS_ENTRY_FREE(e) (VYSE_IS_NIL(e.key))
 #define IS_ENTRY_DEAD(e) (VYSE_IS_UNDEFINED(e.key))
-#define HASH_OBJ(o)		 ((size_t)(o)&UINT64_MAX)
+#define HASH_OBJ(o) ((size_t)(o)&UINT64_MAX)
 
 Table::~Table() {
 	delete[] m_entries;

@@ -100,7 +100,7 @@ static constexpr KeywordData keywords[] = {
 	{"nil", 3, TT::Nil},	 {"or", 2, TT::Or},
 	{"and", 3, TT::Or},		 {"let", 3, TT::Let},
 	{"const", 5, TT::Const}, {"if", 2, TT::If},
-	{"else", 4, TT::Else},	 {"while", 5, TT::While},
+	{"else", 4, TT::Else},   {"while", 5, TT::While},
 	{"fn", 2, TT::Fn},		 {"return", 6, TT::Return},
 	{"break", 5, TT::Break}, {"continue", 8, TT::Continue},
 	{"for", 3, TT::For},

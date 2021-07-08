@@ -10,14 +10,14 @@
 #define THIS_BLOCK (m_codeblock->block())
 #define ERROR(...) (error_at_token(kt::format_str(__VA_ARGS__).c_str(), token))
 
-#define DEFINE_PARSE_FN(name, cond, next_fn)													   \
-	void name() {																				  \
-		next_fn();																				 \
-		while (cond) {																			 \
-			const Token op_token = token;														  \
-			next_fn();																			 \
-			emit(toktype_to_op(op_token.type), op_token);										  \
-		}																						  \
+#define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
+	void name() {                                                                                  \
+		next_fn();                                                                                 \
+		while (cond) {                                                                             \
+			const Token op_token = token;                                                          \
+			next_fn();                                                                             \
+			emit(toktype_to_op(op_token.type), op_token);                                          \
+		}                                                                                          \
 	}
 
 namespace vyse {
@@ -161,7 +161,7 @@ void Compiler::block_stmt() {
 
 void Compiler::if_stmt() {
 	advance(); // consume 'if'
-	expr();	   // parse condition.
+	expr();	// parse condition.
 
 	// If the condition is false, we simply pop
 	// it and jump to the end of the if statement.
@@ -869,7 +869,8 @@ void Compiler::variable(bool can_assign) {
 	if (can_assign) {
 		VYSE_ASSERT(is_assign_tok(peek.type), "Not in an assignment context.");
 		if (is_const) {
-			std::string message = kt::format_str("Cannot assign to variable '{}' marked const.", token.raw(*m_source));
+			std::string message = kt::format_str("Cannot assign to variable '{}' marked const.",
+												 token.raw(*m_source));
 			error_at_token(message.c_str(), token);
 			panic = false; // Don't send the compiler into error recovery mode.
 		}
