@@ -8,3 +8,4 @@ compile_commands.json
 scratchpad
 build.sh
 build-debug.sh
+*.swp
