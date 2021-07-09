@@ -318,8 +318,7 @@ void Compiler::for_stmt() {
 		emit_with_arg(Op::load_const, idx);
 	}
 
-	// Add the actual loop variable that is
-	// exposed to the user. (i)
+	// Add the actual loop variable that is exposed to the user. (i)
 	new_variable(name);
 	const size_t prep_jump = emit_jump(Op::for_prep);
 
@@ -354,7 +353,14 @@ void Compiler::func_expr(String* fname, bool is_method, bool is_arrow) {
 	GCLock lock = m_vm->gc_lock(fname);
 	Compiler compiler{m_vm, this, fname};
 
-	bool open_paren = compiler.match(TT::LParen);
+	// opening parenthesis is optional for arrow functions
+	bool open_paren;
+	if (is_arrow) {
+		open_paren = compiler.match(TT::LParen);
+	} else {
+		compiler.expect(TT::LParen, "Expected '(' before function parameter list.");
+		open_paren = true;
+	}
 
 	uint param_count = 0;
 
@@ -365,7 +371,7 @@ void Compiler::func_expr(String* fname, bool is_method, bool is_arrow) {
 		compiler.add_self_param();
 	}
 
-	if (!compiler.check(TT::RParen)) {
+	if ((open_paren and !compiler.check(TT::RParen)) or (is_arrow and !compiler.check(TT::Arrow))) {
 		do {
 			compiler.expect(TT::Id, "Expected parameter name.");
 			compiler.add_param(compiler.token);

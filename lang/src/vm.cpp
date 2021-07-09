@@ -22,7 +22,14 @@
 #define CURRENT_LINE() (m_current_block->lines[ip - 1])
 
 #define CHECK_TYPE(v, typ, ...)                                                                    \
-	if (!VYSE_CHECK_TT(v, typ)) return ERROR(__VA_ARGS__)
+	if (!VYSE_CHECK_TT(v, typ)) {                                                                  \
+		return ERROR(__VA_ARGS__);                                                                 \
+	}
+
+#define CHECK(cond, ...)                                                                           \
+	if (!(cond)) {                                                                                 \
+		return ERROR(__VA_ARGS__);                                                                 \
+	}
 
 #define FETCH() (m_current_block->code[ip++])
 #define NEXT_BYTE() (static_cast<u8>(m_current_block->code[ip++]))
@@ -187,6 +194,7 @@ ExitCode VM::run() {
 			break;
 		}
 
+		/// TODO: overload with __eq
 		case Op::eq: {
 			Value a = m_stack.pop();
 			Value b = m_stack.pop();
@@ -206,7 +214,7 @@ ExitCode VM::run() {
 			if (VYSE_IS_NUM(operand)) {
 				VYSE_SET_NUM(operand, -VYSE_AS_NUM(operand));
 			} else if (!call_unary_overload("-", "__negate")) {
-				UNOP_ERROR("-", operand);
+				return UNOP_ERROR("-", operand);
 			}
 			break;
 		}
@@ -222,6 +230,7 @@ ExitCode VM::run() {
 			if (VYSE_IS_LIST(v)) {
 				PUSH(VYSE_NUM(VYSE_AS_LIST(v)->length()));
 			} else if (VYSE_IS_TABLE(v)) {
+				/// TODO: overload with __len
 				PUSH(VYSE_NUM(VYSE_AS_TABLE(v)->length()));
 			} else if (VYSE_IS_STRING(v)) {
 				PUSH(VYSE_NUM(VYSE_AS_STRING(v)->m_length));
@@ -382,13 +391,10 @@ ExitCode VM::run() {
 				auto left = VYSE_AS_STRING(a);
 				auto right = VYSE_AS_STRING(b);
 
-				// The second string has been popped
-				// off the stack and might not be reachable.
-				// by the GC. The allocation of the concatenated
-				// string might trigger a GC cycle.
-				gc_protect(right);
+				// The second string has been popped off the stack and might not be reachable by
+				// the GC. The allocation of the concatenated string might trigger a GC cycle.
+				GCLock _ = gc_lock(right);
 				a = concatenate(left, right);
-				gc_unprotect(right);
 			}
 			break;
 		}
@@ -449,7 +455,8 @@ ExitCode VM::run() {
 			break;
 		}
 
-		// table.key = value
+		/// table.key = value
+		/// TODO: overload with `__set`
 		case Op::table_set: {
 			const Value& key = READ_VALUE();
 			if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
@@ -465,6 +472,7 @@ ExitCode VM::run() {
 		}
 
 		// table.key
+		/// TODO: overload with `__get`
 		case Op::table_get: {
 			// TOS = as_table(TOS)->get(READ_VAL())
 			Value tvalue = PEEK(1);
@@ -489,6 +497,7 @@ ExitCode VM::run() {
 		}
 
 		// table_or_string_or_array[key]
+		/// TODO: overload with `__indx`
 		case Op::index: {
 			Value key = POP();
 			Value& tvalue = PEEK(1);
@@ -499,10 +508,10 @@ ExitCode VM::run() {
 					List& list = *static_cast<List*>(object);
 					CHECK_TYPE(key, VT::Number, "List index not a number.");
 					number index = VYSE_AS_NUM(key);
-					if (index < 0 or index >= list.length()) {
-						return ERROR("List index out of bounds (index: {}, length: {}).", index,
-									 list.length());
-					}
+					CHECK(index >= 0 and index < list.length(),
+						  "List index out of bounds (index: {}, length: {}).", index,
+						  list.length());
+
 					tvalue = list[index];
 					break;
 				} else if (object->tag == OT::table) {
@@ -512,9 +521,8 @@ ExitCode VM::run() {
 							   value_type_name(key));
 					const String* str = VYSE_AS_STRING(tvalue);
 					const s64 index = VYSE_AS_NUM(key);
-					if (index < 0 or index >= static_cast<s64>(str->m_length)) {
-						return ERROR("string index out of range.");
-					}
+					CHECK(index >= 0 and index < static_cast<s64>(str->m_length),
+						  "string index out of range.");
 					VYSE_SET_OBJECT(tvalue, char_at(str, index));
 				}
 			} else {
@@ -545,6 +553,7 @@ ExitCode VM::run() {
 		// tbl <- POP()
 		// PUSH(tbl[READ_VALUE()])
 		// PUSH(tbl)
+		/// TODO: take care of overloaded `__indx`
 		case Op::prep_method_call: {
 			Value vtable = PEEK(1);
 			Value vkey = READ_VALUE();
@@ -647,7 +656,7 @@ Value VM::concatenate(const String* left, const String* right) {
 	std::memcpy(buf + left->len(), right->c_str(), right->len());
 
 	size_t hash = hash_cstring(buf, length);
-	String* interned = interned_strings.find_string(buf, length, hash);
+	String* const interned = interned_strings.find_string(buf, length, hash);
 
 	if (interned == nullptr) {
 		String* res = &make_string_no_intern(buf, length, hash);
@@ -676,8 +685,8 @@ void VM::set_global(String* name, Value value) {
 }
 
 void VM::set_global(const char* name, Value value) {
-	/// When allocating space for the [name] string, a GC cycle may be triggered, so
-	/// we have to protect the object from getting collected while that happens.
+	// When allocating space for the [name] string, a GC cycle may be triggered, so
+	// we have to protect the object from getting collected while that happens.
 	if (VYSE_IS_OBJECT(value)) m_stack.push(value);
 	String& sname = make_string(name, strlen(name));
 	if (VYSE_IS_OBJECT(value)) m_stack.pop();
@@ -740,12 +749,9 @@ Closure* VM::compile(const std::string& src) {
 
 	// There are no reachable references to [code] when we allocate `script`. Since allocating a
 	// function can trigger a garbage collection cycle, we protect the code block.
-	gc_protect(code);
+	GCLock lock = gc_lock(code);
 	Closure* closure = &make<Closure>(code, 0);
 
-	// Once the function has been made, [code] can be reached via `script->m_codeblock`, so we can
-	// unprotect it.
-	gc_unprotect(code);
 	m_compiler = nullptr;
 	return closure;
 }
@@ -926,13 +932,13 @@ void VM::pop_callframe() noexcept {
 	VYSE_ASSERT(m_frame_count > 1, "Attempt to pop base callframe.");
 	--m_frame_count;
 
-	/// If we are in the top level script, then there is no older call frame.
+	// If we are in the top level script, then there is no older call frame.
 	if (m_frame_count == 0) return;
 
 	m_current_frame = m_current_frame->prev;
 	VYSE_ASSERT(m_current_frame != nullptr, "Invalid Call stack state.");
 
-	/// restore the instruction pointer to continue from where we left off.
+	// restore the instruction pointer to continue from where we left off.
 	ip = m_current_frame->ip;
 
 	Obj* const callable = m_current_frame->func;
@@ -1201,4 +1207,3 @@ VM::~VM() {
 }
 
 } // namespace vyse
-
