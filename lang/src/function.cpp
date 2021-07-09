@@ -18,7 +18,7 @@ void CodeBlock::trace(GC& gc) {
 	}
 }
 
-/// Function `///
+/// Function ///
 
 Closure::Closure(CodeBlock* code, u32 upval_count) noexcept
 	: Obj(ObjType::closure), m_codeblock{code} {
