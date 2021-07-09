@@ -26,8 +26,9 @@ Value vyse::stdlib::print(VM& vm, int argc) {
 Value stdlib::input(VM& vm, int argc) {
 	for (int i = 0; i < argc; ++i) {
 		const Value& v = vm.get_arg(i);
-		std::string s = value_to_string(v);
-		printf("%s\n", s.c_str());
+		std::string str = value_to_string(v);
+		String& vy_str = vm.make_string(str.c_str(), str.size());
+		vm.print(vm, &vy_str);
 	}
 
 	if (!vm.read_line) return VYSE_NIL;

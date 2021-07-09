@@ -14,7 +14,6 @@ using ReadLineFn = std::function<char*(const VM& vm)>;
 using ErrorFn = std::function<void(const VM& vm, const std::string& err_message)>;
 using ModuleLoader = std::function<std::string(VM& vm, const char* module_name)>;
 
-// map of Module Name -> Dynamic library handle
 
 inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string) {
 	VYSE_ASSERT(string != nullptr, "string to print is null.");

@@ -32,8 +32,8 @@ Compiler::Compiler(VM* vm, const std::string* src) : m_vm{vm}, m_source{src} {
 	// reserve the first slot for this toplevel function.
 	m_symtable.add("<script>", 8, true);
 
-	// When allocating [m_codeblock], the String "script"
-	// not reachable by the VM, so we protect it from GC.
+	// When allocating [m_codeblock], the String "script" not reachable by the VM, so we protect it
+	// from GC.
 	GCLock lock = m_vm->gc_lock(fname);
 	m_codeblock = &vm->make<CodeBlock>(fname);
 }
@@ -53,8 +53,7 @@ Compiler::Compiler(VM* vm, Compiler* parent, String* name) : m_vm{vm}, m_parent{
 }
 
 Compiler::~Compiler() {
-	// If this is the top-level compiler then we can
-	// free the scanner assosciated with it.
+	// If this is the top-level compiler then we can free the scanner assosciated with it.
 	if (m_parent == nullptr) {
 		delete m_scanner;
 	}
@@ -71,10 +70,8 @@ CodeBlock* Compiler::compile() {
 }
 
 CodeBlock* Compiler::compile_func(bool is_arrowfn) {
-	/// If this a compiler for an arrow function, then test
-	/// for an implicitly returned expression right after the
-	/// '->'. If there is a `{` however, we treat it as a function
-	/// body instead.
+	// If this a compiler for an arrow function, then test  for an implicitly returned expression
+	// right after the '->'. If there is a `{` however, we treat it as a function body instead.
 	if (is_arrowfn) {
 		if (check(TT::LCurlBrace)) {
 			block_stmt();
@@ -86,10 +83,8 @@ CodeBlock* Compiler::compile_func(bool is_arrowfn) {
 	} else {
 		test(TT::LCurlBrace, "Expected '{' before function body.");
 		block_stmt();
-		// In case the function does not return anything, we
-		// add an implicit 'return nil'. If the closure *does*
-		// return explicitly then these 2 opcodes will never be
-		// reached anyway.
+		// In case the function does not return anything, we add an implicit 'return nil'. If the
+		// closure *does* return explicitly then these 2 opcodes will never be reached anyway.
 		emit(Op::load_nil, Op::return_val);
 	}
 
@@ -157,7 +152,7 @@ void Compiler::block_stmt() {
 
 void Compiler::if_stmt() {
 	advance(); // consume 'if'
-	expr();	// parse condition.
+	expr();	   // parse condition.
 
 	// If the condition is false, we simply pop
 	// it and jump to the end of the if statement.
@@ -576,8 +571,7 @@ void Compiler::complete_expr_stmt(ExpKind prefix_type) {
 }
 
 // Compile a prefix or a variable assignment.
-// A prefix can be (as described above):
-// (ID | STRING | NUMBER | BOOLEAN)
+// A prefix can be (as described above): (ID | STRING | NUMBER | BOOLEAN)
 // A var assignment is simply ID '=' EXPRESSION
 ExpKind Compiler::prefix() {
 	if (check(TT::LParen)) {
@@ -588,9 +582,8 @@ ExpKind Compiler::prefix() {
 	if (match(TT::Id)) {
 		if (is_assign_tok(peek.type)) {
 			variable(true);
-			// Since we have successfully compiled a valid toplevel
-			// statement, it is longer an expression. We use
-			// ExpKind::none to indicate this.
+			// Since we have successfully compiled a valid toplevel statement, it is longer an
+			// expression. We use ExpKind::none to indicate this.
 			return ExpKind::none;
 		} else {
 			variable(false);
@@ -654,8 +647,8 @@ DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) or match(TT::Mod) or match(TT::
 DEFINE_PARSE_FN(Compiler::exp, match(TT::Exp), unary)
 
 void Compiler::unary() {
-	/// TODO: group all unary oprators together in 'token.hpp'
-	/// and then change this if statement to a simple range check.
+	/// TODO: group all unary oprators together in 'token.hpp' and then change this if statement to
+	/// a simple range check.
 	if (peek.is_unary_op()) {
 		advance();
 		const Token op_token = token;
@@ -714,21 +707,18 @@ void Compiler::table_assign(Op get_op, int idx) {
 	advance();
 	const TT ttype = token.type;
 
-	/// if this is a simple assignment with '=' operator,
-	/// then simply compile the RHS as an expression and
-	/// return to the call site, wherein it's the caller's
-	/// responsibility to emit the 'set' opcode.
+	/// if this is a simple assignment with '=' operator, then simply compile the RHS as an
+	/// expression and return to the call site, wherein it's the caller's responsibility to emit the
+	/// 'set' opcode.
 	if (ttype == TT::Eq) {
 		expr();
 		return;
 	}
 
-	/// If we've reached here then it must be a compound
-	/// assignment operator. So we first need to get the
-	/// original field value, push it on top of the stack,
-	/// modify this value then use a 'set' opcode to store
-	/// it back into the table/array. The 'set' opcode is
-	/// emitted by the caller.
+	/// If we've reached here then it must be a compound assignment operator. So we first need to
+	/// get the original field value, push it on top of the stack, modify this value then use a
+	/// 'set' opcode to store it back into the table/array. The 'set' opcode is emitted by the
+	/// caller.
 	emit(get_op);
 	if (idx > 0) emit_arg(idx);
 	expr();
@@ -738,8 +728,7 @@ void Compiler::table_assign(Op get_op, int idx) {
 void Compiler::compile_args(bool is_method) {
 	advance(); // eat opening '('
 
-	/// If it's a method call, then start with 1
-	/// argument count for the implicit 'self' argument.
+	/// If it's a method call, then start with 1 argument count for the implicit 'self' argument.
 	u32 argc = is_method ? 1 : 0;
 
 	if (!check(TT::RParen)) {
@@ -770,8 +759,7 @@ void Compiler::primary() {
 		static constexpr const char* name = "<anonymous>";
 		String* fname = &m_vm->make_string(name, strlen(name));
 		if (check(TT::LParen)) return func_expr(fname);
-		// Names of lambda expressions are simply ignored
-		// Unless found in a statement context.
+		// Names of lambda expressions are simply ignored unless found in a statement context.
 		expect(TT::Id, "Expected function name or '('.");
 		return func_expr(fname);
 	} else if (match(TT::Id)) {
@@ -873,9 +861,9 @@ void Compiler::variable(bool can_assign) {
 			panic = false; // Don't send the compiler into error recovery mode.
 		}
 
-		/// Compile the RHS of the assignment, and any necessary arithmetic ops if its a
-		/// compound assignment operator. So by the time we are setting the value, the RHS
-		/// is sitting ready on top of the stack.
+		/// Compile the RHS of the assignment, and any necessary arithmetic ops if its a compound
+		/// assignment operator. So by the time we are setting the value, the RHS is sitting ready
+		/// on top of the stack.
 		var_assign(get_op, index);
 		emit_with_arg(set_op, index);
 	} else {
@@ -919,8 +907,8 @@ void Compiler::literal() {
 		ERROR("Too many literal constants in one function.");
 	}
 
-	/// TODO: handle indices larger than UINT8_MAX, by adding a
-	/// load_const_long instruction that takes 2 operands.
+	/// TODO: handle indices larger than UINT8_MAX, by adding a load_const_long instruction that
+	/// takes 2 operands.
 	emit_with_arg(Op::load_const, static_cast<u8>(index));
 }
 
@@ -1055,9 +1043,8 @@ bool Compiler::ok() const noexcept {
 u32 Compiler::emit_string(const Token& token) {
 	const u32 length = token.length() - 2; // minus the quotes
 
-	// the actual length of the string may be different
-	// from what we see in the source code because of
-	// escape characters.
+	// the actual length of the string may be different from what we see in the source code because
+	// of escape characters.
 
 	// +1 to skip the openening quote.
 	const char* srcbuf = token.raw_cstr(*m_source) + 1;
@@ -1112,28 +1099,25 @@ int Compiler::find_upvalue(const Token& token) {
 	// compiler.
 	int index = m_parent->find_local_var(token);
 
-	// If found the local var, then add it to the upvalues list.
-	// and mark the upvalue is "local".
+	// If found the local var, then add it to the upvalues list and mark the upvalue is "local".
 	if (index != -1) {
 		LocalVar& local = m_parent->m_symtable.m_symbols[index];
 		local.is_captured = true;
 		return m_symtable.add_upvalue(index, true, local.is_const);
 	}
 
-	// If not found within the parent compiler's local vars
-	// then look into the parent compiler's upvalues.
+	// If not found within the parent compiler's local vars then look into the parent compiler's
+	// upvalues.
 	index = m_parent->find_upvalue(token);
 
-	// If found in some enclosing scope, add it to the current
-	// upvalues list and return it.
+	// If found in some enclosing scope, add it to the current upvalues list and return it.
 	if (index != -1) {
 		// is not local since we found it in an enclosing compiler.
 		const UpvalDesc& upval = m_parent->m_symtable.m_upvals[index];
 		return m_symtable.add_upvalue(index, false, upval.is_const);
 	}
 
-	// No local variable in any of the enclosing scopes was found with the same
-	// name.
+	// No local variable in any of the enclosing scopes was found with the same name.
 	return -1;
 }
 
@@ -1215,8 +1199,7 @@ int Compiler::op_arity(u32 op_index) const noexcept {
 	if (CHECK_ARITY(op, 0)) return 0;
 	if (CHECK_ARITY(op, 1)) return 1;
 
-	// Constant instructions take 1 operand: the index of the
-	// constant in the constant pool.
+	// Constant instructions take 1 operand: the index of the constant in the constant pool.
 	if (op >= Op_const_start and op <= Op_const_end) return 1;
 	VYSE_ASSERT(CHECK_ARITY(op, 2), "Instructions other than make_func can have upto 2 operands.");
 	return 2;
@@ -1242,7 +1225,6 @@ bool Compiler::is_assign_tok(TT type) const noexcept {
 // and not extract the name and length of the name at the call site.
 // But sometimes we will want to add dummy variables (like for-loop limits).
 // And we don't have a token for those to take the name from.
-
 int Compiler::new_variable(const Token& varname, bool is_const) {
 	const char* name = varname.raw_cstr(*m_source);
 	const u32 length = varname.length();
@@ -1279,8 +1261,7 @@ static bool names_equal(const char* a, int len_a, const char* b, int len_b) {
 }
 
 int SymbolTable::find(const char* name, int length) const {
-	// start looking from the innermost scope, and work our way
-	// outwards.
+	// start looking from the innermost scope, and work our way outwards.
 	for (int i = m_num_symbols - 1; i >= 0; i--) {
 		const LocalVar& symbol = m_symbols[i];
 		if (names_equal(name, length, symbol.name, symbol.length)) return i;

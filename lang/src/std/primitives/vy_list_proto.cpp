@@ -1,9 +1,10 @@
 #include "../../str_format.hpp"
-#include <std/lib_util.hpp>
 #include "value.hpp"
+#include <std/lib_util.hpp>
 #include <std/primitives/vy_list_proto.hpp>
 #include <vm.hpp>
 #include <vy_list.hpp>
+
 
 #define CHECK_ARG_TYPE(n, type)                                                                    \
 	if (!check_arg_type(vm, n, type, fname)) return VYSE_NIL;
@@ -241,21 +242,21 @@ Value filter(VM& vm, int argc) {
 }
 
 Value pop(VM& vm, int argc) {
-    constexpr const char* fname = "pop";
-    if (argc != 1) {
-        cfn_error(vm, fname, kt::format_str("Expected exactly one argument to List.pop"));
-        return VYSE_NIL;
-    }
+	constexpr const char* fname = "pop";
+	if (argc != 1) {
+		cfn_error(vm, fname, kt::format_str("Expected exactly one argument to List.pop"));
+		return VYSE_NIL;
+	}
 
-    CHECK_ARG_TYPE(0, ObjType::list);
+	CHECK_ARG_TYPE(0, ObjType::list);
 
-    List& list = *VYSE_AS_LIST(vm.get_arg(0));
-    if (list.length() == 0) {
-        cfn_error(vm, fname, "Attempt to pop from an empty list");
-        return VYSE_NIL;
-    }
+	List& list = *VYSE_AS_LIST(vm.get_arg(0));
+	if (list.length() == 0) {
+		cfn_error(vm, fname, "Attempt to pop from an empty list");
+		return VYSE_NIL;
+	}
 
-    return list.pop();
+	return list.pop();
 }
 
 void load_list_proto(VM& vm) {
