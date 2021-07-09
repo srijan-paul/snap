@@ -13,7 +13,7 @@ namespace vyse {
 /// for protecting an object inside of a certain scope.
 /// IMPORTANT: It is advisable to never `gc_unprotect` an object after a lock has been created.
 /// The lock will call it automatically upon destruction.
-struct GCLock {
+struct GCLock final {
 	VYSE_NO_DEFAULT_CONSTRUCT(GCLock);
 	VYSE_NO_COPY(GCLock);
 	VYSE_NO_MOVE(GCLock);
@@ -88,3 +88,4 @@ class GC {
 };
 
 } // namespace vyse
+

@@ -18,3 +18,4 @@ SourcePosition Token::source_pos() const {
 }
 
 } // namespace vyse
+

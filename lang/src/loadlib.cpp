@@ -1,6 +1,7 @@
 #include "loadlib.hpp"
 #include "std/lib_util.hpp"
 #include <common.hpp>
+#include <cstdlib>
 #include <dino/dino.hpp>
 #include <forward.hpp>
 #include <string>
@@ -14,22 +15,21 @@ struct StdModule final {
 	const char* module_name;
 	/// @brief Name of the shared library storing this module. e.g -> libmodule.dll or libmodule.so
 	const char* dll_name;
-	/// @brief Path to the shared library. eg -> '/usr/vyse-libs'
-	const char* dll_path;
 };
 
 Value DynLoader::read_std_lib(VM& vm, const StdModule& module) {
+	if (not std_dlls_path) return VYSE_NIL;
+
 	std::string init_func_name = std::string("load_") + module.module_name;
 	std::string dll_name{module.dll_name};
 
 	auto cached_it = cached_dyn_libs.find(dll_name);
 	if (cached_it == cached_dyn_libs.end()) {
-		Lib lib(dll_name, module.dll_path);
+		Lib lib(dll_name, std_dlls_path);
 		cached_dyn_libs.emplace(dll_name, std::move(lib));
 	}
 
 	const Lib& lib = cached_dyn_libs.find(dll_name)->second;
-
 	if (!lib) return VYSE_NIL;
 
 	if (auto init_lib = lib.find<void(VM*, Table*)>(init_func_name)) {
@@ -42,7 +42,7 @@ Value DynLoader::read_std_lib(VM& vm, const StdModule& module) {
 }
 
 static constexpr std::array<StdModule, 1> std_modules = {{
-	{"math", "libvymath", "C:/dev/snap/bin"},
+	{"math", "libvymath"},
 }};
 
 Value load_std_module(VM& vm, int argc) {
@@ -95,3 +95,4 @@ void DynLoader::init_loaders(VM& vm) const {
 }
 
 } // namespace vyse
+

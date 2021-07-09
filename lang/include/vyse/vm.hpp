@@ -249,6 +249,13 @@ class VM {
 		m_gc.protect(o);
 	}
 
+	/// @brief locks an object, preventing it from being garbage collected.
+	/// @return A GCLock object. As long as a lock is alive, the object cannot be garbage collected.
+	/// The GCLock is a RAII object, and drops the protection upon destruction.
+	GCLock gc_lock(Obj* o) {
+		return GCLock(m_gc, o);
+	}
+
 	/// @brief If the object was previously marked safe from GC, then removes the guard, making it
 	/// garbage collectable again.
 	void gc_unprotect(Obj* o) {

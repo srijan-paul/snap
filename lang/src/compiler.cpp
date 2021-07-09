@@ -34,12 +34,8 @@ Compiler::Compiler(VM* vm, const std::string* src) : m_vm{vm}, m_source{src} {
 
 	// When allocating [m_codeblock], the String "script"
 	// not reachable by the VM, so we protect it from GC.
-	m_vm->gc_protect(fname);
+	GCLock lock = m_vm->gc_lock(fname);
 	m_codeblock = &vm->make<CodeBlock>(fname);
-
-	// Now the string is reachable through the code
-	// block, So we can unprotect it.
-	m_vm->gc_unprotect(fname);
 }
 
 Compiler::Compiler(VM* vm, Compiler* parent, String* name) : m_vm{vm}, m_parent{parent} {
@@ -353,17 +349,17 @@ void Compiler::fn_decl() {
 	new_variable(name_token);
 }
 
-// Compile the body of a function or method assuming everything until the
+// Compile the body of a function or method assuming everything excluding the
 // the opening parenthesis has been consumed.
 void Compiler::func_expr(String* fname, bool is_method, bool is_arrow) {
 	// When compiling the body of the function, we allocate
 	// a code block; at that point in time, the name of the
 	// function is not reachable by the Garbage Collector,
 	// so we protect it.
-	m_vm->gc_protect(fname);
+	GCLock lock = m_vm->gc_lock(fname);
 	Compiler compiler{m_vm, this, fname};
 
-	compiler.expect(TT::LParen, "Expected '(' before function parameters.");
+	bool open_paren = compiler.match(TT::LParen);
 
 	uint param_count = 0;
 
@@ -387,8 +383,13 @@ void Compiler::func_expr(String* fname, bool is_method, bool is_arrow) {
 		return;
 	}
 
-	compiler.expect(TT::RParen, "Expected ')' after function parameters.");
-	if (is_arrow) compiler.expect(TT::Arrow, "Expected '->' before lambda body.");
+	if (open_paren) {
+		compiler.expect(TT::RParen, "Expected ')' after function parameters.");
+	}
+
+	if (is_arrow) {
+		compiler.expect(TT::Arrow, "Expected '->' before lambda body.");
+	}
 
 	CodeBlock* const code = compiler.compile_func(is_arrow);
 	if (compiler.has_error) has_error = true;
@@ -397,9 +398,6 @@ void Compiler::func_expr(String* fname, bool is_method, bool is_arrow) {
 	emit(Op::make_func);
 	emit_arg(idx);
 	emit_arg(code->m_num_upvals);
-
-	// Now, [fname] can be reached via the code block itself.
-	m_vm->gc_unprotect(fname);
 
 	for (int i = 0; i < compiler.m_symtable.m_num_upvals; ++i) {
 		const UpvalDesc& upval = compiler.m_symtable.m_upvals[i];
@@ -1042,7 +1040,9 @@ void Compiler::error_at_token(const char* message, const Token& token) {
 }
 
 void Compiler::error(std::string&& message) {
-	if (panic) return;
+	// To prevent cascading errors, we only report the very first error that the compiler
+	// encounters.
+	if (has_error) return;
 	m_vm->on_error(*m_vm, message);
 	has_error = true;
 	panic = true;
