@@ -58,7 +58,10 @@ class String final : public Obj {
 		return m_length * sizeof(char) + sizeof(String);
 	}
 
-	~String();
+	~String() {
+		VYSE_ASSERT(m_chars != nullptr, "Malformed string object");
+		delete[] m_chars;
+	}
 
   private:
 	/// @brief creates a string by copying over the characters `chrs` and length `len`. Instead of

@@ -948,30 +948,44 @@ void VM::pop_callframe() noexcept {
 	}
 }
 
-bool VM::call_closure(Closure* func, int argc) {
-	int extra = argc - func->m_codeblock->param_count();
+bool VM::call_closure(Closure* func, int num_args) {
+	int num_params = func->m_codeblock->param_count();
 
 	// make sure there is enough room in the stack for this function call.
 	ensure_slots(func->m_codeblock->stack_size());
 
 	/// extra arguments are ignored and arguments that aren't provded are replaced with nil.
-	/// TODO: allow variadic functions
-	if (extra < 0) {
-		while (extra < 0) {
+
+	if (num_args < num_params) {
+		// some parameters are missing
+		while (num_args != num_params) {
 			m_stack.push(VYSE_NIL);
-			argc++;
-			extra++;
+			num_args++;
 		}
+	} else if (func->m_codeblock->is_vararg()) {
+		num_args = prep_vararg_call(num_params, num_args);
 	} else {
-		while (extra > 0) {
+		while (num_args != num_params) {
 			m_stack.pop();
-			argc--;
-			extra--;
+			num_args--;
 		}
 	}
 
-	push_callframe(func, argc);
+	assert(num_args == num_params);
+	push_callframe(func, num_args);
 	return true;
+}
+
+int VM::prep_vararg_call(int num_params, int num_args) {
+	VYSE_ASSERT(num_args >= num_params, "bad call to VM::prep_vararg_call");
+	List& varargs = make<List>();
+	int num_varargs = num_args - num_params + 1;
+	for (Value* arg = m_stack.top - num_varargs; arg < m_stack.top; ++arg) {
+		varargs.append(*arg);
+	}
+	m_stack.popn(num_varargs);
+	m_stack.push(VYSE_OBJECT(&varargs));
+	return num_params;
 }
 
 bool VM::call_cclosure(CClosure* cclosure, int argc) {

@@ -4,10 +4,6 @@
 
 namespace vyse {
 
-void GC::mark_value(Value& v) {
-	if (VYSE_IS_OBJECT(v)) mark_object(VYSE_AS_OBJECT(v));
-}
-
 void GC::mark_object(Obj* o) {
 	if (o == nullptr or o->marked) return;
 #ifdef VYSE_LOG_GC

@@ -18,17 +18,18 @@ enum class TokenType {
 	Eof,
 
 	// Operators
-	Plus,   // +
-	Concat, // ..
-	Minus,  // -
-	Mult,   // *
-	Div,	// /
-	Mod,	// %
-	Exp,	// **
-	Eq,		// =
-	Bang,   // !
-	Dot,	// .
-	Len,	// #
+	Plus,	   // +
+	Concat,	   // ..
+	Minus,	   // -
+	Mult,	   // *
+	Div,	   // /
+	Mod,	   // %
+	Exp,	   // **
+	Eq,		   // =
+	Bang,	   // !
+	Dot,	   // .
+	DotDotDot, // ...
+	Len,	   // #
 
 	// NOTE: It is important that these compound
 	// assignment enums are stay in this order.
@@ -36,37 +37,37 @@ enum class TokenType {
 	// added between `ModEq` and `PlusEq`. This is to make
 	// sure that `Compiler::is_assign_tok` works as intended.
 	// Refer to `compiler.cpp`.
-	ModEq,   // %=
-	DivEq,   // /=
-	MultEq,  // *=
+	ModEq,	 // %=
+	DivEq,	 // /=
+	MultEq,	 // *=
 	MinusEq, // -=
-	PlusEq,  // +=
+	PlusEq,	 // +=
 
 	// compare
 
-	Gt,   // >
-	Lt,   // <
+	Gt,	  // >
+	Lt,	  // <
 	GtEq, // >=
 	LtEq, // <=
 
 	// logic
 
 	And, // &&
-	Or,  // ||
+	Or,	 // ||
 
 	// Equality
 
-	EqEq,   // ==
+	EqEq,	// ==
 	BangEq, // !=
 
 	// bitwise
 
-	BitAnd,	// &
-	BitOr,	 // |
+	BitAnd,	   // &
+	BitOr,	   // |
 	BitLShift, // >>
 	BitRShift, // <<
-	BitXor,	// ^
-	BitNot,	// ~
+	BitXor,	   // ^
+	BitNot,	   // ~
 
 	Append, // <<<
 
@@ -78,8 +79,8 @@ enum class TokenType {
 	RParen,		// )
 	LCurlBrace, // {
 	RCurlBrace, // }
-	LSqBrace,   // [
-	RSqBrace,   // ]
+	LSqBrace,	// [
+	RSqBrace,	// ]
 
 	Arrow, // ->
 

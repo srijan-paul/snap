@@ -8,85 +8,47 @@
 using namespace vyse;
 using TT = vyse::TokenType;
 
-// clang-format off
 void print_ttype(vyse::TokenType type) {
 	std::string type_strs[] = {
+		"Integer",	 "Float",	   "String",
+		"True",		 "False",
 
-		"Integer",	
-		"Float",
-		"String",
-		"True",
-		"False",
-
-		"Id",		
-		"Error",	  
-		"ErrStringTerminate",	  
+		"Id",		 "Error",	   "ErrStringTerminate",
 		"Eof",
 
-		"Plus",		
-		"Concat",	  
-		"Minus",		
-		"Mult",		 
-		"Div",
-		"Mod",
-		"Exp",
-		"Eq",
-	  "Bang",
-	  "Dot",
-	  "Len",
+		"Plus",		 "Concat",	   "Minus",
+		"Mult",		 "Div",		   "Mod",
+		"Exp",		 "Eq",		   "Bang",
+		"Dot",		 "DotDotDot",  "Len",
 
-		"DivEq",	 
-		"ModEq",	 
-		"MultEq",	 
-		"MinusEq", 
-		"PlusEq",
+		"DivEq",	 "ModEq",	   "MultEq",
+		"MinusEq",	 "PlusEq",
 
-		"Gt",
-	  "Lt",
-	  "GtEq",
-	  "LtEq",
+		"Gt",		 "Lt",		   "GtEq",
+		"LtEq",
 
-		"And",
-	  "Or",
-	  "EqEq",
-	  "BangEq",
+		"And",		 "Or",		   "EqEq",
+		"BangEq",
 
-		"BitAnd",
-	  "BitOr",
-	  "BitLShift",
-	  "BitRShift",
-	  "BitXor",
-	  "BitNot",
+		"BitAnd",	 "BitOr",	   "BitLShift",
+		"BitRShift", "BitXor",	   "BitNot",
 
 		"Append",
 
-		"Semi",
-	  "Colon",
-	  "Comma",
-	  "LParen",
+		"Semi",		 "Colon",	   "Comma",
+		"LParen",
 
-		"RParen",
-	  "LCurlBrace",
-	  "RCurlBrace",
+		"RParen",	 "LCurlBrace", "RCurlBrace",
 
-		"LSqBrace",
-	  "RSqBrace",
+		"LSqBrace",	 "RSqBrace",
 
 		"Arrow",
 
-		"Let",
-	  "Const",
-	  "If",
-		"While",
-		"For",
-	  "Else",
-	  "Nil",
-	  "Fn",
-	  "Return",
-		"Break",
-		"Continue",
+		"Let",		 "Const",	   "If",
+		"While",	 "For",		   "Else",
+		"Nil",		 "Fn",		   "Return",
+		"Break",	 "Continue",
 	};
-	// clang-format on
 	const std::string& str = type_strs[static_cast<size_t>(type)];
 	std::printf("%-10s", str.c_str());
 }

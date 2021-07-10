@@ -364,18 +364,23 @@ void Compiler::func_expr(String* fname, bool is_method, bool is_arrow) {
 
 	uint param_count = 0;
 
-	// Methods have an implicit 'self' parameter, used to
-	// reference the object itself.
+	// Methods have an implicit 'self' parameter, used to reference the object itself.
 	if (is_method) {
 		++param_count;
 		compiler.add_self_param();
 	}
 
+	bool is_vararg = false;
 	if ((open_paren and !compiler.check(TT::RParen)) or (is_arrow and !compiler.check(TT::Arrow))) {
 		do {
 			compiler.expect(TT::Id, "Expected parameter name.");
 			compiler.add_param(compiler.token);
 			++param_count;
+
+			if (compiler.match(TT::DotDotDot)) {
+				is_vararg = true;
+				break; // variadic parameter is the last one.
+			}
 		} while (compiler.match(TT::Comma));
 	}
 
@@ -393,6 +398,7 @@ void Compiler::func_expr(String* fname, bool is_method, bool is_arrow) {
 	}
 
 	CodeBlock* const code = compiler.compile_func(is_arrow);
+	code->m_is_variadic = is_vararg;
 	if (compiler.has_error) has_error = true;
 	const u8 idx = emit_value(VYSE_OBJECT(code));
 
@@ -420,6 +426,7 @@ void Compiler::func_expr(String* fname, bool is_method, bool is_arrow) {
 	prev = compiler.prev;
 	token = compiler.token;
 	peek = compiler.peek;
+	has_error = compiler.has_error;
 }
 
 void Compiler::ret_stmt() {

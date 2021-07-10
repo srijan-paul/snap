@@ -25,10 +25,6 @@ String::String(const char* chrs, size_t len, size_t hash) noexcept
 	m_chars = buf;
 }
 
-String::~String() {
-	delete[] m_chars;
-}
-
 bool operator==(const String& a, const String& b) {
 	if (&a == &b) return true;
 	size_t alen = a.len(), blen = b.len();

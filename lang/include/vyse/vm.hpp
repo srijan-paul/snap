@@ -14,7 +14,6 @@ using ReadLineFn = std::function<char*(const VM& vm)>;
 using ErrorFn = std::function<void(const VM& vm, const std::string& err_message)>;
 using ModuleLoader = std::function<std::string(VM& vm, const char* module_name)>;
 
-
 inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string) {
 	VYSE_ASSERT(string != nullptr, "string to print is null.");
 	printf("%s", string->c_str());
@@ -358,6 +357,14 @@ class VM {
 	bool op_call(Value value, u8 argc);
 	bool call_closure(Closure* func, int argc);
 	bool call_cclosure(CClosure* cclosure, int argc);
+
+	/// @brief Prepares the VM's stack for a varioadic function call.
+	/// All the extra args are placed in a list, which is then pushed on top of the stack.
+	/// @param num_args number of arguments provided to the call.
+	/// @param num_params Number of parameters as mentioned in the function declaration. The last
+	/// argument must be a variadic arg.
+	/// @return The number of arguments that are on the stack after the varargs have been moved to a list.
+	int prep_vararg_call(int num_params, int num_args);
 
 	inline Table* get_proto(const Value& value) {
 		switch (VYSE_GET_TT(value)) {
