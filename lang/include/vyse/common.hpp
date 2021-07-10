@@ -40,13 +40,13 @@ using number = double;
 #define VYSE_UNREACHABLE() VYSE_ERROR("Unreachable code point reached.")
 
 #define VYSE_STRESS_GC 1
-// #define VYSE_LOG_GC		 1
+// #define VYSE_LOG_GC 1
 
 #else
 
 #define VYSE_ASSERT(cond, message) // empty
-#define VYSE_ERROR(message)		   // empty
-#define VYSE_UNREACHABLE()		   // empty
+#define VYSE_ERROR(message) // empty
+#define VYSE_UNREACHABLE() // empty
 
 #endif
 

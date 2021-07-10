@@ -2,13 +2,17 @@
 #include "value.hpp"
 #include <vm.hpp>
 
+#ifdef VYSE_LOG_GC
+#define GC_LOG(...) printf(__VA_ARGS__)
+#else
+#define GC_LOG(...) // empty
+#endif
+
 namespace vyse {
 
 void GC::mark_object(Obj* o) {
 	if (o == nullptr or o->marked) return;
-#ifdef VYSE_LOG_GC
-	printf("marked: %p [%s] \n", (void*)o, value_to_string(VYSE_OBJECT(o)).c_str());
-#endif
+	GC_LOG("marked: %p [%s] \n", (void*)o, value_to_string(VYSE_OBJECT(o)).c_str());
 	o->marked = true;
 	m_gray_objects.push(o);
 }
@@ -26,10 +30,8 @@ void GC::mark_compiler_roots() {
 void GC::mark() {
 	assert(m_vm != nullptr);
 
-#ifdef VYSE_LOG_GC
-	printf("-- [GC start] --\n");
-	printf("-- Mark --\n");
-#endif
+	GC_LOG("-- [GC start] --\n");
+	GC_LOG("-- Mark --\n");
 
 	// The following roots are known atm ->
 	// 1. The VM's value stack.
@@ -69,26 +71,20 @@ void GC::mark() {
 }
 
 void GC::trace() {
-#ifdef VYSE_LOG_GC
-	printf("-- Trace --\n");
-#endif
+	GC_LOG("-- Trace --\n");
 
 	while (!m_gray_objects.empty()) {
 		Obj* gray_obj = m_gray_objects.top();
 		m_gray_objects.pop();
 
-#ifdef VYSE_LOG_GC
-		printf("Tracing: %p [%s] \n", (void*)gray_obj,
+		GC_LOG("Tracing: %p [%s] \n", (void*)gray_obj,
 			   value_to_string(VYSE_OBJECT(gray_obj)).c_str());
-#endif
 		gray_obj->trace(*this);
 	}
 }
 
 size_t GC::sweep() {
-#ifdef VYSE_LOG_GC
-	printf("-- Sweep --\n");
-#endif
+	GC_LOG("-- Sweep --\n");
 
 	// Delete all the interned strings that haven't been reached by now.
 	m_vm->interned_strings.delete_white_string_keys();
@@ -109,9 +105,7 @@ size_t GC::sweep() {
 		} else {
 			Obj* next = current->next;
 
-#ifdef VYSE_LOG_GC
-			printf("Freed: %s", value_to_string(VYSE_OBJECT(current)).c_str());
-#endif
+			GC_LOG("Freed: %s", value_to_string(VYSE_OBJECT(current)).c_str());
 
 			bytes_freed += current->size();
 			delete current;
@@ -126,9 +120,7 @@ size_t GC::sweep() {
 
 	bytes_allocated -= bytes_freed;
 	next_gc = bytes_allocated * (1 + GCHeapGrowth);
-#ifdef VYSE_LOG_GC
-	printf("-- [GC END] Freed %zu bytes | Next: %zu --\n\n", bytes_freed, next_gc);
-#endif
+	GC_LOG("-- [GC END] Freed %zu bytes | Next: %zu --\n\n", bytes_freed, next_gc);
 	return bytes_freed;
 }
 
@@ -152,4 +144,3 @@ GCLock::~GCLock() {
 }
 
 } // namespace vyse
-
