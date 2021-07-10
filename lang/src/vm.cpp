@@ -213,7 +213,7 @@ ExitCode VM::run() {
 			Value& operand = PEEK(1);
 			if (VYSE_IS_NUM(operand)) {
 				VYSE_SET_NUM(operand, -VYSE_AS_NUM(operand));
-			} else if (!call_unary_overload("-", "__negate")) {
+			} else if (!call_unary_overload("__negate")) {
 				return UNOP_ERROR("-", operand);
 			}
 			break;
@@ -865,7 +865,7 @@ bool VM::call(int argc) {
 	VYSE_ASSERT(argc < (m_stack.top - m_stack.values),
 				"Invalid stack state or incorrect arg count.");
 
-	Value value = m_stack.peek(argc + 1);
+	const Value& value = m_stack.peek(argc + 1);
 	bool ok = op_call(value, argc);
 
 	// If the called object was a CClosure then execution has already finished and no need to call
@@ -876,8 +876,8 @@ bool VM::call(int argc) {
 }
 
 bool VM::op_call(Value value, u8 argc) {
-	if (!VYSE_IS_OBJECT(value)) {
-		ERROR("Attempt to call a {} value.", VYSE_TYPE_CSTR(value));
+	if (VYSE_IS_NIL(value)) {
+		ERROR("Attempt to call a nil value.");
 		return false;
 	}
 
@@ -886,13 +886,18 @@ bool VM::op_call(Value value, u8 argc) {
 		return false;
 	}
 
-	switch (VYSE_AS_OBJECT(value)->tag) {
-	case OT::closure: return call_closure(VYSE_AS_CLOSURE(value), argc);
-	case OT::c_closure: return call_cclosure(VYSE_AS_CCLOSURE(value), argc);
-	default: ERROR("Attempt to call a {} value.", VYSE_TYPE_CSTR(value)); return false;
+	if (VYSE_IS_OBJECT(value)) {
+		switch (VYSE_AS_OBJECT(value)->tag) {
+		case OT::closure: return call_closure(VYSE_AS_CLOSURE(value), argc);
+		case OT::c_closure: return call_cclosure(VYSE_AS_CCLOSURE(value), argc);
+		default: break; // fall
+		}
 	}
 
-	return false;
+	// not a function, so we get it's `__call` field and attempt to call it
+	bool ok = call_func_overload(value, argc);
+	if (!ok) ERROR("Attempt to call a {} value.", VYSE_TYPE_CSTR(value));
+	return ok;
 }
 
 void VM::push_callframe(Obj* callable, int argc) {
@@ -1014,6 +1019,7 @@ bool VM::call_binary_overload(const char* op_str, const char* method_name) {
 		return false;
 	}
 
+	ensure_slots(3);
 	m_stack.push(method);
 	m_stack.push(left);
 	m_stack.push(right);
@@ -1021,21 +1027,59 @@ bool VM::call_binary_overload(const char* op_str, const char* method_name) {
 	return op_call(method, 2);
 }
 
-bool VM::call_unary_overload(const char* op_str, const char* method_name) {
+bool VM::call_unary_overload(const char* method_name) {
 	const Value mname = VYSE_OBJECT(&make_string(method_name));
 	const Value value = m_stack.pop();
 
 	const Value method = index_proto(value, mname);
-	if (VYSE_IS_NIL(method)) {
-		auto msg = kt::format_str("Cannot apply operator '{}' to type: '{}' ", op_str, method_name);
-		runtime_error(std::move(msg));
-		return false;
-	}
+	if (VYSE_IS_NIL(method)) return false;
 
+	ensure_slots(2);
 	m_stack.push(method);
 	m_stack.push(value);
 
 	return op_call(method, 1);
+}
+
+bool VM::call_func_overload(Value& object, int argc) {
+	static constexpr const char* method_name = "__call";
+	static String& method_string = make_string(method_name);
+	static const Value field_name = VYSE_OBJECT(&method_string);
+
+	Value func;
+	bool ok = get_field_of_value(object, field_name, func);
+	assert(ok);
+
+	// Now to actually perform the overloaded, call, we need to adjust the stack
+	// from [object, args...] to [func, object, args...].
+	ensure_slots(1);
+	m_stack.push(VYSE_NIL);
+	for (int index = 1; index <= argc + 1; ++index) {
+		m_stack.top[-index] = m_stack.top[-index - 1];
+	}
+
+	m_stack.top[-argc - 2] = func;
+	return op_call(func, argc + 1);
+}
+
+bool VM::get_field_of_value(Value const& value, Value const& key, Value& inout) {
+	VYSE_ASSERT(VYSE_IS_STRING(key), "field name not a string");
+
+	if (VYSE_IS_TABLE(value)) {
+		Table* const object = VYSE_AS_TABLE(value);
+		inout = object->get(key);
+		return true;
+	}
+
+	Table* const proto = get_proto(value);
+	if (proto == nullptr) {
+		assert(VYSE_IS_NIL(value));
+		ERROR("Attempt to index a nil value.");
+		return false;
+	}
+
+	inout = proto->get(key);
+	return true;
 }
 
 // String operation helpers.
@@ -1120,6 +1164,9 @@ ExitCode VM::binop_error(const char* opstr, const Value& a, const Value& b) {
 }
 
 ExitCode VM::runtime_error(const std::string& message) {
+	// avoid cascading errors if one error has already been reported
+	if (m_has_error) return ExitCode::RuntimeError;
+
 	m_has_error = true;
 
 	std::string error_str =

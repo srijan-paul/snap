@@ -363,7 +363,8 @@ class VM {
 	/// @param num_args number of arguments provided to the call.
 	/// @param num_params Number of parameters as mentioned in the function declaration. The last
 	/// argument must be a variadic arg.
-	/// @return The number of arguments that are on the stack after the varargs have been moved to a list.
+	/// @return The number of arguments that are on the stack after the varargs have been moved to a
+	/// list.
 	int prep_vararg_call(int num_params, int num_args);
 
 	inline Table* get_proto(const Value& value) {
@@ -409,7 +410,16 @@ class VM {
 	/// @brief calls the overloaded unary operator whose protomethod name is [method]
 	/// The operand must be on top of the stack when this function is called.
 	/// @return true of the call succeeded, false otherwise
-	bool call_unary_overload(const char* op_str, const char* method_name);
+	bool call_unary_overload(const char* method_name);
+
+	/// @brief Calls the `__call` member of [object], or it's metatable.
+	/// NOTE: object must be an on the stack at a depth of [argc + 1], followed by [argc] arguments
+	/// that it will be called with.
+	/// @return true if the function call succeeds without any error.
+	bool call_func_overload(Value& value, int argc);
+
+	/// @brief returns `value.field` where `value` is a value of any kind and `key` is a string.
+	bool get_field_of_value(Value const& value, Value const& key, Value& result);
 
 	/// @brief concatenates two strings. Will intern the resulting
 	/// string if it isn't already interned.

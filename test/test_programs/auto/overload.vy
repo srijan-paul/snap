@@ -97,3 +97,14 @@ assert((T:new(5) % T:new(2)).x == 1)
 
 t1 = T:new(100)
 assert(-t1 == -100)
+
+
+const o = {
+  x: 2,
+  y: 3,
+  __call(x, y) {
+    return x * self.x + y * self.y
+  }
+}
+
+assert(o(2, 3) == 13)
