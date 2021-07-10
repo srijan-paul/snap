@@ -25,7 +25,7 @@ OP(get_upval, 1, 1),
 OP(make_func, -1, 1), /* special arity */
 OP(prep_method_call, 1, 1),
 
-// Note that calling function pushes a new call 
+// Note that calling function pushes a new call
 // frame onto the stack, therefore it does not count
 // as incrementing the stack size of the *current*
 // closure.
@@ -56,7 +56,7 @@ OP(lte, 0, -1),
 /// Insert the value at PEEK(1) into the array PEEK(2)
 /// and pop top
 /// el = POP()
-/// arr = PEEK(1) 
+/// arr = PEEK(1)
 /// arr:push(el)
 OP(list_append, 0, -1),
 
@@ -73,21 +73,50 @@ OP(return_val, 0, 0), /* special stack effect */
 
 
 // table indexing
-OP(new_table, 0, 1),
-OP(new_list, 0, 1),
+OP(new_table, 0, 1), // create a new table and push it onto the stack
+OP(new_list, 0, 1),  // create a new list  and push it onto the stack
+
+/// value = POP()
+/// k     = POP()
+/// t     = POP()
+/// t[k]  = value
+/// PUSH(value)
 OP(index_set, 0, -2),
+
+// when the stack state is [ LIST, KEY, VALUE ],
+// VALUE = POP(); KEY = POP(); LIST = POP();
+// LIST[KEY] = VALUE
 OP(table_add_field, 0, -2),
+
+// INDEX = POP(); LIST = POP();
+// PUSH(LIST[INDEX])
 OP(index, 0, -1),
+
+// INDEX = PEEK(1); LIST = PEEK(2);
+// PUSH(LIST[INDEX])
 OP(index_no_pop, 0, 1),
 
+// A  = NEXT(); B = NEXT();
+// ip = ip + AB
 OP(jmp, 2, 0),
+
+// A  = NEXT(); B = NEXT();
+// ip = ip - AB
 OP(jmp_back, 2, 0),
 OP(jmp_if_false_or_pop, 2, 0), /* -1 if TOS is truthy */
 OP(jmp_if_true_or_pop, 2, 0),  /* -1 if TOS is falsy */
 OP(pop_jmp_if_false, 2, -1),
 
 
-/// TODO: explain stuff
+/// Ensures the counter, limit, and step are numbers,
+/// and pushes the counter variable used by the user
+/// onto the stack. At this point, the state of the stack is:
+/// [ counter, limit, step ]
+/// i_      = PEEK(3)
+/// step    = PEEK(1)
+/// counter = counter - step
+/// PUSH(counter) ; this is the variable i, that is used by the user
+/// ip = ip + FETCH_SHORT()
 OP(for_prep, 2, 1),
 
 /// Operands:  A, B (Jump distance)
@@ -102,3 +131,4 @@ OP(for_prep, 2, 1),
 OP(for_loop, 2, 0),
 
 OP(no_op, -1, 0),
+

@@ -89,7 +89,7 @@ void DynLoader::init_loaders(VM& vm) const {
 	CClosure& cached_lib_loader = vm.make<CClosure>(load_cached_module);
 	loaders.append(VYSE_OBJECT(&cached_lib_loader));
 
-	// // Add the default standard library module loader.
+	// Add the default standard library module loader.
 	CClosure& stdlib_loader = vm.make<CClosure>(load_std_module);
 	loaders.append(VYSE_OBJECT(&stdlib_loader));
 }
