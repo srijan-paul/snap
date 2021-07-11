@@ -199,8 +199,7 @@ class VM {
 
 	/// TODO: think of a better name for this method.
 
-	/// @brief Makes an interned string and returns a
-	/// reference to it.
+	/// @brief Makes an interned string and returns a reference to it.
 	String& make_string(const char* chars, size_t length);
 
 	///
@@ -419,7 +418,18 @@ class VM {
 	bool call_func_overload(Value& value, int argc);
 
 	/// @brief returns `value.field` where `value` is a value of any kind and `key` is a string.
-	bool get_field_of_value(Value const& value, Value const& key, Value& result);
+	/// @param value The value to be indexed.
+	/// @param key   The key that is to be used when indexing the value.
+	/// @return true if the indexing was successful, false otherwise.
+	/// Note that [key] must be a string.
+	bool get_field_of_value(const Value& value, const Value& key, Value& result);
+
+	/// @brief sets `result` to `value`[`index`]. Nil, if none found.
+	/// @param value An indexable value like a string, list or table.
+	/// @param index The value to index `value` with.
+	/// @param result An inout parameter containing the result of the operation.
+	/// @return true if the indexing succeeds, false if there is an error
+	bool index_value(const Value& value, const Value& index, Value& result);
 
 	/// @brief concatenates two strings. Will intern the resulting
 	/// string if it isn't already interned.

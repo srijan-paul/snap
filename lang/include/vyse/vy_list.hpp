@@ -5,7 +5,7 @@
 namespace vyse {
 
 class List final : public Obj {
-public:
+  public:
 	static constexpr size_t DefaultCapacity = 8;
 	static constexpr uint GrowthFactor = 2;
 
@@ -45,10 +45,21 @@ public:
 	/// more insertion. Ths may grow the list.
 	void ensure_capacity();
 
-	const Value& operator[](size_t index) const;
-	Value& operator[](size_t index);
+    Value at(size_t index) const noexcept {
+        return m_values[index];
+    }
 
-private:
+	Value& operator[](size_t index) {
+		VYSE_ASSERT(index < m_num_entries, "List index out of range!");
+		return m_values[index];
+	}
+
+	const Value& operator[](size_t index) const {
+		VYSE_ASSERT(index < m_num_entries, "List index out of range!");
+		return m_values[index];
+	}
+
+  private:
 	size_t m_capacity = DefaultCapacity;
 	size_t m_num_entries = 0;
 	Value* m_values = (Value*)malloc(DefaultCapacity * sizeof(Value));

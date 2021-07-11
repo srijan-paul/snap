@@ -35,15 +35,6 @@ Value List::pop() noexcept {
 	return VYSE_NIL;
 }
 
-Value& List::operator[](size_t index) {
-	VYSE_ASSERT(index < m_num_entries, "List index out of range!");
-	return m_values[index];
-}
-
-const Value& List::operator[](size_t index) const {
-	VYSE_ASSERT(index < m_num_entries, "List index out of range!");
-	return m_values[index];
-}
 
 void List::trace(GC& gc) noexcept {
 	for (size_t i = 0; i < m_num_entries; ++i) {

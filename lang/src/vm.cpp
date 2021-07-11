@@ -501,46 +501,20 @@ ExitCode VM::run() {
 		case Op::index: {
 			Value key = POP();
 			Value& tvalue = PEEK(1);
-
-			if (VYSE_IS_OBJECT(tvalue)) {
-				Obj* object = VYSE_AS_OBJECT(tvalue);
-				if (object->tag == OT::list) {
-					List& list = *static_cast<List*>(object);
-					CHECK_TYPE(key, VT::Number, "List index not a number.");
-					number index = VYSE_AS_NUM(key);
-					CHECK(index >= 0 and index < list.length(),
-						  "List index out of bounds (index: {}, length: {}).", index,
-						  list.length());
-
-					tvalue = list[index];
-					break;
-				} else if (object->tag == OT::table) {
-					tvalue = VYSE_AS_TABLE(tvalue)->get(key);
-				} else if (object->tag == OT::string) {
-					CHECK_TYPE(key, VT::Number, "string index must be a number (got {})",
-							   value_type_name(key));
-					const String* str = VYSE_AS_STRING(tvalue);
-					const s64 index = VYSE_AS_NUM(key);
-					CHECK(index >= 0 and index < static_cast<s64>(str->m_length),
-						  "string index out of range.");
-					VYSE_SET_OBJECT(tvalue, char_at(str, index));
-				}
-			} else {
-				return INDEX_ERROR(tvalue);
-			}
-			break;
+            if (!index_value(tvalue, key, tvalue)) {
+                return ExitCode::RuntimeError;
+            }
+            break;
 		}
 
-		// table[key]
 		case Op::index_no_pop: {
-			Value& vtable = PEEK(2);
+			const Value& value = PEEK(2);
 			const Value& key = PEEK(1);
-			if (VYSE_IS_TABLE(vtable)) {
-				if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
-				PUSH(VYSE_AS_TABLE(vtable)->get(key));
-			} else {
-				return INDEX_ERROR(vtable);
+			Value result;
+			if (!index_value(value, key, result)) {
+				return ExitCode::RuntimeError;
 			}
+			PUSH(result);
 			break;
 		}
 
@@ -1079,6 +1053,61 @@ bool VM::get_field_of_value(Value const& value, Value const& key, Value& inout) 
 	}
 
 	inout = proto->get(key);
+	return true;
+}
+
+bool VM::index_value(const Value& value, const Value& index, Value& result) {
+	if (VYSE_IS_OBJECT(value)) {
+		Obj* const object = VYSE_AS_OBJECT(value);
+		switch (object->tag) {
+		case OT::table: {
+			Table* const table = static_cast<Table*>(object);
+			result = table->get(index);
+			return true;
+		}
+		case OT::list: {
+			const List* list = static_cast<List*>(object);
+			if (not VYSE_IS_NUM(index)) {
+				ERROR("List index not a number.");
+				return false;
+			}
+
+			const number idx = VYSE_AS_NUM(index);
+			if (idx < 0 or idx >= list->length()) {
+				ERROR("List index out of bounds. (index: {}, length: {})", idx, list->length());
+				return false;
+			}
+			result = list->at(idx);
+			return true;
+		}
+		case OT::string: {
+			const String& string = *static_cast<String*>(object);
+			if (not VYSE_IS_NUM(index)) {
+				ERROR("String index not a number");
+				return false;
+			}
+
+			const number idx = VYSE_AS_NUM(index);
+			if (idx < 0 or idx >= string.m_length) {
+				ERROR("String index out of bounds. (index: {}, length: {})", idx, string.m_length);
+				return false;
+			}
+
+			result = VYSE_OBJECT(char_at(&string, idx));
+			return true;
+		}
+		default: break; // fallthrough to default
+		}
+	}
+
+	// find prototype of primitive value and index it with [index]
+	Table* const proto = get_proto(value);
+	assert(proto->tag == OT::table);
+	if (proto == nullptr) {
+		ERROR("Attempt to index a {} value.", VYSE_TYPE_CSTR(value));
+		return false;
+	}
+	result = proto->get(index);
 	return true;
 }
 

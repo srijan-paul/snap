@@ -217,12 +217,34 @@ Value replace(VM& vm, int argc) {
 	return VYSE_OBJECT(&vm.take_string(buf, bufsize));
 }
 
+/// @brief create a single character string from it's char code.
+Value from_code(VM& vm, int argc) {
+    constexpr const char* fname = "String.from_code";
+    if (argc != 1) {
+        cfn_error(vm, fname, "Expected exactly 1 argument");
+        return VYSE_NIL;
+    }
+
+    CHECK_ARG_TYPE(0, ValueType::Number);
+    s64 ascii = VYSE_AS_NUM(vm.get_arg(0));
+
+    if (ascii < 0 or ascii > 255) {
+        cfn_error(vm, fname, "ASCII char code must be between 0 and 255");
+        return VYSE_NIL;
+    }
+
+    const char c = static_cast<char>(ascii);
+    return VYSE_OBJECT(&vm.make_string(&c, 1));
+}
+
+
 void load_string_proto(VM& vm) {
 	Table& str_proto = *vm.prototypes.string;
 	add_libfn(vm, str_proto, "substr", substr);
 	add_libfn(vm, str_proto, "code_at", code_at);
 	add_libfn(vm, str_proto, "to_num", to_number);
 	add_libfn(vm, str_proto, "replace", replace);
+	add_libfn(vm, str_proto, "from_code", from_code);
 }
 
 } // namespace vyse::stdlib::primitives
