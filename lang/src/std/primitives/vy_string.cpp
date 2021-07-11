@@ -44,7 +44,7 @@ Value substr(VM& vm, int argc) {
 	static constexpr const char* fname = "String.substr";
 
 	if (argc < 2 or argc > 3) {
-		vm.runtime_error(FMT("Expected 2-3 arguments for call to String:substr (found {})", argc));
+		cfn_error(vm, fname, FMT("Expected 2-3 arguments for call to String:substr (found {})", argc));
 		return VYSE_NIL;
 	}
 
@@ -170,11 +170,13 @@ Value replace(VM& vm, int argc) {
 		return VYSE_NIL;
 	}
 
+	CFuncHelper helper(vm, fname, 3, argc);
+
 	CHECK_ARG_TYPE(0, ObjType::string);
 	CHECK_ARG_TYPE(1, ObjType::string);
 	CHECK_ARG_TYPE(2, ObjType::string);
 
-	const String& src = *VYSE_AS_STRING(vm.get_arg(0));
+	const String& src = helper.get<ObjType::string>();
 	const String& to_replace = *VYSE_AS_STRING(vm.get_arg(1));
 	const String& replace_with = *VYSE_AS_STRING(vm.get_arg(2));
 

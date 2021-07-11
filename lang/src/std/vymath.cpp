@@ -14,7 +14,7 @@ using namespace stdlib::util;
 		return VYSE_NIL;                                                                           \
 	}
 
-Value vy_sqrt(VM& vm, int argc) {
+Value math_sqrt(VM& vm, int argc) {
 	static constexpr const char* fname = "math.sqrt";
 
 	if (argc != 1) {
@@ -38,7 +38,7 @@ T random(T lo = 0, T hi = 1) {
 	return dist(rd);
 }
 
-Value vy_random(VM& vm, int argc) {
+Value math_random(VM& vm, int argc) {
 	static constexpr const char* fname = "math.random";
 
 	if (argc != 0 and argc != 2) {
@@ -59,11 +59,11 @@ Value vy_random(VM& vm, int argc) {
 	return VYSE_NUM(random<number>(low, high));
 }
 
-Value vy_randint(VM& vm, int argc) {
+Value math_randint(VM& vm, int argc) {
 	constexpr const char* fname = "math.randint";
 	CHECK_ARGC(2);
 	if (!check_arg_type(vm, 0, ValueType::Number, fname) or
-		!check_arg_type(vm, 0, ValueType::Number, fname)) {
+		!check_arg_type(vm, 1, ValueType::Number, fname)) {
 		return VYSE_NIL;
 	}
 
@@ -72,9 +72,28 @@ Value vy_randint(VM& vm, int argc) {
 	return VYSE_NUM(floor(random<number>(low, high + 1)));
 }
 
+Value math_sin(VM& vm, int argc) {
+	constexpr const char* fname = "math.sin";
+	CHECK_ARGC(1);
+	if (!check_arg_type(vm, 0, ValueType::Number, fname)) {
+		return VYSE_NIL;
+	}
+
+	number argv = VYSE_AS_NUM(vm.get_arg(0));
+	return VYSE_NUM(sin(argv));
+}
+
 VYSE_API void load_math(VM* vm, Table* module) {
 	assert(vm != nullptr and module != nullptr);
-	add_libfn(*vm, *module, "sqrt", vy_sqrt);
-	add_libfn(*vm, *module, "random", vy_random);
-	add_libfn(*vm, *module, "randint", vy_randint);
+	add_libfn(*vm, *module, "sqrt", math_sqrt);
+	add_libfn(*vm, *module, "random", math_random);
+	add_libfn(*vm, *module, "randint", math_randint);
+	add_libfn(*vm, *module, "sin", math_sin);
+	
+	// String& str_pi = vm->make_string("pi");
+	// GCLock  lock   = vm->gc_lock(&str_pi);
+	// module->set(str_pi, VYSE_NUM(3.14159265358979323846));
+
+	// lib_add_field(vm, vm->make_string("pi"), VYSE_NUM(M_PI));
 }
+
