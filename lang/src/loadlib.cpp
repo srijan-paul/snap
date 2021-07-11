@@ -42,7 +42,11 @@ Value DynLoader::read_std_lib(VM& vm, const StdModule& module) {
 }
 
 static constexpr std::array<StdModule, 1> std_modules = {{
+#ifdef _WIN32
 	{"math", "libvymath"},
+#else
+	{"math", "vymath"}
+#endif
 }};
 
 Value load_std_module(VM& vm, int argc) {
