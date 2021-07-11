@@ -45,7 +45,7 @@ static constexpr std::array<StdModule, 1> std_modules = {{
 #ifdef _WIN32
 	{"math", "libvymath"},
 #else
-	{"math", "vymath"}
+	{"math", "vymath"},
 #endif
 }};
 

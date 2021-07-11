@@ -5,6 +5,8 @@ jobs:
   build-and-run:
     name: Build and run tests
     runs-on: ubuntu-latest
+    env:
+        VYSE_PATH: "/home/runner/work/snap/snap/bin"
     steps:
       - name: checkout
         uses: actions/checkout@v1
@@ -18,4 +20,4 @@ jobs:
         run:  mkdir bin && cd bin && cmake -G Ninja ..
 
       - name: Build project and run tests
-        run: cd bin && ninja && ctest
+        run: cd bin && ninja && ctest --rerun-failed --output-on-failure
