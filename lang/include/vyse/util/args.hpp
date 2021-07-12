@@ -105,8 +105,12 @@ class Args {
 
 	void check(bool cond, const char* err_msg) noexcept(false) {
 		if (not cond) {
-			throw CMiscException(err_msg, m_fname);
+			throw CMiscException(m_fname, err_msg);
 		}
+	}
+
+	[[nodiscard]] inline bool has_next() const noexcept {
+		return m_argc != m_used_argc;
 	}
 
   private:
@@ -128,8 +132,7 @@ class Args {
 		}
 
 		if (VYSE_AS_OBJECT(arg)->tag != typ) {
-			throw CTypeException(m_fname, m_used_argc, otype_to_string(typ),
-								 otype_to_string(VYSE_AS_OBJECT(arg)->tag));
+			throw CTypeException(m_fname, m_used_argc, otype_to_string(typ), value_type_name(arg));
 		}
 
 		return *static_cast<T*>(VYSE_AS_OBJECT(arg));
@@ -142,8 +145,7 @@ class Args {
 		++m_used_argc;
 
 		if (not VYSE_CHECK_TT(arg, tag)) {
-			throw CTypeException(m_fname, m_used_argc, vtype_to_string(tag),
-								 vtype_to_string(VYSE_GET_TT(arg)));
+			throw CTypeException(m_fname, m_used_argc, vtype_to_string(tag), value_type_name(arg));
 		}
 
 		return value_get<T>(arg);

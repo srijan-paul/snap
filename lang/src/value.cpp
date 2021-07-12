@@ -26,7 +26,7 @@ char* num_to_cstring(number num) {
 	if (is_whole) {
 		bufsize = snprintf(nullptr, 0, "%lld", s64(num));
 	} else {
-		bufsize = snprintf(nullptr, 0, "%f", num);
+		bufsize = snprintf(nullptr, 0, "%.7g", num);
 	}
 
 	char* buf = new char[bufsize + 1];
@@ -35,7 +35,7 @@ char* num_to_cstring(number num) {
 	if (is_whole) {
 		res = sprintf(buf, "%lld", s64(num));
 	} else {
-		res = sprintf(buf, "%f", num);
+		res = sprintf(buf, "%.7g", num);
 	}
 
 	VYSE_ASSERT(res > 0, "sprintf failed!");

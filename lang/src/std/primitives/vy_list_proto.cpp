@@ -1,10 +1,10 @@
 #include "../../str_format.hpp"
+#include "util/args.hpp"
 #include "value.hpp"
 #include <std/lib_util.hpp>
 #include <std/primitives/vy_list_proto.hpp>
 #include <vm.hpp>
 #include <vy_list.hpp>
-
 
 #define CHECK_ARG_TYPE(n, type)                                                                    \
 	if (!check_arg_type(vm, n, type, fname)) return VYSE_NIL;
@@ -14,33 +14,18 @@ namespace vyse::stdlib::primitives {
 using namespace util;
 
 Value foreach (VM& vm, int argc) {
-	static constexpr const char* fname = "foreach";
-
-	if (argc != 2) {
-		cfn_error(vm, fname, "Expected 2 arguments for List.foreach. (list, function)");
-		return VYSE_NIL;
-	}
-
-	if (!check_arg_type(vm, 0, ObjType::list, fname)) return VYSE_NIL;
-	List& list = *VYSE_AS_LIST(vm.get_arg(0));
-
-	Value& vfunc = vm.get_arg(1);
-	if (!(VYSE_IS_CLOSURE(vfunc) or VYSE_IS_CCLOSURE(vfunc))) {
-		cfn_error(vm, fname,
-				  kt::format_str("Bad arg #2. Expected function got {}.", value_type_name(vfunc)));
-		return VYSE_NIL;
-	}
+	Args args(vm, "List.foreach", 2, argc);
+	List& list = args.next<List>();
+	Value vfunc = args.next_arg();
 
 	uint list_len = list.length();
-
 	for (uint i = 0; i < list_len; ++i) {
 		vm.m_stack.push(vfunc);
 		vm.m_stack.push(list[i]);
 		vm.m_stack.push(VYSE_NUM(i));
 		bool ok = vm.call(2);
 		if (!ok) return VYSE_NIL;
-		// the result of the function call is now
-		// on the stack, so we pop it off.
+		// the result of the function call is now on the stack, so we pop it off.
 		vm.m_stack.pop();
 	}
 
@@ -48,22 +33,10 @@ Value foreach (VM& vm, int argc) {
 }
 
 Value make(VM& vm, int argc) {
-	constexpr const char* fname = "make";
-	if (argc == 0) {
-		return VYSE_OBJECT(&vm.make<List>());
-	}
-
-	if (!check_arg_type(vm, 0, ValueType::Number, fname)) {
-		return VYSE_NIL;
-	}
-
-	number n = VYSE_AS_NUM(vm.get_arg(0));
-	if (n < 0) {
-		cfn_error(vm, fname, "List size cannot be negative.");
-		return VYSE_NIL;
-	}
-
-	return VYSE_OBJECT(&vm.make<List>(n));
+	Args args(vm, "List.make", 1, argc);
+	std::size_t size = args.next_number();
+	args.check(size > 0, "list size must be positive."); 
+	return VYSE_OBJECT(&vm.make<List>(size));
 }
 
 Value fill(VM& vm, int argc) {

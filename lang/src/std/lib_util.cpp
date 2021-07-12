@@ -5,6 +5,7 @@
 
 namespace vyse::util {
 
+
 void bad_arg_error(vyse::VM& vm, const char* fname, int argn, const char* expected_type,
 				   const char* received_type) {
 	vm.runtime_error(kt::format_str("[internal] Bad argument #{} to '{}' expected {}, got {}.",
@@ -62,4 +63,4 @@ void cfn_error(VM& vm, const char* fname, std::string&& message) {
 	vm.runtime_error(kt::format_str("[internal] In call to {}: {}", fname, message));
 }
 
-} // namespace vyse::stdlib::util
+} // namespace vyse::util

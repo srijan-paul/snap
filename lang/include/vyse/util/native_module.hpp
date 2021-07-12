@@ -17,6 +17,8 @@ class NativeModule {
 	void add_cfunc(const char* fname, NativeFn func);
 	void add_field(const char* name, Value value);
 
+	void add_cclosures(const std::pair<const char*, NativeFn>* funcs, std::size_t num_funcs);
+
   private:
 	VM* const m_vm;
 	Table* const m_table;

@@ -978,15 +978,15 @@ bool VM::call_cclosure(CClosure* cclosure, int argc) {
 		ret = c_func(*this, argc);
 	} catch (const util::CArityException& ex) {
 		// incorrect number of arguments.
-		ERROR("[Internal] In call to '{}': Expected {} arguments. Got {}.", ex.cfunc_name,
+		ERROR("In call to '{}': Expected {} arguments. Got {}.", ex.cfunc_name,
 			  ex.num_params, argc);
 		ret = VYSE_NIL;
 	} catch (const util::CTypeException& ex) {
-		ERROR("[internal] Bad argument #{} to '{}' expected {}, got {}.", ex.argn, ex.func_name,
+		ERROR("Bad argument #{} to '{}' expected {}, got {}.", ex.argn, ex.func_name,
 			  ex.expected_type_name, ex.received_type_name);
 		ret = VYSE_NIL;
 	} catch (const util::CMiscException& ex) {
-		ERROR("[internal] In call to '{}': {}", ex.fname, ex.message);
+		ERROR("In call to '{}': {}", ex.fname, ex.message);
 		ret = VYSE_NIL;
 	}
 
@@ -1219,7 +1219,7 @@ ExitCode VM::runtime_error(const std::string& message) {
 
 	std::string error_str =
 		(m_current_frame->is_cclosure())
-			? kt::format_str("{}\nstack trace:\n", message)
+			? kt::format_str("[internal] {}\nstack trace:\n", message)
 			: kt::format_str("[line {}]: {}\nstack trace:\n", CURRENT_LINE(), message);
 
 	size_t trace_depth = 0;
