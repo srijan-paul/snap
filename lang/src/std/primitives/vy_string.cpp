@@ -1,10 +1,12 @@
 #include "../../str_format.hpp"
-#include <std/lib_util.hpp>
 #include "value.hpp"
 #include <cmath>
 #include <cstdlib>
+#include <std/lib_util.hpp>
 #include <std/primitives/vy_string.hpp>
 #include <vm.hpp>
+#include <util/args.hpp>
+
 
 #define CHECK_ARG_TYPE(n, type)                                                                    \
 	if (!check_arg_type(vm, n, type, fname)) return VYSE_NIL;
@@ -44,7 +46,8 @@ Value substr(VM& vm, int argc) {
 	static constexpr const char* fname = "String.substr";
 
 	if (argc < 2 or argc > 3) {
-		cfn_error(vm, fname, FMT("Expected 2-3 arguments for call to String:substr (found {})", argc));
+		cfn_error(vm, fname,
+				  FMT("Expected 2-3 arguments for call to String:substr (found {})", argc));
 		return VYSE_NIL;
 	}
 
@@ -170,15 +173,11 @@ Value replace(VM& vm, int argc) {
 		return VYSE_NIL;
 	}
 
-	CFuncHelper helper(vm, fname, 3, argc);
+	Args args(vm, fname, 3, argc);
 
-	CHECK_ARG_TYPE(0, ObjType::string);
-	CHECK_ARG_TYPE(1, ObjType::string);
-	CHECK_ARG_TYPE(2, ObjType::string);
-
-	const String& src = helper.get<ObjType::string>();
-	const String& to_replace = *VYSE_AS_STRING(vm.get_arg(1));
-	const String& replace_with = *VYSE_AS_STRING(vm.get_arg(2));
+	const String& src = args.next<String>();
+	const String& to_replace = args.next<String>();
+	const String& replace_with = args.next<String>();
 
 	const char* const str = src.c_str();
 	const char* const find = to_replace.c_str();
@@ -195,8 +194,7 @@ Value replace(VM& vm, int argc) {
 	char* const buf = new char[bufsize + 1];
 	buf[bufsize] = '\0';
 
-	// current position in the source and destination
-	// buffers.
+	// current position in the source and destination buffers.
 	uint src_pos = 0, dst_pos = 0;
 	uint next_replace_idx = 0; // index of the next replacement pos
 	while (src_pos < str_len) {
@@ -221,24 +219,23 @@ Value replace(VM& vm, int argc) {
 
 /// @brief create a single character string from it's char code.
 Value from_code(VM& vm, int argc) {
-    constexpr const char* fname = "String.from_code";
-    if (argc != 1) {
-        cfn_error(vm, fname, "Expected exactly 1 argument");
-        return VYSE_NIL;
-    }
+	constexpr const char* fname = "String.from_code";
+	if (argc != 1) {
+		cfn_error(vm, fname, "Expected exactly 1 argument");
+		return VYSE_NIL;
+	}
 
-    CHECK_ARG_TYPE(0, ValueType::Number);
-    s64 ascii = VYSE_AS_NUM(vm.get_arg(0));
+	CHECK_ARG_TYPE(0, ValueType::Number);
+	s64 ascii = VYSE_AS_NUM(vm.get_arg(0));
 
-    if (ascii < 0 or ascii > 255) {
-        cfn_error(vm, fname, "ASCII char code must be between 0 and 255");
-        return VYSE_NIL;
-    }
+	if (ascii < 0 or ascii > 255) {
+		cfn_error(vm, fname, "ASCII char code must be between 0 and 255");
+		return VYSE_NIL;
+	}
 
-    const char c = static_cast<char>(ascii);
-    return VYSE_OBJECT(&vm.make_string(&c, 1));
+	const char c = static_cast<char>(ascii);
+	return VYSE_OBJECT(&vm.make_string(&c, 1));
 }
-
 
 void load_string_proto(VM& vm) {
 	Table& str_proto = *vm.prototypes.string;

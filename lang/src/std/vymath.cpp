@@ -1,13 +1,15 @@
+#include "util/native_module.hpp"
 #include "value.hpp"
 #include <cmath>
 #include <common.hpp>
 #include <random>
 #include <std/lib_util.hpp>
 #include <type_traits>
+#include <util/args.hpp>
 #include <vm.hpp>
 
 using namespace vyse;
-using namespace stdlib::util;
+using namespace vyse::util;
 
 #define CHECK_ARGC(...)                                                                            \
 	if (!check_argc(vm, fname, argc, __VA_ARGS__)) {                                               \
@@ -15,19 +17,8 @@ using namespace stdlib::util;
 	}
 
 Value math_sqrt(VM& vm, int argc) {
-	static constexpr const char* fname = "math.sqrt";
-
-	if (argc != 1) {
-		cfn_error(vm, fname, "Expected a number argument for math.sqrt");
-		return VYSE_NIL;
-	}
-
-	if (!check_arg_type(vm, 0, ValueType::Number, fname)) {
-		return VYSE_NIL;
-	}
-
-	number arg = VYSE_AS_NUM(vm.get_arg(0));
-	return VYSE_NUM(sqrt(arg));
+	Args args(vm, "math.sqrt", 1, argc);
+	return VYSE_NUM(sqrt(args.next_number()));
 }
 
 template <typename T>
@@ -60,40 +51,55 @@ Value math_random(VM& vm, int argc) {
 }
 
 Value math_randint(VM& vm, int argc) {
-	constexpr const char* fname = "math.randint";
-	CHECK_ARGC(2);
-	if (!check_arg_type(vm, 0, ValueType::Number, fname) or
-		!check_arg_type(vm, 1, ValueType::Number, fname)) {
-		return VYSE_NIL;
-	}
+	Args args(vm, "math.randint", 2, argc);
 
-	number low = VYSE_AS_NUM(vm.get_arg(0));
-	number high = VYSE_AS_NUM(vm.get_arg(1));
+	number low = args.next_number();
+	number high = args.next_number();
 	return VYSE_NUM(floor(random<number>(low, high + 1)));
 }
 
 Value math_sin(VM& vm, int argc) {
-	constexpr const char* fname = "math.sin";
-	CHECK_ARGC(1);
-	if (!check_arg_type(vm, 0, ValueType::Number, fname)) {
-		return VYSE_NIL;
-	}
+	Args args(vm, "math.sin", 1, argc);
+	return VYSE_NUM(sin(args.next_number()));
+}
 
-	number argv = VYSE_AS_NUM(vm.get_arg(0));
-	return VYSE_NUM(sin(argv));
+Value math_cos(VM& vm, int argc) {
+	Args args(vm, "math.cos", 1, argc);
+	return VYSE_NUM(cos(args.next_number()));
+}
+
+Value math_tan(VM& vm, int argc) {
+	Args args(vm, "math.tan", 1, argc);
+	return VYSE_NUM(tan(args.next_number()));
+}
+
+Value math_asin(VM& vm, int argc) {
+	Args args(vm, "math.asin", 1, argc);
+	return VYSE_NUM(asin(args.next_number()));
+}
+
+Value math_acos(VM& vm, int argc) {
+	Args args(vm, "math.acos", 1, argc);
+	return VYSE_NUM(acos(args.next_number()));
+}
+
+Value math_atan(VM& vm, int argc) {
+	Args args(vm, "math.atan", 1, argc);
+	return VYSE_NUM(atan(args.next_number()));
 }
 
 VYSE_API void load_math(VM* vm, Table* module) {
 	assert(vm != nullptr and module != nullptr);
-	add_libfn(*vm, *module, "sqrt", math_sqrt);
-	add_libfn(*vm, *module, "random", math_random);
-	add_libfn(*vm, *module, "randint", math_randint);
-	add_libfn(*vm, *module, "sin", math_sin);
-	
-	// String& str_pi = vm->make_string("pi");
-	// GCLock  lock   = vm->gc_lock(&str_pi);
-	// module->set(str_pi, VYSE_NUM(3.14159265358979323846));
+	NativeModule math(vm, module);
 
-	// lib_add_field(vm, vm->make_string("pi"), VYSE_NUM(M_PI));
+	math.add_cfunc("sqrt", math_sqrt);
+	math.add_cfunc("random", math_random);
+	math.add_cfunc("randint", math_randint);
+	math.add_cfunc("sin", math_sin);
+	math.add_cfunc("cos", math_cos);
+	math.add_cfunc("tan", math_tan);
+	math.add_cfunc("asin", math_asin);
+	math.add_cfunc("acos", math_acos);
+	math.add_cfunc("atan", math_atan);
+	math.add_field("pi", VYSE_NUM(3.14159265358979323846));
 }
-

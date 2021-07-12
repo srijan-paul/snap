@@ -9,8 +9,10 @@
 #include <std/base.hpp>
 #include <std/primitives/vy_number.hpp>
 #include <std/primitives/vy_string.hpp>
+#include <util/args.hpp>
 #include <vm.hpp>
 #include <vy_list.hpp>
+
 
 #if defined(VYSE_DEBUG_RUNTIME) || defined(VYSE_DEBUG_DISASSEMBLY)
 #include <cstdio>
@@ -501,10 +503,10 @@ ExitCode VM::run() {
 		case Op::index: {
 			Value key = POP();
 			Value& tvalue = PEEK(1);
-            if (!index_value(tvalue, key, tvalue)) {
-                return ExitCode::RuntimeError;
-            }
-            break;
+			if (!index_value(tvalue, key, tvalue)) {
+				return ExitCode::RuntimeError;
+			}
+			break;
 		}
 
 		case Op::index_no_pop: {
@@ -970,7 +972,24 @@ int VM::prep_vararg_call(int num_params, int num_args) {
 bool VM::call_cclosure(CClosure* cclosure, int argc) {
 	push_callframe(cclosure, argc);
 	NativeFn c_func = cclosure->cfunc();
-	Value ret = c_func(*this, argc);
+
+	Value ret;
+	try {
+		ret = c_func(*this, argc);
+	} catch (const util::CArityException& ex) {
+		// incorrect number of arguments.
+		ERROR("[Internal] In call to '{}': Expected {} arguments. Got {}.", ex.cfunc_name,
+			  ex.num_params, argc);
+		ret = VYSE_NIL;
+	} catch (const util::CTypeException& ex) {
+		ERROR("[internal] Bad argument #{} to '{}' expected {}, got {}.", ex.argn, ex.func_name,
+			  ex.expected_type_name, ex.received_type_name);
+		ret = VYSE_NIL;
+	} catch (const util::CMiscException& ex) {
+		ERROR("[internal] In call to '{}': {}", ex.fname, ex.message);
+		ret = VYSE_NIL;
+	}
+
 	pop_callframe();
 
 	m_stack.popn(argc);

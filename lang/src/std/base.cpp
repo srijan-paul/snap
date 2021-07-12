@@ -6,7 +6,7 @@
 #include <std/lib_util.hpp>
 #include <vm.hpp>
 
-using namespace vyse::stdlib::util;
+using namespace vyse::util;
 using namespace vyse;
 
 /// TODO: benchmark and optimize this.
