@@ -1,5 +1,4 @@
 #include <cmath>
-#include <common.hpp>
 #include <limits>
 #include <random>
 #include <std/lib_util.hpp>
@@ -134,9 +133,9 @@ Value isinf(VM& vm, int argc) {
 Value log(VM& vm, int argc) {
 	Args args(vm, "math.log", 1, argc); // need at least 1 arg
 
-	number x = args.next_number();
+	const number x = args.next_number();
 	if (argc == 2) {
-		number base = args.next_number();
+		const number base = args.next_number();
 		if (base == 10.0) return VYSE_NUM(std::log10(x));
 		if (base == 2.0) return VYSE_NUM(std::log2(x));
 		return VYSE_NUM(std::log(x) / std::log(base));
@@ -167,11 +166,73 @@ Value torad(VM& vm, int argc) {
 	return VYSE_NUM(args.next_number() * factor);
 }
 
+Value atan2(VM& vm, int argc) {
+	Args args(vm, "math.atan2", 2, argc);
+	return VYSE_NUM(std::atan2(args.next_number(), args.next_number()));
+}
+
+Value tan2(VM& vm, int argc) {
+	Args args(vm, "math.tan2", 2, argc);
+	return VYSE_NUM(std::tan(args.next_number()) * std::tan(args.next_number()));
+}
+
+s64 powmod(s64 x, s64 y, s64 mod) {
+	s64 result = 1;
+	while (y) {
+		if (y & 1) {
+			result = (result * x) % mod;
+		}
+		y >>= 1;
+		x = (x * x) % mod;
+	}
+	return result;
+}
+
+Value pow(VM& vm, int argc) {
+	Args args(vm, "math.pow", 2, argc);
+	const number base = args.next_number();
+	const number power = args.next_number();
+	if (args.has_next()) {
+		const number mod = args.next_number();
+		args.check(is_integer(power) && is_integer(mod) && is_integer(base),
+				   "Expected integer base, power and modulus");
+		args.check(mod >= 0, "3rd argument (modulus) must be positive.");
+		return VYSE_NUM(powmod(base, power, mod));
+	}
+
+	return VYSE_NUM(std::pow(base, power));
+}
+
+// fast combination algorithm
+// https://en.wikipedia.org/wiki/Combination
+int64_t vy_comb(int64_t n, int64_t k) {
+	if (k > n) {
+		return 0;
+	}
+	if (k > n / 2) {
+		k = n - k;
+	}
+	int64_t result = 1;
+	for (int64_t i = 1; i <= k; ++i) {
+		result = (result * (n - i + 1)) / i;
+	}
+	return result;
+}
+
+Value comb(VM& vm, int argc) {
+	Args args(vm, "math.comb", 2, argc);
+	const number n = args.next_number();
+	const number k = args.next_number();
+	args.check(is_integer(n) && is_integer(k), "Expected integer arguments");
+	return VYSE_NUM(vy_comb(static_cast<int64_t>(n), static_cast<int64_t>(k)));
+}
+
 static constexpr std::pair<const char*, NativeFn> funcs[] = {
 	{"sqrt", sqrt}, {"random", random}, {"randint", randint}, {"sin", sin},		{"cos", cos},
 	{"tan", tan},	{"asin", asin},		{"acos", acos},		  {"atan", atan},	{"math", atan},
 	{"atan", atan}, {"max", max},		{"min", min},		  {"isnan", isnan}, {"isinf", isinf},
 	{"log", log},	{"log10", log10},	{"exp", exp},		  {"todeg", todeg}, {"torad", torad},
+	{"tan2", tan2}, {"atan2", atan2},	{"pow", pow},		  {"comb", comb},
 };
 
 VYSE_API void load_math(VM* vm, Table* module) {

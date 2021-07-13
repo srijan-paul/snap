@@ -6,7 +6,6 @@
 #include <cassert>
 #include <string>
 
-
 namespace vyse {
 
 enum class ObjType : u8 {
@@ -155,33 +154,28 @@ void print_value(Value v);
 
 #define VYSE_CAST_INT(v) (s64(VYSE_AS_NUM(v)))
 
-inline constexpr bool is_val_falsy(const Value& value) {
+inline constexpr bool is_val_falsy(const Value& value) noexcept {
 	return VYSE_IS_FALSE(value) or VYSE_IS_NIL(value);
 }
 
-inline constexpr bool is_val_truthy(const Value& value) {
+inline constexpr bool is_val_truthy(const Value& value) noexcept {
 	return !is_val_falsy(value);
 }
 
+inline constexpr bool is_integer(number num) noexcept {
+	return num == s64(num);
+}
+
 template <typename T>
-inline T value_get(const Value& value);
-
-template <>
-inline constexpr number value_get(const Value& value) {
-	assert(VYSE_IS_NUM(value));
-	return VYSE_AS_NUM(value);
-}
-
-template <>
-inline constexpr bool value_get(const Value& value) {
-	assert(VYSE_IS_BOOL(value));
-	return VYSE_AS_BOOL(value);
-}
-
-template <>
-inline constexpr Obj* value_get(const Value& value) {
-	assert(VYSE_IS_OBJECT(value));
-	return VYSE_AS_OBJECT(value);
+inline constexpr T value_get(Value const& value) {
+	if constexpr (std::is_arithmetic_v<T>) {
+		return VYSE_AS_NUM(value);
+	} else if constexpr (std::is_same_v<T, bool>) {
+		return VYSE_AS_BOOL(value);
+	} else {
+		static_assert(std::is_same_v<T, Obj*>, "Unsupported type.");
+		return VYSE_AS_OBJECT(value);
+	}
 }
 
 } // namespace vyse
