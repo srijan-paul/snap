@@ -206,12 +206,9 @@ Value pow(VM& vm, int argc) {
 // fast combination algorithm
 // https://en.wikipedia.org/wiki/Combination
 int64_t vy_comb(int64_t n, int64_t k) {
-	if (k > n) {
-		return 0;
-	}
-	if (k > n / 2) {
-		k = n - k;
-	}
+	if (k > n) return 0;
+	if (k > n / 2) k = n - k;
+
 	int64_t result = 1;
 	for (int64_t i = 1; i <= k; ++i) {
 		result = (result * (n - i + 1)) / i;

@@ -35,10 +35,6 @@ struct CMiscException : std::exception {
 template <typename...>
 constexpr bool AlwaysFalse = false;
 
-/// @brief Maps an `ObjType` enum tag to an actual C++ type that derives from vyse::Object.
-template <ObjType Ot>
-struct ObjTypeOfTag;
-
 template <typename T>
 struct TagOfType {
 	static constexpr ObjType tag = ObjType::user_data;
@@ -66,7 +62,7 @@ DECL_TAG_MAPPING(Obj*, ValueType::Object);
 
 /// @brief A helper class that can be used in Native functions to fetch arguments without having
 /// to worry about type checking. All argument count or type checking and error reporting is handled
-/// by this class and the VM.
+/// by this class and the VM. look at functions in `lang/src/vymath.cpp` for usage reference.
 class Args {
 	VYSE_NO_COPY(Args);
 	VYSE_NO_DEFAULT_CONSTRUCT(Args);

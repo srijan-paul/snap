@@ -8,7 +8,7 @@ namespace vyse::util {
 
 void bad_arg_error(vyse::VM& vm, const char* fname, int argn, const char* expected_type,
 				   const char* received_type) {
-	vm.runtime_error(kt::format_str("[internal] Bad argument #{} to '{}' expected {}, got {}.",
+	vm.runtime_error(kt::format_str("Bad argument #{} to '{}' expected {}, got {}.",
 									argn, fname, expected_type, received_type));
 }
 
@@ -45,13 +45,13 @@ bool check_argc(VM& vm, const char* fname, int argc, int min_args, int max_args)
 	if (max_args == -1) max_args = min_args;
 
 	if (min_args == max_args and argc != min_args) {
-		vm.runtime_error(kt::format_str("[interal] In {}: Expected exactly {} args (got {}).",
+		vm.runtime_error(kt::format_str("In {}: Expected exactly {} args (got {}).",
 										fname, min_args, argc));
 		return false;
 	}
 
 	if (argc < min_args or argc > max_args) {
-		vm.runtime_error(kt::format_str("[internal] In {}: Expected {}-{} args (got {}).", fname,
+		vm.runtime_error(kt::format_str("In {}: Expected {}-{} args (got {}).", fname,
 										min_args, max_args, argc));
 		return false;
 	}
@@ -60,7 +60,7 @@ bool check_argc(VM& vm, const char* fname, int argc, int min_args, int max_args)
 }
 
 void cfn_error(VM& vm, const char* fname, std::string&& message) {
-	vm.runtime_error(kt::format_str("[internal] In call to {}: {}", fname, message));
+	vm.runtime_error(kt::format_str("In call to {}: {}", fname, message));
 }
 
 } // namespace vyse::util
