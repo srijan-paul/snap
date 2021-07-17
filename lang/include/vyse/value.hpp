@@ -31,7 +31,7 @@ class Obj {
   public:
 	const ObjType tag;
 
-	explicit constexpr Obj(ObjType tt) noexcept : tag{tt} {};
+	explicit constexpr Obj(ObjType tt) noexcept : tag{tt} {}
 	constexpr Obj(Obj&& o) = default;
 	constexpr Obj(Obj const& o) = default;
 	virtual ~Obj() = default;

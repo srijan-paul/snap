@@ -33,6 +33,7 @@ class List final : public Obj {
 		return m_capacity;
 	}
 
+	/// @brief returns true if `index` is a valid key for this list.
 	inline bool in_range(number index) const noexcept {
 		return index >= 0 and index < m_num_entries;
 	}

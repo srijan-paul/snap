@@ -16,6 +16,8 @@ static constexpr number e = 2.7182818284590452354;
 static constexpr number vy_nan = std::numeric_limits<number>::quiet_NaN();
 static constexpr number vy_max_num = std::numeric_limits<number>::max();
 static constexpr number vy_min_num = std::numeric_limits<number>::min();
+static constexpr integer vy_max_int = std::numeric_limits<integer>::max();
+static constexpr integer vy_min_int = std::numeric_limits<integer>::min();
 static constexpr number vy_inf = std::numeric_limits<number>::infinity();
 
 Value sqrt(VM& vm, int argc) {
@@ -224,12 +226,23 @@ Value comb(VM& vm, int argc) {
 	return VYSE_NUM(vy_comb(static_cast<int64_t>(n), static_cast<int64_t>(k)));
 }
 
+Value floor(VM& vm, int argc) {
+	Args args(vm, "math.floor", 1, argc);
+	return VYSE_NUM(std::floor(args.next_number()));
+}
+
+Value ceil(VM& vm, int argc) {
+	Args args(vm, "math.ceil", 1, argc);
+	return VYSE_NUM(std::ceil(args.next_number()));
+}
+
 static constexpr std::pair<const char*, NativeFn> funcs[] = {
 	{"sqrt", sqrt}, {"random", random}, {"randint", randint}, {"sin", sin},		{"cos", cos},
 	{"tan", tan},	{"asin", asin},		{"acos", acos},		  {"atan", atan},	{"math", atan},
 	{"atan", atan}, {"max", max},		{"min", min},		  {"isnan", isnan}, {"isinf", isinf},
 	{"log", log},	{"log10", log10},	{"exp", exp},		  {"todeg", todeg}, {"torad", torad},
-	{"tan2", tan2}, {"atan2", atan2},	{"pow", pow},		  {"comb", comb},
+	{"tan2", tan2}, {"atan2", atan2},	{"pow", pow},		  {"comb", comb},	{"floor", floor},
+	{"ceil", ceil},
 };
 
 VYSE_API void load_math(VM* vm, Table* module) {
@@ -244,6 +257,8 @@ VYSE_API void load_math(VM* vm, Table* module) {
 	math.add_field("e", VYSE_NUM(e));
 	math.add_field("max_value", VYSE_NUM(vy_max_num));
 	math.add_field("min_value", VYSE_NUM(vy_min_num));
+	math.add_field("max_int", VYSE_NUM(vy_max_int));
+	math.add_field("min_int", VYSE_NUM(vy_min_int));
 }
 
 } // namespace vyse::stdlib::math

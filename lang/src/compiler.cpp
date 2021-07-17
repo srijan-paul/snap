@@ -101,7 +101,7 @@ CodeBlock* Compiler::compile_func(bool is_arrowfn) {
 // - expression statement
 // - export statement
 void Compiler::toplevel() {
-	if (panic) recover();
+	if (has_error) goto_eof();
 	if (eof()) return;
 
 	const TT tt = peek.type;
@@ -871,7 +871,6 @@ void Compiler::variable(bool can_assign) {
 			std::string message = kt::format_str("Cannot assign to variable '{}' marked const.",
 												 token.raw(*m_source));
 			error_at_token(message.c_str(), token);
-			panic = false; // Don't send the compiler into error recovery mode.
 		}
 
 		/// Compile the RHS of the assignment, and any necessary arithmetic ops if its a compound
@@ -925,12 +924,10 @@ void Compiler::literal() {
 	emit_with_arg(Op::load_const, static_cast<u8>(index));
 }
 
-void Compiler::recover() {
+void Compiler::goto_eof() {
 	while (!eof()) {
 		advance();
-		if (check(TT::Semi)) break;
 	}
-	panic = false;
 }
 
 void Compiler::enter_block() noexcept {
@@ -1046,7 +1043,6 @@ void Compiler::error(std::string&& message) {
 	if (has_error) return;
 	m_vm->on_error(*m_vm, message);
 	has_error = true;
-	panic = true;
 }
 
 bool Compiler::ok() const noexcept {

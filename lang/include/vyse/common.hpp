@@ -21,6 +21,7 @@ using u16 = std::uint16_t;
 
 using std::size_t;
 using number = double;
+using integer = int64_t;
 
 #define VYSE_DEBUG
 

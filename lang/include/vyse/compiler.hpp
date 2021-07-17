@@ -150,11 +150,6 @@ class Compiler {
 
 	const std::string* m_source;
 	bool has_error = false;
-	// When true, the compiler goes into
-	// error recovery mode, trying to eat all
-	// tokens until some that might denote the
-	// beginning of a statement is encountered.
-	bool panic = false;
 	/// The scanner object that this compiler
 	/// draws tokens from. This is a pointer
 	/// because the nested child compilers will
@@ -195,10 +190,8 @@ class Compiler {
 	// Compile a function's body (if this is a child compiler).
 	CodeBlock* compile_func(bool is_arrowfn = false);
 
-	// keep eating tokens until a token
-	// that may indicate the end of a block or statement
-	// is found.
-	void recover();
+	/// @brief Jump straight to the end of input.
+	void goto_eof();
 
 	void toplevel();
 
@@ -252,12 +245,10 @@ class Compiler {
 	void literal();							   // NUM | STR | BOOL | nil
 	void func_expr(String* fname, bool is_method = false, bool is_arrow = false); // fn NAME? BLOCK
 
-	/// @brief compiles a table, assuming the opening '{' has been
-	/// consumed.
+	/// @brief compiles a table, assuming the opening '{' has been consumed.
 	void table();
 
-	/// @brief compiles an array, asuming the opening '[' has been
-	/// consumed.
+	/// @brief compiles an array, asuming the opening '[' has been consumed.
 	void array();
 
 	/// @brief Compiles a variable assignment RHS, assumes the

@@ -28,10 +28,12 @@ class String final : public Obj {
 	friend VM;
 
 	VYSE_NO_DEFAULT_CONSTRUCT(String);
+	VYSE_NO_COPY(String);
+	VYSE_NO_MOVE(String);
 
   public:
 	/// @param len length of the string.
-	explicit String(const char* chrs, size_t len) noexcept;
+	explicit String(const char* chrs, size_t len);
 
 	[[nodiscard]] inline constexpr const char* c_str() const noexcept {
 		return m_chars;
@@ -68,7 +70,7 @@ class String final : public Obj {
 	/// computing the hash, this uses a precomputed hash value of `hash`. IMPORTANT: It is the
 	/// caller's responsibilty to ensure that `hash` is the correct hash of the this string, having
 	/// the same value has `hash_cstring(chrs, len)`.
-	explicit String(const char* chrs, size_t len, size_t hash) noexcept;
+	explicit String(const char* chrs, size_t len, size_t hash);
 
 	/// @brief creates a string that owns the (heap allocated) characters `chrs`.
 	/// @param chrs Null terminated character buffer on the heap.

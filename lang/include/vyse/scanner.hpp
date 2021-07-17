@@ -6,16 +6,16 @@
 
 namespace vyse {
 
-class Scanner {
+class Scanner final {
 	VYSE_NO_COPY(Scanner);
 	VYSE_NO_MOVE(Scanner);
 	VYSE_NO_DEFAULT_CONSTRUCT(Scanner);
 
-public:
+  public:
 	Scanner(const std::string* src) noexcept : source{src} {};
 	Token next_token() noexcept;
 
-private:
+  private:
 	const std::string* source;
 	struct {
 		u32 line;
@@ -47,4 +47,4 @@ private:
 	Token make_string(char quote);
 	Token token_if_match(char c, TokenType then, TokenType other);
 };
-} // namespace vyse 
+} // namespace vyse

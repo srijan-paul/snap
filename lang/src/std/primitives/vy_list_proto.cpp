@@ -35,7 +35,7 @@ Value foreach (VM& vm, int argc) {
 Value make(VM& vm, int argc) {
 	Args args(vm, "List.make", 1, argc);
 	std::size_t size = args.next_number();
-	args.check(size > 0, "list size must be positive."); 
+	args.check(size > 0, "list size must be positive.");
 	return VYSE_OBJECT(&vm.make<List>(size));
 }
 
@@ -84,7 +84,8 @@ Value slice(VM& vm, int argc) {
 
 	List& slice = vm.make<List>();
 	size_t start = from, limit = to;
-	for (size_t i = start; i < limit; ++i) {
+
+	for (size_t i = start; i <= limit; ++i) {
 		slice.append(list[i]);
 	}
 
