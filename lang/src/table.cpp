@@ -69,8 +69,6 @@ bool Table::set(String& key, Value value) {
 	return set(VYSE_OBJECT(&key), value);
 }
 
-/// TODO: handle the case for [set] where the [key] is a member of it's
-/// prototype.
 bool Table::set(Value key, Value value) {
 	VYSE_ASSERT(!VYSE_IS_NIL(key), "Table key is nil.");
 

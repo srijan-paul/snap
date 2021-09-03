@@ -15,8 +15,7 @@ String::String(const char* chrs, std::size_t len) : Obj(ObjType::string), m_leng
 	m_chars = buf;
 }
 
-String::String(const char* chrs, size_t len, size_t hash) 
-	: Obj{OT::string}, m_length{len} {
+String::String(const char* chrs, size_t len, size_t hash) : Obj{OT::string}, m_length{len} {
 	VYSE_ASSERT(hash == hash_cstring(chrs, len), "Incorrect cstring hash.");
 	char* buf = new char[len + 1];
 	std::memcpy(buf, chrs, len);

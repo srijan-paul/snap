@@ -1,5 +1,5 @@
 fn bf(src, input) {
-    const memory = List.make(30)
+    const memory = List.make(30000)
     memory:fill(0)
     let mPtr  = 0
     let inPtr = 0
@@ -12,8 +12,14 @@ fn bf(src, input) {
         const c = src[ip]
         if        c == '+' {
             memory[mPtr] += 1
+            if mPtr >= #memory {
+                assert(false, "Heap overrun")
+            }
         } else if c == '-' {
             memory[mPtr] -= 1
+            if mPtr < 0 {
+                assert(false, "Heap underrun")
+            }
         } else if c == '.' {
             out = out .. String.from_code(memory[mPtr])
         } else if c == 'x' {
@@ -43,8 +49,6 @@ fn bf(src, input) {
            }
         } else if c == ']' {
             ip = stack:pop() - 1
-        } else {
-            assert(false, "Unsupported operation")
         }
         ip += 1
     }
@@ -52,4 +56,4 @@ fn bf(src, input) {
     print(out)
 }
 
-bf(input("Enter a brainfuck program:\n"))
+bf(input("Enter a brainf*** program"), input("Enter input (if any):"))

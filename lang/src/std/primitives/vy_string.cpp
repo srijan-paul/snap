@@ -4,9 +4,8 @@
 #include <cstdlib>
 #include <std/lib_util.hpp>
 #include <std/primitives/vy_string.hpp>
-#include <vm.hpp>
 #include <util/args.hpp>
-
+#include <vm.hpp>
 
 #define CHECK_ARG_TYPE(n, type)                                                                    \
 	if (!check_arg_type(vm, n, type, fname)) return VYSE_NIL;
@@ -132,8 +131,7 @@ Value code_at(VM& vm, int argc) {
 	return VYSE_NUM(c);
 }
 
-/// @brief convert a vyse string to a double.
-/// returns 'nan' if it can't be parsed as a double.
+/// @brief convert a vyse string to a double. Returns 'nan' if it can't be parsed as a double.
 static number str2num_base10(const String* str) {
 	const char* cstr = str->c_str();
 	bool seen_period = false;
@@ -168,13 +166,8 @@ Value to_number(VM& vm, int argc) {
 
 Value replace(VM& vm, int argc) {
 	static constexpr const char* fname = "replace";
-	if (argc != 3) {
-		cfn_error(vm, fname, "expected 3 arguments (string, to_replace, replace_with).");
-		return VYSE_NIL;
-	}
 
 	Args args(vm, fname, 3, argc);
-
 	const String& src = args.next<String>();
 	const String& to_replace = args.next<String>();
 	const String& replace_with = args.next<String>();
@@ -220,14 +213,9 @@ Value replace(VM& vm, int argc) {
 /// @brief create a single character string from it's char code.
 Value from_code(VM& vm, int argc) {
 	constexpr const char* fname = "String.from_code";
-	if (argc != 1) {
-		cfn_error(vm, fname, "Expected exactly 1 argument");
-		return VYSE_NIL;
-	}
+	Args args(vm, fname, 1, argc);
 
-	CHECK_ARG_TYPE(0, ValueType::Number);
-	s64 ascii = VYSE_AS_NUM(vm.get_arg(0));
-
+	s64 ascii = args.next_number();
 	if (ascii < 0 or ascii > 255) {
 		cfn_error(vm, fname, "ASCII char code must be between 0 and 255");
 		return VYSE_NIL;

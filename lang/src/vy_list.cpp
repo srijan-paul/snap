@@ -35,7 +35,6 @@ Value List::pop() noexcept {
 	return VYSE_NIL;
 }
 
-
 void List::trace(GC& gc) noexcept {
 	for (size_t i = 0; i < m_num_entries; ++i) {
 		gc.mark_value(m_values[i]);

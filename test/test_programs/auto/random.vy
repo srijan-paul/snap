@@ -31,6 +31,7 @@ fn is_palindrome(str) {
 	}
 	return true
 }
+
 assert(is_palindrome("racecar"))
 assert(!is_palindrome("xewd"))
 
@@ -52,7 +53,6 @@ fn newton_sqrt(x) {
 
 const math = import('math')
 assert(math.floor(newton_sqrt(100)) == 10)
-
 
 fn recursive_sum(arr) {
 	if #arr == 0 {

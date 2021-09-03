@@ -13,7 +13,6 @@
 #include <vm.hpp>
 #include <vy_list.hpp>
 
-
 #if defined(VYSE_DEBUG_RUNTIME) || defined(VYSE_DEBUG_DISASSEMBLY)
 #include <cstdio>
 #include <debug.hpp>
@@ -686,7 +685,7 @@ void VM::set_global(const char* name, Value value) {
 #undef POP
 
 ExitCode VM::interpret() {
-	bool ok = init();
+	const bool ok = init();
 	if (!ok) {
 		m_has_error = true;
 		return ExitCode::CompileError;
@@ -700,7 +699,7 @@ bool VM::init() {
 		return false;
 	}
 
-	Closure* script = compile(*m_source);
+	Closure* const script = compile(*m_source);
 	if (script == nullptr) return false;
 	invoke_script(script);
 
@@ -716,7 +715,7 @@ Closure* VM::compile(const std::string& src) {
 	Compiler compiler{this, &src};
 	m_compiler = &compiler;
 
-	CodeBlock* code = m_compiler->compile();
+	CodeBlock* const code = m_compiler->compile();
 
 	if (!compiler.ok()) {
 		m_compiler = nullptr;
@@ -725,8 +724,8 @@ Closure* VM::compile(const std::string& src) {
 
 	// There are no reachable references to [code] when we allocate `script`. Since allocating a
 	// function can trigger a garbage collection cycle, we protect the code block.
-	GCLock lock = gc_lock(code);
-	Closure* closure = &make<Closure>(code, 0);
+	GCLock const lock = gc_lock(code);
+	Closure* const closure = &make<Closure>(code, 0);
 
 	m_compiler = nullptr;
 	return closure;
@@ -753,7 +752,7 @@ ExitCode VM::runcode(const std::string& code) {
 }
 
 void VM::add_stdlib_object(const char* name, Obj* o) {
-	Value vglobal = VYSE_OBJECT(o);
+	Value const vglobal = VYSE_OBJECT(o);
 	set_global(name, vglobal);
 }
 
@@ -814,7 +813,7 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 	// We've reached a node in the list where the previous node is above the slot we wanted to
 	// capture, but the current node is deeper. Meaning `slot` points to a new value that hasn't
 	// been captured before. So we add it between `prev` and `current`.
-	Upvalue* upval = &make<Upvalue>(slot);
+	Upvalue* const upval = &make<Upvalue>(slot);
 	upval->next_upval = current;
 
 	// prev is null when there are no upvalues.
@@ -829,7 +828,7 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 
 void VM::close_upvalues_upto(Value* last) {
 	while (m_open_upvals != nullptr and m_open_upvals->m_value >= last) {
-		Upvalue* current = m_open_upvals;
+		Upvalue* const current = m_open_upvals;
 		// these two lines are the last rites of an upvalue, closing it.
 		current->closed = *current->m_value;
 		current->m_value = &current->closed;
@@ -842,12 +841,12 @@ bool VM::call(int argc) {
 				"Invalid stack state or incorrect arg count.");
 
 	const Value& value = m_stack.peek(argc + 1);
-	bool ok = op_call(value, argc);
+	const bool ok = op_call(value, argc);
 
 	// If the called object was a CClosure then execution has already finished and no need to call
 	// run() from here.
 	if (VYSE_IS_CCLOSURE(value)) return ok;
-	ExitCode ec = run();
+	const ExitCode ec = run();
 	return ec == ExitCode::Success;
 }
 
@@ -871,7 +870,7 @@ bool VM::op_call(Value value, u8 argc) {
 	}
 
 	// not a function, so we get it's `__call` field and attempt to call it
-	bool ok = call_func_overload(value, argc);
+	const bool ok = call_func_overload(value, argc);
 	if (!ok) ERROR("Attempt to call a {} value.", VYSE_TYPE_CSTR(value));
 	return ok;
 }
@@ -930,13 +929,12 @@ void VM::pop_callframe() noexcept {
 }
 
 bool VM::call_closure(Closure* func, int num_args) {
-	int num_params = func->m_codeblock->param_count();
+	const int num_params = func->m_codeblock->param_count();
 
 	// make sure there is enough room in the stack for this function call.
 	ensure_slots(func->m_codeblock->stack_size());
 
 	/// extra arguments are ignored and arguments that aren't provded are replaced with nil.
-
 	if (num_args < num_params) {
 		// some parameters are missing
 		while (num_args != num_params) {
@@ -978,8 +976,8 @@ bool VM::call_cclosure(CClosure* cclosure, int argc) {
 		ret = c_func(*this, argc);
 	} catch (const util::CArityException& ex) {
 		// incorrect number of arguments.
-		ERROR("In call to '{}': Expected {} arguments. Got {}.", ex.cfunc_name,
-			  ex.num_params, argc);
+		ERROR("In call to '{}': Expected {} arguments. Got {}.", ex.cfunc_name, ex.num_params,
+			  argc);
 		ret = VYSE_NIL;
 	} catch (const util::CTypeException& ex) {
 		ERROR("Bad argument #{} to '{}' expected {}, got {}.", ex.argn, ex.func_name,
@@ -1262,7 +1260,7 @@ void default_error_fn([[maybe_unused]] const VM& vm, const std::string& err_msg)
 	fprintf(stderr, "%s\n", err_msg.c_str());
 }
 
-char* default_readline([[maybe_unused]] const VM& vm) {
+char* default_readline(const VM&) {
 	size_t buf_size = 8;
 	char* buf = (char*)malloc(sizeof(char) * buf_size);
 
@@ -1279,19 +1277,6 @@ char* default_readline([[maybe_unused]] const VM& vm) {
 	buf = (char*)realloc(buf, sizeof(char) * (nchars + 1));
 	buf[nchars] = '\0';
 	return buf;
-}
-
-Value VM::import_module(String& modname) {
-	return VYSE_NIL;
-	std::string code = find_module(*this, modname.c_str());
-	Closure* func = compile(code);
-	if (func == nullptr) return VYSE_NIL;
-
-	m_stack.push(VYSE_OBJECT(func));
-	bool ok = call(0);
-
-	if (!ok) return VYSE_NIL;
-	return m_stack.pop();
 }
 
 std::string default_find_module(VM&, const char*) {

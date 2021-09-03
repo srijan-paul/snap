@@ -154,19 +154,14 @@ void Compiler::if_stmt() {
 	advance(); // consume 'if'
 	expr();	   // parse condition.
 
-	// If the condition is false, we simply pop
-	// it and jump to the end of the if statement.
-	// This puts as after the closing '}', which
-	// might be an 'else' block sometimes.
+	// If the condition is false, we simply pop it and jump to the end of the if statement.
+	// This puts as after the closing '}', which might be an 'else' block sometimes.
 	size_t jmp = emit_jump(Op::pop_jmp_if_false);
 	toplevel();
 
 	if (match(TT::Else)) {
-		// If the 'if' block executed
-		// then the 'else' shouldn't run, to
-		// do this, we jump straight to the end
-		// of the 'else' block after evaluating
-		// the 'if'.
+		// If the 'if' block executed then the 'else' shouldn't run, to do this, we jump straight to
+		// the end of the 'else' block after evaluating the 'if'.
 		size_t else_jmp = emit_jump(Op::jmp);
 		patch_jump(jmp);
 		toplevel();
@@ -196,8 +191,8 @@ void Compiler::exit_loop(Op op_loop) {
 	patch_backwards_jump(back_jmp, m_loop->start);
 
 	for (int i = m_loop->start; i < n_ops;) {
-		// no_op instructions are 'placeholders' for
-		// jumps resulting from a break or continue statement.
+		// no_op instructions are 'placeholders' for jumps resulting from a break or continue
+		// statement.
 		if (THIS_BLOCK.code[i] == Op::no_op) {
 
 			// If it's a break statement then patch it to the
@@ -213,11 +208,10 @@ void Compiler::exit_loop(Op op_loop) {
 			}
 		}
 
-		// It is crucial that we increment the counter by the
-		// current instruction's arity (number of operands needed)
-		// instead of simply doing `i++`. If we do `i++` then we'd
-		// be reading operands to other instructions like `load_const`
-		// as bytecode instructions and misinterpreting the values.
+		// It is crucial that we increment the counter by the current instruction's arity (number of
+		// operands needed) instead of simply doing `i++`. If we do `i++` then we'd be reading
+		// operands to other instructions like `load_const` as bytecode instructions and
+		// misinterpreting the values.
 		i += op_arity(i) + 1;
 	}
 
@@ -241,22 +235,16 @@ void Compiler::break_stmt() {
 		return;
 	}
 
-	/// remove all the local variables inside the
-	/// loop's body before jumping out of it.
+	/// Remove all the local variables inside the loop's body before jumping out of it.
 	discard_loop_locals(m_loop->scope_depth);
 
-	// A 'break' statement's jump instruction is
-	// characterized by a `no_op` instruction. So when
-	// the `Compiler::loop_exit` method is patching old loops, it
-	// doesn't get confused between 'jmp' instructions from
-	// break statements and 'jmp' instructions from other
-	// statements like "if".
+	// A 'break' statement's jump instruction is characterized by a `no_op` instruction. So when the
+	// `Compiler::loop_exit` method is patching old loops, it doesn't get confused between 'jmp'
+	// instructions from break statements and 'jmp' instructions from other statements like "if".
 	const int jmp = emit_jump(Op::no_op);
 
-	// A no_op instruction followed by a 0x00
-	// is recognized as a 'break' statement.
-	// Later the 0x00 and the following byte are
-	// changed into the actual jump offset.
+	// A no_op instruction followed by a 0x00 is recognized as a 'break' statement.
+	// Later the 0x00 and the following byte are changed into the actual jump offset.
 	THIS_BLOCK.code[jmp] = Op(0x00);
 }
 
@@ -294,9 +282,8 @@ void Compiler::for_stmt() {
 
 	const Token name = token;
 
-	// Enter the scope for the for loop
-	// Note that the loop iterator variable belongs
-	// inside this block.
+	// Enter the scope for the for loop.
+	// Note that the loop iterator variable belongs inside this block.
 	enter_block();
 
 	new_variable("<for-start>", 11);
@@ -353,7 +340,7 @@ void Compiler::func_expr(String* fname, bool is_method, bool is_arrow) {
 	GCLock lock = m_vm->gc_lock(fname);
 	Compiler compiler{m_vm, this, fname};
 
-	// opening parenthesis is optional for arrow functions
+	// parentheses are optional for arrow functions
 	bool open_paren;
 	if (is_arrow) {
 		open_paren = compiler.match(TT::LParen);
@@ -1052,7 +1039,7 @@ bool Compiler::ok() const noexcept {
 u32 Compiler::emit_string(const Token& token) {
 	const u32 length = token.length() - 2; // minus the quotes
 
-	// the actual length of the string may be different from what we see in the source code because
+	// The actual length of the string may be different from what we see in the source code because
 	// of escape characters.
 
 	// +1 to skip the openening quote.
