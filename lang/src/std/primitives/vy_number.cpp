@@ -1,6 +1,6 @@
+#include <std/lib_util.hpp>
 #include <std/primitives/vy_number.hpp>
 #include <vm.hpp>
-#include "../lib_util.hpp"
 
 namespace vyse::stdlib::primitives {
 
@@ -25,7 +25,7 @@ Value to_str(VM& vm, int argc) {
 	return VYSE_OBJECT(str);
 }
 
-void load_num_proto(VM &vm) {
+void load_num_proto(VM& vm) {
 	Table& num_proto = *vm.prototypes.number;
 	add_libfn(vm, num_proto, "to_string", to_str);
 }

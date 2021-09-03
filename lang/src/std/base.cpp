@@ -1,13 +1,17 @@
 #include "../str_format.hpp"
-#include "lib_util.hpp"
 #include "value.hpp"
+#include "vy_list.hpp"
+#include <loadlib.hpp>
 #include <std/base.hpp>
+#include <std/lib_util.hpp>
+#include <util/args.hpp>
 #include <vm.hpp>
 
-using namespace vyse::stdlib::util;
+using namespace vyse::util;
+using namespace vyse;
 
 /// TODO: benchmark and optimize this.
-vyse::Value vyse::stdlib::print(VM& vm, int argc) {
+Value vyse::stdlib::print(VM& vm, int argc) {
 	std::string res = "";
 	for (int i = 0; i < argc; ++i) {
 		res += value_to_string(vm.get_arg(i)) + "  ";
@@ -20,11 +24,12 @@ vyse::Value vyse::stdlib::print(VM& vm, int argc) {
 	return VYSE_NIL;
 }
 
-vyse::Value vyse::stdlib::input(VM& vm, int argc) {
+Value stdlib::input(VM& vm, int argc) {
 	for (int i = 0; i < argc; ++i) {
 		const Value& v = vm.get_arg(i);
-		std::string s = value_to_string(v);
-		printf("%s\n", s.c_str());
+		std::string str = value_to_string(v);
+		String& vy_str = vm.make_string(str.c_str(), str.size());
+		vm.print(vm, &vy_str);
 	}
 
 	if (!vm.read_line) return VYSE_NIL;
@@ -33,33 +38,28 @@ vyse::Value vyse::stdlib::input(VM& vm, int argc) {
 	return VYSE_OBJECT(string);
 }
 
-vyse::Value vyse::stdlib::setproto(VM& vm, int argc) {
-	static const char* func_name = "setproto";
+Value stdlib::setproto(VM& vm, int argc) {
+	static const char* fname = "setproto";
+	Args args(vm, fname, 2, argc);
 
-	if (argc != 2) {
-		vm.runtime_error("'setproto' builtin expects exactly 2 arguments.");
-		return VYSE_NIL;
-	}
+	Value vtable = args.next_arg();
+	Value vproto = args.next_arg();
 
-	Value& vtable = vm.get_arg(0);
-	Value& vproto = vm.get_arg(1);
+	args.check(
+		VYSE_IS_OBJECT(vtable),
+		kt::format_str("expected table as 1st argument, got {}", VYSE_TYPE_CSTR(vtable)).c_str());
 
-	if (!VYSE_IS_TABLE(vtable)) {
-		bad_arg_error(vm, func_name, 1, "table", VYSE_TYPE_CSTR(vtable));
-		return VYSE_NIL;
-	}
+	args.check(
+		VYSE_IS_OBJECT(vtable),
+		kt::format_str("expected table as 2nd argument, got {}", VYSE_TYPE_CSTR(vtable)).c_str());
 
-	if (!VYSE_IS_TABLE(vproto)) {
-		bad_arg_error(vm, func_name, 2, "table", VYSE_TYPE_CSTR(vproto));
-		return VYSE_NIL;
-	}
-
-	// Check for cyclic prototypes.
 	Table* table = VYSE_AS_TABLE(vtable);
 	const Table* prototype = VYSE_AS_TABLE(vproto);
+
+	// Check for cyclic prototypes.
 	while (prototype != nullptr) {
 		if (prototype == table) {
-			vm.runtime_error("cyclic prototype chains are not allowed.");
+			cfn_error(vm, "setproto", "cyclic prototype chains are not allowed.");
 			return VYSE_NIL;
 		}
 		prototype = prototype->m_proto_table;
@@ -70,23 +70,14 @@ vyse::Value vyse::stdlib::setproto(VM& vm, int argc) {
 }
 
 vyse::Value vyse::stdlib::getproto(VM& vm, int argc) {
-	static constexpr const char* fname = "assert";
+	Args args(vm, "getproto", 1, argc);
 
-	if (argc != 1) {
-		cfn_error(vm, fname, "Expected at least 1 argument of type table.");
-		return VYSE_NIL;
-	}
-
-	if (!check_arg_type(vm, 0, ObjType::table, fname)) {
-		return VYSE_NIL;
-	}
-
-	const Table* table = VYSE_AS_TABLE(vm.get_arg(0));
-	if (table->m_proto_table == nullptr) return VYSE_NIL;
-	return VYSE_OBJECT(table->m_proto_table);
+	const Table& table = args.next<Table>();
+	if (table.m_proto_table == nullptr) return VYSE_NIL;
+	return VYSE_OBJECT(table.m_proto_table);
 }
 
-vyse::Value vyse::stdlib::assert_(VM& vm, int argc) {
+Value stdlib::assert_(VM& vm, int argc) {
 	static constexpr const char* fname = "assert";
 
 	if (argc < 1 or argc > 2) {
@@ -104,5 +95,46 @@ vyse::Value vyse::stdlib::assert_(VM& vm, int argc) {
 	}
 
 	vm.runtime_error(message);
+	return VYSE_NIL;
+}
+
+Value stdlib::import(VM& vm, int argc) {
+	static constexpr const char* fname = "import";
+	Args args(vm, fname, 1, argc);
+
+	Value vloaders = vm.get_global(VMLoadersName);
+	args.check(VYSE_IS_LIST(vloaders), "Global '__loaders__' list not found");
+
+	Value mod_name = args.next_arg();
+	args.check(VYSE_IS_STRING(mod_name), "Expected string as 1st argument.");
+
+	const List& loaders = *VYSE_AS_LIST(vloaders);
+	for (uint i = 0; i < loaders.length(); ++i) {
+		Value loader = loaders[i];
+		/// Skip any non-callable loaders
+		/// TODO: Objects with an overloaded '__call' should be used as loaders.
+		if (not(VYSE_IS_CLOSURE(loader) or VYSE_IS_CCLOSURE(loader))) continue;
+
+		vm.m_stack.push(loader);
+		vm.m_stack.push(mod_name);
+
+		bool ok = vm.call(1);
+		if (not ok) return VYSE_NIL;
+
+		Value result = vm.m_stack.pop();
+
+		if (not VYSE_IS_NIL(result)) {
+			Value module_cache = vm.get_global(ModuleCacheName);
+			if (VYSE_IS_TABLE(module_cache)) {
+				VYSE_AS_TABLE(module_cache)->set(mod_name, result);
+			}
+
+			return result;
+		}
+	}
+
+	cfn_error(vm, fname,
+			  kt::format_str("Cannot find module '{}'", VYSE_AS_STRING(mod_name)->c_str()));
+
 	return VYSE_NIL;
 }

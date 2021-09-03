@@ -14,20 +14,22 @@ enum class TokenType {
 
 	Id,
 	Error,
+	ErrStringTerminate,
 	Eof,
 
 	// Operators
-	Plus,		// +
-	Concat, // ..
-	Minus,	// -
-	Mult,		// *
-	Div,		// /
-	Mod,		// %
-	Exp,		// **
-	Eq,			// =
-	Bang,		// !
-	Dot,		// .
-	Len,		// #
+	Plus,	   // +
+	Concat,	   // ..
+	Minus,	   // -
+	Mult,	   // *
+	Div,	   // /
+	Mod,	   // %
+	Exp,	   // **
+	Eq,		   // =
+	Bang,	   // !
+	Dot,	   // .
+	DotDotDot, // ...
+	Len,	   // #
 
 	// NOTE: It is important that these compound
 	// assignment enums are stay in this order.
@@ -43,8 +45,8 @@ enum class TokenType {
 
 	// compare
 
-	Gt,		// >
-	Lt,		// <
+	Gt,	  // >
+	Lt,	  // <
 	GtEq, // >=
 	LtEq, // <=
 
@@ -55,30 +57,30 @@ enum class TokenType {
 
 	// Equality
 
-	EqEq,		// ==
+	EqEq,	// ==
 	BangEq, // !=
 
 	// bitwise
 
-	BitAnd,		 // &
-	BitOr,		 // |
+	BitAnd,	   // &
+	BitOr,	   // |
 	BitLShift, // >>
 	BitRShift, // <<
-	BitXor,		 // ^
-	BitNot,		 // ~
+	BitXor,	   // ^
+	BitNot,	   // ~
 
 	Append, // <<<
 
 	// Punctuation
-	Semi,				// ;
-	Colon,			// :
-	Comma,			// ,
-	LParen,			// (
-	RParen,			// )
+	Semi,		// ;
+	Colon,		// :
+	Comma,		// ,
+	LParen,		// (
+	RParen,		// )
 	LCurlBrace, // {
 	RCurlBrace, // }
-	LSqBrace,		// [
-	RSqBrace,		// ]
+	LSqBrace,	// [
+	RSqBrace,	// ]
 
 	Arrow, // ->
 
@@ -121,12 +123,13 @@ struct Token {
 
 	bool is_unary_op() const noexcept {
 		return type == TokenType::BitNot or type == TokenType::Len or type == TokenType::Bang or
-					 type == TokenType::Minus;
+			   type == TokenType::Minus;
 	}
 
 	bool is_literal() const noexcept {
-		return type == TokenType::Integer or type == TokenType::String or type == TokenType::Float or
-					 type == TokenType::False or type == TokenType::True or type == TokenType::Nil;
+		return type == TokenType::Integer or type == TokenType::String or
+			   type == TokenType::Float or type == TokenType::False or type == TokenType::True or
+			   type == TokenType::Nil;
 	}
 };
 

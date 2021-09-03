@@ -196,13 +196,13 @@ You can either run all benchmarks, or run specific benchmarks.
 To run all benchmarks, enter the following into your shell:
 ```sh
 cd benchmarks
-py run.py
+python3 run.py
 ```
 
 To run, a specific benchmark, use the `--bench` option:
 
 ```sh
-py run.py --bench=fib
+python3 run.py --bench=fib
 ```
 
 # Tests
@@ -231,6 +231,7 @@ Currently, syntax highlighting and code completion snippets are supported on the
 
 # Development
 
-If you're looking to fork contribute to vyse, It is recommended to have clang-format for formatting and clangd language server for your text editor. On VSCode, the `C/C++` extension can be used to debug the executable. Alternatively, you can use GDC/LLDB or other debuggers to your liking.
+If you're looking to contribute to vyse, It is recommended to have clang-format for formatting and clangd language server for your text editor. On VSCode, the `C/C++` extension can be used to debug the executable. Alternatively, you can use GDC/LLDB or other debuggers to your liking.
 
 All the source and header files for vyse are present in the `lang` directory in the project's root folder.
+The primitive CLI module is present under `cli/`.

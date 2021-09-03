@@ -55,20 +55,18 @@ Vyse supports the following operators, from highest to lowest precedence:
 ```
 
 ## Variables
-
 Variables behave very similar to javascript. Can be declared with `let` and `const`,
 and can hold values of any type.
 
 ```lua
-let mynum = 123; -- mutable declaration is done with 'let'
-mynum = 456; -- assignment with '='
+let mynum = 123;        --  mutable declaration is done with 'let'
+mynum = 456;            -- assignment with '='
 const my_other_num = 1; -- variables declared with `const` cannot be reassigned to.
 ```
 
 ## Control Flow.
-
 Vyse supports the following control flow statements:
-if-else if-else, for, while, do..while.
+if-else if-else, for, while.
 
 If statements are very straightforward:
 
@@ -105,7 +103,7 @@ specify a third parameter:
 
 ```lua
 for i = 1, 10, 2 {
-  print("i = " .. i)
+  print("i = ", i)
 }
 ```
 
@@ -133,7 +131,6 @@ for item in my_array {
 ```
 
 ## Functions
-
 Functions are declared using the `fn` keyword and like most languages,
 called using the `()` operator.
 
@@ -181,8 +178,7 @@ Output: `Hello, Bob. Good morning!`
 Functions can be called with less or more number of arguments
 than mentioned in the definition.
 
-1. When called with fewer arguments, the missing arguments are assumed to be
-   `nil`.
+1. When called with fewer arguments, the missing arguments are assumed to be `nil`.
 2. When called with more arguments, the extra parameters are simply ignored.
 
 For example:
@@ -198,13 +194,12 @@ log(5, 10); -- 5
 ```
 
 ## Rest parameter.
-
 Functions can optionally contain a `rest` parameter, which can stand for any
 number of parameters. Note that the `rest` parameter must be the last in
 parameter list.
 
 ```rs
-fn log(...xs) {
+fn log(xs...) {
   for x in xs {
     print(x)
   }
@@ -262,16 +257,16 @@ For any method bound to an object, there should always be an extra first
 parameter. By convention, the first parameter is called `self`. But you may
 choose to call it by any name.
 
-```js
+```lua
 const Cat = {
   name: "Tom",
-  sound: "Meow"
+  sound: "Meow",
   meow() {
     print(self.sound .. "!")
   }
 }
 
-Cat:meow() // Meow!
+Cat:meow() -- Meow!
 ```
 
 Note that calling a method with the `:` operator simply means the first
@@ -279,13 +274,12 @@ parmeter passed to the function is the caller itself. In this case, it is
 exactly identical to saying `Cat.meow(Cat)`.
 
 ## Parent objects.
-
 An object can have parent objects, when a certain property is not found
 in an object itself, the parent is queried for the property.
 
 ```lua
 const t_parent = { a: 1, b: 2 };
-const t_child = { a: 3 };
+const t_child  = { a: 3 };
 
 print(t_child.a, t_child.b); -- 3, nil
 setproto(t_child, t_parent); -- set t_child's prototype to t_parent
@@ -296,7 +290,6 @@ This design is inspired by Lua and can be used to simulate some OOP features,
 like method overriding.
 
 ## Operator overloads
-
 Many vyse operators can be overloaded to perform different actions.
 The overloading methods must exist somewhere up in the parent object hierarchy.
 Eg -
@@ -317,14 +310,14 @@ let c = a + b
 
 Upon running the above code, we get:
 ```
-ERROR: cannot use operator '+' on operands of type 'table' and 'table'.
+ERROR: Bad operand types for operator '+': 'table' and 'table'.
 ```
 
 The above code will throw an error since we can't add two tables.
-To remedy the error, we introduce a metamethod that overloads the `+` operator:
+To remedy the error, we introduce a magic method that overloads the `+` operator:
 
 ```rs
-fn Point.__add(a, b) {
+Point.__add = fn (a, b) {
   return Point:init(a.x + b.x, a.y + b.y);
 }
 
@@ -340,7 +333,6 @@ and the method names is listed below for reference:
 | Operator   | Method     | Arity |
 | :--------- | :--------- | :---- |
 | +          | \_\_add    | 2     |
-| + (unary)  | \_\_unp    | 1     |
 | -          | \_\_sub    | 2     |
 | - (unary)  | \_\_unm    | 1     |
 | /          | \_\_div    | 2     |
@@ -357,9 +349,10 @@ and the method names is listed below for reference:
 | <<         | \_\_bsl    | 2     |
 | >>         | \_\_bsr    | 2     |
 | ~          | \_\_bnot   | 1     |
-| .          | \_\_indx   | 2     |
+| .          | \_\_get    | 2     |
+| []         | \_\_index  | 2     |
 | ==         | \_\_eq     | 2     |
 | !=         | \_\_neq    | 2     |
 | ..         | \_\_concat | 2     |
 | ()         | \_\_call   | any   |
-| (tostring) | \_\_tostr  | 1     |
+| (tostring) | \_\_str    | 1     |

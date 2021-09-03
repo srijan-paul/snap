@@ -25,3 +25,7 @@ for i = 0, #arr2 {
     k += 1
   }
 }
+
+let xs = [1, 2, 3, 4]
+xs[0] += 1
+assert(xs[0] == 2, "'+=' on list indices")

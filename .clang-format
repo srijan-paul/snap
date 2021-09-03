@@ -1,20 +1,20 @@
 BasedOnStyle: LLVM
-IndentWidth: 2 
-TabWidth: 2
+IndentWidth: 4
+TabWidth: 4
 UseTab: Always
 
 ---
 Language: Cpp
 PointerAlignment: Left
-AlignConsecutiveMacros: true
 AlignEscapedNewlines: Right
 AlignOperands: true
 AlignTrailingComments: true
-AlignConsecutiveAssignments: false 
-AllowShortFunctionsOnASingleLine: None
+AlignConsecutiveAssignments: false
+AllowShortFunctionsOnASingleLine: Empty
 AllowShortLoopsOnASingleLine: true
 BreakBeforeBraces: Attach
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortIfStatementsOnASingleLine: true
 AlwaysBreakTemplateDeclarations: Yes
 ColumnLimit: 100
+

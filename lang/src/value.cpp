@@ -4,8 +4,6 @@
 #include <vm.hpp>
 #include <vy_list.hpp>
 
-#define CONST_CAST(typ, val) (static_cast<const typ*>(val))
-
 namespace vyse {
 
 using VT = ValueType;
@@ -28,7 +26,7 @@ char* num_to_cstring(number num) {
 	if (is_whole) {
 		bufsize = snprintf(nullptr, 0, "%lld", s64(num));
 	} else {
-		bufsize = snprintf(nullptr, 0, "%f", num);
+		bufsize = snprintf(nullptr, 0, "%.7g", num);
 	}
 
 	char* buf = new char[bufsize + 1];
@@ -37,7 +35,7 @@ char* num_to_cstring(number num) {
 	if (is_whole) {
 		res = sprintf(buf, "%lld", s64(num));
 	} else {
-		res = sprintf(buf, "%f", num);
+		res = sprintf(buf, "%.7g", num);
 	}
 
 	VYSE_ASSERT(res > 0, "sprintf failed!");
@@ -47,8 +45,9 @@ char* num_to_cstring(number num) {
 char* value_to_cstring(Value v) {
 	switch (VYSE_GET_TT(v)) {
 	case VT::Number: return num_to_cstring(VYSE_AS_NUM(v));
-	default: VYSE_UNREACHABLE();
+	default: VYSE_UNREACHABLE(); break;
 	}
+	return nullptr;
 }
 
 std::string value_to_string(Value v) {
@@ -88,8 +87,9 @@ std::string value_to_string(Value v) {
 		default: return "[ vyse object ]";
 		}
 	}
-	default: VYSE_ERROR("Impossible value tag.");
+	default: VYSE_ERROR("Impossible value tag."); break;
 	}
+	return "<unknown>";
 }
 
 const char* vtype_to_string(VT tag) {

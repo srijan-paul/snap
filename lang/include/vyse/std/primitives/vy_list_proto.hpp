@@ -13,5 +13,6 @@ Value foreach (VM&, int);
 Value slice(VM&, int);
 Value map(VM&, int);
 Value reduce(VM&, int);
+Value filter(VM&, int);
 
 } // namespace vyse::stdlib::primitives

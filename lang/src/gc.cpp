@@ -1,17 +1,18 @@
+#include "gc.hpp"
 #include "value.hpp"
 #include <vm.hpp>
 
-namespace vyse {
+#ifdef VYSE_LOG_GC
+#define GC_LOG(...) printf(__VA_ARGS__)
+#else
+#define GC_LOG(...) // empty
+#endif
 
-void GC::mark_value(Value& v) {
-	if (VYSE_IS_OBJECT(v)) mark_object(VYSE_AS_OBJECT(v));
-}
+namespace vyse {
 
 void GC::mark_object(Obj* o) {
 	if (o == nullptr or o->marked) return;
-#ifdef VYSE_LOG_GC
-	printf("marked: %p [%s] \n", (void*)o, value_to_string(VYSE_OBJECT(o)).c_str());
-#endif
+	GC_LOG("marked: %p [%s] \n", (void*)o, value_to_string(VYSE_OBJECT(o)).c_str());
 	o->marked = true;
 	m_gray_objects.push(o);
 }
@@ -27,11 +28,10 @@ void GC::mark_compiler_roots() {
 }
 
 void GC::mark() {
+	assert(m_vm != nullptr);
 
-#ifdef VYSE_LOG_GC
-	printf("-- [GC start] --\n");
-	printf("-- Mark --\n");
-#endif
+	GC_LOG("-- [GC start] --\n");
+	GC_LOG("-- Mark --\n");
 
 	// The following roots are known atm ->
 	// 1. The VM's value stack.
@@ -57,7 +57,7 @@ void GC::mark() {
 		mark_object(o);
 	}
 
-	for (auto entry : m_vm->m_global_vars) {
+	for (auto& entry : m_vm->m_global_vars) {
 		mark_object(entry.first);
 		mark_value(entry.second);
 	}
@@ -71,34 +71,29 @@ void GC::mark() {
 }
 
 void GC::trace() {
-#ifdef VYSE_LOG_GC
-	printf("-- Trace --\n");
-#endif
+	GC_LOG("-- Trace --\n");
 
 	while (!m_gray_objects.empty()) {
 		Obj* gray_obj = m_gray_objects.top();
 		m_gray_objects.pop();
 
-#ifdef VYSE_LOG_GC
-		printf("Tracing: %p [%s] \n", (void*)gray_obj, value_to_string(VYSE_OBJECT(gray_obj)).c_str());
-#endif
+		GC_LOG("Tracing: %p [%s] \n", (void*)gray_obj,
+			   value_to_string(VYSE_OBJECT(gray_obj)).c_str());
 		gray_obj->trace(*this);
 	}
 }
 
 size_t GC::sweep() {
-#ifdef VYSE_LOG_GC
-	printf("-- Sweep --\n");
-#endif
+	GC_LOG("-- Sweep --\n");
 
-	/// Delete all the interned strings that haven't been reached
-	/// by now.
+	// Delete all the interned strings that haven't been reached by now.
 	m_vm->interned_strings.delete_white_string_keys();
 
 	size_t bytes_freed = 0;
 
-	// Walk over the [m_objects] linked list
-	// and free any objects that aren't marked
+	// By this point, the reachable parts of the heap has been scanned once and all objects that
+	// were reachable from the root set have been marked as alive. Now we can re-scan the entire
+	// heap by going over the `m_objects` linked list and delete all objects that are not marked as
 	// alive.
 	Obj* prev = nullptr;
 	Obj* current = m_objects;
@@ -110,9 +105,7 @@ size_t GC::sweep() {
 		} else {
 			Obj* next = current->next;
 
-#ifdef VYSE_LOG_GC
-			printf("Freed: %s", value_to_string(VYSE_OBJECT(current)).c_str());
-#endif
+			GC_LOG("Freed: %s", value_to_string(VYSE_OBJECT(current)).c_str());
 
 			bytes_freed += current->size();
 			delete current;
@@ -127,9 +120,7 @@ size_t GC::sweep() {
 
 	bytes_allocated -= bytes_freed;
 	next_gc = bytes_allocated * (1 + GCHeapGrowth);
-#ifdef VYSE_LOG_GC
-	printf("-- [GC END] Freed %zu bytes | Next: %zu --\n\n", bytes_freed, next_gc);
-#endif
+	GC_LOG("-- [GC END] Freed %zu bytes | Next: %zu --\n\n", bytes_freed, next_gc);
 	return bytes_freed;
 }
 
@@ -139,6 +130,17 @@ void GC::protect(Obj* o) {
 
 void GC::unprotect(Obj* o) {
 	m_extra_roots.erase(o);
+}
+
+GCLock::GCLock(GC& gc, Obj* obj) : m_gc(&gc), m_object(obj) {
+	VYSE_ASSERT(obj != nullptr, "Object provided to GC protect lock is already deleted");
+	m_gc->protect(m_object);
+}
+
+GCLock::~GCLock() {
+	VYSE_ASSERT(m_object != nullptr, "Object protected by GC lock deleted.");
+	assert(m_gc != nullptr);
+	m_gc->unprotect(m_object);
 }
 
 } // namespace vyse

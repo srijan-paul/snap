@@ -11,13 +11,13 @@
 #define ERROR(...) (error_at_token(kt::format_str(__VA_ARGS__).c_str(), token))
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
-	void name() {                                                                                    \
-		next_fn();                                                                                     \
-		while (cond) {                                                                                 \
-			const Token op_token = token;                                                                \
-			next_fn();                                                                                   \
-			emit(toktype_to_op(op_token.type), op_token);                                                \
-		}                                                                                              \
+	void name() {                                                                                  \
+		next_fn();                                                                                 \
+		while (cond) {                                                                             \
+			const Token op_token = token;                                                          \
+			next_fn();                                                                             \
+			emit(toktype_to_op(op_token.type), op_token);                                          \
+		}                                                                                          \
 	}
 
 namespace vyse {
@@ -25,24 +25,20 @@ namespace vyse {
 using Op = Opcode;
 using TT = TokenType;
 
-Compiler::Compiler(VM* vm, const std::string* src) noexcept : m_vm{vm}, m_source{src} {
+Compiler::Compiler(VM* vm, const std::string* src) : m_vm{vm}, m_source{src} {
 	m_scanner = new Scanner{src};
 	advance(); // set `peek` to the first token in the token stream.
 	String* fname = &vm->make_string("<script>", 8);
 	// reserve the first slot for this toplevel function.
 	m_symtable.add("<script>", 8, true);
 
-	// When allocating [m_codeblock], the String "script"
-	// not reachable by the VM, so we protect it from GC.
-	m_vm->gc_protect(fname);
+	// When allocating [m_codeblock], the String "script" not reachable by the VM, so we protect it
+	// from GC.
+	GCLock lock = m_vm->gc_lock(fname);
 	m_codeblock = &vm->make<CodeBlock>(fname);
-
-	// Now the string is reachable through the code
-	// block, So we can unprotect it.
-	m_vm->gc_unprotect(fname);
 }
 
-Compiler::Compiler(VM* vm, Compiler* parent, String* name) noexcept : m_vm{vm}, m_parent{parent} {
+Compiler::Compiler(VM* vm, Compiler* parent, String* name) : m_vm{vm}, m_parent{parent} {
 	m_scanner = m_parent->m_scanner;
 	m_codeblock = &m_vm->make<CodeBlock>(name);
 
@@ -57,8 +53,7 @@ Compiler::Compiler(VM* vm, Compiler* parent, String* name) noexcept : m_vm{vm}, 
 }
 
 Compiler::~Compiler() {
-	// If this is the top-level compiler then we can
-	// free the scanner assosciated with it.
+	// If this is the top-level compiler then we can free the scanner assosciated with it.
 	if (m_parent == nullptr) {
 		delete m_scanner;
 	}
@@ -75,12 +70,10 @@ CodeBlock* Compiler::compile() {
 }
 
 CodeBlock* Compiler::compile_func(bool is_arrowfn) {
-	/// If this a compiler for an arrow function, then test
-	/// for an implicitly returned expression right after the
-	/// '->'. If there is a `{` however, we treat it as a function
-	/// body instead.
+	// If this a compiler for an arrow function, then test  for an implicitly returned expression
+	// right after the '->'. If there is a `{` however, we treat it as a function body instead.
 	if (is_arrowfn) {
-		if (match(TT::LCurlBrace)) {
+		if (check(TT::LCurlBrace)) {
 			block_stmt();
 			emit(Op::load_nil);
 		} else {
@@ -90,10 +83,8 @@ CodeBlock* Compiler::compile_func(bool is_arrowfn) {
 	} else {
 		test(TT::LCurlBrace, "Expected '{' before function body.");
 		block_stmt();
-		// In case the function does not return anything, we
-		// add an implicit 'return nil'. If the closure *does*
-		// return explicitly then these 2 opcodes will never be
-		// reached anyway.
+		// In case the function does not return anything, we add an implicit 'return nil'. If the
+		// closure *does* return explicitly then these 2 opcodes will never be reached anyway.
 		emit(Op::load_nil, Op::return_val);
 	}
 
@@ -110,7 +101,7 @@ CodeBlock* Compiler::compile_func(bool is_arrowfn) {
 // - expression statement
 // - export statement
 void Compiler::toplevel() {
-	if (panic) recover();
+	if (has_error) goto_eof();
 	if (eof()) return;
 
 	const TT tt = peek.type;
@@ -161,21 +152,16 @@ void Compiler::block_stmt() {
 
 void Compiler::if_stmt() {
 	advance(); // consume 'if'
-	expr();		 // parse condition.
+	expr();	   // parse condition.
 
-	// If the condition is false, we simply pop
-	// it and jump to the end of the if statement.
-	// This puts as after the closing '}', which
-	// might be an 'else' block sometimes.
+	// If the condition is false, we simply pop it and jump to the end of the if statement.
+	// This puts as after the closing '}', which might be an 'else' block sometimes.
 	size_t jmp = emit_jump(Op::pop_jmp_if_false);
 	toplevel();
 
 	if (match(TT::Else)) {
-		// If the 'if' block executed
-		// then the 'else' shouldn't run, to
-		// do this, we jump straight to the end
-		// of the 'else' block after evaluating
-		// the 'if'.
+		// If the 'if' block executed then the 'else' shouldn't run, to do this, we jump straight to
+		// the end of the 'else' block after evaluating the 'if'.
 		size_t else_jmp = emit_jump(Op::jmp);
 		patch_jump(jmp);
 		toplevel();
@@ -205,8 +191,8 @@ void Compiler::exit_loop(Op op_loop) {
 	patch_backwards_jump(back_jmp, m_loop->start);
 
 	for (int i = m_loop->start; i < n_ops;) {
-		// no_op instructions are 'placeholders' for
-		// jumps resulting from a break or continue statement.
+		// no_op instructions are 'placeholders' for jumps resulting from a break or continue
+		// statement.
 		if (THIS_BLOCK.code[i] == Op::no_op) {
 
 			// If it's a break statement then patch it to the
@@ -216,16 +202,16 @@ void Compiler::exit_loop(Op op_loop) {
 				patch_jump(i + 1);
 			} else {
 				VYSE_ASSERT(u8(THIS_BLOCK.code[i + 1]) == 0xff, "Bad jump.");
-				THIS_BLOCK.code[i] = (m_loop->loop_type == Loop::Type::While) ? Op::jmp_back : Op::for_loop;
+				THIS_BLOCK.code[i] =
+					(m_loop->loop_type == Loop::Type::While) ? Op::jmp_back : Op::for_loop;
 				patch_backwards_jump(i + 1, m_loop->start);
 			}
 		}
 
-		// It is crucial that we increment the counter by the
-		// current instruction's arity (number of operands needed)
-		// instead of simply doing `i++`. If we do `i++` then we'd
-		// be reading operands to other instructions like `load_const`
-		// as bytecode instructions and misinterpreting the values.
+		// It is crucial that we increment the counter by the current instruction's arity (number of
+		// operands needed) instead of simply doing `i++`. If we do `i++` then we'd be reading
+		// operands to other instructions like `load_const` as bytecode instructions and
+		// misinterpreting the values.
 		i += op_arity(i) + 1;
 	}
 
@@ -249,22 +235,16 @@ void Compiler::break_stmt() {
 		return;
 	}
 
-	/// remove all the local variables inside the
-	/// loop's body before jumping out of it.
+	/// Remove all the local variables inside the loop's body before jumping out of it.
 	discard_loop_locals(m_loop->scope_depth);
 
-	// A 'break' statement's jump instruction is
-	// characterized by a `no_op` instruction. So when
-	// the `Compiler::loop_exit` method is patching old loops, it
-	// doesn't get confused between 'jmp' instructions from
-	// break statements and 'jmp' instructions from other
-	// statements like "if".
+	// A 'break' statement's jump instruction is characterized by a `no_op` instruction. So when the
+	// `Compiler::loop_exit` method is patching old loops, it doesn't get confused between 'jmp'
+	// instructions from break statements and 'jmp' instructions from other statements like "if".
 	const int jmp = emit_jump(Op::no_op);
 
-	// A no_op instruction followed by a 0x00
-	// is recognized as a 'break' statement.
-	// Later the 0x00 and the following byte are
-	// changed into the actual jump offset.
+	// A no_op instruction followed by a 0x00 is recognized as a 'break' statement.
+	// Later the 0x00 and the following byte are changed into the actual jump offset.
 	THIS_BLOCK.code[jmp] = Op(0x00);
 }
 
@@ -302,9 +282,8 @@ void Compiler::for_stmt() {
 
 	const Token name = token;
 
-	// Enter the scope for the for loop
-	// Note that the loop iterator variable belongs
-	// inside this block.
+	// Enter the scope for the for loop.
+	// Note that the loop iterator variable belongs inside this block.
 	enter_block();
 
 	new_variable("<for-start>", 11);
@@ -326,8 +305,7 @@ void Compiler::for_stmt() {
 		emit_with_arg(Op::load_const, idx);
 	}
 
-	// Add the actual loop variable that is
-	// exposed to the user. (i)
+	// Add the actual loop variable that is exposed to the user. (i)
 	new_variable(name);
 	const size_t prep_jump = emit_jump(Op::for_prep);
 
@@ -352,32 +330,44 @@ void Compiler::fn_decl() {
 	new_variable(name_token);
 }
 
-// Compile the body of a function or method assuming everything until the
+// Compile the body of a function or method assuming everything excluding the
 // the opening parenthesis has been consumed.
 void Compiler::func_expr(String* fname, bool is_method, bool is_arrow) {
 	// When compiling the body of the function, we allocate
 	// a code block; at that point in time, the name of the
 	// function is not reachable by the Garbage Collector,
 	// so we protect it.
-	m_vm->gc_protect(fname);
+	GCLock lock = m_vm->gc_lock(fname);
 	Compiler compiler{m_vm, this, fname};
 
-	compiler.expect(TT::LParen, "Expected '(' before function parameters.");
+	// parentheses are optional for arrow functions
+	bool open_paren;
+	if (is_arrow) {
+		open_paren = compiler.match(TT::LParen);
+	} else {
+		compiler.expect(TT::LParen, "Expected '(' before function parameter list.");
+		open_paren = true;
+	}
 
 	uint param_count = 0;
 
-	// Methods have an implicit 'self' parameter, used to
-	// reference the object itself.
+	// Methods have an implicit 'self' parameter, used to reference the object itself.
 	if (is_method) {
 		++param_count;
 		compiler.add_self_param();
 	}
 
-	if (!compiler.check(TT::RParen)) {
+	bool is_vararg = false;
+	if ((open_paren and !compiler.check(TT::RParen)) or (is_arrow and !compiler.check(TT::Arrow))) {
 		do {
 			compiler.expect(TT::Id, "Expected parameter name.");
 			compiler.add_param(compiler.token);
 			++param_count;
+
+			if (compiler.match(TT::DotDotDot)) {
+				is_vararg = true;
+				break; // variadic parameter is the last one.
+			}
 		} while (compiler.match(TT::Comma));
 	}
 
@@ -386,19 +376,22 @@ void Compiler::func_expr(String* fname, bool is_method, bool is_arrow) {
 		return;
 	}
 
-	compiler.expect(TT::RParen, "Expected ')' after function parameters.");
-	if (is_arrow) compiler.expect(TT::Arrow, "Expected '->' before lambda body.");
+	if (open_paren) {
+		compiler.expect(TT::RParen, "Expected ')' after function parameters.");
+	}
+
+	if (is_arrow) {
+		compiler.expect(TT::Arrow, "Expected '->' before lambda body.");
+	}
 
 	CodeBlock* const code = compiler.compile_func(is_arrow);
+	code->m_is_variadic = is_vararg;
 	if (compiler.has_error) has_error = true;
 	const u8 idx = emit_value(VYSE_OBJECT(code));
 
 	emit(Op::make_func);
 	emit_arg(idx);
 	emit_arg(code->m_num_upvals);
-
-	// Now, [fname] can be reached via the code block itself.
-	m_vm->gc_unprotect(fname);
 
 	for (int i = 0; i < compiler.m_symtable.m_num_upvals; ++i) {
 		const UpvalDesc& upval = compiler.m_symtable.m_upvals[i];
@@ -420,6 +413,7 @@ void Compiler::func_expr(String* fname, bool is_method, bool is_arrow) {
 	prev = compiler.prev;
 	token = compiler.token;
 	peek = compiler.peek;
+	has_error = compiler.has_error;
 }
 
 void Compiler::ret_stmt() {
@@ -428,7 +422,7 @@ void Compiler::ret_stmt() {
 	// compile this statement as `return EXPR`, else it's just a `return`.
 	// where a `nil` after the return is implicit.
 	if (peek.is_literal() or check(TT::Id) or peek.is_unary_op() or check(TT::LParen) or
-			check(TT::Fn) or check(TT::LCurlBrace) or check(TT::LSqBrace)) {
+		check(TT::Fn) or check(TT::LCurlBrace) or check(TT::LSqBrace)) {
 		expr();
 	} else {
 		emit(Op::load_nil);
@@ -478,15 +472,15 @@ void Compiler::expr_stmt() {
 // what is and isn't a valid LHS for assignment.
 // The following is the grammar for a valid assignment statement:
 //
-// ASSIGN            := LHS ASSIGN_TOK EXPRESSION
-// LHS               := ID | (SUFFIXED_EXP ASSIGNABLE_SUFFIX)
-// SUFFIXED_EXP      := (PREFIX | SUFFIXED_EXP) SUFFIX
-// PREFIX            := (ID | STRING | NUMBER | BOOLEAN)
-// SUFFIX            := ASSIGNABLE_SUFFIX | '('ARGS')' | METHOD_CALL | APPEND
-// ASSIGNABLE_SUFFIX := '[' EXPRESSION ']' | '.'ID
-// METHOD_CALL       := ':' ID '(' ARGS ')'
-// APPEND 					 := '<<<' EXPR_OR
-// ASSIGN_TOK        := '=' | '+=' | '-=' | '*=' | '%=' | '/=' | '//='
+// ASSIGN			:= LHS ASSIGN_TOK EXPRESSION
+// LHS			    := ID | (SUFFIXED_EXP ASSIGNABLE_SUFFIX)
+// SUFFIXED_EXP	    := (PREFIX | SUFFIXED_EXP) SUFFIX
+// PREFIX			:= (ID | STRING | NUMBER | BOOLEAN)
+// SUFFIX			:= ASSIGNABLE_SUFFIX | '('ARGS')' | METHOD_CALL | APPEND
+// ASSIGNABLE_SUFFIX  := '[' EXPRESSION ']' | '.'ID
+// METHOD_CALL	      := ':' ID '(' ARGS ')'
+// APPEND 			  := '<<<' EXPR_OR
+// ASSIGN_TOK		  := '=' | '+=' | '-=' | '*=' | '%=' | '/=' | '//='
 //
 // It may be noticed that parsing an assignment when the LHS can be an arbitrarily
 // long chain of '.', '[]', '()' etc will require indefinite backtracking, or some
@@ -577,8 +571,7 @@ void Compiler::complete_expr_stmt(ExpKind prefix_type) {
 }
 
 // Compile a prefix or a variable assignment.
-// A prefix can be (as described above):
-// (ID | STRING | NUMBER | BOOLEAN)
+// A prefix can be (as described above): (ID | STRING | NUMBER | BOOLEAN)
 // A var assignment is simply ID '=' EXPRESSION
 ExpKind Compiler::prefix() {
 	if (check(TT::LParen)) {
@@ -589,9 +582,8 @@ ExpKind Compiler::prefix() {
 	if (match(TT::Id)) {
 		if (is_assign_tok(peek.type)) {
 			variable(true);
-			// Since we have successfully compiled a valid toplevel
-			// statement, it is longer an expression. We use
-			// ExpKind::none to indicate this.
+			// Since we have successfully compiled a valid toplevel statement, it is longer an
+			// expression. We use ExpKind::none to indicate this.
 			return ExpKind::none;
 		} else {
 			variable(false);
@@ -648,15 +640,15 @@ DEFINE_PARSE_FN(Compiler::bit_xor, match(TT::BitXor), bit_and)
 DEFINE_PARSE_FN(Compiler::bit_and, match(TT::BitAnd), equality)
 DEFINE_PARSE_FN(Compiler::equality, match(TT::EqEq) or match(TT::BangEq), comparison)
 DEFINE_PARSE_FN(Compiler::comparison,
-								match(TT::Gt) or match(TT::Lt) or match(TT::GtEq) or match(TT::LtEq), b_shift)
+				match(TT::Gt) or match(TT::Lt) or match(TT::GtEq) or match(TT::LtEq), b_shift)
 DEFINE_PARSE_FN(Compiler::b_shift, match(TT::BitLShift) or match(TT::BitRShift), sum)
 DEFINE_PARSE_FN(Compiler::sum, (match(TT::Plus) or match(TT::Minus) or match(TT::Concat)), mult)
 DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) or match(TT::Mod) or match(TT::Div)), exp)
 DEFINE_PARSE_FN(Compiler::exp, match(TT::Exp), unary)
 
 void Compiler::unary() {
-	/// TODO: group all unary oprators together in 'token.hpp'
-	/// and then change this if statement to a simple range check.
+	/// TODO: group all unary oprators together in 'token.hpp' and then change this if statement to
+	/// a simple range check.
 	if (peek.is_unary_op()) {
 		advance();
 		const Token op_token = token;
@@ -666,7 +658,7 @@ void Compiler::unary() {
 		case TT::Minus: emit(Op::negate, op_token); break;
 		case TT::Len: emit(Op::len, op_token); break;
 		case TT::BitNot: emit(Op::bnot, op_token); break;
-		default: VYSE_ERROR("Impossible unary token.");
+		default: VYSE_ERROR("Impossible unary token."); break;
 		}
 		return;
 	}
@@ -715,21 +707,18 @@ void Compiler::table_assign(Op get_op, int idx) {
 	advance();
 	const TT ttype = token.type;
 
-	/// if this is a simple assignment with '=' operator,
-	/// then simply compile the RHS as an expression and
-	/// return to the call site, wherein it's the caller's
-	/// responsibility to emit the 'set' opcode.
+	/// if this is a simple assignment with '=' operator, then simply compile the RHS as an
+	/// expression and return to the call site, wherein it's the caller's responsibility to emit the
+	/// 'set' opcode.
 	if (ttype == TT::Eq) {
 		expr();
 		return;
 	}
 
-	/// If we've reached here then it must be a compound
-	/// assignment operator. So we first need to get the
-	/// original field value, push it on top of the stack,
-	/// modify this value then use a 'set' opcode to store
-	/// it back into the table/array. The 'set' opcode is
-	/// emitted by the caller.
+	/// If we've reached here then it must be a compound assignment operator. So we first need to
+	/// get the original field value, push it on top of the stack, modify this value then use a
+	/// 'set' opcode to store it back into the table/array. The 'set' opcode is emitted by the
+	/// caller.
 	emit(get_op);
 	if (idx > 0) emit_arg(idx);
 	expr();
@@ -739,8 +728,7 @@ void Compiler::table_assign(Op get_op, int idx) {
 void Compiler::compile_args(bool is_method) {
 	advance(); // eat opening '('
 
-	/// If it's a method call, then start with 1
-	/// argument count for the implicit 'self' argument.
+	/// If it's a method call, then start with 1 argument count for the implicit 'self' argument.
 	u32 argc = is_method ? 1 : 0;
 
 	if (!check(TT::RParen)) {
@@ -771,8 +759,7 @@ void Compiler::primary() {
 		static constexpr const char* name = "<anonymous>";
 		String* fname = &m_vm->make_string(name, strlen(name));
 		if (check(TT::LParen)) return func_expr(fname);
-		// Names of lambda expressions are simply ignored
-		// Unless found in a statement context.
+		// Names of lambda expressions are simply ignored unless found in a statement context.
 		expect(TT::Id, "Expected function name or '('.");
 		return func_expr(fname);
 	} else if (match(TT::Id)) {
@@ -868,15 +855,14 @@ void Compiler::variable(bool can_assign) {
 	if (can_assign) {
 		VYSE_ASSERT(is_assign_tok(peek.type), "Not in an assignment context.");
 		if (is_const) {
-			std::string message =
-					kt::format_str("Cannot assign to variable '{}' marked const.", token.raw(*m_source));
+			std::string message = kt::format_str("Cannot assign to variable '{}' marked const.",
+												 token.raw(*m_source));
 			error_at_token(message.c_str(), token);
-			panic = false; // Don't send the compiler into error recovery mode.
 		}
 
-		/// Compile the RHS of the assignment, and any necessary arithmetic ops if its a
-		/// compound assignment operator. So by the time we are setting the value, the RHS
-		/// is sitting ready on top of the stack.
+		/// Compile the RHS of the assignment, and any necessary arithmetic ops if its a compound
+		/// assignment operator. So by the time we are setting the value, the RHS is sitting ready
+		/// on top of the stack.
 		var_assign(get_op, index);
 		emit_with_arg(set_op, index);
 	} else {
@@ -911,24 +897,24 @@ void Compiler::literal() {
 		emit(Op::load_nil);
 		return;
 	}
-	default: VYSE_ERROR(kt::format_str("Impossible literal token type {}", int(token.type)).c_str());
+	default:
+		VYSE_ERROR(kt::format_str("Impossible literal token type {}", int(token.type)).c_str());
+		break;
 	}
 
 	if (index > MaxLocalVars) {
 		ERROR("Too many literal constants in one function.");
 	}
 
-	/// TODO: handle indices larger than UINT8_MAX, by adding a
-	/// load_const_long instruction that takes 2 operands.
+	/// TODO: handle indices larger than UINT8_MAX, by adding a load_const_long instruction that
+	/// takes 2 operands.
 	emit_with_arg(Op::load_const, static_cast<u8>(index));
 }
 
-void Compiler::recover() {
+void Compiler::goto_eof() {
 	while (!eof()) {
 		advance();
-		if (check(TT::Semi)) break;
 	}
-	panic = false;
 }
 
 void Compiler::enter_block() noexcept {
@@ -1034,15 +1020,16 @@ void Compiler::error_at(const char* message, u32 line) {
 }
 
 void Compiler::error_at_token(const char* message, const Token& token) {
-	error(kt::format_str("[line {}]: near '{}': {}", token.location.line, token.raw(*m_source),
-											 message));
+	static constexpr const char* fmt = "[line {}]: near '{}': {}";
+	error(kt::format_str(fmt, token.location.line, token.raw(*m_source), message));
 }
 
 void Compiler::error(std::string&& message) {
-	if (panic) return;
+	// To prevent cascading errors, we only report the very first error that the compiler
+	// encounters.
+	if (has_error) return;
 	m_vm->on_error(*m_vm, message);
 	has_error = true;
-	panic = true;
 }
 
 bool Compiler::ok() const noexcept {
@@ -1051,8 +1038,41 @@ bool Compiler::ok() const noexcept {
 
 u32 Compiler::emit_string(const Token& token) {
 	const u32 length = token.length() - 2; // minus the quotes
+
+	// The actual length of the string may be different from what we see in the source code because
+	// of escape characters.
+
 	// +1 to skip the openening quote.
-	String& string = m_vm->make_string(token.raw_cstr(*m_source) + 1, length);
+	const char* srcbuf = token.raw_cstr(*m_source) + 1;
+	char* strbuf = (char*)malloc(sizeof(char) * (length + 1));
+	strbuf[length] = '\0';
+
+	uint pos = 0;
+	for (uint i = 0; i < length; ++i) {
+		// count escape characters as single chars.
+		if (srcbuf[i] == '\\') {
+			VYSE_ASSERT(i + 1 < length, "Malformed string token with '\\' as last character.");
+			char next_char = srcbuf[i + 1];
+			switch (next_char) {
+			case 'n': strbuf[pos] = '\n'; break;
+			case 't': strbuf[pos] = '\t'; break;
+			case 'r': strbuf[pos] = '\r'; break;
+			case 'b': strbuf[pos] = '\b'; break;
+			case 'v': strbuf[pos] = '\v'; break;
+			default: strbuf[pos] = next_char; break;
+			}
+			++i;
+		} else {
+			strbuf[pos] = srcbuf[i];
+		}
+		++pos;
+	}
+
+	uint str_len = pos;
+	strbuf = (char*)realloc(strbuf, sizeof(char) * (str_len + 1));
+	strbuf[str_len] = '\0';
+
+	String& string = m_vm->take_string(strbuf, str_len);
 	return emit_value(VYSE_OBJECT(&string));
 }
 
@@ -1075,28 +1095,25 @@ int Compiler::find_upvalue(const Token& token) {
 	// compiler.
 	int index = m_parent->find_local_var(token);
 
-	// If found the local var, then add it to the upvalues list.
-	// and mark the upvalue is "local".
+	// If found the local var, then add it to the upvalues list and mark the upvalue is "local".
 	if (index != -1) {
 		LocalVar& local = m_parent->m_symtable.m_symbols[index];
 		local.is_captured = true;
 		return m_symtable.add_upvalue(index, true, local.is_const);
 	}
 
-	// If not found within the parent compiler's local vars
-	// then look into the parent compiler's upvalues.
+	// If not found within the parent compiler's local vars then look into the parent compiler's
+	// upvalues.
 	index = m_parent->find_upvalue(token);
 
-	// If found in some enclosing scope, add it to the current
-	// upvalues list and return it.
+	// If found in some enclosing scope, add it to the current upvalues list and return it.
 	if (index != -1) {
 		// is not local since we found it in an enclosing compiler.
 		const UpvalDesc& upval = m_parent->m_symtable.m_upvals[index];
 		return m_symtable.add_upvalue(index, false, upval.is_const);
 	}
 
-	// No local variable in any of the enclosing scopes was found with the same
-	// name.
+	// No local variable in any of the enclosing scopes was found with the same name.
 	return -1;
 }
 
@@ -1161,7 +1178,7 @@ Op Compiler::toktype_to_op(TT toktype) const noexcept {
 	case TT::GtEq: return Op::gte;
 	case TT::LtEq: return Op::lte;
 	case TT::Exp: return Op::exp;
-	default: VYSE_UNREACHABLE();
+	default: VYSE_UNREACHABLE(); break;
 	}
 }
 
@@ -1169,7 +1186,8 @@ Op Compiler::toktype_to_op(TT toktype) const noexcept {
 int Compiler::op_arity(u32 op_index) const noexcept {
 	const Op op = THIS_BLOCK.code[op_index];
 	if (op == Op::make_func) {
-		VYSE_ASSERT(op_index != THIS_BLOCK.op_count() - 1, "Op::make_func cannot be the last opcode");
+		VYSE_ASSERT(op_index != THIS_BLOCK.op_count() - 1,
+					"Op::make_func cannot be the last opcode");
 		int n_upvals = int(THIS_BLOCK.code[op_index + 1]);
 		return 1 + n_upvals * 2;
 	}
@@ -1177,8 +1195,7 @@ int Compiler::op_arity(u32 op_index) const noexcept {
 	if (CHECK_ARITY(op, 0)) return 0;
 	if (CHECK_ARITY(op, 1)) return 1;
 
-	// Constant instructions take 1 operand: the index of the
-	// constant in the constant pool.
+	// Constant instructions take 1 operand: the index of the constant in the constant pool.
 	if (op >= Op_const_start and op <= Op_const_end) return 1;
 	VYSE_ASSERT(CHECK_ARITY(op, 2), "Instructions other than make_func can have upto 2 operands.");
 	return 2;
@@ -1204,13 +1221,12 @@ bool Compiler::is_assign_tok(TT type) const noexcept {
 // and not extract the name and length of the name at the call site.
 // But sometimes we will want to add dummy variables (like for-loop limits).
 // And we don't have a token for those to take the name from.
-
 int Compiler::new_variable(const Token& varname, bool is_const) {
 	const char* name = varname.raw_cstr(*m_source);
 	const u32 length = varname.length();
 	if (m_symtable.find_in_current_scope(name, length) != -1) {
 		std::string errmsg = kt::format_str("Attempt to redeclare existing variable '{}'.",
-																				std::string_view(name, length));
+											std::string_view(name, length));
 		error_at_token(errmsg.c_str(), varname);
 		return -1;
 	}
@@ -1241,8 +1257,7 @@ static bool names_equal(const char* a, int len_a, const char* b, int len_b) {
 }
 
 int SymbolTable::find(const char* name, int length) const {
-	// start looking from the innermost scope, and work our way
-	// outwards.
+	// start looking from the innermost scope, and work our way outwards.
 	for (int i = m_num_symbols - 1; i >= 0; i--) {
 		const LocalVar& symbol = m_symbols[i];
 		if (names_equal(name, length, symbol.name, symbol.length)) return i;

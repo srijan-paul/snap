@@ -1,12 +1,11 @@
 #include <gc.hpp>
 #include <vy_list.hpp>
 
-
 namespace vyse {
 
 List::List(size_t mincap)
-		: Obj(ObjType::list),
-			m_capacity(pow2ceil(mincap + 1)), m_values{(Value*)malloc(sizeof(Value) * m_capacity)} {
+	: Obj(ObjType::list),
+	  m_capacity(pow2ceil(mincap + 1)), m_values{(Value*)malloc(sizeof(Value) * m_capacity)} {
 	m_num_entries = mincap;
 	for (uint i = 0; i < m_num_entries; ++i) m_values[i] = VYSE_NIL;
 }
@@ -34,16 +33,6 @@ Value List::pop() noexcept {
 		return m_values[--m_num_entries];
 	}
 	return VYSE_NIL;
-}
-
-Value& List::operator[](size_t index) {
-	VYSE_ASSERT(index < m_num_entries, "List index out of range!");
-	return m_values[index];
-}
-
-const Value& List::operator[](size_t index) const {
-	VYSE_ASSERT(index < m_num_entries, "List index out of range!");
-	return m_values[index];
 }
 
 void List::trace(GC& gc) noexcept {

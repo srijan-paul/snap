@@ -1,52 +1,65 @@
 #pragma once
 #include "compiler.hpp"
 #include "gc.hpp"
+#include "loadlib.hpp"
 #include "table.hpp"
 #include "vm_stack.hpp"
 #include <functional>
+#include <unordered_map>
 
 namespace vyse {
 
-enum class ExitCode : u8 {
-	Success,
-	CompileError,
-	RuntimeError,
-};
-
 using PrintFn = std::function<void(const VM& vm, const String* string)>;
 using ReadLineFn = std::function<char*(const VM& vm)>;
-using ErrorFn = std::function<void(const VM& vm, std::string& err_message)>;
+using ErrorFn = std::function<void(const VM& vm, const std::string& err_message)>;
+using ModuleLoader = std::function<std::string(VM& vm, const char* module_name)>;
 
 inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string) {
 	VYSE_ASSERT(string != nullptr, "string to print is null.");
 	printf("%s", string->c_str());
 }
 
-void default_error_fn(const VM& vm, std::string& err_msg);
+void default_error_fn(const VM& vm, const std::string& err_msg);
 char* default_readline(const VM& vm);
+std::string default_find_module(VM& vm, const char* module_name);
+
+struct VMConfig {
+	/// @brief function used by the VM to print a string to console.
+	PrintFn print = default_print_fn;
+	/// @brief function used by the VM to read a line from the console.
+	ReadLineFn read = default_readline;
+	/// @brief function used by the VM to throw display an error.
+	ErrorFn error = default_error_fn;
+
+	/// @brief function used by the VM to load a module's source code. this is called whenever the
+	/// [import] global function is invoked in a Vyse script.
+	ModuleLoader load_module = nullptr;
+};
+
+enum class ExitCode {
+	Success,
+	CompileError,
+	RuntimeError,
+};
 
 class VM {
+	// The garbage collector needs access to the VM's root object set.
 	friend GC;
 	friend Compiler;
 
-public:
+	// The library loader needs access to the VM's cached libraries.
+	friend Value load_std_module(VM& vm, int argc);
+
+  public:
 	VYSE_NO_COPY(VM);
 	VYSE_NO_MOVE(VM);
 
-	// The value returned by the VM at the
-	// end of it's execution. Nil by default.
-	// This stores the value returned by the top level
-	// return statement.
-	// If this is an object, then that will be
-	// destroyed when the VM goes out of scope / reaches
-	// the end of it's lifespan.
+	/// @brief The value returned by the VM at the end of it's execution. Nil by default. This
+	/// stores the value returned by the top level return statement. If this is an object, then that
+	/// will be destroyed when the VM goes out of scope / reaches the end of it's lifespan.
 	Value return_value = VYSE_NIL;
 
-	/// TODO: Dynamically grow the stack by statically
-	/// determining the max stack size at compile time
-	/// inside a function body.
-
-	/// the function that vyse uses to print stuff onto the console.
+	/// The function that vyse uses to print stuff onto the console.
 	/// It is called whenever the `print` function is called in vyse source code.
 	PrintFn print = default_print_fn;
 
@@ -58,6 +71,8 @@ public:
 	/// The function to be used by the VM when reading a line from stdin.
 	ReadLineFn read_line = default_readline;
 
+	ModuleLoader find_module = default_find_module;
+
 	/// Maximum size of the call stack. If the call stack
 	/// size exceeds this, then there is a stack overflow.
 	static constexpr size_t MaxCallStack = 1024;
@@ -66,11 +81,6 @@ public:
 	/// We put a cap on this to avoid extrememly long stack traces
 	/// caused by infinite recursion.
 	static constexpr size_t MaxStackTraceDepth = 11;
-
-	/// @brief The VM's value stack. All operations in Vyse
-	/// are done by popping from and pushing to this data
-	/// structure.
-	Stack m_stack;
 
 	VM(const std::string* src) noexcept : m_source{src}, m_gc(*this){};
 	VM() : m_source{nullptr}, m_gc(*this){};
@@ -85,15 +95,13 @@ public:
 		///  really is at runtime. (using the [tag] field)
 		Obj* func = nullptr;
 
-		/// The next instruction to be executed
-		/// In this function.
+		/// The next instruction to be executed in this function.
 		size_t ip = 0;
 
-		/// the base of the Callframe in the VM's
+		/// The base of the Callframe in the VM's
 		/// value stack. This denotes the first
 		/// slot usable by the CallFrame. All local variables
-		/// are represented as a stack offset from this
-		/// base.
+		/// are represented as a stack offsets from this base.
 		Value* base = nullptr;
 
 		CallFrame* next = nullptr;
@@ -104,44 +112,63 @@ public:
 		}
 	};
 
-	/// @brief Get the [num]th argument of the
-	/// current function. get_arg(0) returns the
-	/// first argument.
+	///
+	/// @brief Get the [num]th argument of the current function. `get_arg(0)` returns the first
+	/// argument.
+	///
 	inline Value& get_arg(u8 idx) const {
 		return m_current_frame->base[idx + 1];
 	}
 
-	/// @brief Returns the currently exceuting function
-	/// wrapped in a value.
-	Value current_fn() const {
+	/// @brief Returns the currently exceuting function wrapped in a value.
+	inline Value current_fn() const {
 		return VYSE_OBJECT(m_current_frame->func);
 	}
 
-	Value const* base() const noexcept {
+	/// @brief Returns the base of the current call frame.
+	inline Value const* base() const noexcept {
 		return m_current_frame->base;
 	}
 
-	Value* base() noexcept {
+	/// @brief Returns the base of the current callframe
+	inline Value* base() noexcept {
 		return m_current_frame->base;
 	}
 
 	bool init();
 
 	ExitCode runcode(const std::string& code);
-	ExitCode runfile(const std::string& filepath);
 	ExitCode run();
+	Closure* compile(const std::string& code);
 
+	/// @brief Load the base vyse standard library.
+	void load_stdlib();
+
+	///
+	/// @brief Finds a module by it's name, interprets it's code and returns the resulting
+	/// vyse::Value.
+	/// @param modname Name of the module, usually the argument to the builtin function `import`.
+	///
+	Value import_module(String& modname);
+
+	///
+	/// @brief returns the currently executing block.
+	///
 	const Block* block() const noexcept {
 		return m_current_block;
 	}
 
-	/// @brief makes an object of type [T],
-	/// registers it with the VM and return a reference to
+	///
+	/// @brief constructs an object of type [T], registers it with the VM and returns a reference to
 	/// the newly created object.
-	/// The object is registered simply by attaching
-	/// it to the head of the VM's object linked list.
+	///
 	template <typename T, typename... Args>
 	T& make(Args&&... args) {
+		static_assert(
+			std::is_base_of_v<Obj, T>,
+			"VM::make can only produce instances of vyse::Object and it's deriving classes.");
+		static_assert(!std::is_same_v<T, String>, "Use 'VM::make_string' to make string objects.");
+
 		T* object = new T(std::forward<Args>(args)...);
 		register_object(object);
 		return *object;
@@ -157,7 +184,7 @@ public:
 
 #ifdef VYSE_LOG_GC
 			printf("< GC cycle invoked while attempting to allocate %s >\n",
-						 value_to_string(VYSE_OBJECT(o)).c_str());
+				   value_to_string(VYSE_OBJECT(o)).c_str());
 #endif
 			collect_garbage();
 
@@ -172,34 +199,37 @@ public:
 
 	/// TODO: think of a better name for this method.
 
-	/// @brief Makes an interned string and returns a
-	/// reference to it.
+	/// @brief Makes an interned string and returns a reference to it.
 	String& make_string(const char* chars, size_t length);
 
+	///
 	/// @brief Makes a string from the provided char buffer.
+	///
 	/// @param chars A null terminated char buffer.
+	///
 	String& make_string(const char* chars) {
 		return make_string(chars, strlen(chars));
 	}
 
-	/// @brief takes ownership of a string with char buffer 'chrs'
-	/// and length 'len'. Note that `chrs` now belongs to the VM,
-	/// and it may be freed inside this function if an interned copy
+	///
+	/// @brief takes ownership of a string with char buffer 'chrs' and length 'len'. Note that
+	/// `chrs` now belongs to the VM, and it may be freed inside this function if an interned copy
 	/// is found. The caller must not use the [chrs] buffer after
 	/// calling this.
+	///
 	String& take_string(char* chrs, size_t len);
 
-	/// @brief Triggers a garbage collection cycle, does a
-	/// mark-trace-sweep.
+	///
+	/// @brief Triggers a garbage collection cycle, does a mark-trace-sweep.
 	/// @return The number of bytes freed.
+	///
 	size_t collect_garbage();
 
-	/// @brief Makes sure there are at least [num_slots] stack slots
-	/// free to be used above the current stack-top.
+	/// @brief Makes sure there are at least [num_slots] stack slots free to be used above the
+	/// current stack-top.
 	void ensure_slots(uint num_slots);
 
-	/// @brief turns off the garbage collector.
-	/// GC cycles won't be triggered regardless of
+	/// @brief turns off the garbage collector. GC cycles won't be triggered regardless of
 	/// how much memory is allocated.
 	inline void gc_off() {
 		can_collect = false;
@@ -210,14 +240,21 @@ public:
 		can_collect = true;
 	}
 
-	/// @brief Marks the object safe from garbage collection
-	/// until `VM::gc_unprotect` is called on the object.
+	/// @brief Marks the object safe from garbage collection until `VM::gc_unprotect` is called on
+	/// the object.
 	void gc_protect(Obj* o) {
 		m_gc.protect(o);
 	}
 
-	/// @brief If the object was previously marked safe from GC,
-	/// then removes the guard, making it garbage collectable again.
+	/// @brief locks an object, preventing it from being garbage collected.
+	/// @return A GCLock object. As long as a lock is alive, the object cannot be garbage collected.
+	/// The GCLock is a RAII object, and drops the protection upon destruction.
+	GCLock gc_lock(Obj* o) {
+		return GCLock(m_gc, o);
+	}
+
+	/// @brief If the object was previously marked safe from GC, then removes the guard, making it
+	/// garbage collectable again.
 	void gc_unprotect(Obj* o) {
 		m_gc.unprotect(o);
 	}
@@ -225,18 +262,16 @@ public:
 	/// @brief returns the number of objects objects that haven't been garbage collected.
 	size_t num_objects() const;
 
-	/// @brief returns the amount of memory currently allocated by the
-	/// VM. Note that this only includes the memory allocated Garbage collectable
-	/// objects on the heap and not stack values.
+	/// @brief returns the amount of memory currently allocated by the VM. Note that this only
+	/// includes the memory allocated Garbage collectable objects on the heap and not stack values.
 	size_t memory() const noexcept {
 		return m_gc.bytes_allocated;
 	}
 
-	/// @brief calls a callable object that is present at a depth
-	/// of [argc] - 1 in the stack, followed by argc arguments.
+	/// @brief calls a callable object that is present at a depth of [argc] - 1 in the stack,
+	/// followed by argc arguments.
 	/// @param argc number of a arguments.
-	/// @return true if the function call was sucessfull, false if it
-	///	resulted in an error.
+	/// @return true if the function call was sucessfull, false if it resulted in an error.
 	bool call(int argc);
 
 	Value get_global(String* name) const;
@@ -245,21 +280,15 @@ public:
 	void set_global(String* name, Value value);
 	void set_global(const char* name, Value value);
 
-	/// @brief Loads all the standard library functions into the
-	/// VM's global variables table.
-	void load_stdlib();
-
-	/// @brief loads the prototypes of all
-	/// primitive data types.
+	/// @brief loads the prototypes of all primitive data types.
 	void load_primitives();
 
-	/// @brief Throws a runtime error by producing a stack trace, then
-	/// calling the `on_error` and shutting down the VM by returning an
-	/// ExitCode::RuntimeError
+	/// @brief Throws a runtime error by producing a stack trace, then calling the `on_error` and
+	/// shutting down the VM by returning an ExitCode::RuntimeError
 	/// @param message The error message.
 	ExitCode runtime_error(std::string const& message);
 
-	// Prototypes for primitive data types.
+	/// @brief Prototypes for primitive data types.
 	struct PrimitiveProtos {
 		Table* string = nullptr;
 		Table* number = nullptr;
@@ -267,40 +296,45 @@ public:
 		Table* list = nullptr;
 	} prototypes;
 
-private:
+	/// @brief The VM's value stack. All operations in Vyse are done by popping from and pushing to
+	/// this data structure.
+	Stack m_stack;
+
+	using NativeLib = DynLoader::Lib;
+
+	/// @brief The Dynamic library loader used to load dyn_libs
+	DynLoader dynloader;
+
+  private:
+	VMConfig m_config;
+
 	const std::string* m_source;
 	bool m_has_error = false;
 	Compiler* m_compiler = nullptr;
 
-	/// @brief Whether or not the garbage collector
-	/// is allowed to collect garbage. This can be turned
-	/// on or off using `VM::gc_off`
+	/// @brief Whether or not the garbage collector is allowed to collect garbage. This can be
+	/// turned on or off using `VM::gc_off`
 	bool can_collect = true;
 
-	// The instruction pointer.
-	// It stores the index of the next instruction
-	// to be executed. An "instruction" here is an Opcode
-	// inside the current function's `m_block`.
+	// The instruction pointer. It stores the index of the next instruction to be executed. An
+	// "instruction" here is an Opcode inside the current function's `m_block`.
 	size_t ip = 0;
 
 	/// GARAGE COLLECTION ///
 
 	GC m_gc;
 
-	// VM's personal list of all open upvalues.
-	// This is a sorted linked list, the head
-	// contains the upvalue pointing to the
-	// highest value on the stack.
+	// VM's personal list of all open upvalues. This is a sorted linked list, the head contains the
+	// upvalue pointing to the highest value on the stack.
 	Upvalue* m_open_upvals = nullptr;
 
-	/// the call stack is internally a linked list,
-	/// the base call frame is always fixed and initalized
-	/// when the VM is constructed.
+	/// the call stack is internally a linked list, the base call frame is always fixed and
+	/// initalized when the VM is constructed.
 	CallFrame* const base_frame = new CallFrame;
 
-	/// The topmost callframe that the VM is
-	/// currently executing in.
+	/// The topmost callframe that the VM is currently executing in.
 	CallFrame* m_current_frame = base_frame;
+
 	// total number of call frames that have been allocated.
 	u32 m_frame_count = 0;
 
@@ -316,32 +350,86 @@ private:
 
 	std::unordered_map<String*, Value> m_global_vars;
 
-	/// @brief call any callable value from within the VM.
-	/// Note that this is only used to call instructions from
-	/// inside a vyse script. To call anything from a C/C++
-	/// program, the call method is used instead.
+	/// @brief call any callable value from within the VM. Note that this is only used to call
+	/// instructions from inside a vyse script. To call anything from a C/C++ program, the call
+	/// method is used instead.
 	bool op_call(Value value, u8 argc);
 	bool call_closure(Closure* func, int argc);
 	bool call_cclosure(CClosure* cclosure, int argc);
 
-	/// @brief return the `table[key]` where table is the prototype
-	/// of [value].
-	inline Value index_value(const Value& value, const Value& key) noexcept {
+	/// @brief Prepares the VM's stack for a varioadic function call.
+	/// All the extra args are placed in a list, which is then pushed on top of the stack.
+	/// @param num_args number of arguments provided to the call.
+	/// @param num_params Number of parameters as mentioned in the function declaration. The last
+	/// argument must be a variadic arg.
+	/// @return The number of arguments that are on the stack after the varargs have been moved to a
+	/// list.
+	int prep_vararg_call(int num_params, int num_args);
+
+	inline Table* get_proto(const Value& value) {
 		switch (VYSE_GET_TT(value)) {
-		case ValueType::Bool: return prototypes.boolean->get(key);
-		case ValueType::Number: return prototypes.number->get(key);
+		case ValueType::Bool: return prototypes.boolean;
+		case ValueType::Number: return prototypes.number;
 		case ValueType::Object: {
-			const Obj* o = VYSE_AS_OBJECT(value);
+			Obj* o = VYSE_AS_OBJECT(value);
 			switch (o->tag) {
-			case ObjType::string: return prototypes.string->get(key);
-			case ObjType::list: return prototypes.list->get(key);
-			case ObjType::table: return static_cast<const Table*>(o)->get(key);
-			default: return VYSE_NIL;
+			case ObjType::string: return prototypes.string;
+			case ObjType::list: return prototypes.list;
+			case ObjType::table: return static_cast<Table*>(o)->m_proto_table;
+			default: return nullptr;
 			}
 		}
-		default: return VYSE_NIL;
+		default: return nullptr;
 		}
 	}
+
+	/// @brief return the `table[key]` where table is the prototype
+	/// of [value].
+	inline Value index_proto(const Value& value, const Value& key) noexcept {
+		const Table* proto = get_proto(value);
+		if (proto != nullptr) return proto->get(key);
+		return VYSE_NIL;
+	}
+
+	/// @brief Make an un-interned string object and return a reference to the said object. Note
+	/// that this function must only be called interally in the VM in places where string interning
+	/// is taken care of explicitly.
+	template <typename... Args>
+	String& make_string_no_intern(Args... args) {
+		String* str = new String(std::forward<Args>(args)...);
+		register_object(str);
+		return *str;
+	}
+
+	/// @brief calls the overloaded operator whose protomethod name is [method_name]
+	/// The arguments must be in the stack in order.
+	/// @return true if the call succeeded, false if there was an error.
+	bool call_binary_overload(const char* op_str, const char* method_name);
+
+	/// @brief calls the overloaded unary operator whose protomethod name is [method]
+	/// The operand must be on top of the stack when this function is called.
+	/// @return true of the call succeeded, false otherwise
+	bool call_unary_overload(const char* method_name);
+
+	/// @brief Calls the `__call` member of [object], or it's metatable.
+	/// NOTE: object must be an on the stack at a depth of [argc + 1], followed by [argc] arguments
+	/// that it will be called with.
+	/// @return true if the function call succeeds without any error.
+	bool call_func_overload(Value& value, int argc);
+
+	/// @brief returns `value.field` where `value` is a value of any kind and `key` is a string.
+	/// @param value The value to be indexed.
+	/// @param key   The key that is to be used when indexing the value.
+	/// @return true if the indexing was successful, false otherwise.
+	/// Note that [key] must be a string.
+	bool get_field_of_value(const Value& value, const Value& key, Value& result);
+
+	/// @brief sets `result` to `value`[`index`]. Nil, if none found.
+	/// @param value An indexable value like a string, list or table.
+	/// @param index The value to index `value` with.
+	/// @param result An inout parameter containing the result of the operation.
+	/// @return true if the indexing succeeds, false if there is an error
+	bool index_value(const Value& value, const Value& index, Value& result);
 
 	/// @brief concatenates two strings. Will intern the resulting
 	/// string if it isn't already interned.

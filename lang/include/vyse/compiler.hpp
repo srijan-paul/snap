@@ -31,8 +31,8 @@ struct LocalVar {
 
 	explicit LocalVar() noexcept {};
 	explicit LocalVar(const char* varname, u32 name_len, u8 scope_depth = 0,
-										bool isconst = false) noexcept
-			: name{varname}, length{name_len}, depth{scope_depth}, is_const{isconst} {};
+					  bool isconst = false) noexcept
+		: name{varname}, length{name_len}, depth{scope_depth}, is_const{isconst} {};
 };
 
 struct UpvalDesc {
@@ -75,7 +75,7 @@ enum class ExpKind {
 class Compiler {
 	friend GC;
 
-public:
+  public:
 	static constexpr u8 MaxLocalVars = UINT8_MAX;
 	static constexpr u8 MaxUpValues = UINT8_MAX;
 	static constexpr u8 MaxConstants = UINT8_MAX;
@@ -87,7 +87,7 @@ public:
 
 	// Creates a fresh new compiler that will
 	// parse the toplevel script `src`.
-	explicit Compiler(VM* vm, const std::string* src) noexcept;
+	explicit Compiler(VM* vm, const std::string* src);
 
 	/// @brief Create a child compiler used for
 	/// compiling function bodies. This assumes
@@ -95,7 +95,7 @@ public:
 	/// the everything up to the functions body.
 	/// @param parent The parent compiler that created this compiler. Used for looking up upvalues.
 	/// @param fname name of the function that this compiler is commpiling into.
-	explicit Compiler(VM* vm, Compiler* parent, String* fname) noexcept;
+	explicit Compiler(VM* vm, Compiler* parent, String* fname);
 
 	~Compiler();
 
@@ -118,7 +118,7 @@ public:
 	/// off the stack.
 	int op_stack_effect(Opcode op) const noexcept;
 
-private:
+  private:
 	struct Loop {
 		VYSE_NO_DEFAULT_CONSTRUCT(Loop);
 		enum class Type {
@@ -150,11 +150,6 @@ private:
 
 	const std::string* m_source;
 	bool has_error = false;
-	// When true, the compiler goes into
-	// error recovery mode, trying to eat all
-	// tokens until some that might denote the
-	// beginning of a statement is encountered.
-	bool panic = false;
 	/// The scanner object that this compiler
 	/// draws tokens from. This is a pointer
 	/// because the nested child compilers will
@@ -195,24 +190,22 @@ private:
 	// Compile a function's body (if this is a child compiler).
 	CodeBlock* compile_func(bool is_arrowfn = false);
 
-	// keep eating tokens until a token
-	// that may indicate the end of a block or statement
-	// is found.
-	void recover();
+	/// @brief Jump straight to the end of input.
+	void goto_eof();
 
 	void toplevel();
 
-	void var_decl();								// (let|const) DECL+
+	void var_decl();				// (let|const) DECL+
 	void declarator(bool is_const); // ID (= EXPR)?
-	void block_stmt();							// {stmt*}
-	void if_stmt();									// if EXPR STMT (else STMT)?
-	void while_stmt();							// while EXPR STMT
-	void for_stmt();								// for ID = EXP, EXP (, EXP)? STMT
-	void break_stmt();							// BREAK
-	void continue_stmt();						// CONTINUE
-	void fn_decl();									// fn (ID|SUFFIXED_EXPR) BLOCK
-	void ret_stmt();								// return EXPR?
-	void expr_stmt();								// FUNCALL | ASSIGN
+	void block_stmt();				// {stmt*}
+	void if_stmt();					// if EXPR STMT (else STMT)?
+	void while_stmt();				// while EXPR STMT
+	void for_stmt();				// for ID = EXP, EXP (, EXP)? STMT
+	void break_stmt();				// BREAK
+	void continue_stmt();			// CONTINUE
+	void fn_decl();					// fn (ID|SUFFIXED_EXPR) BLOCK
+	void ret_stmt();				// return EXPR?
+	void expr_stmt();				// FUNCALL | ASSIGN
 	void complete_expr_stmt(ExpKind prefix_type);
 
 	// parses a expression statement's prefix.
@@ -225,39 +218,37 @@ private:
 
 	void append(); // <<<
 
-	void logic_or();	// || or
+	void logic_or();  // || or
 	void logic_and(); // && and
 
 	void bit_or();	// |
 	void bit_xor(); // ^
 	void bit_and(); // &
 
-	void equality();	 // == !=
+	void equality();   // == !=
 	void comparison(); // > >= < <=
-	void b_shift();		 // >> <<
+	void b_shift();	   // >> <<
 
-	void sum();					// + - ..
-	void mult();				// * / %
-	void exp();					// **
-	void unary();				// - + ! not
-	void atomic();			// (ID|'(' EXPR ')' ) SUFFIX*
+	void sum();			// + - ..
+	void mult();		// * / %
+	void exp();			// **
+	void unary();		// - + ! not
+	void atomic();		// (ID|'(' EXPR ')' ) SUFFIX*
 	void suffix_expr(); // '['EXPR']' | '.'ID | '('ARGS')' | :ID'('')'
 
 	/// @brief Compiles the arguments for a call expression. The current token
 	/// must be the opening '(' for the argument
-	void compile_args(bool is_method = false);						 // EXPR (',' EXPR)*
-	void grouping();																			 // '('expr')'
-	void primary();																				 // LITERAL | ID
-	void variable(bool can_assign);												 // ID
-	void literal();																				 // NUM | STR | BOOL | nil
+	void compile_args(bool is_method = false); // EXPR (',' EXPR)*
+	void grouping();						   // '('expr')'
+	void primary();							   // LITERAL | ID
+	void variable(bool can_assign);			   // ID
+	void literal();							   // NUM | STR | BOOL | nil
 	void func_expr(String* fname, bool is_method = false, bool is_arrow = false); // fn NAME? BLOCK
 
-	/// @brief compiles a table, assuming the opening '{' has been
-	/// consumed.
+	/// @brief compiles a table, assuming the opening '{' has been consumed.
 	void table();
 
-	/// @brief compiles an array, asuming the opening '[' has been
-	/// consumed.
+	/// @brief compiles an array, asuming the opening '[' has been consumed.
 	void array();
 
 	/// @brief Compiles a variable assignment RHS, assumes the
@@ -348,6 +339,14 @@ private:
 	inline void emit_with_arg(Opcode opm, u8 arg);
 
 	size_t emit_value(Value value);
+
+	/// @brief returns the length of a string after considering the
+	/// escape characters.
+	/// @param srcbuf Position of the first character of the string
+	/// in the source buffer
+	/// @param srclen length of the string when the escape sequences are not
+	/// considered as single chars.
+	int src_string_len(const char* srcbuf, int srclen);
 	u32 emit_string(const Token& token);
 	u32 emit_id_string(const Token& token);
 

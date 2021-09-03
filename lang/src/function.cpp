@@ -18,10 +18,10 @@ void CodeBlock::trace(GC& gc) {
 	}
 }
 
-/// Function `///
+/// Function ///
 
 Closure::Closure(CodeBlock* code, u32 upval_count) noexcept
-		: Obj(ObjType::closure), m_codeblock{code} {
+	: Obj(ObjType::closure), m_codeblock{code} {
 	m_upvals.resize(upval_count);
 }
 
@@ -41,4 +41,4 @@ void CClosure::trace([[maybe_unused]] GC& gc) {
 	/// TODO: mark upvalues.
 }
 
-} // namespace vyse 
+} // namespace vyse

@@ -1,4 +1,4 @@
-#include "common.hpp"
+#include "loadlib.hpp"
 #include "std/primitives/vy_list_proto.hpp"
 #include "std/vystrlib.hpp"
 #include "str_format.hpp"
@@ -9,6 +9,7 @@
 #include <std/base.hpp>
 #include <std/primitives/vy_number.hpp>
 #include <std/primitives/vy_string.hpp>
+#include <util/args.hpp>
 #include <vm.hpp>
 #include <vy_list.hpp>
 
@@ -17,27 +18,34 @@
 #include <debug.hpp>
 #endif
 
-#define ERROR(...)		 runtime_error(kt::format_str(__VA_ARGS__))
+#define ERROR(...) runtime_error(kt::format_str(__VA_ARGS__))
 #define INDEX_ERROR(v) ERROR("Attempt to index a '{}' value.", VYSE_TYPE_CSTR(v))
 #define CURRENT_LINE() (m_current_block->lines[ip - 1])
 
 #define CHECK_TYPE(v, typ, ...)                                                                    \
-	if (!VYSE_CHECK_TT(v, typ)) return ERROR(__VA_ARGS__)
+	if (!VYSE_CHECK_TT(v, typ)) {                                                                  \
+		return ERROR(__VA_ARGS__);                                                                 \
+	}
 
-#define FETCH()			(m_current_block->code[ip++])
+#define CHECK(cond, ...)                                                                           \
+	if (!(cond)) {                                                                                 \
+		return ERROR(__VA_ARGS__);                                                                 \
+	}
+
+#define FETCH() (m_current_block->code[ip++])
 #define NEXT_BYTE() (static_cast<u8>(m_current_block->code[ip++]))
 #define FETCH_SHORT()                                                                              \
-	(ip += 2, (u16)((static_cast<u8>(m_current_block->code[ip - 2]) << 8) |                          \
-									static_cast<u8>(m_current_block->code[ip - 1])))
-#define READ_VALUE()					(m_current_block->constant_pool[NEXT_BYTE()])
-#define GET_VAR(index)				(m_current_frame->base[index])
+	(ip += 2, (u16)((static_cast<u8>(m_current_block->code[ip - 2]) << 8) |                        \
+					static_cast<u8>(m_current_block->code[ip - 1])))
+#define READ_VALUE() (m_current_block->constant_pool[NEXT_BYTE()])
+#define GET_VAR(index) (m_current_frame->base[index])
 #define SET_VAR(index, value) (m_current_frame->base[index] = value)
 
 // PEEK(1) fetches the topmost value in the stack.
-#define PEEK(depth) m_stack.top[-depth]
-#define POP()				(m_stack.pop())
-#define DISCARD()		(--m_stack.top)
-#define POPN(n)			(m_stack.top -= n)
+#define PEEK(depth) m_stack.top[-(depth)]
+#define POP() (m_stack.pop())
+#define DISCARD() (--m_stack.top)
+#define POPN(n) (m_stack.top -= n)
 #define PUSH(value) m_stack.push(value)
 
 namespace vyse {
@@ -46,45 +54,46 @@ using Op = Opcode;
 using VT = ValueType;
 using OT = ObjType;
 
-#define IS_VAL_FALSY(v)	 ((VYSE_IS_BOOL(v) and !(VYSE_AS_BOOL(v))) or VYSE_IS_NIL(v))
+#define IS_VAL_FALSY(v) ((VYSE_IS_BOOL(v) and !(VYSE_AS_BOOL(v))) or VYSE_IS_NIL(v))
 #define IS_VAL_TRUTHY(v) (!IS_VAL_FALSY(v))
 
 #define UNOP_ERROR(op, v) ERROR("Cannot use operator '{}' on type '{}'.", op, VYSE_TYPE_CSTR(v))
 
-#define CMP_OP(op)                                                                                 \
-	do {                                                                                             \
-		Value b = m_stack.pop();                                                                       \
-		Value a = m_stack.pop();                                                                       \
+#define CMP_OP(op, proto_method)                                                                   \
+	do {                                                                                           \
+		Value& b = PEEK(1);                                                                        \
+		Value& a = PEEK(2);                                                                        \
                                                                                                    \
-		if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                       \
-			PUSH(VYSE_BOOL(VYSE_AS_NUM(a) op VYSE_AS_NUM(b)));                                           \
-		} else {                                                                                       \
-			return binop_error(#op, b, a);                                                               \
-		}                                                                                              \
+		if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                   \
+			m_stack.top[-2] = (VYSE_BOOL(VYSE_AS_NUM(a) op VYSE_AS_NUM(b)));                       \
+			DISCARD();                                                                             \
+		} else if (!call_binary_overload(#op, proto_method)) {                                     \
+			return ExitCode::RuntimeError;                                                         \
+		}                                                                                          \
 	} while (false);
 
-#define BINOP(op)                                                                                  \
-	do {                                                                                             \
-		Value& a = PEEK(1);                                                                            \
-		Value& b = PEEK(2);                                                                            \
+#define BINOP(op, proto_method_name)                                                               \
+	do {                                                                                           \
+		Value& right = PEEK(1);                                                                    \
+		Value& left = PEEK(2);                                                                     \
                                                                                                    \
-		if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                       \
-			VYSE_SET_NUM(b, VYSE_AS_NUM(b) op VYSE_AS_NUM(a));                                           \
-			DISCARD();                                                                                   \
-		} else {                                                                                       \
-			return binop_error(#op, b, a);                                                               \
-		}                                                                                              \
+		if (VYSE_IS_NUM(left) and VYSE_IS_NUM(right)) {                                            \
+			VYSE_SET_NUM(left, VYSE_AS_NUM(left) op VYSE_AS_NUM(right));                           \
+			DISCARD();                                                                             \
+		} else if (!call_binary_overload(#op, proto_method_name)) {                                \
+			return ExitCode::RuntimeError;                                                         \
+		}                                                                                          \
 	} while (false);
 
-#define BIT_BINOP(op)                                                                              \
-	Value& b = PEEK(1);                                                                              \
-	Value& a = PEEK(2);                                                                              \
+#define BIT_BINOP(op, proto_method_name)                                                           \
+	Value& b = PEEK(1);                                                                            \
+	Value& a = PEEK(2);                                                                            \
                                                                                                    \
-	if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                         \
-		VYSE_SET_NUM(a, VYSE_CAST_INT(a) op VYSE_CAST_INT(b));                                         \
-		DISCARD();                                                                                     \
-	} else {                                                                                         \
-		return binop_error(#op, a, b);                                                                 \
+	if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                       \
+		VYSE_SET_NUM(a, VYSE_CAST_INT(a) op VYSE_CAST_INT(b));                                     \
+		DISCARD();                                                                                 \
+	} else if (!call_binary_overload(#op, proto_method_name)) {                                    \
+		return ExitCode::RuntimeError;                                                             \
 	}
 
 #ifdef VYSE_DEBUG_RUNTIME
@@ -111,14 +120,14 @@ ExitCode VM::run() {
 		case Op::load_nil: PUSH(VYSE_NIL); break;
 
 		case Op::pop: m_stack.pop(); break;
-		case Op::add: BINOP(+); break;
-		case Op::sub: BINOP(-); break;
-		case Op::mult: BINOP(*); break;
+		case Op::add: BINOP(+, "__add"); break;
+		case Op::sub: BINOP(-, "__sub"); break;
+		case Op::mult: BINOP(*, "__mult"); break;
 
-		case Op::gt: CMP_OP(>); break;
-		case Op::lt: CMP_OP(<); break;
-		case Op::gte: CMP_OP(>=); break;
-		case Op::lte: CMP_OP(<=); break;
+		case Op::gt: CMP_OP(>, "__gt"); break;
+		case Op::lt: CMP_OP(<, "__lt"); break;
+		case Op::gte: CMP_OP(>=, "__gte"); break;
+		case Op::lte: CMP_OP(<=, "__lte"); break;
 
 		case Op::div: {
 			Value& a = PEEK(1);
@@ -130,7 +139,7 @@ ExitCode VM::run() {
 				}
 				VYSE_SET_NUM(b, VYSE_AS_NUM(b) / VYSE_AS_NUM(a));
 				DISCARD();
-			} else {
+			} else if (!call_binary_overload("/", "__div")) {
 				return binop_error("/", b, a);
 			}
 			break;
@@ -142,51 +151,51 @@ ExitCode VM::run() {
 			if (VYSE_IS_NUM(base) and VYSE_IS_NUM(power)) {
 				VYSE_SET_NUM(base, pow(VYSE_AS_NUM(base), VYSE_AS_NUM(power)));
 				DISCARD();
-			} else {
+			} else if (!call_binary_overload("/", "__exp")) {
 				return binop_error("**", base, power);
 			}
 			break;
 		}
 
 		case Op::mod: {
-			Value& a = PEEK(1);
-			Value& b = PEEK(2);
+			Value& left = PEEK(2);
+			Value& right = PEEK(1);
 
-			if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {
-				VYSE_SET_NUM(b, fmod(VYSE_AS_NUM(b), VYSE_AS_NUM(a)));
-			} else {
-				return binop_error("%", b, a);
+			if (VYSE_IS_NUM(left) and VYSE_IS_NUM(right)) {
+				VYSE_SET_NUM(left, fmod(VYSE_AS_NUM(left), VYSE_AS_NUM(right)));
+				DISCARD();
+			} else if (!call_binary_overload("%", "__mod")) {
+				return binop_error("%", left, right);
 			}
-
-			DISCARD();
 			break;
 		}
 
 		case Op::lshift: {
-			BIT_BINOP(<<);
+			BIT_BINOP(<<, "__bsl");
 			break;
 		}
 
 		case Op::rshift: {
-			BIT_BINOP(>>);
+			BIT_BINOP(>>, "__bsr");
 			break;
 		}
 
 		case Op::band: {
-			BIT_BINOP(&);
+			BIT_BINOP(&, "__band");
 			break;
 		}
 
 		case Op::bxor: {
-			BIT_BINOP(^);
+			BIT_BINOP(^, "__bxor");
 			break;
 		}
 
 		case Op::bor: {
-			BIT_BINOP(|);
+			BIT_BINOP(|, "__bor");
 			break;
 		}
 
+		/// TODO: overload with __eq
 		case Op::eq: {
 			Value a = m_stack.pop();
 			Value b = m_stack.pop();
@@ -203,10 +212,11 @@ ExitCode VM::run() {
 
 		case Op::negate: {
 			Value& operand = PEEK(1);
-			if (VYSE_IS_NUM(operand))
+			if (VYSE_IS_NUM(operand)) {
 				VYSE_SET_NUM(operand, -VYSE_AS_NUM(operand));
-			else
-				UNOP_ERROR("-", operand);
+			} else if (!call_unary_overload("__negate")) {
+				return UNOP_ERROR("-", operand);
+			}
 			break;
 		}
 
@@ -221,6 +231,7 @@ ExitCode VM::run() {
 			if (VYSE_IS_LIST(v)) {
 				PUSH(VYSE_NUM(VYSE_AS_LIST(v)->length()));
 			} else if (VYSE_IS_TABLE(v)) {
+				/// TODO: overload with __len
 				PUSH(VYSE_NUM(VYSE_AS_TABLE(v)->length()));
 			} else if (VYSE_IS_STRING(v)) {
 				PUSH(VYSE_NUM(VYSE_AS_STRING(v)->m_length));
@@ -234,7 +245,8 @@ ExitCode VM::run() {
 			if (VYSE_IS_NUM(PEEK(1))) {
 				VYSE_SET_NUM(PEEK(1), ~s64(VYSE_AS_NUM(PEEK(1))));
 			} else {
-				return ERROR("Cannot use operator '~' on value of type '{}'", VYSE_TYPE_CSTR(PEEK(1)));
+				return ERROR("Cannot use operator '~' on value of type '{}'",
+							 VYSE_TYPE_CSTR(PEEK(1)));
 			}
 			break;
 		}
@@ -272,15 +284,11 @@ ExitCode VM::run() {
 			break;
 		}
 
-		// In a for loop, the variables are to be set up in the
-		// stack as such: [counter, limit, step, i]
-		// Here, 'i' is the user exposed counter. The user is free to modify
-		// this variable, however the 'for_loop' instruction at the end
-		// of a loop's body will change it back to `counter + limit`.
-		// counter = counter - 1;
-		// i = counter;
-		// jump to to corresponding for_loop opcode;
-		// make some type checks;
+		// In a for loop, the variables are to be set up in the stack as such: [counter, limit,
+		// step, i]. Here, 'i' is the user exposed counter. The user is free to modify this
+		// variable, however the 'for_loop' instruction at the end of a loop's body will change it
+		// back to `counter + limit`. counter = counter - 1; i = counter; jump to to corresponding
+		// for_loop opcode; make some type checks;
 		case Op::for_prep: {
 			Value& counter = PEEK(3);
 			CHECK_TYPE(counter, VT::Number, "'for' variable not a number.");
@@ -370,7 +378,7 @@ ExitCode VM::run() {
 
 		case Op::close_upval: {
 			close_upvalues_upto(m_stack.top - 1);
-			POP();
+			DISCARD();
 			break;
 		}
 
@@ -384,13 +392,10 @@ ExitCode VM::run() {
 				auto left = VYSE_AS_STRING(a);
 				auto right = VYSE_AS_STRING(b);
 
-				// The second string has been popped
-				// off the stack and might not be reachable.
-				// by the GC. The allocation of the concatenated
-				// string might trigger a GC cycle.
-				gc_protect(right);
+				// The second string has been popped off the stack and might not be reachable by
+				// the GC. The allocation of the concatenated string might trigger a GC cycle.
+				GCLock _ = gc_lock(right);
 				a = concatenate(left, right);
-				gc_unprotect(right);
 			}
 			break;
 		}
@@ -406,7 +411,7 @@ ExitCode VM::run() {
 				VYSE_AS_LIST(vlist)->append(POP());
 			} else {
 				return ERROR("Attempt to append to a {} value. (Can only append to lists)",
-										 value_type_name(vlist));
+							 value_type_name(vlist));
 			}
 			break;
 		}
@@ -436,7 +441,8 @@ ExitCode VM::run() {
 				CHECK_TYPE(key, VT::Number, "List index not a number.");
 				number index = VYSE_AS_NUM(key);
 				if (index < 0 or index >= list.length()) {
-					return ERROR("List index out of bounds (index: {}, length: {}).", index, list.length());
+					return ERROR("List index out of bounds (index: {}, length: {}).", index,
+								 list.length());
 				}
 				list[index] = value;
 				m_stack.top[-1] = value; // assignment returns it's RHS.
@@ -450,7 +456,8 @@ ExitCode VM::run() {
 			break;
 		}
 
-		// table.key = value
+		/// table.key = value
+		/// TODO: overload with `__set`
 		case Op::table_set: {
 			const Value& key = READ_VALUE();
 			if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
@@ -466,6 +473,7 @@ ExitCode VM::run() {
 		}
 
 		// table.key
+		/// TODO: overload with `__get`
 		case Op::table_get: {
 			// TOS = as_table(TOS)->get(READ_VAL())
 			Value tvalue = PEEK(1);
@@ -490,49 +498,24 @@ ExitCode VM::run() {
 		}
 
 		// table_or_string_or_array[key]
+		/// TODO: overload with `__indx`
 		case Op::index: {
 			Value key = POP();
 			Value& tvalue = PEEK(1);
-
-			if (VYSE_IS_OBJECT(tvalue)) {
-				Obj* object = VYSE_AS_OBJECT(tvalue);
-				if (object->tag == OT::list) {
-					List& list = *static_cast<List*>(object);
-					CHECK_TYPE(key, VT::Number, "List index not a number.");
-					number index = VYSE_AS_NUM(key);
-					if (index < 0 or index >= list.length()) {
-						return ERROR("List index out of bounds (index: {}, length: {}).", index, list.length());
-					}
-					tvalue = list[index];
-					break;
-				} else if (object->tag == OT::table) {
-					tvalue = VYSE_AS_TABLE(tvalue)->get(key);
-				} else if (object->tag == OT::string) {
-					CHECK_TYPE(key, VT::Number, "string index must be a number (got {})",
-										 value_type_name(key));
-					const String* str = VYSE_AS_STRING(tvalue);
-					const s64 index = VYSE_AS_NUM(key);
-					if (index < 0 or index >= static_cast<s64>(str->m_length)) {
-						return ERROR("string index out of range.");
-					}
-					VYSE_SET_OBJECT(tvalue, char_at(str, index));
-				}
-			} else {
-				return INDEX_ERROR(tvalue);
+			if (!index_value(tvalue, key, tvalue)) {
+				return ExitCode::RuntimeError;
 			}
 			break;
 		}
 
-		// table[key]
 		case Op::index_no_pop: {
-			Value& vtable = PEEK(2);
+			const Value& value = PEEK(2);
 			const Value& key = PEEK(1);
-			if (VYSE_IS_TABLE(vtable)) {
-				if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
-				PUSH(VYSE_AS_TABLE(vtable)->get(key));
-			} else {
-				return INDEX_ERROR(vtable);
+			Value result;
+			if (!index_value(value, key, result)) {
+				return ExitCode::RuntimeError;
 			}
+			PUSH(result);
 			break;
 		}
 
@@ -545,6 +528,7 @@ ExitCode VM::run() {
 		// tbl <- POP()
 		// PUSH(tbl[READ_VALUE()])
 		// PUSH(tbl)
+		/// TODO: take care of overloaded `__indx`
 		case Op::prep_method_call: {
 			Value vtable = PEEK(1);
 			Value vkey = READ_VALUE();
@@ -554,7 +538,7 @@ ExitCode VM::run() {
 			if (VYSE_IS_TABLE(vtable)) {
 				m_stack.top[-1] = VYSE_AS_TABLE(vtable)->get(vkey);
 			} else {
-				m_stack.top[-1] = index_value(vtable, vkey);
+				m_stack.top[-1] = index_proto(vtable, vkey);
 			}
 			PUSH(vtable);
 
@@ -563,7 +547,7 @@ ExitCode VM::run() {
 
 		case Op::call_func: {
 			u8 argc = NEXT_BYTE();
-			Value value = PEEK(argc - 1);
+			Value value = PEEK(argc + 1);
 			if (!op_call(value, argc)) return ExitCode::RuntimeError;
 			break;
 		}
@@ -576,6 +560,7 @@ ExitCode VM::run() {
 			DISCARD();
 			PUSH(result);
 
+			// No more code to run, the script has executed successfully.
 			m_frame_count--;
 			if (m_frame_count == 0) {
 				return_value = result;
@@ -585,14 +570,14 @@ ExitCode VM::run() {
 			m_current_frame = m_current_frame->prev;
 			VYSE_ASSERT(m_current_frame != nullptr, "Invalid call stack state.");
 
-			// If the call site of this Vyse function was in C
-			// then we return  control to the C function.
+			// If the call site of this Vyse function was in C++ then we return control to the C++
+			// function.
 			if (m_current_frame->func->tag == OT::c_closure) {
 				return ExitCode::Success;
 			}
 
 			VYSE_ASSERT(m_current_frame->func->tag == OT::closure,
-									"Invalid callable object at callframe base.");
+						"Invalid callable object at callframe base.");
 			m_current_block = &static_cast<Closure*>(m_current_frame->func)->m_codeblock->block();
 			ip = m_current_frame->ip;
 			break;
@@ -646,10 +631,10 @@ Value VM::concatenate(const String* left, const String* right) {
 	std::memcpy(buf + left->len(), right->c_str(), right->len());
 
 	size_t hash = hash_cstring(buf, length);
-	String* interned = interned_strings.find_string(buf, length, hash);
+	String* const interned = interned_strings.find_string(buf, length, hash);
 
 	if (interned == nullptr) {
-		String* res = &make<String>(buf, length, hash);
+		String* res = &make_string_no_intern(buf, length, hash);
 		Value vresult = VYSE_OBJECT(res);
 		interned_strings.set(vresult, VYSE_BOOL(true));
 		return vresult;
@@ -675,7 +660,12 @@ void VM::set_global(String* name, Value value) {
 }
 
 void VM::set_global(const char* name, Value value) {
+	// When allocating space for the [name] string, a GC cycle may be triggered, so
+	// we have to protect the object from getting collected while that happens.
+	if (VYSE_IS_OBJECT(value)) m_stack.push(value);
 	String& sname = make_string(name, strlen(name));
+	if (VYSE_IS_OBJECT(value)) m_stack.pop();
+
 	m_global_vars[&sname] = value;
 }
 
@@ -690,9 +680,12 @@ void VM::set_global(const char* name, Value value) {
 #undef IS_VAL_TRUTHY
 #undef CMP_OP
 #undef PEEK
+#undef PUSH
+#undef DISCARD
+#undef POP
 
 ExitCode VM::interpret() {
-	bool ok = init();
+	const bool ok = init();
 	if (!ok) {
 		m_has_error = true;
 		return ExitCode::CompileError;
@@ -706,44 +699,44 @@ bool VM::init() {
 		return false;
 	}
 
-	Compiler compiler{this, m_source};
-	m_compiler = &compiler;
-
-	CodeBlock* code = m_compiler->compile();
-	// If the compilation failed, return false
-	// and signal a compile time error.
-	if (!compiler.ok()) return false;
-
-	// There are no reachable references to [code]
-	// when we allocate `script`. Since allocating a func
-	// can trigger a garbage collection cycle, we protect
-	// the code block.
-	gc_protect(code);
-	Closure* script = &make<Closure>(code, 0);
-
-	// Once the function has been made, [code] can
-	// be reached via `script->m_codeblock`, so we can
-	// unprotect it.
-	gc_unprotect(code);
-
+	Closure* const script = compile(*m_source);
+	if (script == nullptr) return false;
 	invoke_script(script);
 
 #ifdef VYSE_DEBUG_DISASSEMBLY
 	disassemble_block(script->name()->c_str(), *m_current_block);
 	printf("\n");
 #endif
-	m_compiler = nullptr;
+
 	return true;
 }
 
+Closure* VM::compile(const std::string& src) {
+	Compiler compiler{this, &src};
+	m_compiler = &compiler;
+
+	CodeBlock* const code = m_compiler->compile();
+
+	if (!compiler.ok()) {
+		m_compiler = nullptr;
+		return nullptr;
+	}
+
+	// There are no reachable references to [code] when we allocate `script`. Since allocating a
+	// function can trigger a garbage collection cycle, we protect the code block.
+	GCLock const lock = gc_lock(code);
+	Closure* const closure = &make<Closure>(code, 0);
+
+	m_compiler = nullptr;
+	return closure;
+}
+
 void VM::invoke_script(Closure* script) {
-	// clear the stack in case there is some leftover
-	// junk from previous invocations.
+	// clear the stack in case there is some leftover junk from previous invocations.
 	m_stack.clear();
-	// make sure there is enough room in the stack
-	// for this function call.
-	ensure_slots(script->m_codeblock->stack_size());
-	PUSH(VYSE_OBJECT(script));
+	// make sure there is enough room in the stack for this function call. +1 for the script itself.
+	ensure_slots(script->m_codeblock->stack_size() + 1);
+	m_stack.push(VYSE_OBJECT(script));
 	base_frame->base = m_stack.top - 1;
 	base_frame->ip = 0;
 	ip = 0;
@@ -759,14 +752,8 @@ ExitCode VM::runcode(const std::string& code) {
 }
 
 void VM::add_stdlib_object(const char* name, Obj* o) {
-	auto vglobal = VYSE_OBJECT(o);
-	// setting a global variable may trigger a garbage collection
-	// cycle (when allocating the [name] as vyse::String). At that
-	// point, vprint is only reachable on the C stack, so we protect
-	// it by pushing it on to the VM stack.
-	PUSH(vglobal);
+	Value const vglobal = VYSE_OBJECT(o);
 	set_global(name, vglobal);
-	DISCARD();
 }
 
 void VM::load_stdlib() {
@@ -776,6 +763,10 @@ void VM::load_stdlib() {
 	add_stdlib_object("byte", &make<CClosure>(stdlib::byte));
 	add_stdlib_object("assert", &make<CClosure>(stdlib::assert_));
 	add_stdlib_object("input", &make<CClosure>(stdlib::input));
+	add_stdlib_object("import", &make<CClosure>(stdlib::import));
+
+	/// Initialize the default package loader functions used by the `import` builtin.
+	dynloader.init_loaders(*this);
 
 	load_primitives();
 }
@@ -808,24 +799,21 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 	Upvalue* current = m_open_upvals;
 	Upvalue* prev = nullptr;
 
-	// keep going until we reach a slot whose
-	// depth is lower than what we've been looking
-	// for, or until we reach the end of the list.
+	// keep going until we reach a slot whose depth is lower than what we've been looking for, or
+	// until we reach the end of the list.
 	while (current != nullptr and current->m_value < slot) {
 		prev = current;
 		current = current->next_upval;
 	}
 
-	// We've found an upvalue that was
-	// already capturing a value at this stack
-	// slot, so we reuse the existing upvalue
+	// We've found an upvalue that was already capturing a value at this stack slot, so we reuse the
+	// existing upvalue
 	if (current != nullptr and current->m_value == slot) return current;
 
-	// We've reached a node in the list where the previous node is above the
-	// slot we wanted to capture, but the current node is deeper.
-	// Meaning `slot` points to a new value that hasn't been captured before.
-	// So we add it between `prev` and `current`.
-	Upvalue* upval = &make<Upvalue>(slot);
+	// We've reached a node in the list where the previous node is above the slot we wanted to
+	// capture, but the current node is deeper. Meaning `slot` points to a new value that hasn't
+	// been captured before. So we add it between `prev` and `current`.
+	Upvalue* const upval = &make<Upvalue>(slot);
 	upval->next_upval = current;
 
 	// prev is null when there are no upvalues.
@@ -840,9 +828,8 @@ Upvalue* VM::capture_upvalue(Value* slot) {
 
 void VM::close_upvalues_upto(Value* last) {
 	while (m_open_upvals != nullptr and m_open_upvals->m_value >= last) {
-		Upvalue* current = m_open_upvals;
-		// these two lines are the last rites of an
-		// upvalue, closing it.
+		Upvalue* const current = m_open_upvals;
+		// these two lines are the last rites of an upvalue, closing it.
 		current->closed = *current->m_value;
 		current->m_value = &current->closed;
 		m_open_upvals = current->next_upval;
@@ -850,22 +837,22 @@ void VM::close_upvalues_upto(Value* last) {
 }
 
 bool VM::call(int argc) {
-	VYSE_ASSERT(argc < (m_stack.top - m_stack.values), "Invalid stack state or incorrect arg count.");
+	VYSE_ASSERT(argc < (m_stack.top - m_stack.values),
+				"Invalid stack state or incorrect arg count.");
 
-	Value value = m_stack.peek(argc + 1);
-	bool ok = op_call(value, argc);
+	const Value& value = m_stack.peek(argc + 1);
+	const bool ok = op_call(value, argc);
 
-	// if the called object was a CClosure then
-	// execution has already finished and no need
-	// to call run() from here.
+	// If the called object was a CClosure then execution has already finished and no need to call
+	// run() from here.
 	if (VYSE_IS_CCLOSURE(value)) return ok;
-	ExitCode ec = run();
+	const ExitCode ec = run();
 	return ec == ExitCode::Success;
 }
 
 bool VM::op_call(Value value, u8 argc) {
-	if (!VYSE_IS_OBJECT(value)) {
-		ERROR("Attempt to call a {} value.", VYSE_TYPE_CSTR(value));
+	if (VYSE_IS_NIL(value)) {
+		ERROR("Attempt to call a nil value.");
 		return false;
 	}
 
@@ -874,23 +861,27 @@ bool VM::op_call(Value value, u8 argc) {
 		return false;
 	}
 
-	switch (VYSE_AS_OBJECT(value)->tag) {
-	case OT::closure: return call_closure(VYSE_AS_CLOSURE(value), argc);
-	case OT::c_closure: return call_cclosure(VYSE_AS_CCLOSURE(value), argc);
-	default: ERROR("Attempt to call a {} value.", VYSE_TYPE_CSTR(value)); return false;
+	if (VYSE_IS_OBJECT(value)) {
+		switch (VYSE_AS_OBJECT(value)->tag) {
+		case OT::closure: return call_closure(VYSE_AS_CLOSURE(value), argc);
+		case OT::c_closure: return call_cclosure(VYSE_AS_CCLOSURE(value), argc);
+		default: break; // fall
+		}
 	}
 
-	return false;
+	// not a function, so we get it's `__call` field and attempt to call it
+	const bool ok = call_func_overload(value, argc);
+	if (!ok) ERROR("Attempt to call a {} value.", VYSE_TYPE_CSTR(value));
+	return ok;
 }
 
 void VM::push_callframe(Obj* callable, int argc) {
 	VYSE_ASSERT(callable->tag == OT::c_closure or callable->tag == OT::closure,
-							"Non callable callframe pushed.");
+				"Non callable callframe pushed.");
 	VYSE_ASSERT(argc >= 0, "Negative argument count.");
 
-	// Save the current instruction pointer
-	// in the call frame so we can resume
-	// execution when the function returns.
+	// Save the current instruction pointer in the call frame so we can resume execution when the
+	// function returns.
 	m_current_frame->ip = ip;
 
 	// prepare the next call frame
@@ -921,15 +912,13 @@ void VM::pop_callframe() noexcept {
 	VYSE_ASSERT(m_frame_count > 1, "Attempt to pop base callframe.");
 	--m_frame_count;
 
-	/// If we are in the top level script,
-	/// then there is no older call frame.
+	// If we are in the top level script, then there is no older call frame.
 	if (m_frame_count == 0) return;
 
 	m_current_frame = m_current_frame->prev;
 	VYSE_ASSERT(m_current_frame != nullptr, "Invalid Call stack state.");
 
-	/// restore the instruction pointer to continue
-	/// from where we left off.
+	// restore the instruction pointer to continue from where we left off.
 	ip = m_current_frame->ip;
 
 	Obj* const callable = m_current_frame->func;
@@ -939,46 +928,204 @@ void VM::pop_callframe() noexcept {
 	}
 }
 
-bool VM::call_closure(Closure* func, int argc) {
-	int extra = argc - func->m_codeblock->param_count();
+bool VM::call_closure(Closure* func, int num_args) {
+	const int num_params = func->m_codeblock->param_count();
 
-	// make sure there is enough room in the stack
-	// for this function call.
+	// make sure there is enough room in the stack for this function call.
 	ensure_slots(func->m_codeblock->stack_size());
 
-	/// extra arguments are ignored and
-	/// arguments that aren't provded are replaced with nil.
-	/// TODO: avoid this by either intializing all stack slots
-	/// to nil or by not allowing calls with incorrect argument
-	/// count. (Make an exception for varargs.)
-	if (extra < 0) {
-		while (extra < 0) {
-			PUSH(VYSE_NIL);
-			argc++;
-			extra++;
+	/// extra arguments are ignored and arguments that aren't provded are replaced with nil.
+	if (num_args < num_params) {
+		// some parameters are missing
+		while (num_args != num_params) {
+			m_stack.push(VYSE_NIL);
+			num_args++;
 		}
+	} else if (func->m_codeblock->is_vararg()) {
+		num_args = prep_vararg_call(num_params, num_args);
 	} else {
-		while (extra > 0) {
-			DISCARD();
-			argc--;
-			extra--;
+		while (num_args != num_params) {
+			m_stack.pop();
+			num_args--;
 		}
 	}
 
-	push_callframe(func, argc);
+	assert(num_args == num_params);
+	push_callframe(func, num_args);
 	return true;
+}
+
+int VM::prep_vararg_call(int num_params, int num_args) {
+	VYSE_ASSERT(num_args >= num_params, "bad call to VM::prep_vararg_call");
+	List& varargs = make<List>();
+	int num_varargs = num_args - num_params + 1;
+	for (Value* arg = m_stack.top - num_varargs; arg < m_stack.top; ++arg) {
+		varargs.append(*arg);
+	}
+	m_stack.popn(num_varargs);
+	m_stack.push(VYSE_OBJECT(&varargs));
+	return num_params;
 }
 
 bool VM::call_cclosure(CClosure* cclosure, int argc) {
 	push_callframe(cclosure, argc);
-	CFunction c_func = cclosure->cfunc();
-	Value ret = c_func(*this, argc);
+	NativeFn c_func = cclosure->cfunc();
+
+	Value ret;
+	try {
+		ret = c_func(*this, argc);
+	} catch (const util::CArityException& ex) {
+		// incorrect number of arguments.
+		ERROR("In call to '{}': Expected {} arguments. Got {}.", ex.cfunc_name, ex.num_params,
+			  argc);
+		ret = VYSE_NIL;
+	} catch (const util::CTypeException& ex) {
+		ERROR("Bad argument #{} to '{}' expected {}, got {}.", ex.argn, ex.func_name,
+			  ex.expected_type_name, ex.received_type_name);
+		ret = VYSE_NIL;
+	} catch (const util::CMiscException& ex) {
+		ERROR("In call to '{}': {}", ex.fname, ex.message);
+		ret = VYSE_NIL;
+	}
+
 	pop_callframe();
 
 	m_stack.popn(argc);
 	m_stack.top[-1] = ret;
 
 	return !m_has_error;
+}
+
+bool VM::call_binary_overload(const char* op_str, const char* method_name) {
+	/// look for an overloaded method on each of the operands.
+	/// TODO: get rid of the temporary string object here
+	const Value mname = VYSE_OBJECT(&make_string(method_name));
+	const Value right = m_stack.pop();
+	const Value left = m_stack.pop();
+
+	Value method = index_proto(left, mname);
+	if (VYSE_IS_NIL(method)) method = index_proto(right, mname);
+	if (VYSE_IS_NIL(method)) {
+		binop_error(op_str, left, right);
+		return false;
+	}
+
+	ensure_slots(3);
+	m_stack.push(method);
+	m_stack.push(left);
+	m_stack.push(right);
+
+	return op_call(method, 2);
+}
+
+bool VM::call_unary_overload(const char* method_name) {
+	const Value mname = VYSE_OBJECT(&make_string(method_name));
+	const Value value = m_stack.pop();
+
+	const Value method = index_proto(value, mname);
+	if (VYSE_IS_NIL(method)) return false;
+
+	ensure_slots(2);
+	m_stack.push(method);
+	m_stack.push(value);
+
+	return op_call(method, 1);
+}
+
+bool VM::call_func_overload(Value& object, int argc) {
+	static constexpr const char* method_name = "__call";
+	static String& method_string = make_string(method_name);
+	static const Value field_name = VYSE_OBJECT(&method_string);
+
+	Value func;
+	bool ok = get_field_of_value(object, field_name, func);
+	assert(ok);
+
+	// Now to actually perform the overloaded, call, we need to adjust the stack
+	// from [object, args...] to [func, object, args...].
+	ensure_slots(1);
+	m_stack.push(VYSE_NIL);
+	for (int index = 1; index <= argc + 1; ++index) {
+		m_stack.top[-index] = m_stack.top[-index - 1];
+	}
+
+	m_stack.top[-argc - 2] = func;
+	return op_call(func, argc + 1);
+}
+
+bool VM::get_field_of_value(Value const& value, Value const& key, Value& inout) {
+	VYSE_ASSERT(VYSE_IS_STRING(key), "field name not a string");
+
+	if (VYSE_IS_TABLE(value)) {
+		Table* const object = VYSE_AS_TABLE(value);
+		inout = object->get(key);
+		return true;
+	}
+
+	Table* const proto = get_proto(value);
+	if (proto == nullptr) {
+		assert(VYSE_IS_NIL(value));
+		ERROR("Attempt to index a nil value.");
+		return false;
+	}
+
+	inout = proto->get(key);
+	return true;
+}
+
+bool VM::index_value(const Value& value, const Value& index, Value& result) {
+	if (VYSE_IS_OBJECT(value)) {
+		Obj* const object = VYSE_AS_OBJECT(value);
+		switch (object->tag) {
+		case OT::table: {
+			Table* const table = static_cast<Table*>(object);
+			result = table->get(index);
+			return true;
+		}
+		case OT::list: {
+			const List* list = static_cast<List*>(object);
+			if (not VYSE_IS_NUM(index)) {
+				ERROR("List index not a number.");
+				return false;
+			}
+
+			const number idx = VYSE_AS_NUM(index);
+			if (idx < 0 or idx >= list->length()) {
+				ERROR("List index out of bounds. (index: {}, length: {})", idx, list->length());
+				return false;
+			}
+			result = list->at(idx);
+			return true;
+		}
+		case OT::string: {
+			const String& string = *static_cast<String*>(object);
+			if (not VYSE_IS_NUM(index)) {
+				ERROR("String index not a number");
+				return false;
+			}
+
+			const number idx = VYSE_AS_NUM(index);
+			if (idx < 0 or idx >= string.m_length) {
+				ERROR("String index out of bounds. (index: {}, length: {})", idx, string.m_length);
+				return false;
+			}
+
+			result = VYSE_OBJECT(char_at(&string, idx));
+			return true;
+		}
+		default: break; // fallthrough to default
+		}
+	}
+
+	// find prototype of primitive value and index it with [index]
+	Table* const proto = get_proto(value);
+	assert(proto->tag == OT::table);
+	if (proto == nullptr) {
+		ERROR("Attempt to index a {} value.", VYSE_TYPE_CSTR(value));
+		return false;
+	}
+	result = proto->get(index);
+	return true;
 }
 
 // String operation helpers.
@@ -994,13 +1141,12 @@ String& VM::take_string(char* buf, size_t len) {
 	// look for an existing interened copy of the string.
 	String* interend = interned_strings.find_string(buf, len, hash);
 	if (interend != nullptr) {
-		// we now 'own' the string, so we are free to
-		// get rid of this buffer if we don't need it.
+		// we now 'own' the string, so we are free to get rid of this buffer if we don't need it.
 		delete[] buf;
 		return *interend;
 	}
 
-	String& string = make<String>(buf, len, hash);
+	String& string = make_string_no_intern(buf, len, hash);
 	interned_strings.set(VYSE_OBJECT(&string), VYSE_BOOL(true));
 	return string;
 }
@@ -1008,12 +1154,12 @@ String& VM::take_string(char* buf, size_t len) {
 String& VM::make_string(const char* chars, size_t length) {
 	size_t hash = hash_cstring(chars, length);
 
-	// If an identical string has already been created, then
-	// return a reference to the existing string instead.
+	// If an identical string has already been created, then return a reference to the existing
+	// string instead.
 	String* interned = interned_strings.find_string(chars, length, hash);
 	if (interned != nullptr) return *interned;
 
-	String* string = &make<String>(chars, length, hash);
+	String* string = &make_string_no_intern(chars, length, hash);
 	interned_strings.set(VYSE_OBJECT(string), VYSE_BOOL(true));
 
 	return *string;
@@ -1031,10 +1177,9 @@ void VM::ensure_slots(uint slots_needed) {
 	Value* old_stack = m_stack.values;
 	m_stack.values = static_cast<Value*>(realloc(m_stack.values, m_stack.size * sizeof(Value)));
 
-	// Now that the stack has moved in memory, the CallFrames and the
-	// Upvalue chain still contain dangling pointers to the old stack,
-	// so we update those to the same relative distance from the new
-	// stack's base address.
+	// Now that the stack has moved in memory, the CallFrames and the Upvalue chain still contain
+	// dangling pointers to the old stack, so we update those to the same relative distance from the
+	// new stack's base address.
 	for (CallFrame* cf = m_current_frame; cf; cf = cf->prev) {
 		cf->base = m_stack.values + (cf->base - old_stack);
 	}
@@ -1060,17 +1205,20 @@ size_t VM::collect_garbage() {
 // -- Error reporting --
 
 ExitCode VM::binop_error(const char* opstr, const Value& a, const Value& b) {
-	return ERROR("Cannot use operator '{}' on operands of type '{}' and '{}'.", opstr,
-							 VYSE_TYPE_CSTR(a), VYSE_TYPE_CSTR(b));
+	return ERROR("Bad types for operator '{}': '{}' and '{}'.", opstr, VYSE_TYPE_CSTR(a),
+				 VYSE_TYPE_CSTR(b));
 }
 
 ExitCode VM::runtime_error(const std::string& message) {
+	// avoid cascading errors if one error has already been reported
+	if (m_has_error) return ExitCode::RuntimeError;
+
 	m_has_error = true;
 
 	std::string error_str =
-			(m_current_frame->is_cclosure())
-					? kt::format_str("{}\nstack trace:\n", message)
-					: kt::format_str("[line {}]: {}\nstack trace:\n", CURRENT_LINE(), message);
+		(m_current_frame->is_cclosure())
+			? kt::format_str("[internal] {}\nstack trace:\n", message)
+			: kt::format_str("[line {}]: {}\nstack trace:\n", CURRENT_LINE(), message);
 
 	size_t trace_depth = 0;
 	for (CallFrame* frame = m_current_frame; frame; frame = frame->prev) {
@@ -1084,8 +1232,8 @@ ExitCode VM::runtime_error(const std::string& message) {
 		const Closure& func = *static_cast<Closure*>(frame->func);
 
 		const Block& block = func.m_codeblock->block();
-		VYSE_ASSERT(frame->ip >= 0 and frame->ip < block.lines.size(),
-								"IP not in range for std::vector<u32> block.lines.");
+		VYSE_ASSERT(frame->ip < block.lines.size(),
+					"IP not in range for std::vector<u32> block.lines.");
 
 		int line = block.lines[frame->ip];
 		if (frame == base_frame) {
@@ -1107,13 +1255,12 @@ ExitCode VM::runtime_error(const std::string& message) {
 	return ExitCode::RuntimeError;
 }
 
-// The default behavior on an error is to simply
-// print it to the stderr.
-void default_error_fn([[maybe_unused]] const VM& vm, std::string& err_msg) {
+// The default behavior on an error is to simply print it to the stderr.
+void default_error_fn([[maybe_unused]] const VM& vm, const std::string& err_msg) {
 	fprintf(stderr, "%s\n", err_msg.c_str());
 }
 
-char* default_readline([[maybe_unused]] const VM& vm) {
+char* default_readline(const VM&) {
 	size_t buf_size = 8;
 	char* buf = (char*)malloc(sizeof(char) * buf_size);
 
@@ -1132,8 +1279,12 @@ char* default_readline([[maybe_unused]] const VM& vm) {
 	return buf;
 }
 
-/// TODO: The user might need some objects even after the VM
-/// has been destructed. Add support for this.
+std::string default_find_module(VM&, const char*) {
+	return "return { x: 1 }";
+}
+
+/// TODO: The user might need some objects even after the VM has been destructed. Add support for
+/// this.
 VM::~VM() {
 	if (m_gc.m_objects == nullptr) return;
 	for (Obj* object = m_gc.m_objects; object != nullptr;) {

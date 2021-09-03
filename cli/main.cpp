@@ -29,7 +29,7 @@ std::optional<std::string> readfile(const char* filepath) {
 
 int main(int argc, char** argv) {
 	if (argc != 2) {
-		printf("The Vyse Programming Language. v 0.0.1 Pre-alpha .\n");
+		printf("The Vyse Programming Language. v0.0.1 Pre-alpha .\n");
 		printf("Usage: vy <filename>\n");
 		return 0;
 	}

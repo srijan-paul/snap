@@ -53,7 +53,12 @@ Token Scanner::next_token() noexcept {
 
 	case '&': return token_if_match('&', TT::And, TT::BitAnd);
 	case '|': return token_if_match('|', TT::Or, TT::BitOr);
-	case '.': return token_if_match('.', TT::Concat, TT::Dot);
+	case '.':
+		if (match('.')) {
+			return token_if_match('.', TT::DotDotDot, TT::Concat);
+		} else {
+			return make_token(TT::Dot);
+		}
 
 	case '^': return make_token(TT::BitXor);
 	case '~': return make_token(TT::BitNot);
@@ -96,20 +101,20 @@ typedef struct {
 } KeywordData;
 
 static constexpr KeywordData keywords[] = {
-		{"false", 5, TT::False}, {"true", 4, TT::True},
-		{"nil", 3, TT::Nil},		 {"or", 2, TT::Or},
-		{"and", 3, TT::Or},			 {"let", 3, TT::Let},
-		{"const", 5, TT::Const}, {"if", 2, TT::If},
-		{"else", 4, TT::Else},	 {"while", 5, TT::While},
-		{"fn", 2, TT::Fn},			 {"return", 6, TT::Return},
-		{"break", 5, TT::Break}, {"continue", 8, TT::Continue},
-		{"for", 3, TT::For},
+	{"false", 5, TT::False}, {"true", 4, TT::True},
+	{"nil", 3, TT::Nil},	 {"or", 2, TT::Or},
+	{"and", 3, TT::Or},		 {"let", 3, TT::Let},
+	{"const", 5, TT::Const}, {"if", 2, TT::If},
+	{"else", 4, TT::Else},	 {"while", 5, TT::While},
+	{"fn", 2, TT::Fn},		 {"return", 6, TT::Return},
+	{"break", 5, TT::Break}, {"continue", 8, TT::Continue},
+	{"for", 3, TT::For},
 };
 
 TT Scanner::kw_or_id_type() const {
 	for (auto& kw : keywords) {
 		if (kw.length == (current - start) and
-				std::memcmp(source->c_str() + start, kw.word, kw.length) == 0)
+			std::memcmp(source->c_str() + start, kw.word, kw.length) == 0)
 			return kw.ttype;
 	}
 	return TT::Id;
@@ -128,20 +133,22 @@ Token Scanner::number() {
 	return make_token(type);
 }
 
-/// TODO: escape characters.
+/// TODO: handle unterminated strings.
 Token Scanner::make_string(char quote) {
 	while (!(eof() or check(quote))) {
 		char c = next();
 		if (c == '\n') {
 			line_pos.line++;
 			line_pos.column = 1;
+		} else if (c == '\\') {
+			// unconditionally consume the next
+			// character since it's an escape sequence.
+			next();
 		}
 	}
-	if (eof()) {
-		return make_token(TT::Error);
-	} else {
-		next(); // eat the closing quote.
-	}
+
+	if (eof()) return make_token(TT::Error);
+	next(); // eat the closing quote.
 	return make_token(TT::String);
 }
 

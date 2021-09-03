@@ -83,7 +83,7 @@ void table_test() {
 	} 
 	return T.a + T.b
 	)",
-							VYSE_NUM(3), " Indexing tables with '.' operator");
+				VYSE_NUM(3), " Indexing tables with '.' operator");
 
 	// setting table field names.
 	test_return(R"(
@@ -94,19 +94,20 @@ void table_test() {
 		t.k = 3
 		return t.k +  a
 	)",
-							VYSE_NUM(10), "setting table field names");
+				VYSE_NUM(10), "setting table field names");
 
 	test_file("tables/table-1.vy", VYSE_NUM(3), "returning tables from a closure");
 	test_file("tables/table-2.vy", VYSE_NUM(6), "Accessing table fields");
 	test_file("tables/table-3.vy", VYSE_NUM(11), "Accessing table fields");
 	test_file("tables/table-4.vy", VYSE_NUM(10), "Computed member assignment and access");
 	test_file("tables/table-5.vy", VYSE_NUM(10),
-						"tables/Computed member access and dot member access are equivalent for string keys");
+			  "tables/Computed member access and dot member access are equivalent for string keys");
 	test_file("tables/table-6.vy", VYSE_NUM(25), "Compound assignment to computed members");
 	test_file("tables/table-7.vy", VYSE_NUM(10), "Syntactic sugar for table methods");
 	test_file("tables/table-8.vy", VYSE_NUM(1), "Empty tables.");
 	test_file("tables/table-9.vy", VYSE_NUM(30), "Chained dot and subscript operators.");
-	test_file("tables/keys.vy", VYSE_NUM(6), "Subscript operator in table key with interned strings");
+	test_file("tables/keys.vy", VYSE_NUM(6),
+			  "Subscript operator in table key with interned strings");
 	test_file("tables/point.vy", VYSE_NUM(50), "Constructor like functions. (point.vy)");
 	test_file("tables/method-1.vy", VYSE_NUM(3), "Method call syntax.");
 	test_file("tables/method-2.vy", VYSE_NUM(5), "Chained method calls.");
@@ -126,7 +127,7 @@ void global_test() {
 
 void string_test() {
 	test_string_return("strings/string-concat.vy", "this is a string",
-										 "Chained string concatenation");
+					   "Chained string concatenation");
 	test_string_return("strings/string.vy", "snap = good", "String cocatenation in blocks");
 	test_string_return("strings/gc-strcat.vy", "xyz", "String cocatenation and GC");
 	std::cout << "[String tests passed]\n";
@@ -151,7 +152,7 @@ void loop_test() {
 	test_file("loop/for/continue.vy", VYSE_NUM(25), "continue in for-loop");
 	test_file("loop/for/break.vy", VYSE_NUM(28), "break in for-loop");
 	test_file("loop/for/for-mut-counter.vy", VYSE_NUM(45),
-						"for-loop that tries to change the counter inside loop body");
+			  "for-loop that tries to change the counter inside loop body");
 	test_file("loop/for/nest.vy", VYSE_NUM(870), "nested for loops");
 	test_file("loop/for/in-closure.vy", VYSE_NUM(110), "for-loop inside closure.");
 }

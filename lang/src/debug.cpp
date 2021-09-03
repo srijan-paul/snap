@@ -84,8 +84,8 @@ size_t disassemble_instr(const Block& block, Op op, size_t offset) {
 			bool is_local = int(block.code[offset++]);
 			if (is_local) {
 				int idx = static_cast<int>(block.code[++offset]);
-				printf("        %-4zu  %-22s  %s %d\n", offset - 1, " ", (is_local == 0) ? "upvalue" : "local",
-							 idx);
+				printf("        %-4zu  %-22s  %s %d\n", offset - 1, " ",
+					   (is_local == 0) ? "upvalue" : "local", idx);
 			}
 		}
 		return offset - old_loc + 1;
