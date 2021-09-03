@@ -68,8 +68,11 @@ Vyse aims to keep most of what Lua provides, but address the aforementioned issu
 Here is a rough overview of the language's syntax and features:
 
 ```lua
+-- importing modules is done with the builtin 'import' function
+const math = import("math")
+
 --  variable declaration and assignment
-const PI = 3.14159  -- variables declared with const are immutable
+const PI = math.pi -- variables declared with const are immutable
 let radius = 10
 
 --  Function declaration
