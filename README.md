@@ -231,6 +231,7 @@ Currently, syntax highlighting and code completion snippets are supported on the
 
 # Development
 
-If you're looking to fork contribute to vyse, It is recommended to have clang-format for formatting and clangd language server for your text editor. On VSCode, the `C/C++` extension can be used to debug the executable. Alternatively, you can use GDC/LLDB or other debuggers to your liking.
+If you're looking to contribute to vyse, It is recommended to have clang-format for formatting and clangd language server for your text editor. On VSCode, the `C/C++` extension can be used to debug the executable. Alternatively, you can use GDC/LLDB or other debuggers to your liking.
 
 All the source and header files for vyse are present in the `lang` directory in the project's root folder.
+The primitive CLI module is present under `cli/`.
