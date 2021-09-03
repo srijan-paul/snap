@@ -196,13 +196,13 @@ You can either run all benchmarks, or run specific benchmarks.
 To run all benchmarks, enter the following into your shell:
 ```sh
 cd benchmarks
-py run.py
+python3 run.py
 ```
 
 To run, a specific benchmark, use the `--bench` option:
 
 ```sh
-py run.py --bench=fib
+python3 run.py --bench=fib
 ```
 
 # Tests
