@@ -3,7 +3,7 @@
 
 namespace vyse {
 
-struct Upvalue final : public Obj {
+class Upvalue final : public Obj {
   public:
 	explicit constexpr Upvalue(Value* v) noexcept : Obj(ObjType::upvalue), m_value{v} {};
 	~Upvalue() = default;
