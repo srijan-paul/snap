@@ -16,11 +16,9 @@ jobs:
       - name: Install submodule dependencies 
         run:  git submodule update --init --recursive
 
-      - name: Initialize build directory
-        run: mkdir -p bin && cd bin
-      
       - name: Create build scripts
-        run: cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=true -DSTRESS_GC=true -DLOG_GC=false -DLOG_DIASM=false
+        run: mkdir -p bin && cd bin && 
+          cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=true -DSTRESS_GC=true -DLOG_GC=false -DLOG_DIASM=false
 
       - name: Build project and run tests
         run: cd bin && ninja && ctest --rerun-failed --output-on-failure
