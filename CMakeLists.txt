@@ -7,11 +7,18 @@ set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lang/src")
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${SOURCE_DIR}/*.cpp")
 set(INCLUDE_DIR lang/include/vyse)
 
+set(STRESS_GC OFF CACHE BOOL "Runs garbage collector as often as possible")
+set(LOG_GC OFF CACHE BOOL "Logs GC output on every GC event.")
+set(LOG_DISASM OFF CACHE BOOL "Logs program disassembly before execution.")
+set(BUILD_TESTS ON CACHE BOOL "Compile the test suite.")
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
 endif()
 
-enable_testing()
+if(BUILD_TESTS)
+  enable_testing()
+endif()
 
 function(LINK_VYSE_DEPS EXEC)
     target_link_libraries(${EXEC} ${PROJECT_NAME})
@@ -30,11 +37,26 @@ target_link_libraries(${PROJECT_NAME} PRIVATE dino::dino)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
+if(STRESS_GC)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC -DVYSE_STRESS_GC)
+endif()
+
+if(LOG_GC)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC -DVYSE_LOG_GC)
+endif()
+
+if(LOG_DISASM)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC -DVYSE_DEBUG_DISASSEMBLY)
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL Debug)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC -DVYSE_DEBUG)
+endif()
+
 # exclude windows' stupid lowercase macros like 'min' and 'max'
 # to stop them from interfering with vyse code.
 target_compile_definitions(${PROJECT_NAME} PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
 target_compile_options(${PROJECT_NAME} PUBLIC "-Wall" "-Wpedantic" "-Wextra" "-fexceptions")
-
 
 # Builds a shared object file from a vyse standard library source file
 function(BUILD_VYSE_LIB LIB_NAME)
@@ -66,13 +88,13 @@ function(PREPARE_TEST EXE_NAME TEST_NAME FILE_NAME)
     add_test(${TEST_NAME} ${EXE_NAME})
 endfunction()
 
-if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
+if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
   option(VYSE_TESTS "Build tests" ON)
 else()
   option(VYSE_TESTS "Build tests" OFF)
 endif()
 
-if (VYSE_TESTS)
+if(VYSE_TESTS AND BUILD_TESTS)
   PREPARE_TEST(scanner-test ScannerTests "scanner-test.cpp")
   PREPARE_TEST(compiler-test CompilerTests "compiler-test.cpp")
   PREPARE_TEST(vm-test VMTest "vm-test.cpp")
