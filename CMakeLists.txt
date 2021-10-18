@@ -7,9 +7,9 @@ set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lang/src")
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${SOURCE_DIR}/*.cpp")
 set(INCLUDE_DIR lang/include/vyse)
 
-set(STRESS_GC OFF CACHE BOOL "Runs garbage collector as often as possible")
-set(LOG_GC OFF CACHE BOOL "Logs GC output on every GC event.")
-set(LOG_DISASM OFF CACHE BOOL "Logs program disassembly before execution.")
+set(STRESS_GC OFF CACHE BOOL "Run garbage collector as often as possible")
+set(LOG_GC OFF CACHE BOOL "Log GC output on every GC event.")
+set(LOG_DISASM OFF CACHE BOOL "Log program disassembly before execution.")
 set(BUILD_TESTS ON CACHE BOOL "Compile the test suite.")
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -28,7 +28,7 @@ endfunction()
 # The dino helper is used for dynamic library loading.
 add_subdirectory("ext/dino")
 
-# static library
+# The vyse static library
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIR})
 target_include_directories(${PROJECT_NAME} PUBLIC "ext/dino/include")
@@ -37,6 +37,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE dino::dino)
 set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_17)
 
+# Configure some macros based on flags.
 if(STRESS_GC)
   target_compile_definitions(${PROJECT_NAME} PUBLIC -DVYSE_STRESS_GC)
 endif()
@@ -49,9 +50,7 @@ if(LOG_DISASM)
   target_compile_definitions(${PROJECT_NAME} PUBLIC -DVYSE_DEBUG_DISASSEMBLY)
 endif()
 
-if(CMAKE_BUILD_TYPE STREQUAL Debug)
-  target_compile_definitions(${PROJECT_NAME} PUBLIC -DVYSE_DEBUG)
-endif()
+target_compile_definitions(${PROJECT_NAME} PUBLIC  $<$<CONFIG:Debug>:VYSE_DEBUG>)
 
 # exclude windows' stupid lowercase macros like 'min' and 'max'
 # to stop them from interfering with vyse code.

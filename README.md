@@ -182,13 +182,31 @@ After downloading/cloning vyse into a directory, `cd` into it and run the follow
 ```bash
 mkdir bin
 cd bin
-cmake .. -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+cmake .. -G Ninja -DBUILD_TESTS=true -DCMAKE_BUILD_TYPE=Debug -DSTRESS_GC=true -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 ninja
 ./vy <filename>
 ```
 
-Note that `-CMAKE_C_COMPILER=clang -CMAKE_CXX_COMPILER=clang++` are optional, and you can use any C++ compiler toolchain of your liking. The above will build the compiler in **Debug** mode.
-To build in release mode, add the `-DCMAKE_BUILD_TYPE=Release` argument.
+The CMake script accepts some options, namely:
+
+| Option               | Values            | Description                                                                                                       |
+|----------------------|-------------------|-------------------------------------------------------------------------------------------------------------------|
+| `-DCMAKE_BUILD_TYPE` | `Release`/`Debug` | Compilation mode for the C++ compiler. Also enables runtime assertions.                                                                            |
+| `-DBUILD_TESTS`      | `true`/`false`    | Whether to build the test suite.                                                                                  |
+| `-DSTRESS_GC`        | `true`/`false`    | When `true`, runs the garbage collector whenever possible. Useful for catching GC bugs.                             |
+| `-DLOG_GC`           | `true`/`false`    | When `true`, logs the GC status on every cycle.                                                                   |
+| `-DLOG_DISASM`       | `true`/`false`    | When `true`, dumps the bytecode disassembly of every program after the compiler pass, before running it on the VM |
+
+Note that `-CMAKE_C_COMPILER=clang -CMAKE_CXX_COMPILER=clang++` are optional, and you can use any C++ compiler toolchain of your liking.
+The aforementioned snippet will build the project in debug mode, which is preferred for development but is much, much slower.
+
+For an optimized release build, use:
+
+```sh
+cmake .. -G Ninja -DBUILD_TESTS=true -DCMAKE_BUILD_TYPE=Release -DSTRESS_GC=false -DLOG_GC=false -DLOG_DISASM=false
+```
+
+When the compilation mode is `release`, all the other options are automatically disabled.
 
 # Benchmarks
 
