@@ -1139,11 +1139,11 @@ String& VM::take_string(char* buf, size_t len) {
 	size_t hash = hash_cstring(buf, len);
 
 	// look for an existing interened copy of the string.
-	String* interend = interned_strings.find_string(buf, len, hash);
-	if (interend != nullptr) {
+	String* interned = interned_strings.find_string(buf, len, hash);
+	if (interned != nullptr) {
 		// we now 'own' the string, so we are free to get rid of this buffer if we don't need it.
 		delete[] buf;
-		return *interend;
+		return *interned;
 	}
 
 	String& string = make_string_no_intern(buf, len, hash);

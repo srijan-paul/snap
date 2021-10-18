@@ -23,12 +23,9 @@ using std::size_t;
 using number = double;
 using integer = int64_t;
 
-#define VYSE_DEBUG
-
 #ifdef VYSE_DEBUG
 
-// #define VYSE_DEBUG_RUNTIME		 1
-// #define VYSE_DEBUG_DISASSEMBLY 1
+// #define VYSE_DEBUG_RUNTIME 1
 
 #define VYSE_ASSERT(cond, message)                                                                 \
 	((cond) ? 0                                                                                    \
@@ -39,9 +36,6 @@ using integer = int64_t;
 	(fprintf(stderr, "[%s:%d]: Interal Error: %s", __func__, __LINE__, message), abort())
 
 #define VYSE_UNREACHABLE() VYSE_ERROR("Unreachable code point reached.")
-
-#define VYSE_STRESS_GC 1
-// #define VYSE_LOG_GC 1
 
 #else
 
