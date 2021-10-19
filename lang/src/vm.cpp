@@ -624,7 +624,7 @@ ExitCode VM::run() {
 Value VM::concatenate(const String* left, const String* right) {
 	size_t length = left->len() + right->len();
 
-	char* buf = new char[length + 1];
+	char* const buf = new char[length + 1];
 	buf[length] = '\0';
 
 	std::memcpy(buf, left->c_str(), left->len());
@@ -634,7 +634,7 @@ Value VM::concatenate(const String* left, const String* right) {
 	String* const interned = interned_strings.find_string(buf, length, hash);
 
 	if (interned == nullptr) {
-		String* res = &make_string_no_intern(buf, length, hash);
+		String* const res = &make_string_no_intern(buf, length, hash);
 		Value vresult = VYSE_OBJECT(res);
 		interned_strings.set(vresult, VYSE_BOOL(true));
 		return vresult;
