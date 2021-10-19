@@ -104,21 +104,23 @@ void Compiler::toplevel() {
 	if (has_error) goto_eof();
 	if (eof()) return;
 
-	const TT tt = peek.type;
+	const TT token_type = peek.type;
 
-	switch (tt) {
+	// clang-format off
+	switch (token_type) {
 	case TT::Const:
-	case TT::Let: var_decl(); break;
-	case TT::LCurlBrace: block_stmt(); break;
-	case TT::If: if_stmt(); break;
-	case TT::While: while_stmt(); break;
-	case TT::For: for_stmt(); break;
-	case TT::Fn: fn_decl(); break;
-	case TT::Return: ret_stmt(); break;
-	case TT::Break: break_stmt(); break;
-	case TT::Continue: continue_stmt(); break;
-	default: expr_stmt(); break;
+	case TT::Let:        var_decl();      break;
+	case TT::LCurlBrace: block_stmt();    break;
+	case TT::If:         if_stmt();       break;
+	case TT::While:      while_stmt();    break;
+	case TT::For:        for_stmt();      break;
+	case TT::Fn:         fn_decl();       break;
+	case TT::Return:     ret_stmt();      break;
+	case TT::Break:      break_stmt();    break;
+	case TT::Continue:   continue_stmt(); break;
+	default:             expr_stmt();     break;
 	}
+	// clang-format on
 	match(TT::Semi);
 }
 
@@ -1154,32 +1156,34 @@ inline void Compiler::emit(Op a, Op b) {
 }
 
 Op Compiler::toktype_to_op(TT toktype) const noexcept {
+	// clang-format off
 	switch (toktype) {
 	case TT::Plus:
-	case TT::PlusEq: return Op::add;
+	case TT::PlusEq:             return Op::add;
 	case TT::Minus:
-	case TT::MinusEq: return Op::sub;
+	case TT::MinusEq:            return Op::sub;
 	case TT::Div:
-	case TT::DivEq: return Op::div;
+	case TT::DivEq:              return Op::div;
 	case TT::Mult:
-	case TT::MultEq: return Op::mult;
+	case TT::MultEq:             return Op::mult;
 	case TT::Mod:
-	case TT::ModEq: return Op::mod;
-	case TT::EqEq: return Op::eq;
-	case TT::BangEq: return Op::neq;
-	case TT::Concat: return Op::concat;
-	case TT::BitLShift: return Op::lshift;
-	case TT::BitRShift: return Op::rshift;
-	case TT::BitAnd: return Op::band;
-	case TT::BitOr: return Op::bor;
-	case TT::BitXor: return Op::bxor;
-	case TT::Gt: return Op::gt;
-	case TT::Lt: return Op::lt;
-	case TT::GtEq: return Op::gte;
-	case TT::LtEq: return Op::lte;
-	case TT::Exp: return Op::exp;
-	default: VYSE_UNREACHABLE(); break;
+	case TT::ModEq:              return Op::mod;
+	case TT::EqEq:               return Op::eq;
+	case TT::BangEq:             return Op::neq;
+	case TT::Concat:             return Op::concat;
+	case TT::BitLShift:          return Op::lshift;
+	case TT::BitRShift:          return Op::rshift;
+	case TT::BitAnd:             return Op::band;
+	case TT::BitOr:              return Op::bor;
+	case TT::BitXor:             return Op::bxor;
+	case TT::Gt:                 return Op::gt;
+	case TT::Lt:                 return Op::lt;
+	case TT::GtEq:               return Op::gte;
+	case TT::LtEq:               return Op::lte;
+	case TT::Exp:                return Op::exp;
+	default: VYSE_UNREACHABLE(); return Op::no_op;
 	}
+	// clang-format on
 }
 
 #define CHECK_ARITY(x, y) ((x) >= (Op_##y##_operands_start) and ((x) <= (Op_##y##_operands_end)))
