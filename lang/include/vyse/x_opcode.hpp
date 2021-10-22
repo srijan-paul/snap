@@ -84,13 +84,13 @@ OP(new_list, 0, 1),  // create a new list  and push it onto the stack
 OP(index_set, 0, -2),
 
 // when the stack state is [ LIST, KEY, VALUE ],
-// VALUE = POP(); KEY = POP(); LIST = POP();
+// VALUE = POP(); KEY = POP(); LIST = PEEK(1);
 // LIST[KEY] = VALUE
 OP(table_add_field, 0, -2),
 
 // INDEX = POP(); LIST = POP();
 // PUSH(LIST[INDEX])
-OP(index, 0, -1),
+OP(subscript, 0, -1),
 
 // INDEX = PEEK(1); LIST = PEEK(2);
 // PUSH(LIST[INDEX])

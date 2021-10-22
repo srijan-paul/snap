@@ -507,7 +507,7 @@ void Compiler::complete_expr_stmt(ExpKind prefix_type) {
 				emit(Op::index_set);
 				return;
 			} else {
-				emit(Op::index);
+				emit(Op::subscript);
 				exp_kind = ExpKind::prefix;
 			}
 			break;
@@ -679,7 +679,7 @@ void Compiler::suffix_expr() {
 			advance();
 			expr();
 			expect(TT::RSqBrace, "Expected ']' to close index expression.");
-			emit(Op::index);
+			emit(Op::subscript);
 			break;
 		}
 		case TT::LParen: compile_args(); break;
@@ -730,7 +730,7 @@ void Compiler::table_assign(Op get_op, int idx) {
 void Compiler::compile_args(bool is_method) {
 	advance(); // eat opening '('
 
-	/// If it's a method call, then start with 1 argument count for the implicit 'self' argument.
+	// If it's a method call, then start with 1 argument count for the implicit 'self' argument.
 	u32 argc = is_method ? 1 : 0;
 
 	if (!check(TT::RParen)) {
@@ -783,7 +783,7 @@ void Compiler::primary() {
 void Compiler::table() {
 	emit(Opcode::new_table);
 
-	/// empty table.
+	// empty table.
 	if (match(TT::RCurlBrace)) return;
 
 	do {
@@ -797,7 +797,7 @@ void Compiler::table() {
 			const int key_idx = emit_value(VYSE_OBJECT(key_string));
 			emit_with_arg(Op::load_const, key_idx);
 			if (check(TT::LParen)) {
-				func_expr(key_string, true); // is_methpd = true, is_arrow = false
+				func_expr(key_string, true); // is_method = true, is_arrow = false
 				emit(Op::table_add_field);
 				if (check(TT::RCurlBrace)) break;
 				continue;

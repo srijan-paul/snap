@@ -88,11 +88,8 @@ class VM {
 	ExitCode interpret();
 
 	struct CallFrame {
-		/// `func` is either an instance of CClosure
-		///  or Closure. However, since it can be
-		///  any of the two, we store a pointer to
-		///  to it's base class and check which one it
-		///  really is at runtime. (using the [tag] field)
+		/// `func` references the callable object assosciated with this call frame.
+		/// We use `func->tag` to determine what type of object this is exactly at runtime.
 		Obj* func = nullptr;
 
 		/// The next instruction to be executed in this function.
@@ -107,7 +104,7 @@ class VM {
 		CallFrame* next = nullptr;
 		CallFrame* prev = nullptr;
 
-		bool is_cclosure() const noexcept {
+		[[nodiscard]] bool is_cclosure() const noexcept {
 			return func->tag == ObjType::c_closure;
 		}
 	};
@@ -264,7 +261,7 @@ class VM {
 
 	/// @brief returns the amount of memory currently allocated by the VM. Note that this only
 	/// includes the memory allocated Garbage collectable objects on the heap and not stack values.
-	size_t memory() const noexcept {
+	[[nodiscard]] size_t memory() const noexcept {
 		return m_gc.bytes_allocated;
 	}
 
@@ -298,7 +295,7 @@ class VM {
 
 	/// @brief The VM's value stack. All operations in Vyse are done by popping from and pushing to
 	/// this data structure.
-	Stack m_stack;
+	VMStack m_stack;
 
 	using NativeLib = DynLoader::Lib;
 
@@ -429,7 +426,7 @@ class VM {
 	/// @param index The value to index `value` with.
 	/// @param result An inout parameter containing the result of the operation.
 	/// @return true if the indexing succeeds, false if there is an error
-	bool index_value(const Value& value, const Value& index, Value& result);
+	bool subscript_value(const Value& value, const Value& index, Value& result);
 
 	/// @brief concatenates two strings. Will intern the resulting
 	/// string if it isn't already interned.
