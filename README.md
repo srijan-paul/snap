@@ -26,7 +26,7 @@
 [![Discord](https://img.shields.io/discord/591914197219016707.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/qvtfJXJMRH)
 [![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/tterb/atomic-design-ui/blob/master/LICENSEs)
 
-Vyse is a dynamically typed, interpreted and fast scriptling language inspired by Lua for rapid prototyping of applications like video games. Programmers familiar with Lua/Javascript can pick up vyse within an hour.
+Vyse is a dynamically typed, interpreted and fast scriptling language inspired by Lua for rapid prototyping of applications like video games. Programmers familiar with Lua/Javascript can pick up the language within an hour.
 Vyse also comes with a C++ API for frictionless embedding in projects.
 
 ## Table of Contents
