@@ -1175,6 +1175,37 @@ String& VM::make_string(const char* chars, size_t length) {
 	return *string;
 }
 
+/* 
+ * Growing the VM stack is done by `realloc`ing the old stack buffer to a new
+ * location in memory. However, when we do so, we must be careful enough to update
+ * all pointers that pointed to the old stack. Let's use call frames as an example.
+ * Every call frame has a 'base' pointer, that points to the first slot in the stack
+ * which belongs to the frame. When the stack is moved to a new location, this
+ * 'base' pointer must also be updated.
+ * 
+ * The key idea is that since the contents and state of the stack are preserved on
+ * growth, so the distance between the old stack's base and the callframe's base is
+ * equal to the distance between the new stack's base and the callframe's base.
+ *
+ * dH = call_frame.base - old_stack.base
+ * call_frame.base = new_stack.base + dH
+ *
+ *                                                                    +--------+
+ *                                                                    |        |
+ *                                                                    |--------|
+ * +-------+                                                          |        |
+ * |       |      (BEFORE)                         (AFTER)            |--------|
+ * |-------| <- call_frame.base -+                                    |        |
+ * |       |                     |            +- call_frame.base ->   |--------|
+ * |-------|                     |  dH1 = dH2 |                       |        |
+ * |       |                     |            |                       |--------|
+ * +-------+ <- old_stack.base  -+            |                       |        |
+ *                                            +- new_stack.base  ->   +--------+
+ * OLD STACK                                                          NEW STACK
+ *
+ * Similarly, we also update the pointers in the upvalue chain of the VM.
+ *
+*/
 void VM::ensure_slots(uint num_requested_slots) {
 	const std::ptrdiff_t num_used_slots = m_stack.top - m_stack.values;
 	const uint num_free_slots = m_stack.size - num_used_slots;
