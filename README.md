@@ -11,7 +11,7 @@
   <p align="center">
    An elegant and embeddable programming language
     <br />
-    <a href="https://github.com/srijan-paul/vyse/blob/main/doc/manual.md"><b>Visit the language spec »</b></a>
+    <a href="https://github.com/srijan-paul/snap/blob/main/doc/manual.md"><b>Visit the language spec »</b></a>
     <a href="https://srijan-paul.github.io/vyse"><b>Website »</b>
     </a>
     <br />
@@ -22,13 +22,12 @@
   </p>
 </p>
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/13bade553aab46f7a592dcb881c925d9)](https://www.codacy.com/gh/srijan-paul/snap/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=srijan-paul/snap&amp;utm_campaign=Badge_Grade) 
 ![CI Status](https://github.com/srijan-paul/snap/actions/workflows/test.yml/badge.svg)
 [![Discord](https://img.shields.io/discord/591914197219016707.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/qvtfJXJMRH)
 [![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/tterb/atomic-design-ui/blob/master/LICENSEs)
 
-Vyse is a dynamically typed, interpreted and fast scriptling language inspired by Lua for rapid prototyping of applications like video games.
-(Note that this is a work in progresss project and few of promised are currently under development, It is advised to not use vyse for any development purposes in it's current stage).
+Vyse is a dynamically typed, interpreted and fast scriptling language inspired by Lua for rapid prototyping of applications like video games. Programmers familiar with Lua/Javascript can pick up vyse within an hour.
+Vyse also comes with a C++ API for frictionless embedding in projects.
 
 ## Table of Contents
 
