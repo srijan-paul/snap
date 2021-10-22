@@ -434,28 +434,14 @@ ExitCode VM::run() {
 		}
 
 		// table_or_list[key] = value
-		case Op::index_set: {
-			Value value = POP();
+		case Op::subscript_set: {
+			Value rhs = POP();
 			Value key = POP();
+			Value& lhs = PEEK(1);
 
-			Value& tvalue = PEEK(1);
-			if (VYSE_IS_LIST(tvalue)) {
-				List& list = *VYSE_AS_LIST(tvalue);
-				CHECK_TYPE(key, VT::Number, "List index not a number.");
-				number index = VYSE_AS_NUM(key);
-				if (index < 0 or index >= list.length()) {
-					return ERROR("List index out of bounds (index: {}, length: {}).", index,
-								 list.length());
-				}
-				list[index] = value;
-				m_stack.top[-1] = value; // assignment returns it's RHS.
-			} else if (VYSE_IS_TABLE(tvalue)) {
-				if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
-				VYSE_AS_TABLE(tvalue)->set(key, value);
-				m_stack.top[-1] = value; // assignment returns it's RHS.
-			} else {
-				return ERROR("Attempt to index a {} value.", VYSE_TYPE_CSTR(tvalue));
-			}
+			bool ok = subscript_set(lhs, key, rhs);
+			// assignment returns it's RHS.
+			m_stack.top[-1] = ok ? rhs : VYSE_NIL;
 			break;
 		}
 
@@ -502,10 +488,10 @@ ExitCode VM::run() {
 
 		// table_or_string_or_array[key]
 		/// TODO: overload with `__indx`
-		case Op::subscript: {
+		case Op::subscript_get: {
 			Value key = POP();
 			Value& tvalue = PEEK(1);
-			if (!subscript_value(tvalue, key, tvalue)) {
+			if (!get_subscript_of_value(tvalue, key, tvalue)) {
 				return ExitCode::RuntimeError;
 			}
 			break;
@@ -515,7 +501,7 @@ ExitCode VM::run() {
 			const Value& value = PEEK(2);
 			const Value& key = PEEK(1);
 			Value result;
-			if (!subscript_value(value, key, result)) {
+			if (!get_subscript_of_value(value, key, result)) {
 				return ExitCode::RuntimeError;
 			}
 			PUSH(result);
@@ -1078,7 +1064,7 @@ bool VM::get_field_of_value(Value const& value, Value const& key, Value& inout) 
 	return true;
 }
 
-bool VM::subscript_value(const Value& value, const Value& index, Value& result) {
+bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& result) {
 	if (VYSE_IS_OBJECT(value)) {
 		Obj* const object = VYSE_AS_OBJECT(value);
 		switch (object->tag) {
@@ -1136,6 +1122,41 @@ bool VM::subscript_value(const Value& value, const Value& index, Value& result) 
 	return true;
 }
 
+bool VM::subscript_set(const Value& lhs, const Value& key, const Value& rhs) {
+	if (VYSE_IS_LIST(lhs)) {
+		List& list = *VYSE_AS_LIST(lhs);
+		return list_index_set(list, key, rhs);
+	}
+
+	if (VYSE_IS_TABLE(lhs)) {
+		if (VYSE_IS_NIL(key)) {
+			ERROR("Table key cannot be nil.");
+			return false;
+		}
+		VYSE_AS_TABLE(lhs)->set(key, rhs);
+		return true;
+	}
+
+	ERROR("Attempt to index a {} value.", VYSE_TYPE_CSTR(lhs));
+	return false;
+}
+
+bool VM::list_index_set(List& list, const Value& key, const Value& value) {
+	if (!VYSE_CHECK_TT(key, VT::Number)) {
+		ERROR("List index not a number.");
+		return false;
+	}
+
+	number index = VYSE_AS_NUM(key);
+	if (index < 0 or index >= list.length()) {
+		ERROR("List index out of bounds (index: {}, length: {}).", index, list.length());
+		return false;
+	}
+
+	list[index] = value;
+	return true;
+}
+
 // ---------------------------
 // STRING MANIPULATION HELPERS
 // ---------------------------
@@ -1175,14 +1196,14 @@ String& VM::make_string(const char* chars, size_t length) {
 	return *string;
 }
 
-/* 
+/*
  * Growing the VM stack is done by `realloc`ing the old stack buffer to a new
  * location in memory. However, when we do so, we must be careful enough to update
  * all pointers that pointed to the old stack. Let's use call frames as an example.
  * Every call frame has a 'base' pointer, that points to the first slot in the stack
  * which belongs to the frame. When the stack is moved to a new location, this
  * 'base' pointer must also be updated.
- * 
+ *
  * The key idea is that since the contents and state of the stack are preserved on
  * growth, so the distance between the old stack's base and the callframe's base is
  * equal to the distance between the new stack's base and the callframe's base.
@@ -1205,7 +1226,7 @@ String& VM::make_string(const char* chars, size_t length) {
  *
  * Similarly, we also update the pointers in the upvalue chain of the VM.
  *
-*/
+ */
 void VM::ensure_slots(uint num_requested_slots) {
 	const std::ptrdiff_t num_used_slots = m_stack.top - m_stack.values;
 	const uint num_free_slots = m_stack.size - num_used_slots;

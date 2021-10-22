@@ -504,10 +504,10 @@ void Compiler::complete_expr_stmt(ExpKind prefix_type) {
 			expect(TT::RSqBrace, "Expected ']' to close index expression.");
 			if (is_assign_tok(peek.type)) {
 				table_assign(Op::index_no_pop, -1);
-				emit(Op::index_set);
+				emit(Op::subscript_set);
 				return;
 			} else {
-				emit(Op::subscript);
+				emit(Op::subscript_get);
 				exp_kind = ExpKind::prefix;
 			}
 			break;
@@ -679,7 +679,7 @@ void Compiler::suffix_expr() {
 			advance();
 			expr();
 			expect(TT::RSqBrace, "Expected ']' to close index expression.");
-			emit(Op::subscript);
+			emit(Op::subscript_get);
 			break;
 		}
 		case TT::LParen: compile_args(); break;

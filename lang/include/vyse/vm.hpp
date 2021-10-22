@@ -415,18 +415,22 @@ class VM {
 	bool call_func_overload(Value& value, int argc);
 
 	/// @brief returns `value.field` where `value` is a value of any kind and `key` is a string.
-	/// @param value The value to be indexed.
-	/// @param key   The key that is to be used when indexing the value.
-	/// @return true if the indexing was successful, false otherwise.
-	/// Note that [key] must be a string.
+	/// @param result An inout parameter used to store the result of this operation.
+	/// @return true if the indexing was successful, false if there was an error.
 	bool get_field_of_value(const Value& value, const Value& key, Value& result);
 
 	/// @brief sets `result` to `value`[`index`]. Nil, if none found.
-	/// @param value An indexable value like a string, list or table.
-	/// @param index The value to index `value` with.
 	/// @param result An inout parameter containing the result of the operation.
 	/// @return true if the indexing succeeds, false if there is an error
-	bool subscript_value(const Value& value, const Value& index, Value& result);
+	bool get_subscript_of_value(const Value& value, const Value& index, Value& result);
+
+	/// @brief performs the `lhs[key] = rhs` operation.
+	/// @return true if the operation was successful, false if there was an error instead.
+	bool subscript_set(const Value& lhs, const Value& key, const Value& rhs);
+
+	/// @brief performs the `lust[key] = rhs` operation.
+	/// @return true if the operation was successful, false if an error was thrown instead.
+	bool list_index_set(List& list, const Value& index, const Value& rhs);
 
 	/// @brief concatenates two strings. Will intern the resulting
 	/// string if it isn't already interned.
