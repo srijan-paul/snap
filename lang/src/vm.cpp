@@ -158,14 +158,14 @@ ExitCode VM::run() {
 		}
 
 		case Op::mod: {
-			Value& left = PEEK(2);
-			Value& right = PEEK(1);
+			Value& l = PEEK(2);
+			Value& r = PEEK(1);
 
-			if (VYSE_IS_NUM(left) and VYSE_IS_NUM(right)) {
-				VYSE_SET_NUM(left, fmod(VYSE_AS_NUM(left), VYSE_AS_NUM(right)));
+			if (VYSE_IS_NUM(l) and VYSE_IS_NUM(r)) {
+				VYSE_SET_NUM(l, fmod(VYSE_AS_NUM(l), VYSE_AS_NUM(r)));
 				DISCARD();
 			} else if (!call_binary_overload("%", "__mod")) {
-				return binop_error("%", left, right);
+				return binop_error("%", l, r);
 			}
 			break;
 		}
@@ -392,13 +392,13 @@ ExitCode VM::run() {
 			if (!(VYSE_IS_STRING(a) and VYSE_IS_STRING(b))) {
 				return binop_error("..", a, b);
 			} else {
-				auto left = VYSE_AS_STRING(a);
-				auto right = VYSE_AS_STRING(b);
+				auto l = VYSE_AS_STRING(a);
+				auto r = VYSE_AS_STRING(b);
 
 				// The second string has been popped off the stack and might not be reachable by
 				// the GC. The allocation of the concatenated string might trigger a GC cycle.
-				GCLock _ = gc_lock(right);
-				a = concatenate(left, right);
+				GCLock _ = gc_lock(r);
+				a = concatenate(l, r);
 			}
 			break;
 		}
@@ -1183,14 +1183,14 @@ String& VM::take_string(char* buf, size_t len) {
 }
 
 String& VM::make_string(const char* chars, size_t length) {
-	size_t hash = hash_cstring(chars, length);
+	const size_t hash = hash_cstring(chars, length);
 
 	// If an identical string has already been created, then return a reference to the existing
 	// string instead.
-	String* interned = interned_strings.find_string(chars, length, hash);
+	String* const interned = interned_strings.find_string(chars, length, hash);
 	if (interned != nullptr) return *interned;
 
-	String* string = &make_string_no_intern(chars, length, hash);
+	String* const string = &make_string_no_intern(chars, length, hash);
 	interned_strings.set(VYSE_OBJECT(string), VYSE_BOOL(true));
 
 	return *string;
@@ -1235,7 +1235,7 @@ void VM::ensure_slots(uint num_requested_slots) {
 	if (num_free_slots > num_requested_slots) return;
 
 	Value* const old_stack_base = m_stack.values;
-	uint new_stack_size = pow2ceil(m_stack.size + (num_requested_slots - num_free_slots) + 1);
+	const uint new_stack_size = pow2ceil(m_stack.size + (num_requested_slots - num_free_slots) + 1);
 	m_stack.size = new_stack_size;
 	m_stack.values = static_cast<Value*>(realloc(m_stack.values, m_stack.size * sizeof(Value)));
 
@@ -1350,7 +1350,7 @@ std::string default_find_module(VM&, const char*) {
 VM::~VM() {
 	if (m_gc.m_objects == nullptr) return;
 	for (Obj* object = m_gc.m_objects; object != nullptr;) {
-		Obj* next = object->next;
+		Obj* const next = object->next;
 		delete object;
 		object = next;
 	}
