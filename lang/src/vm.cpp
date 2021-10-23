@@ -611,7 +611,7 @@ ExitCode VM::run() {
 }
 
 Value VM::concatenate(const String* left, const String* right) {
-	size_t length = left->len() + right->len();
+	const size_t length = left->len() + right->len();
 
 	char* const buf = new char[length + 1];
 	buf[length] = '\0';
@@ -619,7 +619,7 @@ Value VM::concatenate(const String* left, const String* right) {
 	std::memcpy(buf, left->c_str(), left->len());
 	std::memcpy(buf + left->len(), right->c_str(), right->len());
 
-	size_t hash = hash_cstring(buf, length);
+	const size_t hash = hash_cstring(buf, length);
 	String* const interned = interned_strings.find_string(buf, length, hash);
 
 	if (interned == nullptr) {
@@ -634,7 +634,7 @@ Value VM::concatenate(const String* left, const String* right) {
 }
 
 Value VM::get_global(String* name) const {
-	auto search = m_global_vars.find(name);
+	const auto search = m_global_vars.find(name);
 	if (search == m_global_vars.end()) return VYSE_UNDEF;
 	return search->second;
 }
