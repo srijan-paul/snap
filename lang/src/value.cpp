@@ -24,7 +24,7 @@ char* num_to_cstring(number num) {
 
 	int bufsize;
 	if (is_whole) {
-		bufsize = snprintf(nullptr, 0, "%lld", s64(num));
+		bufsize = snprintf(nullptr, 0, "%ld", s64(num));
 	} else {
 		bufsize = snprintf(nullptr, 0, "%.7g", num);
 	}
@@ -33,7 +33,7 @@ char* num_to_cstring(number num) {
 	buf[bufsize] = '\0';
 	int res;
 	if (is_whole) {
-		res = sprintf(buf, "%lld", s64(num));
+		res = sprintf(buf, "%ld", s64(num));
 	} else {
 		res = sprintf(buf, "%.7g", num);
 	}

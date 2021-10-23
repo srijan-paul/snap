@@ -153,7 +153,7 @@ static number str2num_base10(const String* str) {
 
 /// TODO: Handle different bases from 2 to 64
 Value to_number(VM& vm, int argc) {
-	constexpr const char* fname = "to_num";
+	constexpr const char* fname = "String.to_num";
 	if (argc != 1) {
 		cfn_error(vm, fname, "Expected one argument of type string");
 		return VYSE_NIL;
@@ -191,12 +191,10 @@ Value replace(VM& vm, int argc) {
 	uint src_pos = 0, dst_pos = 0;
 	uint next_replace_idx = 0; // index of the next replacement pos
 	while (src_pos < str_len) {
-		// break out of the loop if there are no more
-		// replacements to be made.
+		// break out of the loop if there are no more replacements to be made.
 		if (next_replace_idx >= indices.size()) break;
 		if (indices[next_replace_idx] == src_pos) {
-			// We've reached a location where [find] exists
-			// and needs to be replaced with [replace].
+			// We've reached a location where [find] exists and needs to be replaced with [replace].
 			std::memcpy(buf + dst_pos, replace, replace_len);
 			dst_pos += replace_len;
 			src_pos += find_len;

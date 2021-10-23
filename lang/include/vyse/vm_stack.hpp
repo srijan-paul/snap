@@ -6,23 +6,23 @@
 namespace vyse {
 
 /// Total wasted hours: 16
-class Stack final {
+class VMStack final {
 	friend VM;
 	friend GC;
-	VYSE_NO_COPY(Stack);
-	VYSE_NO_MOVE(Stack);
+	VYSE_NO_COPY(VMStack);
+	VYSE_NO_MOVE(VMStack);
 
 public:
 	static constexpr size_t InitialSize = 128;
 
-	Stack() = default;
-	~Stack() noexcept {
+	VMStack() = default;
+	~VMStack() noexcept {
 		VYSE_ASSERT(values != nullptr, "stack is freed before destruction");
 		free(values);
 	}
 
 	/// @brief Pushes [value] on top of the stack.
-	inline void push(Value value) noexcept {
+	inline void push(Value value) {
 		VYSE_ASSERT(top < (values + size), "Top points past the end of stack.");
 		*(top++) = value;
 	}

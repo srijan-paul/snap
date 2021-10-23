@@ -7,7 +7,7 @@ namespace vyse::stdlib::primitives {
 using namespace util;
 
 Value to_str(VM& vm, int argc) {
-	constexpr const char* fname = "to_string";
+	constexpr const char* fname = "Number.to_string";
 
 	if (argc != 1) {
 		cfn_error(vm, "", "No argument provided. (expected 1 number)");
