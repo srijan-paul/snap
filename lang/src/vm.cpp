@@ -130,24 +130,24 @@ ExitCode VM::run() {
 		case Op::lte: CMP_OP(<=, "__lte"); break;
 
 		case Op::div: {
-			Value& a = PEEK(1);
-			Value& b = PEEK(2);
+			Value& l = PEEK(2);
+			const Value& r = PEEK(1);
 
-			if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {
-				if (VYSE_AS_NUM(b) == 0) {
+			if (VYSE_IS_NUM(r) and VYSE_IS_NUM(l)) {
+				if (VYSE_AS_NUM(l) == 0) {
 					return runtime_error("Attempt to divide by 0.\n");
 				}
-				VYSE_SET_NUM(b, VYSE_AS_NUM(b) / VYSE_AS_NUM(a));
+				VYSE_SET_NUM(l, VYSE_AS_NUM(l) / VYSE_AS_NUM(r));
 				DISCARD();
 			} else if (!call_binary_overload("/", "__div")) {
-				return binop_error("/", b, a);
+				return binop_error("/", l, r);
 			}
 			break;
 		}
 
 		case Op::exp: {
 			Value& base = PEEK(2);
-			Value& power = PEEK(1);
+			const Value& power = PEEK(1);
 			if (VYSE_IS_NUM(base) and VYSE_IS_NUM(power)) {
 				VYSE_SET_NUM(base, pow(VYSE_AS_NUM(base), VYSE_AS_NUM(power)));
 				DISCARD();
@@ -159,7 +159,7 @@ ExitCode VM::run() {
 
 		case Op::mod: {
 			Value& l = PEEK(2);
-			Value& r = PEEK(1);
+			const Value& r = PEEK(1);
 
 			if (VYSE_IS_NUM(l) and VYSE_IS_NUM(r)) {
 				VYSE_SET_NUM(l, fmod(VYSE_AS_NUM(l), VYSE_AS_NUM(r)));
@@ -197,15 +197,15 @@ ExitCode VM::run() {
 
 		/// TODO: overload with __eq
 		case Op::eq: {
-			Value a = m_stack.pop();
-			Value b = m_stack.pop();
+			const Value a = m_stack.pop();
+			const Value b = m_stack.pop();
 			PUSH(VYSE_BOOL(a == b));
 			break;
 		}
 
 		case Op::neq: {
-			Value a = POP();
-			Value b = POP();
+			const Value a = POP();
+			const Value b = POP();
 			PUSH(VYSE_BOOL(a != b));
 			break;
 		}
@@ -221,13 +221,13 @@ ExitCode VM::run() {
 		}
 
 		case Op::lnot: {
-			Value a = POP();
+			const Value a = POP();
 			PUSH(VYSE_BOOL(IS_VAL_FALSY(a)));
 			break;
 		}
 
 		case Op::len: {
-			Value v = POP();
+			const Value v = POP();
 			if (VYSE_IS_LIST(v)) {
 				PUSH(VYSE_NUM(VYSE_AS_LIST(v)->length()));
 			} else if (VYSE_IS_TABLE(v)) {
@@ -279,7 +279,7 @@ ExitCode VM::run() {
 		}
 
 		case Op::jmp_back: {
-			u16 dist = FETCH_SHORT();
+			const u16 dist = FETCH_SHORT();
 			ip -= dist;
 			break;
 		}
@@ -346,32 +346,32 @@ ExitCode VM::run() {
 		}
 
 		case Op::set_upval: {
-			u8 idx = NEXT_BYTE();
+			const u8 idx = NEXT_BYTE();
 			VYSE_ASSERT(m_current_frame->func->tag == OT::closure, "enclosing frame a CClosure!");
-			Closure* cl = static_cast<Closure*>(m_current_frame->func);
+			Closure* const cl = static_cast<Closure*>(m_current_frame->func);
 			*cl->get_upval(idx)->m_value = POP();
 			break;
 		}
 
 		case Op::get_upval: {
-			u8 idx = NEXT_BYTE();
+			const u8 idx = NEXT_BYTE();
 			VYSE_ASSERT(m_current_frame->func->tag == OT::closure, "enclosing frame a CClosure!");
-			Closure* cl = static_cast<Closure*>(m_current_frame->func);
+			Closure* const cl = static_cast<Closure*>(m_current_frame->func);
 			PUSH(*cl->get_upval(idx)->m_value);
 			break;
 		}
 
 		case Op::set_global: {
-			Value name = READ_VALUE();
+			const Value name = READ_VALUE();
 			VYSE_ASSERT(VYSE_IS_STRING(name), "global name not a string.");
 			set_global(VYSE_AS_STRING(name), POP());
 			break;
 		}
 
 		case Op::get_global: {
-			Value name = READ_VALUE();
+			const Value name = READ_VALUE();
 			VYSE_ASSERT(VYSE_IS_STRING(name), "global name not a string.");
-			Value value = get_global(VYSE_AS_STRING(name));
+			const Value value = get_global(VYSE_AS_STRING(name));
 			if (VYSE_IS_UNDEFINED(value)) {
 				return ERROR("Undefined variable '{}'.", VYSE_AS_STRING(name)->c_str());
 			}
@@ -425,19 +425,19 @@ ExitCode VM::run() {
 		}
 
 		case Op::table_add_field: {
-			Value value = POP();
-			Value key = POP();
+			const Value value = POP();
+			const Value key = POP();
 
-			Value vtable = PEEK(1);
+			const Value vtable = PEEK(1);
 			VYSE_AS_TABLE(vtable)->set(key, value);
 			break;
 		}
 
 		// table_or_list[key] = value
 		case Op::subscript_set: {
-			Value rhs = POP();
-			Value key = POP();
-			Value& lhs = PEEK(1);
+			const Value rhs = POP();
+			const Value key = POP();
+			const Value& lhs = PEEK(1);
 
 			bool ok = subscript_set(lhs, key, rhs);
 			// assignment returns it's RHS.
@@ -450,7 +450,7 @@ ExitCode VM::run() {
 		case Op::table_set: {
 			const Value& key = READ_VALUE();
 			if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
-			Value value = POP();
+			const Value value = POP();
 			Value& tvalue = PEEK(1);
 			if (VYSE_IS_TABLE(tvalue)) {
 				VYSE_AS_TABLE(tvalue)->set(key, value);
@@ -465,7 +465,7 @@ ExitCode VM::run() {
 		/// TODO: overload with `__get`
 		case Op::table_get: {
 			// TOS = as_table(TOS)->get(READ_VAL())
-			Value tvalue = PEEK(1);
+			const Value tvalue = PEEK(1);
 			if (VYSE_IS_TABLE(tvalue)) {
 				m_stack.top[-1] = VYSE_AS_TABLE(tvalue)->get(READ_VALUE());
 			} else {
@@ -477,7 +477,7 @@ ExitCode VM::run() {
 		// table.key
 		case Op::table_get_no_pop: {
 			// push((TOS)->get(READ_VAL()))
-			Value tval = PEEK(1);
+			const Value tval = PEEK(1);
 			if (VYSE_IS_TABLE(tval)) {
 				PUSH(VYSE_AS_TABLE(tval)->get(READ_VALUE()));
 			} else {
@@ -489,7 +489,7 @@ ExitCode VM::run() {
 		// table_or_string_or_array[key]
 		/// TODO: overload with `__indx`
 		case Op::subscript_get: {
-			Value key = POP();
+			const Value key = POP();
 			Value& tvalue = PEEK(1);
 			if (!get_subscript_of_value(tvalue, key, tvalue)) {
 				return ExitCode::RuntimeError;
@@ -519,8 +519,8 @@ ExitCode VM::run() {
 		// PUSH(tbl)
 		/// TODO: take care of overloaded `__indx`
 		case Op::prep_method_call: {
-			Value vtable = PEEK(1);
-			Value vkey = READ_VALUE();
+			const Value vtable = PEEK(1);
+			const Value vkey = READ_VALUE();
 			VYSE_ASSERT(VYSE_IS_STRING(vkey), "method name not a string.");
 
 			if (VYSE_IS_NIL(vtable)) return INDEX_ERROR(vtable);
@@ -535,14 +535,14 @@ ExitCode VM::run() {
 		}
 
 		case Op::call_func: {
-			u8 argc = NEXT_BYTE();
-			Value value = PEEK(argc + 1);
+			const u8 argc = NEXT_BYTE();
+			const Value value = PEEK(argc + 1);
 			if (!op_call(value, argc)) return ExitCode::RuntimeError;
 			break;
 		}
 
 		case Op::return_val: {
-			Value result = POP();
+			const Value result = POP();
 			close_upvalues_upto(m_current_frame->base);
 			m_stack.top = m_current_frame->base + 1;
 
@@ -573,16 +573,16 @@ ExitCode VM::run() {
 		}
 
 		case Op::make_func: {
-			Value vcode = READ_VALUE();
+			const Value vcode = READ_VALUE();
 			VYSE_ASSERT(VYSE_IS_CODEBLOCK(vcode), "make_func arg not a codeblock.");
-			u32 num_upvals = NEXT_BYTE();
+			const u32 num_upvals = NEXT_BYTE();
 			Closure* func = &make<Closure>(VYSE_AS_PROTO(vcode), num_upvals);
 
 			PUSH(VYSE_OBJECT(func));
 
 			for (u8 i = 0; i < num_upvals; ++i) {
-				bool is_local = NEXT_BYTE();
-				u8 index = NEXT_BYTE();
+				const bool is_local = NEXT_BYTE();
+				const u8 index = NEXT_BYTE();
 
 				if (is_local) {
 					func->set_upval(i, capture_upvalue(m_current_frame->base + index));
