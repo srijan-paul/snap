@@ -387,13 +387,13 @@ ExitCode VM::run() {
 
 		case Op::concat: {
 			Value& a = PEEK(2);
-			Value b = POP();
+			Value const b = POP();
 
 			if (!(VYSE_IS_STRING(a) and VYSE_IS_STRING(b))) {
 				return binop_error("..", a, b);
 			} else {
-				auto l = VYSE_AS_STRING(a);
-				auto r = VYSE_AS_STRING(b);
+				String* const l = VYSE_AS_STRING(a);
+				String* const r = VYSE_AS_STRING(b);
 
 				// The second string has been popped off the stack and might not be reachable by
 				// the GC. The allocation of the concatenated string might trigger a GC cycle.
