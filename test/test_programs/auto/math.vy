@@ -15,3 +15,7 @@ assert(math.comb(51, 4) == 249900);
 	assert(math.ceil(math.min_int) == math.min_int)
 	assert(math.floor(math.min_int) == math.min_int)
 }
+
+assert(math.gcd(1, 1) == 1)
+assert(math.gcd(14, 70) == 14)
+assert(math.gcd(21, 70) == 7)

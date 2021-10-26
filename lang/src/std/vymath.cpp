@@ -236,13 +236,20 @@ Value ceil(VM& vm, int argc) {
 	return VYSE_NUM(std::ceil(args.next_number()));
 }
 
+Value gcd(VM& vm, int argc) {
+	Args args(vm, "math.gcd", 2, argc);
+	const number l = args.next_number();
+	const number r = args.next_number();
+	return VYSE_NUM(std::gcd(s64(l), s64(r)));
+}
+
 static constexpr std::pair<const char*, NativeFn> funcs[] = {
 	{"sqrt", sqrt}, {"random", random}, {"randint", randint}, {"sin", sin},		{"cos", cos},
 	{"tan", tan},	{"asin", asin},		{"acos", acos},		  {"atan", atan},	{"math", atan},
 	{"atan", atan}, {"max", max},		{"min", min},		  {"isnan", isnan}, {"isinf", isinf},
 	{"log", log},	{"log10", log10},	{"exp", exp},		  {"todeg", todeg}, {"torad", torad},
 	{"tan2", tan2}, {"atan2", atan2},	{"pow", pow},		  {"comb", comb},	{"floor", floor},
-	{"ceil", ceil},
+	{"ceil", ceil}, {"gcd", gcd},
 };
 
 VYSE_API void load_math(VM* vm, Table* module) {
