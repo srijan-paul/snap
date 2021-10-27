@@ -51,16 +51,18 @@ There exist some quirks in Lua that Vyse aims to change.
 - The concept of metatables and metamethods is somewhat unintuitive to new programmers.
 - Tables being used as both arrays and maps can have unwanted side effects.
 - Lacks many features that are common in other languages such as :
-  * Compound assignment operators (`+=`, `-=`, `*=`) and decrement and increment operators (`++`, `--`) .
-  * `continue` statement for skipping over some loop iterations.
-  * `switch` statements.
+
+  - Compound assignment operators (`+=`, `-=`, `*=`) and decrement and increment operators (`++`, `--`) .
+  - `continue` statement for skipping over some loop iterations.
+  - `switch` statements.
 
 - Arrays starting at 1 is a a minor issue to some.
 
 Vyse aims to keep most of what Lua provides, but address the aforementioned issues and offer the following QoL feautures:
-  - A Familiar syntax for programmers migrating from Javascript and C
-  - An easy to integrate C++ API for easy embedding in applications
-  - Syntactic sugar for JS like OOP that boils down to the very same metatable and metamethod heirarchy.
+
+- A Familiar syntax for programmers migrating from Javascript and C
+- An easy to integrate C++ API for easy embedding in applications
+- Syntactic sugar for JS like OOP that boils down to the very same metatable and metamethod heirarchy.
 
 ## Overview
 
@@ -156,13 +158,13 @@ The stages involved are :
 
 ### Lexing / Tokenizing (Source string -> Token)
 
-The vyse lexer resides in the `lang/include/vyse/scanner.hpp` file, A simple hand written lexer that accepts a string returns a
+The vyse lexer resides in the `include/scanner.hpp` file, A simple hand written lexer that accepts a string returns a
 token whenever the method `next_token()` is called.
 The Lexer is called from within the Compiler, but can also be instantiated and used stand-alone for testing purposes.
 
 ### Compiling (Tokens -> Bytecode)
 
-The Compiler compiles tokens to Bytecode following the Vyse Bytecode Instruction format (`lang/include/opcode.hpp`).
+The Compiler compiles tokens to Bytecode following the Vyse Bytecode Instruction format (`include/x_opcode.hpp`).
 Every instruction is 1 byte long. The compiler returns a function containing all the bytecode from the script, which is
 then loaded into the VM and called.
 
@@ -179,8 +181,8 @@ The build tool used here is Ninja, but you can use any other build tool of your 
 After downloading/cloning vyse into a directory, `cd` into it and run the following commands to run the tests:
 
 ```bash
-mkdir bin
-cd bin
+mkdir build
+cd build
 cmake .. -G Ninja -DBUILD_TESTS=true -DCMAKE_BUILD_TYPE=Debug -DSTRESS_GC=true -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
 ninja
 ./vy <filename>
@@ -189,10 +191,10 @@ ninja
 The CMake script accepts some options, namely:
 
 | Option               | Values            | Description                                                                                                       |
-|----------------------|-------------------|-------------------------------------------------------------------------------------------------------------------|
-| `-DCMAKE_BUILD_TYPE` | `Release`/`Debug` | Compilation mode for the C++ compiler. Also enables runtime assertions.                                                                            |
+| -------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `-DCMAKE_BUILD_TYPE` | `Release`/`Debug` | Compilation mode for the C++ compiler. Also enables runtime assertions.                                           |
 | `-DBUILD_TESTS`      | `true`/`false`    | Whether to build the test suite.                                                                                  |
-| `-DSTRESS_GC`        | `true`/`false`    | When `true`, runs the garbage collector whenever possible. Useful for catching GC bugs.                             |
+| `-DSTRESS_GC`        | `true`/`false`    | When `true`, runs the garbage collector whenever possible. Useful for catching GC bugs.                           |
 | `-DLOG_GC`           | `true`/`false`    | When `true`, logs the GC status on every cycle.                                                                   |
 | `-DLOG_DISASM`       | `true`/`false`    | When `true`, dumps the bytecode disassembly of every program after the compiler pass, before running it on the VM |
 
@@ -205,8 +207,6 @@ For an optimized release build, use:
 cmake .. -G Ninja -DBUILD_TESTS=true -DCMAKE_BUILD_TYPE=Release -DSTRESS_GC=false -DLOG_GC=false -DLOG_DISASM=false
 ```
 
-When the compilation mode is `release`, all the other options are automatically disabled.
-
 # Benchmarks
 
 The benchmarks for vyuse are present in the `benchmark` directory.
@@ -214,6 +214,7 @@ The `benchmark/run.py` script can be used to compare Vyse against other language
 You can either run all benchmarks, or run specific benchmarks.
 
 To run all benchmarks, enter the following into your shell:
+
 ```sh
 cd benchmarks
 python3 run.py
@@ -231,14 +232,12 @@ For testing, the `ctest` utility is used along with some hand written helper hea
 To run existing tests, run `ctest` inside the build directory (`bin` or `out`).
 Tests of all kinds can be found under the `test` directory.
 
-
 ![Fibonacci benchmark](./media/fib-bench.png)
 
 (Note: time is in seconds)
 
 If your terminal does not have ASNI support, or you want to pipe the benchmarks to a
 file for reporting, then you can use the `--nocolor` flag.
-
 
 # Editor-Support
 
@@ -251,7 +250,9 @@ Currently, syntax highlighting and code completion snippets are supported on the
 
 # Development
 
-If you're looking to contribute to vyse, It is recommended to have clang-format for formatting and clangd language server for your text editor. On VSCode, the `C/C++` extension can be used to debug the executable. Alternatively, you can use GDC/LLDB or other debuggers to your liking.
+If you're looking to contribute to vyse, It is recommended to have clang-format for formatting and clangd language server for your text editor.
+On VSCode, the `C/C++` extension can be used to debug the executable.
+Alternatively, you can use GDC/LLDB or other debuggers to your liking.
 
-All the source and header files for vyse are present in the `lang` directory in the project's root folder.
-The primitive CLI module is present under `cli/`.
+The sources are in `src/` while the public headers are in `include/`.
+A basic CLI module is present under `cli/`.
