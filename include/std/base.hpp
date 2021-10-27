@@ -1,7 +1,7 @@
 #pragma once
 #include "../forward.hpp"
 
-namespace vyse::stdlib {
+namespace vy::stdlib {
 
 Value print(VM&, int);
 

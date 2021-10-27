@@ -5,7 +5,7 @@
 #include <value.hpp>
 #include <vm.hpp>
 
-namespace vyse::util {
+namespace vy::util {
 
 /// @brief The exception thrown when a NativeFn has incorrect number of arguments.
 /// This is handled in the VM.
@@ -154,4 +154,4 @@ class Args {
 	int m_used_argc = 0;
 };
 
-} // namespace vyse::util
+} // namespace vy::util

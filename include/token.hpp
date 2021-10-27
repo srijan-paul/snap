@@ -2,7 +2,7 @@
 #include "common.hpp"
 #include <string>
 
-namespace vyse {
+namespace vy {
 
 enum class TokenType {
 	// Literals
@@ -133,4 +133,4 @@ struct Token {
 	}
 };
 
-} // namespace vyse
+} // namespace vy

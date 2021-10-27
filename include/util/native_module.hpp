@@ -3,7 +3,7 @@
 #include <forward.hpp>
 #include <gc.hpp>
 
-namespace vyse::util {
+namespace vy::util {
 
 /// @brief A NativeModule helper class to manage native extensions to vyse.
 /// Check `lang/src/vymath.cpp` for usage reference.
@@ -35,4 +35,4 @@ class NativeModule {
 	const GCLock m_lock;
 };
 
-} // namespace vyse::util
+} // namespace vy::util

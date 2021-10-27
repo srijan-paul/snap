@@ -96,9 +96,3 @@ if(BUILD_TESTS)
   PREPARE_TEST(stdlib-test StdlibTest "stdlib-test.cpp")
   PREPARE_TEST(auto-test AutoTests "auto-tests.cpp")
 endif()
-
-# benchmarks
-set(BENCHMARK_SUITE "benchmark")
-add_executable(${BENCHMARK_SUITE} ${CMAKE_CURRENT_SOURCE_DIR}/benchmark/cpp/benchmark.cpp)
-LINK_VYSE_DEPS(${BENCHMARK_SUITE})
-target_compile_features(${BENCHMARK_SUITE} PUBLIC cxx_std_17)

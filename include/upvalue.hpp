@@ -1,7 +1,7 @@
 #pragma once
 #include "value.hpp"
 
-namespace vyse {
+namespace vy {
 
 class Upvalue final : public Obj {
   public:
@@ -18,4 +18,4 @@ class Upvalue final : public Obj {
 	}
 };
 
-} // namespace vyse
+} // namespace vy

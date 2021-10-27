@@ -5,7 +5,7 @@
 #include <string>
 #include <type_traits>
 
-namespace vyse::util {
+namespace vy::util {
 
 
 /// @brief throws an error having the message [message] inside the function having name[fname].

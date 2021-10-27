@@ -2,7 +2,7 @@
 #include <string>
 #include <token.hpp>
 
-namespace vyse {
+namespace vy {
 
 std::string Token::raw(const std::string& source) const {
 	auto pos = source_pos();
@@ -17,5 +17,4 @@ SourcePosition Token::source_pos() const {
 	return location.source_pos;
 }
 
-} // namespace vyse
-
+} // namespace vy

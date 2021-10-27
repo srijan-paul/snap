@@ -2,7 +2,7 @@
 #include <cstring>
 #include <scanner.hpp>
 
-namespace vyse {
+namespace vy {
 
 using TT = TokenType;
 
@@ -209,4 +209,4 @@ void Scanner::skip_comment() {
 	while (!(eof() or check('\n') or check('\r'))) next();
 }
 
-} // namespace vyse
+} // namespace vy

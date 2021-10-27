@@ -3,13 +3,12 @@
 #include <std/lib_util.hpp>
 #include <vm.hpp>
 
-namespace vyse::util {
+namespace vy::util {
 
-
-void bad_arg_error(vyse::VM& vm, const char* fname, int argn, const char* expected_type,
+void bad_arg_error(vy::VM& vm, const char* fname, int argn, const char* expected_type,
 				   const char* received_type) {
-	vm.runtime_error(kt::format_str("Bad argument #{} to '{}' expected {}, got {}.",
-									argn, fname, expected_type, received_type));
+	vm.runtime_error(kt::format_str("Bad argument #{} to '{}' expected {}, got {}.", argn, fname,
+									expected_type, received_type));
 }
 
 void add_libfn(VM& vm, Table& proto, const char* name, NativeFn cfn) {
@@ -45,14 +44,14 @@ bool check_argc(VM& vm, const char* fname, int argc, int min_args, int max_args)
 	if (max_args == -1) max_args = min_args;
 
 	if (min_args == max_args and argc != min_args) {
-		vm.runtime_error(kt::format_str("In {}: Expected exactly {} args (got {}).",
-										fname, min_args, argc));
+		vm.runtime_error(
+			kt::format_str("In {}: Expected exactly {} args (got {}).", fname, min_args, argc));
 		return false;
 	}
 
 	if (argc < min_args or argc > max_args) {
-		vm.runtime_error(kt::format_str("In {}: Expected {}-{} args (got {}).", fname,
-										min_args, max_args, argc));
+		vm.runtime_error(kt::format_str("In {}: Expected {}-{} args (got {}).", fname, min_args,
+										max_args, argc));
 		return false;
 	}
 
@@ -63,4 +62,4 @@ void cfn_error(VM& vm, const char* fname, std::string&& message) {
 	vm.runtime_error(kt::format_str("In call to {}: {}", fname, message));
 }
 
-} // namespace vyse::util
+} // namespace vy::util

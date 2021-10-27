@@ -1,7 +1,7 @@
 #include <gc.hpp>
 #include <vy_list.hpp>
 
-namespace vyse {
+namespace vy {
 
 List::List(size_t mincap)
 	: Obj(ObjType::list),
@@ -41,4 +41,4 @@ void List::trace(GC& gc) noexcept {
 	}
 }
 
-} // namespace vyse
+} // namespace vy

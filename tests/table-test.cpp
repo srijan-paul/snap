@@ -6,21 +6,21 @@
 
 #define NUM		 VYSE_NUM
 #define NIL		 VYSE_NIL
-#define STR(...) (new vyse::String(__VA_ARGS__))
+#define STR(...) (new vy::String(__VA_ARGS__))
 #define BOOL(t)	 VYSE_BOOL(t)
 
-using unique_str_ptr = std::unique_ptr<vyse::String>;
-using shared_str_ptr = std::shared_ptr<vyse::String>;
+using unique_str_ptr = std::unique_ptr<vy::String>;
+using shared_str_ptr = std::shared_ptr<vy::String>;
 
-bool table_has_cstring(vyse::Table& t, const char* cs) {
+bool table_has_cstring(vy::Table& t, const char* cs) {
 	const size_t len = strlen(cs);
-	vyse::String* s = t.find_string(cs, len, vyse::hash_cstring(cs, len));
+	vy::String* s = t.find_string(cs, len, vy::hash_cstring(cs, len));
 	if (s == nullptr) return false;
 	return true;
 }
 
 void run_test() {
-	vyse::Table table;
+	vy::Table table;
 	EXPECT(table.get(NUM(1)) == NIL, "Non-existent keys return nil.");
 	table.set(NUM(1), NUM(2));
 	EXPECT(table.get(NUM(1)) == NUM(2), "number-number key values.");
@@ -34,7 +34,7 @@ void run_test() {
 }
 
 void resize_test() {
-	vyse::Table t;
+	vy::Table t;
 	for (int i = 0; i < 1000; ++i) {
 		t.set(NUM(i), NUM(i * 2));
 	}
@@ -49,7 +49,7 @@ void resize_test() {
 ///    Also check if the querying for the other 90%  works as well.
 /// 3. Reinsert the keys 900-1000 and test the queries again.
 void removal_test() {
-	vyse::Table t;
+	vy::Table t;
 	for (int i = 0; i < 1000; ++i) t.set(NUM(i), NUM(i * 3));
 	for (int i = 0; i < 1000; ++i) EXPECT(t.get(NUM(i)) == NUM(i * 3), "Table::get.");
 
@@ -68,7 +68,7 @@ void removal_test() {
 }
 
 void strkey_test() {
-	vyse::Table t;
+	vy::Table t;
 	const char* sk = "this is a random key.";
 	const char* sv = "this is a random value.";
 
@@ -84,10 +84,10 @@ void strkey_test() {
 		   "Strings don't have reference equality when not interned.");
 }
 
-vyse::String* make_interned_string(vyse::Table& intern_table, const char* cs, int len) {
-	vyse::String* interned = intern_table.find_string(cs, len, vyse::hash_cstring(cs, len));
+vy::String* make_interned_string(vy::Table& intern_table, const char* cs, int len) {
+	vy::String* interned = intern_table.find_string(cs, len, vy::hash_cstring(cs, len));
 	if (interned == nullptr) {
-		auto* s = new vyse::String(cs, len);
+		auto* s = new vy::String(cs, len);
 		intern_table.set(VYSE_OBJECT(s), BOOL(true));
 		return s;
 	}
@@ -95,18 +95,18 @@ vyse::String* make_interned_string(vyse::Table& intern_table, const char* cs, in
 }
 
 void intern_test() {
-	vyse::Table t;
+	vy::Table t;
 	const char* s1 = "a short string.";
-	vyse::String* s = make_interned_string(t, s1, strlen(s1));
+	vy::String* s = make_interned_string(t, s1, strlen(s1));
 	EXPECT(t.length() == 1,
 		   "Table::length() - is 1 when there is one string entry in the Intern table. (got: "
 			   << t.length() << ")");
 
 	int s1len = strlen(s1);
-	EXPECT(t.find_string(s1, strlen(s1), vyse::hash_cstring(s1, s1len)) != nullptr,
+	EXPECT(t.find_string(s1, strlen(s1), vy::hash_cstring(s1, s1len)) != nullptr,
 		   "Table::find_string test.");
 
-	vyse::String* s_ = make_interned_string(t, s1, strlen(s1));
+	vy::String* s_ = make_interned_string(t, s1, strlen(s1));
 	EXPECT(s_ == s, "String comparison can be done using pointers when interned (got "
 						<< std::hex << s_ << " != " << s << ").");
 

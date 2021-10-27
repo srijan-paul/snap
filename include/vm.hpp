@@ -7,7 +7,7 @@
 #include <functional>
 #include <unordered_map>
 
-namespace vyse {
+namespace vy {
 
 using PrintFn = std::function<void(const VM& vm, const String* string)>;
 using ReadLineFn = std::function<char*(const VM& vm)>;
@@ -479,4 +479,4 @@ class VM {
 	ExitCode binop_error(const char* opstr, const Value& a, const Value& b);
 };
 
-} // namespace vyse
+} // namespace vy

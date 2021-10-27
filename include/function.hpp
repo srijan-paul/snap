@@ -2,7 +2,7 @@
 #include "string.hpp"
 #include "upvalue.hpp"
 
-namespace vyse {
+namespace vy {
 
 // A protoype is the body of a function that contains the bytecode and other relevant information.
 class CodeBlock final : public Obj {
@@ -121,4 +121,4 @@ class CClosure final : public Obj {
 	void trace(GC& gc) override;
 };
 
-} // namespace vyse
+} // namespace vy

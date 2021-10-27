@@ -5,7 +5,7 @@
 #include "scanner.hpp"
 #include <array>
 
-namespace vyse {
+namespace vy {
 
 struct LocalVar {
 	/// Pointer to the local variable's name in the source code.
@@ -360,4 +360,4 @@ class Compiler {
 	bool is_assign_tok(TokenType ttype) const noexcept;
 };
 
-} // namespace vyse
+} // namespace vy

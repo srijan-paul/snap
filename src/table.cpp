@@ -4,7 +4,7 @@
 #include <table.hpp>
 #include <upvalue.hpp>
 
-namespace vyse {
+namespace vy {
 
 using VT = ValueType;
 using OT = ObjType;
@@ -243,4 +243,4 @@ bool operator==(const Table::Entry& a, const Table::Entry& b) {
 	return a.hash == b.hash and a.key == b.key;
 }
 
-} // namespace vyse
+} // namespace vy

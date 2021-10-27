@@ -6,7 +6,7 @@
 #include <set>
 #include <stack>
 
-namespace vyse {
+namespace vy {
 
 /// @brief A GC lock that protects the object as long as the lock is alive.
 /// Once the lock is destroyed, the object is unprotected again. This is useful
@@ -89,4 +89,4 @@ class GC {
 	std::set<Obj*> m_extra_roots;
 };
 
-} // namespace vyse
+} // namespace vy

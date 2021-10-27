@@ -2,7 +2,7 @@
 #include "util.hpp"
 #include "value.hpp"
 
-namespace vyse {
+namespace vy {
 
 class List final : public Obj {
   public:
@@ -46,9 +46,9 @@ class List final : public Obj {
 	/// more insertion. Ths may grow the list.
 	void ensure_capacity();
 
-    Value at(size_t index) const noexcept {
-        return m_values[index];
-    }
+	Value at(size_t index) const noexcept {
+		return m_values[index];
+	}
 
 	Value& operator[](size_t index) {
 		VYSE_ASSERT(index < m_num_entries, "List index out of range!");
@@ -68,4 +68,4 @@ class List final : public Obj {
 	virtual void trace(GC& gc) noexcept override;
 };
 
-} // namespace vyse
+} // namespace vy

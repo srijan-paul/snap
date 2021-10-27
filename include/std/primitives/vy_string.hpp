@@ -1,7 +1,7 @@
 #pragma once
 #include "../../forward.hpp"
 
-namespace vyse::stdlib::primitives {
+namespace vy::stdlib::primitives {
 
 /// Loads the string prototype table and instantiates all it's functions.
 void load_string_proto(VM& vm);

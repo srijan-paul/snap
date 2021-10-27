@@ -3,7 +3,7 @@
 #include "value.hpp"
 #include <cstddef>
 
-namespace vyse {
+namespace vy {
 
 /// Total wasted hours: 16
 class VMStack final {

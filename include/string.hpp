@@ -2,7 +2,7 @@
 #include "token.hpp"
 #include "value.hpp"
 
-namespace vyse {
+namespace vy {
 
 // this hash function is from: https://craftinginterpreters.com/hash-tables.html
 constexpr u32 hash_cstring(const char* key, uint len) {
@@ -99,4 +99,4 @@ class String final : public Obj {
 };
 
 bool operator==(const String& a, const String& b);
-} // namespace vyse
+} // namespace vy

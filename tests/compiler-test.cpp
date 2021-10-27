@@ -2,8 +2,8 @@
 #include <debug.hpp>
 #include <opcode.hpp>
 
-using namespace vyse;
-using Op = vyse::Opcode;
+using namespace vy;
+using Op = vy::Opcode;
 
 void block_test() {
 	std::printf("--- block test ---\n");

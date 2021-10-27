@@ -4,7 +4,7 @@
 #include <vm.hpp>
 #include <vy_list.hpp>
 
-namespace vyse {
+namespace vy {
 
 using VT = ValueType;
 using OT = ObjType;
@@ -144,4 +144,4 @@ bool operator!=(const Value& a, const Value& b) {
 	return !(a == b);
 }
 
-} // namespace vyse
+} // namespace vy

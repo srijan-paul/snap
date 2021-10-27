@@ -2,7 +2,7 @@
 #include <common.hpp>
 #include <value.hpp>
 
-namespace vyse {
+namespace vy {
 
 size_t Block::add_instruction(Opcode i, u32 line) {
 	code.push_back(i);

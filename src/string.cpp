@@ -3,7 +3,7 @@
 #include <cstring>
 #include <string.hpp>
 
-namespace vyse {
+namespace vy {
 
 using OT = ObjType;
 
@@ -34,3 +34,4 @@ bool operator==(const String& a, const String& b) {
 void String::trace([[maybe_unused]] GC& gc) {}
 
 } // namespace vyse
+ 

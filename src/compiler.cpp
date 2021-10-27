@@ -20,7 +20,7 @@
 		}                                                                                          \
 	}
 
-namespace vyse {
+namespace vy {
 
 using Op = Opcode;
 using TT = TokenType;
@@ -1295,4 +1295,4 @@ int SymbolTable::add_upvalue(int index, bool is_local, bool is_const) {
 	return m_num_upvals++;
 }
 
-} // namespace vyse
+} // namespace vy

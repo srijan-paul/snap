@@ -1,6 +1,6 @@
 /// Forward declarations to avoid name resolution conflicts.
 
-namespace vyse {
+namespace vy {
 
 #ifndef VYSE_NAN_TAG
 struct Value;
@@ -30,4 +30,4 @@ using NativeFn = Value (*)(VM& vm, int argc);
 /// @brief Functions that load a library authored in C++
 using LibInitFn = Table& (*)(VM& vm);
 
-} // namespace vyse
+} // namespace vy

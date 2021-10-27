@@ -4,9 +4,9 @@
 #include <std/vystrlib.hpp>
 #include <vm.hpp>
 
-namespace vyse::stdlib {
+namespace vy::stdlib {
 
-using namespace vyse::util;
+using namespace vy::util;
 
 Value byte(VM& vm, int argc) {
 	Args args(vm, "byte", 1, argc);

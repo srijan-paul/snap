@@ -1,7 +1,7 @@
 #pragma once
 #include "../../forward.hpp"
 
-namespace vyse::stdlib::primitives {
+namespace vy::stdlib::primitives {
 
 /// @brief load and initialize the number prototype table.
 void load_num_proto(VM& vm);

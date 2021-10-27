@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <string>
 
-namespace vyse {
+namespace vy {
 
 class Scanner final {
 	VYSE_NO_COPY(Scanner);
@@ -47,4 +47,4 @@ class Scanner final {
 	Token make_string(char quote);
 	Token token_if_match(char c, TokenType then, TokenType other);
 };
-} // namespace vyse
+} // namespace vy

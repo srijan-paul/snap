@@ -4,7 +4,7 @@
 #include <scanner.hpp>
 
 
-using namespace vyse;
+using namespace vy;
 using TT = TokenType;
 
 static bool compare_ttypes(const std::string* code, std::vector<TT> expected) {

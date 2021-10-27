@@ -3,7 +3,7 @@
 #include <cstring>
 #include <memory>
 
-namespace vyse {
+namespace vy {
 
 constexpr int VersionMajor = 0;
 constexpr int VersionMinor = 0;
@@ -40,8 +40,8 @@ using integer = int64_t;
 #else
 
 #define VYSE_ASSERT(cond, message) // empty
-#define VYSE_ERROR(message) // empty
-#define VYSE_UNREACHABLE() // empty
+#define VYSE_ERROR(message)		   // empty
+#define VYSE_UNREACHABLE()		   // empty
 
 #endif
 
@@ -57,4 +57,4 @@ using integer = int64_t;
 
 #define VYSE_API extern "C"
 
-} // namespace vyse
+} // namespace vy

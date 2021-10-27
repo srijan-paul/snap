@@ -1,7 +1,7 @@
 #include "util/test_utils.hpp"
 #include <iostream>
 
-using namespace vyse;
+using namespace vy;
 
 void strlib_test() {
 	test_string_return("stdlib/substr.vy", "Moon", "String.substr");

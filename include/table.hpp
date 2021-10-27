@@ -4,7 +4,7 @@
 #include <cmath>
 #include <std/base.hpp>
 
-namespace vyse {
+namespace vy {
 
 // This is the core table data structure
 // in vyse. I decided to go with a hashtable
@@ -142,4 +142,4 @@ class Table final : public Obj {
 
 bool operator==(const Table::Entry& a, const Table::Entry& b);
 
-} // namespace vyse
+} // namespace vy

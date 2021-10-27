@@ -8,7 +8,7 @@
 #include <vm.hpp>
 #include <vy_list.hpp>
 
-namespace vyse {
+namespace vy {
 
 struct StdModule final {
 	/// @brief The module name that the user has to use when calling `import` or `require`
@@ -98,5 +98,4 @@ void DynLoader::init_loaders(VM& vm) const {
 	loaders.append(VYSE_OBJECT(&stdlib_loader));
 }
 
-} // namespace vyse
-
+} // namespace vy

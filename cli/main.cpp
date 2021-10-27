@@ -9,7 +9,7 @@
 #include <vm.hpp>
 #include <optional>
 
-using namespace vyse;
+using namespace vy;
 
 ExitCode runcode(std::string const& code) {
 	VM vm;

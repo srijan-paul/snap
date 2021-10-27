@@ -3,7 +3,7 @@
 #include <gc.hpp>
 #include <upvalue.hpp>
 
-namespace vyse {
+namespace vy {
 
 u32 CodeBlock::add_param() {
 	++m_num_params;
@@ -41,4 +41,4 @@ void CClosure::trace([[maybe_unused]] GC& gc) {
 	/// TODO: mark upvalues.
 }
 
-} // namespace vyse
+} // namespace vy

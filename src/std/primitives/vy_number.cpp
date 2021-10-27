@@ -2,7 +2,7 @@
 #include <std/primitives/vy_number.hpp>
 #include <vm.hpp>
 
-namespace vyse::stdlib::primitives {
+namespace vy::stdlib::primitives {
 
 using namespace util;
 
@@ -30,4 +30,4 @@ void load_num_proto(VM& vm) {
 	add_libfn(vm, num_proto, "to_string", to_str);
 }
 
-} // namespace vyse::stdlib::primitives
+} // namespace vy::stdlib::primitives

@@ -10,7 +10,7 @@
 #define CHECK_ARG_TYPE(n, type)                                                                    \
 	if (!check_arg_type(vm, n, type, fname)) return VYSE_NIL;
 
-namespace vyse::stdlib::primitives {
+namespace vy::stdlib::primitives {
 
 using namespace util;
 
@@ -232,4 +232,4 @@ void load_string_proto(VM& vm) {
 	add_libfn(vm, str_proto, "from_code", from_code);
 }
 
-} // namespace vyse::stdlib::primitives
+} // namespace vy::stdlib::primitives

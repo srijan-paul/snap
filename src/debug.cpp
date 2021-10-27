@@ -4,7 +4,7 @@
 #include <iostream>
 #include <value.hpp>
 
-namespace vyse {
+namespace vy {
 
 using Op = Opcode;
 using std::printf;
@@ -113,4 +113,4 @@ void disassemble_block(const char* name, const Block& block) {
 
 #undef op2s
 
-} // namespace vyse
+} // namespace vy

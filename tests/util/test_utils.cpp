@@ -5,10 +5,10 @@
 #include <sstream>
 #include <vm.hpp>
 
-using namespace vyse;
-using TT = vyse::TokenType;
+using namespace vy;
+using TT = vy::TokenType;
 
-void print_ttype(vyse::TokenType type) {
+void print_ttype(vy::TokenType type) {
 	std::string type_strs[] = {
 		"Integer",	 "Float",	   "String",
 		"True",		 "False",
@@ -53,14 +53,14 @@ void print_ttype(vyse::TokenType type) {
 	std::printf("%-10s", str.c_str());
 }
 
-void print_token(const vyse::Token& token, const std::string& src) {
+void print_token(const vy::Token& token, const std::string& src) {
 	print_ttype(token.type);
 	std::printf("'%s'", token.raw(src).c_str());
 }
 
 void print_disassembly(const char* code) {
 	const std::string code_s{code};
-	vyse::VM vm{&code_s};
+	vy::VM vm{&code_s};
 	vm.init();
 	disassemble_block("test_block", *vm.block());
 	printf("\n");

@@ -7,11 +7,11 @@
 #include <util/args.hpp>
 #include <vm.hpp>
 
-using namespace vyse::util;
-using namespace vyse;
+using namespace vy::util;
+using namespace vy;
 
 /// TODO: benchmark and optimize this.
-Value vyse::stdlib::print(VM& vm, int argc) {
+Value vy::stdlib::print(VM& vm, int argc) {
 	std::string res = "";
 	for (int i = 0; i < argc; ++i) {
 		res += value_to_string(vm.get_arg(i)) + "  ";
@@ -69,7 +69,7 @@ Value stdlib::setproto(VM& vm, int argc) {
 	return vtable;
 }
 
-vyse::Value vyse::stdlib::getproto(VM& vm, int argc) {
+vy::Value vy::stdlib::getproto(VM& vm, int argc) {
 	Args args(vm, "getproto", 1, argc);
 
 	const Table& table = args.next<Table>();

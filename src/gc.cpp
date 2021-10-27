@@ -8,7 +8,7 @@
 #define GC_LOG(...) // empty
 #endif
 
-namespace vyse {
+namespace vy {
 
 void GC::mark_object(Obj* o) {
 	if (o == nullptr or o->marked) return;
@@ -143,4 +143,4 @@ GCLock::~GCLock() {
 	m_gc->unprotect(m_object);
 }
 
-} // namespace vyse
+} // namespace vy

@@ -3,7 +3,7 @@
 #include <util/native_module.hpp>
 #include <vm.hpp>
 
-namespace vyse::util {
+namespace vy::util {
 
 NativeModule::NativeModule(VM* vm, Table* table)
 	: m_vm{vm}, m_table{table}, m_lock{vm->gc_lock(table)} {}
@@ -34,4 +34,4 @@ void NativeModule::add_field(const char* name, Value value) {
 	m_table->set(vyname, value);
 }
 
-} // namespace vyse::util
+} // namespace vy::util

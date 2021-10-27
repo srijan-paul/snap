@@ -6,7 +6,7 @@
 #include <memory>
 #include <stdlib.h>
 
-using namespace vyse;
+using namespace vy;
 
 static void expr_tests() {
 	test_return("return 5 / 2", VYSE_NUM(2.5));

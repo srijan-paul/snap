@@ -6,10 +6,10 @@
 #include <util/auxlib.hpp>
 #include <vm.hpp>
 
-using namespace vyse;
-using namespace vyse::util;
+using namespace vy;
+using namespace vy::util;
 
-namespace vyse::stdlib::math {
+namespace vy::stdlib::math {
 
 static constexpr number pi = 3.141592653589793238462643383279502884197;
 static constexpr number e = 2.7182818284590452354;
@@ -268,4 +268,4 @@ VYSE_API void load_math(VM* vm, Table* module) {
 	math.add_field("min_int", VYSE_NUM(vy_min_int));
 }
 
-} // namespace vyse::stdlib::math
+} // namespace vy::stdlib::math

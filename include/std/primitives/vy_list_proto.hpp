@@ -1,7 +1,7 @@
 #pragma once
 #include "../../forward.hpp"
 
-namespace vyse::stdlib::primitives {
+namespace vy::stdlib::primitives {
 
 void load_list_proto(VM& vm);
 

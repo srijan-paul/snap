@@ -6,7 +6,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace vyse {
+namespace vy {
 
 struct StdModule;
 
@@ -42,5 +42,4 @@ class DynLoader final {
 /// @brief The default module loader in vyse that only loads standard library modules like 'math'
 Value load_std_module(VM& vm, int argc);
 
-} // namespace vyse
-
+} // namespace vy

@@ -48,7 +48,7 @@
 #define POPN(n) (m_stack.top -= n)
 #define PUSH(value) m_stack.push(value)
 
-namespace vyse {
+namespace vy {
 
 using Op = Opcode;
 using VT = ValueType;
@@ -1362,4 +1362,4 @@ VM::~VM() {
 	}
 }
 
-} // namespace vyse
+} // namespace vy
