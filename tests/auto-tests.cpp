@@ -23,6 +23,5 @@ int main() {
 	}
 
 	std::cout << "auto tests passed" << std::endl;
-
 	return 0;
 }

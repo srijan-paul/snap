@@ -3,7 +3,6 @@
 #include "util/test_utils.hpp"
 #include <scanner.hpp>
 
-
 using namespace vy;
 using TT = TokenType;
 
@@ -27,20 +26,20 @@ static bool run_tests() {
 	bool passed = true;
 	std::string code = "123 4.55 + - -= += >= >> << > < <=";
 	passed = passed && compare_ttypes(&code, {TT::Integer, TT::Float, TT::Plus, TT::Minus,
-																						TT::MinusEq, TT::PlusEq, TT::GtEq, TT::BitRShift,
-																						TT::BitLShift, TT::Gt, TT::Lt, TT::LtEq});
+											  TT::MinusEq, TT::PlusEq, TT::GtEq, TT::BitRShift,
+											  TT::BitLShift, TT::Gt, TT::Lt, TT::LtEq});
 
 	// test keyword and identifier scanning
 	code = "let true false xyz else break continue";
 	passed = passed && compare_ttypes(&code, {TT::Let, TT::True, TT::False, TT::Id, TT::Else,
-																						TT::Break, TT::Continue, TT::Eof});
+											  TT::Break, TT::Continue, TT::Eof});
 
 	code = "'this is a string' .. 'this is also string'";
 	passed = passed && compare_ttypes(&code, {TT::String, TT::Concat, TT::String, TT::Eof});
 
 	code = "~ ! ## ** * *";
 	passed = passed && compare_ttypes(&code, {TT::BitNot, TT::Bang, TT::Len, TT::Len, TT::Exp,
-																						TT::Mult, TT::Mult, TT::Eof});
+											  TT::Mult, TT::Mult, TT::Eof});
 
 	return passed;
 }

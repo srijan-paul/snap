@@ -4,10 +4,10 @@
 #include "value.hpp"
 #include <table.hpp>
 
-#define NUM		 VYSE_NUM
-#define NIL		 VYSE_NIL
+#define NUM VYSE_NUM
+#define NIL VYSE_NIL
 #define STR(...) (new vy::String(__VA_ARGS__))
-#define BOOL(t)	 VYSE_BOOL(t)
+#define BOOL(t) VYSE_BOOL(t)
 
 using unique_str_ptr = std::unique_ptr<vy::String>;
 using shared_str_ptr = std::shared_ptr<vy::String>;
