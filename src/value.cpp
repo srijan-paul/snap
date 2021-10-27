@@ -2,7 +2,7 @@
 #include <cassert>
 #include <cstdio>
 #include <vm.hpp>
-#include <vy_list.hpp>
+#include <list.hpp>
 
 namespace vy {
 

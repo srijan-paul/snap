@@ -1,4 +1,4 @@
-#include <loadlib.hpp>
+#include <libloader.hpp>
 #include <util/lib_util.hpp>
 #include <common.hpp>
 #include <cstdlib>
@@ -6,7 +6,7 @@
 #include <forward.hpp>
 #include <string>
 #include <vm.hpp>
-#include <vy_list.hpp>
+#include <list.hpp>
 
 namespace vy {
 

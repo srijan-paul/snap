@@ -1,7 +1,7 @@
 #pragma once
 #include "compiler.hpp"
 #include "gc.hpp"
-#include "loadlib.hpp"
+#include "libloader.hpp"
 #include "table.hpp"
 #include "vm_stack.hpp"
 #include <functional>
@@ -246,7 +246,7 @@ class VM {
 	/// @brief locks an object, preventing it from being garbage collected.
 	/// @return A GCLock object. As long as a lock is alive, the object cannot be garbage collected.
 	/// The GCLock is a RAII object, and drops the protection upon destruction.
-	GCLock gc_lock(Obj* o) {
+	[[nodiscard]] GCLock gc_lock(Obj* o) {
 		return GCLock(m_gc, o);
 	}
 

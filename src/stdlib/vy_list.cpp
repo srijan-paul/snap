@@ -1,10 +1,10 @@
 #include "../str_format.hpp"
-#include "util/args.hpp"
-#include "value.hpp"
-#include <util/lib_util.hpp>
+#include <util/args.hpp>
+#include <value.hpp>
+#include <list.hpp>
 #include <stdlib/vy_list.hpp>
+#include <util/lib_util.hpp>
 #include <vm.hpp>
-#include <vy_list.hpp>
 
 #define CHECK_ARG_TYPE(n, type)                                                                    \
 	if (!check_arg_type(vm, n, type, fname)) return VYSE_NIL;
@@ -59,31 +59,17 @@ Value fill(VM& vm, int argc) {
 }
 
 Value slice(VM& vm, int argc) {
-	constexpr const char* fname = "List.slice";
-	if (argc != 3) {
-		cfn_error(vm, fname, "Expected 3 arguments (list, from, to)");
-		return VYSE_NIL;
-	}
-	CHECK_ARG_TYPE(0, ObjType::list);
-	CHECK_ARG_TYPE(1, ValueType::Number);
-	CHECK_ARG_TYPE(2, ValueType::Number);
+	Args args(vm, "List.slice", 3, argc);
 
-	const List& list = *VYSE_AS_LIST(vm.get_arg(0));
-	number from = VYSE_AS_NUM(vm.get_arg(1));
-	number to = VYSE_AS_NUM(vm.get_arg(2));
+	const List& list = args.next<List>();
+	const number from = args.next_number();
+	const number to = args.next_number();
 
-	if (!list.in_range(from)) {
-		cfn_error(vm, fname, "Bad argument #2 (from). List index out of range.");
-		return VYSE_NIL;
-	}
-
-	if (!list.in_range(to)) {
-		cfn_error(vm, fname, "Bad argument #3 (to). List index out of range.");
-		return VYSE_NIL;
-	}
+	args.check(list.in_range(from), "Bad argument #2 (from). List index out of range.");
+	args.check(list.in_range(to), "Bad argument #3 (to). List index out of range.");
 
 	List& slice = vm.make<List>();
-	size_t start = from, limit = to;
+	const size_t start = from, limit = to;
 
 	for (size_t i = start; i <= limit; ++i) {
 		slice.append(list[i]);
@@ -93,28 +79,17 @@ Value slice(VM& vm, int argc) {
 }
 
 Value map(VM& vm, int argc) {
-	constexpr const char* fname = "List.map";
-	if (argc != 2) {
-		cfn_error(vm, fname, "Expected at least 2 arguments (list, map_fn");
-		return VYSE_NIL;
-	}
+	Args args(vm, "List.map", 2, argc);
 
-	CHECK_ARG_TYPE(0, ObjType::list);
+	const List& list = args.next<List>();
+	Value vfunc = args.next_arg();
+	args.check(
+		VYSE_IS_CLOSURE(vfunc) or VYSE_IS_CCLOSURE(vfunc),
+		kt::format_str("Bad arg #2. Expected function, got {}.", value_type_name(vfunc)).c_str());
 
-	Value& vfunc = vm.get_arg(1);
-	if (!(VYSE_IS_CLOSURE(vfunc) or VYSE_IS_CCLOSURE(vfunc))) {
-		cfn_error(vm, fname,
-				  kt::format_str("Bad arg #2. Expected function, got {}.", value_type_name(vfunc)));
-		return VYSE_NIL;
-	}
-
-	const List& list = *VYSE_AS_LIST(vm.get_arg(0));
 	List& ret = vm.make<List>();
+	GCLock _ = vm.gc_lock(&ret);
 
-	/// The list we just created isn't reachable by
-	/// the garbage collector from any root set, so
-	/// we protect it.
-	vm.gc_protect(&ret);
 	for (uint i = 0; i < list.length(); ++i) {
 		vm.m_stack.push(vfunc);
 		vm.m_stack.push(list[i]);
@@ -127,9 +102,6 @@ Value map(VM& vm, int argc) {
 		ret.append(vm.m_stack.pop());
 	}
 
-	/// once we return it, it's going to get
-	/// pushed onto the stack and become reachable.
-	vm.gc_unprotect(&ret);
 	return VYSE_OBJECT(&ret);
 }
 
@@ -178,21 +150,14 @@ Value reduce(VM& vm, int argc) {
 }
 
 Value filter(VM& vm, int argc) {
-	constexpr const char* fname = "List.filter";
-	if (argc != 2) {
-		cfn_error(vm, fname, "Expected 2 arguments (list, filter_fn).");
-		return VYSE_NIL;
-	}
+	Args args(vm, "List.filter", 2, argc);
 
-	CHECK_ARG_TYPE(0, ObjType::list);
-	const List& list = *VYSE_AS_LIST(vm.get_arg(0));
+	const List& list = args.next<List>();
+	const Value vfunc = args.next_arg();
 
-	Value& vfunc = vm.get_arg(1);
-	if (!(VYSE_IS_CLOSURE(vfunc) or VYSE_IS_CCLOSURE(vfunc))) {
-		cfn_error(vm, fname,
-				  kt::format_str("Bad arg #2. Expected function, got {}.", value_type_name(vfunc)));
-		return VYSE_NIL;
-	}
+	args.check(
+		(VYSE_IS_CLOSURE(vfunc) or VYSE_IS_CCLOSURE(vfunc)),
+		kt::format_str("Bad arg #2. Expected function, got {}.", value_type_name(vfunc)).c_str());
 
 	List& ret = vm.make<List>();
 	vm.gc_protect(&ret);
@@ -216,20 +181,9 @@ Value filter(VM& vm, int argc) {
 }
 
 Value pop(VM& vm, int argc) {
-	constexpr const char* fname = "pop";
-	if (argc != 1) {
-		cfn_error(vm, fname, kt::format_str("Expected exactly one argument to List.pop"));
-		return VYSE_NIL;
-	}
-
-	CHECK_ARG_TYPE(0, ObjType::list);
-
-	List& list = *VYSE_AS_LIST(vm.get_arg(0));
-	if (list.length() == 0) {
-		cfn_error(vm, fname, "Attempt to pop from an empty list");
-		return VYSE_NIL;
-	}
-
+	Args args(vm, "List.pop", 1, argc);
+	List& list = args.next<List>();
+	args.check(list.length() > 0, "Attempt to pop from an empty list");
 	return list.pop();
 }
 

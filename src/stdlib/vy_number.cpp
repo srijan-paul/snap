@@ -1,5 +1,6 @@
-#include <util/lib_util.hpp>
+#include "util/args.hpp"
 #include <stdlib/vy_number.hpp>
+#include <util/lib_util.hpp>
 #include <vm.hpp>
 
 namespace vy::stdlib::primitives {
@@ -7,21 +8,10 @@ namespace vy::stdlib::primitives {
 using namespace util;
 
 Value to_str(VM& vm, int argc) {
-	constexpr const char* fname = "Number.to_string";
-
-	if (argc != 1) {
-		cfn_error(vm, "", "No argument provided. (expected 1 number)");
-		return VYSE_NIL;
-	}
-
-	if (!check_arg_type(vm, 0, ValueType::Number, fname)) {
-		return VYSE_NIL;
-	}
-
-	number num = VYSE_AS_NUM(vm.get_arg(0));
-	char* num_cstr = num_to_cstring(num);
-	String* str = &vm.take_string(num_cstr, strlen(num_cstr));
-
+	Args args(vm, "Number.to_string", 1, argc);
+	const number num = args.next_number();
+	char* const num_cstr = num_to_cstring(num);
+	String* const str = &vm.take_string(num_cstr, strlen(num_cstr));
 	return VYSE_OBJECT(str);
 }
 

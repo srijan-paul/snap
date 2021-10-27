@@ -2,7 +2,7 @@
 #include "util.hpp"
 #include <cmath>
 #include <cstddef>
-#include <loadlib.hpp>
+#include <libloader.hpp>
 #include <stdlib/base.hpp>
 #include <stdlib/vy_list.hpp>
 #include <stdlib/vy_number.hpp>
@@ -10,7 +10,7 @@
 #include <util/args.hpp>
 #include <value.hpp>
 #include <vm.hpp>
-#include <vy_list.hpp>
+#include <list.hpp>
 
 #if defined(VYSE_DEBUG_RUNTIME) || defined(VYSE_DEBUG_DISASSEMBLY)
 #include <cstdio>

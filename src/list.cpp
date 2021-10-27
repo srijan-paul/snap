@@ -1,5 +1,5 @@
 #include <gc.hpp>
-#include <vy_list.hpp>
+#include <list.hpp>
 
 namespace vy {
 
