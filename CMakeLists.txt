@@ -3,9 +3,9 @@ set(APP_VERSION "0.0.1" CACHE STRING "Application Version" FORCE)
 project(vyse VERSION ${APP_VERSION}
              DESCRIPTION "An embeddable, dynamically typed language."
              LANGUAGES CXX)
-set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lang/src")
+set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${SOURCE_DIR}/*.cpp")
-set(INCLUDE_DIR lang/include/vyse)
+set(INCLUDE_DIR include/)
 
 set(STRESS_GC OFF CACHE BOOL "Run garbage collector as often as possible")
 set(LOG_GC OFF CACHE BOOL "Log GC output on every GC event.")
@@ -59,7 +59,7 @@ target_compile_options(${PROJECT_NAME} PUBLIC "-Wall" "-Wpedantic" "-Wextra" "-f
 
 # Builds a shared object file from a vyse standard library source file
 function(BUILD_VYSE_LIB LIB_NAME)
-  add_library(${LIB_NAME} SHARED ${SOURCE_DIR}/std/${LIB_NAME}.cpp)
+  add_library(${LIB_NAME} SHARED ${SOURCE_DIR}/stdlib/${LIB_NAME}.cpp)
   target_link_libraries(${LIB_NAME} PRIVATE ${PROJECT_NAME})
   target_include_directories(${LIB_NAME} PRIVATE ${INCLUDE_DIR})
   target_compile_features(${LIB_NAME} PRIVATE cxx_std_17)
@@ -75,7 +75,7 @@ target_link_libraries(${CLI_NAME} ${PROJECT_NAME})
 target_compile_features(${CLI_NAME} PRIVATE cxx_std_17)
 
 # tests
-set(TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/test")
+set(TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests")
 set(TEST_UTIL_SRC "${TEST_DIR}/util/test_utils.cpp")
 function(PREPARE_TEST EXE_NAME TEST_NAME FILE_NAME)
     add_executable(${EXE_NAME} "${TEST_DIR}/${FILE_NAME}" ${TEST_UTIL_SRC})
@@ -96,9 +96,3 @@ if(BUILD_TESTS)
   PREPARE_TEST(stdlib-test StdlibTest "stdlib-test.cpp")
   PREPARE_TEST(auto-test AutoTests "auto-tests.cpp")
 endif()
-
-# benchmarks
-set(BENCHMARK_SUITE "benchmark")
-add_executable(${BENCHMARK_SUITE} ${CMAKE_CURRENT_SOURCE_DIR}/benchmark/cpp/benchmark.cpp)
-LINK_VYSE_DEPS(${BENCHMARK_SUITE})
-target_compile_features(${BENCHMARK_SUITE} PUBLIC cxx_std_17)
