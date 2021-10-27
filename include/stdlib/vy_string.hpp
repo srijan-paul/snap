@@ -1,5 +1,5 @@
 #pragma once
-#include "../../forward.hpp"
+#include <forward.hpp> 
 
 namespace vy::stdlib::primitives {
 
@@ -7,7 +7,7 @@ namespace vy::stdlib::primitives {
 void load_string_proto(VM& vm);
 
 /// args: string, from, [len]
-/// if to is provided, returns the [len] consecutive characters in [string]
+/// if [to] is provided, returns the [len] consecutive characters in [string]
 /// starting from [from]. Other wise truncates the characters in range [0, from) and
 /// returns the rest.
 Value substr(VM&, int);

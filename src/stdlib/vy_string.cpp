@@ -1,10 +1,10 @@
-#include "../../str_format.hpp"
-#include "value.hpp"
+#include "../str_format.hpp"
 #include <cmath>
 #include <cstdlib>
-#include <std/lib_util.hpp>
-#include <std/primitives/vy_string.hpp>
+#include <stdlib/vy_string.hpp>
 #include <util/args.hpp>
+#include <util/lib_util.hpp>
+#include <value.hpp>
 #include <vm.hpp>
 
 #define CHECK_ARG_TYPE(n, type)                                                                    \
@@ -223,6 +223,16 @@ Value from_code(VM& vm, int argc) {
 	return VYSE_OBJECT(&vm.make_string(&c, 1));
 }
 
+Value byte(VM& vm, int argc) {
+	Args args(vm, "byte", 2, argc);
+	const String& string = args.next<String>();
+	const number idx = args.next_number();
+	args.check(idx >= 0 and idx < string.len() and idx == s64(idx), "Invalid index.");
+	args.check(string.len() > 0, "String must be at least one character long.");
+	const char c = string.at(idx);
+	return VYSE_NUM(c);
+}
+
 void load_string_proto(VM& vm) {
 	Table& str_proto = *vm.prototypes.string;
 	add_libfn(vm, str_proto, "substr", substr);
@@ -230,6 +240,7 @@ void load_string_proto(VM& vm) {
 	add_libfn(vm, str_proto, "to_num", to_number);
 	add_libfn(vm, str_proto, "replace", replace);
 	add_libfn(vm, str_proto, "from_code", from_code);
+	add_libfn(vm, str_proto, "byte", byte);
 }
 
 } // namespace vy::stdlib::primitives

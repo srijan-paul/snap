@@ -1,5 +1,5 @@
 #pragma once
-#include "../forward.hpp"
+#include <forward.hpp> 
 
 namespace vy::stdlib {
 
@@ -14,4 +14,4 @@ Value getproto(VM&, int);
 Value assert_(VM&, int);
 Value import(VM&, int);
 
-} // namespace vyse::stdlib
+} // namespace vy::stdlib

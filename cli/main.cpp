@@ -14,9 +14,7 @@ using namespace vy;
 ExitCode runcode(std::string const& code) {
 	VM vm;
 	vm.load_stdlib();
-	ExitCode ec = vm.runcode(code);
-
-	return ec;
+	return vm.runcode(code);
 }
 
 std::optional<std::string> readfile(const char* filepath) {

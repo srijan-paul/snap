@@ -2,8 +2,8 @@
 #include "value.hpp"
 #include "vy_list.hpp"
 #include <loadlib.hpp>
-#include <std/base.hpp>
-#include <std/lib_util.hpp>
+#include <stdlib/base.hpp>
+#include <util/lib_util.hpp>
 #include <util/args.hpp>
 #include <vm.hpp>
 
@@ -138,3 +138,4 @@ Value stdlib::import(VM& vm, int argc) {
 
 	return VYSE_NIL;
 }
+

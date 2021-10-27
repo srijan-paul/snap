@@ -1,5 +1,5 @@
-#include <std/lib_util.hpp>
-#include <std/primitives/vy_number.hpp>
+#include <util/lib_util.hpp>
+#include <stdlib/vy_number.hpp>
 #include <vm.hpp>
 
 namespace vy::stdlib::primitives {

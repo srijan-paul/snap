@@ -7,7 +7,6 @@
 
 namespace vy::util {
 
-
 /// @brief throws an error having the message [message] inside the function having name[fname].
 void cfn_error(VM& vm, const char* fname, std::string&& message);
 void bad_arg_error(VM& vm, const char* fname, int argn, const char* expected_type,

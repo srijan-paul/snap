@@ -1,8 +1,8 @@
-#include "../../str_format.hpp"
+#include "../str_format.hpp"
 #include "util/args.hpp"
 #include "value.hpp"
-#include <std/lib_util.hpp>
-#include <std/primitives/vy_list_proto.hpp>
+#include <util/lib_util.hpp>
+#include <stdlib/vy_list.hpp>
 #include <vm.hpp>
 #include <vy_list.hpp>
 

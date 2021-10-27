@@ -1,5 +1,5 @@
-#include "gc.hpp"
-#include "value.hpp"
+#include <gc.hpp>
+#include <value.hpp>
 #include <vm.hpp>
 
 #ifdef VYSE_LOG_GC

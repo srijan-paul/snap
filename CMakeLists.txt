@@ -59,7 +59,7 @@ target_compile_options(${PROJECT_NAME} PUBLIC "-Wall" "-Wpedantic" "-Wextra" "-f
 
 # Builds a shared object file from a vyse standard library source file
 function(BUILD_VYSE_LIB LIB_NAME)
-  add_library(${LIB_NAME} SHARED ${SOURCE_DIR}/std/${LIB_NAME}.cpp)
+  add_library(${LIB_NAME} SHARED ${SOURCE_DIR}/stdlib/${LIB_NAME}.cpp)
   target_link_libraries(${LIB_NAME} PRIVATE ${PROJECT_NAME})
   target_include_directories(${LIB_NAME} PRIVATE ${INCLUDE_DIR})
   target_compile_features(${LIB_NAME} PRIVATE cxx_std_17)

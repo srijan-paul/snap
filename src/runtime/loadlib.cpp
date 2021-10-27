@@ -1,5 +1,5 @@
-#include "loadlib.hpp"
-#include "std/lib_util.hpp"
+#include <loadlib.hpp>
+#include <util/lib_util.hpp>
 #include <common.hpp>
 #include <cstdlib>
 #include <dino/dino.hpp>

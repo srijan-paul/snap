@@ -1,15 +1,14 @@
-#include "loadlib.hpp"
-#include "std/primitives/vy_list_proto.hpp"
-#include "std/vystrlib.hpp"
-#include "str_format.hpp"
+#include "../str_format.hpp"
 #include "util.hpp"
-#include "value.hpp"
 #include <cmath>
 #include <cstddef>
-#include <std/base.hpp>
-#include <std/primitives/vy_number.hpp>
-#include <std/primitives/vy_string.hpp>
+#include <loadlib.hpp>
+#include <stdlib/base.hpp>
+#include <stdlib/vy_list.hpp>
+#include <stdlib/vy_number.hpp>
+#include <stdlib/vy_string.hpp>
 #include <util/args.hpp>
+#include <value.hpp>
 #include <vm.hpp>
 #include <vy_list.hpp>
 
@@ -749,7 +748,6 @@ void VM::load_stdlib() {
 	add_stdlib_object("print", &make<CClosure>(stdlib::print));
 	add_stdlib_object("setproto", &make<CClosure>(stdlib::setproto));
 	add_stdlib_object("getproto", &make<CClosure>(stdlib::getproto));
-	add_stdlib_object("byte", &make<CClosure>(stdlib::byte));
 	add_stdlib_object("assert", &make<CClosure>(stdlib::assert_));
 	add_stdlib_object("input", &make<CClosure>(stdlib::input));
 	add_stdlib_object("import", &make<CClosure>(stdlib::import));

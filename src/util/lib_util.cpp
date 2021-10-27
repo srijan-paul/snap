@@ -1,6 +1,6 @@
 #include "../str_format.hpp"
 #include "value.hpp"
-#include <std/lib_util.hpp>
+#include <util/lib_util.hpp>
 #include <vm.hpp>
 
 namespace vy::util {
