@@ -3,9 +3,9 @@ set(APP_VERSION "0.0.1" CACHE STRING "Application Version" FORCE)
 project(vyse VERSION ${APP_VERSION}
              DESCRIPTION "An embeddable, dynamically typed language."
              LANGUAGES CXX)
-set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lang/src")
+set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${SOURCE_DIR}/*.cpp")
-set(INCLUDE_DIR lang/include/vyse)
+set(INCLUDE_DIR include/)
 
 set(STRESS_GC OFF CACHE BOOL "Run garbage collector as often as possible")
 set(LOG_GC OFF CACHE BOOL "Log GC output on every GC event.")
@@ -75,7 +75,7 @@ target_link_libraries(${CLI_NAME} ${PROJECT_NAME})
 target_compile_features(${CLI_NAME} PRIVATE cxx_std_17)
 
 # tests
-set(TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/test")
+set(TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tests")
 set(TEST_UTIL_SRC "${TEST_DIR}/util/test_utils.cpp")
 function(PREPARE_TEST EXE_NAME TEST_NAME FILE_NAME)
     add_executable(${EXE_NAME} "${TEST_DIR}/${FILE_NAME}" ${TEST_UTIL_SRC})

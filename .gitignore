@@ -1,4 +1,5 @@
 bin/*
+build/*
 out/*
 debug/*
 compile_commands.json
@@ -9,3 +10,4 @@ scratchpad
 build.sh
 build-debug.sh
 *.swp
+TODO.txt

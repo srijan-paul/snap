@@ -8,7 +8,7 @@
 namespace stdfs = std::filesystem;
 
 int main() {
-	std::string dir_path = "../test/test_programs/auto";
+	std::string dir_path = "../tests/test_programs/auto";
 	assert(stdfs::exists(dir_path) && "test directory exists.");
 
 	for (const auto& entry : stdfs::directory_iterator(dir_path)) {

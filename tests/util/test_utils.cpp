@@ -86,11 +86,11 @@ void test_return(const std::string&& code, Value expected, const char* message) 
 
 std::string load_file(const char* filename, bool is_relative) {
 	// Currently files can only be read relative to the path of the binary (which is
-	// in `bin/vm_test`).
+	// in `build/vm_test`).
 	// So to read the file just from it's name, we append the file beginning of the
 	// file path to it.
 
-	static const char* path_prefix = "../test/test_programs/";
+	static const char* path_prefix = "../tests/test_programs/";
 
 	std::string filepath{is_relative ? (std::string(path_prefix) + filename) : filename};
 	std::ifstream file(filepath);

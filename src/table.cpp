@@ -204,7 +204,7 @@ size_t Table::hash_value(Value key) const {
 	case VT::Bool: return VYSE_AS_BOOL(key) ? 7 : 15;
 	case VT::Number: return size_t(VYSE_AS_NUM(key)); // TODO: use a proper numeric hash
 	case VT::Object: return hash_object(VYSE_AS_OBJECT(key));
-	default: VYSE_UNREACHABLE();
+	default: VYSE_UNREACHABLE(); return 0;
 	}
 }
 

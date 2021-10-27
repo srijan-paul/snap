@@ -61,11 +61,11 @@ using OT = ObjType;
 
 #define CMP_OP(op, proto_method)                                                                   \
 	do {                                                                                           \
-		Value& b = PEEK(1);                                                                        \
-		Value& a = PEEK(2);                                                                        \
+		Value& r = PEEK(1);                                                                        \
+		Value& l = PEEK(2);                                                                        \
                                                                                                    \
-		if (VYSE_IS_NUM(a) and VYSE_IS_NUM(b)) {                                                   \
-			m_stack.top[-2] = (VYSE_BOOL(VYSE_AS_NUM(a) op VYSE_AS_NUM(b)));                       \
+		if (VYSE_IS_NUM(l) and VYSE_IS_NUM(r)) {                                                   \
+			m_stack.top[-2] = (VYSE_BOOL(VYSE_AS_NUM(l) op VYSE_AS_NUM(r)));                       \
 			DISCARD();                                                                             \
 		} else if (!call_binary_overload(#op, proto_method)) {                                     \
 			return ExitCode::RuntimeError;                                                         \
