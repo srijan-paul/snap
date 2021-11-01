@@ -11,3 +11,5 @@ build.sh
 build-debug.sh
 *.swp
 TODO.txt
+benchmark/venv/*
+benchmark/env/*

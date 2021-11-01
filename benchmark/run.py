@@ -48,13 +48,13 @@ class Lang:
 		self.color = color
 
 	def run(self, filepath):
-		os.system(f'{self.exec} {self.dir}\\{filepath}{self.ext}')
+		os.system(f'{self.exec} {self.dir}//{filepath}{self.ext}')
 		print('\n')
 
 langs = [
-	Lang('Vyse', '..\\bin\\vy', 'vyse', '.vy', 'yellow'),
+	Lang('Vyse', '../build/vy', 'vyse', '.vy', 'yellow'),
 	Lang('Lua', 'lua', 'lua', '.lua', 'magenta'),
-	Lang('Python', 'py', 'python', '.py', 'blue')
+	Lang('Python', 'python', 'python', '.py', 'blue')
 ]
 
 benches = [
