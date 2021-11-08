@@ -6,11 +6,11 @@ try:
 except NameError:
     pass
 
-list = []
+list_ = []
 for i in range(0, 1000000):
-  list.append(i)
+  list_.append(i)
 
-sum = 0
-for i in list:
-  sum += i
-print(sum)
+sum_ = 0
+for i in list_:
+  sum_ += i
+print(sum_)

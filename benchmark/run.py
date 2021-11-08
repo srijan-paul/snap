@@ -31,11 +31,11 @@ class BenchMark:
 		return (end - start).total_seconds()
 
 class Lang:
-	"""
+	r"""
 	[exec_name] - string that is used as the executable to launch benchmark programs.
 	Note that if the executable is not in the user's PATH then the exec_name must
 	be the filepath of the executable relative to the directory from where this
-	file is run. (eg - 'py' for Python and '..\\bin\\vy' for Vyse)
+	file is run. (eg - 'py' for Python and '..\bin\vy' for Vyse)
 	[dir_name] name of the directory where all the benchmark programs for this
 	language reside. (eg- 'lua' for the Lua language.)
 	[ext] - file extension for the language (eg - '.lua' for Lua)
@@ -93,8 +93,7 @@ def get_langs():
 		for lang in langs:
 			if lang.name.lower() == args.lang.lower():
 				return [lang]
-		else:
-			return None
+		return None
 	return langs
 
 total_times = 1

@@ -35,7 +35,7 @@ def main():
 
     val = 1
     toggle = Toggle(val)
-    for i in range(0,NUM):
+    for _ in range(0,NUM):
         val = toggle.activate().value()
         val = toggle.activate().value()
         val = toggle.activate().value()
@@ -53,7 +53,7 @@ def main():
 
     val = 1
     ntoggle = NthToggle(val, 3)
-    for i in range(0,NUM):
+    for _ in range(0,NUM):
         val = ntoggle.activate().value()
         val = ntoggle.activate().value()
         val = ntoggle.activate().value()
