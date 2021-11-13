@@ -6,9 +6,8 @@
 
 namespace vy {
 
-// This is the core table data structure
-// in vyse. I decided to go with a hashtable
-// implementation that uses Robinhood hashing
+// This is the core table data structure in vyse.
+// I decided to go with a hashtable implementation that uses Robinhood hashing
 // and linear probing.
 class Table final : public Obj {
 	friend GC;
@@ -17,24 +16,21 @@ class Table final : public Obj {
 	explicit Table() noexcept : Obj{ObjType::table} {};
 	~Table();
 
-	/// IMPORTANT: `DefaultCapacity` must always be a
-	/// power of two, since we are using the `&` trick
+	/// IMPORTANT: `DefaultCapacity` must always be a power of two, since we are using the `&` trick
 	/// to calculate fast mod.
 	static constexpr size_t DefaultCapacity = 16;
 	static constexpr u8 GrowthFactor = 2;
 	static constexpr float LoadFactor = 0.85;
 
 	/// @brief The prototype for this table.
-	/// If a property is not found in this table
-	/// then a lookup is done on the prototype.
+	/// If a property is not found in this table then a lookup is done on the prototype.
 	Table* m_proto_table = nullptr;
 
 	/// @return The value assosciated with `key`.
 	Value get(Value key) const;
 
-	/// @brief Removes a key from the Hashtable.
-	/// and returns true if [key] really did exist
-	/// in the table before deletion.
+	/// @brief Removes a key from the Hashtable. and returns true if [key] really did exist in the
+	/// table before deletion.
 	bool remove(Value key);
 
 	/// @brief Set table[key] = value.
@@ -46,8 +42,7 @@ class Table final : public Obj {
 	/// @return True if a new entry was added, False if an existing entry was modified
 	bool set(String& key, Value value);
 
-	/// @return The number of key-value pairs that
-	/// are active in this table.
+	/// @return The number of key-value pairs that are active in this table.
 	size_t length() const;
 
 	/// @brief Takes a string C string on the heap. checks if

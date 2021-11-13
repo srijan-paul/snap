@@ -54,7 +54,13 @@ class Obj {
 	virtual size_t size() const = 0;
 };
 
-enum class ValueType : u8 { Number, Bool, Object, Nil, Undefined };
+enum class ValueType : u8 {
+	Number,
+	Bool,
+	Object,
+	Nil,
+	Undefined,
+};
 
 // Without NaN tagging, values are represented as structs weighing 16 bytes. 1 word for the type tag
 // and one for the union representing the possible states. This is a bit wasteful but not that bad.
