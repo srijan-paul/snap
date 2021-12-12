@@ -110,6 +110,7 @@ const char* otype_to_string(ObjType tag) {
 	case OT::closure: return "function";
 	case OT::c_closure: return "native function";
 	case OT::list: return "list";
+	case OT::user_data: return "userdata";
 	default: return "unknown";
 	}
 }

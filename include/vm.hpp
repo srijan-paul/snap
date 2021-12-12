@@ -3,6 +3,8 @@
 #include "gc.hpp"
 #include "libloader.hpp"
 #include "table.hpp"
+#include "value.hpp"
+#include "userdata.hpp"
 #include "vm_stack.hpp"
 #include <functional>
 #include <unordered_map>
@@ -373,6 +375,7 @@ class VM {
 			case ObjType::string: return prototypes.string;
 			case ObjType::list: return prototypes.list;
 			case ObjType::table: return static_cast<Table*>(o)->m_proto_table;
+			case ObjType::user_data: return static_cast<UserData*>(o)->m_proto;
 			default: return nullptr;
 			}
 		}
