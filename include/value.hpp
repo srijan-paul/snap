@@ -34,7 +34,9 @@ class Obj {
 	explicit constexpr Obj(ObjType tt) noexcept : tag{tt} {}
 	constexpr Obj(Obj&& o) = default;
 	constexpr Obj(Obj const& o) = default;
-	virtual ~Obj() = default;
+
+	/// TODO: What are the implications of making this noexcept(false)?
+	virtual ~Obj() noexcept(false) = default;
 
 	virtual const char* to_cstring() const;
 
@@ -43,6 +45,7 @@ class Obj {
 	Obj* next = nullptr;
 	/// @brief Whether this object has been 'marked' as alive in the most
 	/// currently active garbage collection cycle (if any).
+	/// TODO: use the MSB in the `next` pointer for this task?
 	bool marked = false;
 
 	/// @brief Traces all the references that this object
@@ -80,8 +83,8 @@ struct Value {
 		constexpr Data(Obj* o) noexcept : object(o) {}
 	} as;
 
-	explicit constexpr Value(number n) noexcept : tag{ValueType::Number}, as{n} {};
-	explicit constexpr Value(bool b) noexcept : tag{ValueType::Bool}, as{b} {};
+	explicit constexpr Value(number n) noexcept : tag{ValueType::Number}, as{n} {}
+	explicit constexpr Value(bool b) noexcept : tag{ValueType::Bool}, as{b} {}
 	explicit constexpr Value() noexcept : tag{ValueType::Nil} {};
 	explicit constexpr Value(Obj* o) noexcept : tag{ValueType::Object}, as{o} {
 		VYSE_ASSERT(o != nullptr, "Unexpected nullptr object");

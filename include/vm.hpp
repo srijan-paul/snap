@@ -375,7 +375,7 @@ class VM {
 			case ObjType::string: return prototypes.string;
 			case ObjType::list: return prototypes.list;
 			case ObjType::table: return static_cast<Table*>(o)->m_proto_table;
-			case ObjType::user_data: return static_cast<UserData*>(o)->m_proto;
+			case ObjType::user_data: return static_cast<UserDataBase*>(o)->m_proto;
 			default: return nullptr;
 			}
 		}
