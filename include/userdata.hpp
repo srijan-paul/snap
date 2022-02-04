@@ -16,24 +16,25 @@ struct UserDataBase : public Obj {
 		: Obj{ObjType::user_data}, m_type_id{type_id}, m_proto{proto} {}
 	UserDataBase(size_t type_id) : Obj{ObjType::user_data}, m_type_id{type_id} {}
 
-	std::size_t const m_type_id;
+	size_t const m_type_id;
 	Table* m_proto = nullptr;
-	TraceFn trace_fn = nullptr;
-	DeleteFn delete_fn = nullptr;
+	TraceFn m_tracer = nullptr;
+	DeleteFn m_deleter = nullptr;
+	CClosure* m_indexer = nullptr;
 };
 
 template <typename T>
 class UserData final : public UserDataBase {
   public:
+	static const size_t TypeId;
+	
 	UserData() = delete;
 	UserData(T* const data) : UserDataBase(typeid(T).hash_code()), m_data{data} {}
 
 	~UserData() {
-		if (!delete_fn) return;
+		if (!m_deleter) return;
 		if (typeid(T).hash_code() == m_type_id) {
-			delete_fn(m_data);
-		} else {
-			throw "Bad";
+			m_deleter(m_data);
 		}
 	}
 
@@ -41,12 +42,17 @@ class UserData final : public UserDataBase {
 		return "user-data";
 	}
 
+	[[nodiscard]] static size_t get_type_id() noexcept {
+		return typeid(T).hash_code();
+	}
+
   protected:
 	void trace(GC& gc) override {
 		gc.mark_object(m_proto);
-		if (trace_fn) {
-			if (typeid(T).hash_code() == m_type_id) {
-				trace_fn(gc, m_data);
+		gc.mark_object(m_indexer);
+		if (m_tracer) {
+			if (get_type_id() == m_type_id) {
+				m_tracer(gc, m_data);
 			}
 		}
 	}

@@ -131,6 +131,14 @@ class Args {
 			throw CTypeException(m_fname, m_used_argc, otype_to_string(typ), value_type_name(arg));
 		}
 
+		if constexpr (std::is_base_of_v<UserDataBase, T>) {
+			if (static_cast<UserDataBase*>(VYSE_AS_OBJECT(arg))->m_type_id !=
+				T::get_type_id()) {
+				throw CTypeException(m_fname, m_used_argc, otype_to_string(typ),
+									 value_type_name(arg));
+			}
+		}
+
 		return *static_cast<T*>(VYSE_AS_OBJECT(arg));
 	}
 

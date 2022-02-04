@@ -35,8 +35,7 @@ class Obj {
 	constexpr Obj(Obj&& o) = default;
 	constexpr Obj(Obj const& o) = default;
 
-	/// TODO: What are the implications of making this noexcept(false)?
-	virtual ~Obj() noexcept(false) = default;
+	virtual ~Obj() = default;
 
 	virtual const char* to_cstring() const;
 
