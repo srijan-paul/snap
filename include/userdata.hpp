@@ -94,12 +94,22 @@ class UserData : public Obj {
 	// clang-format on
 
   public:
+	/// @brief An ID that uniquely identifies the datatype that this UserData wraps.
 	size_t const m_type_id;
 
+	/// @brief Prototype for this UserData.
 	Table* m_proto = nullptr;
+
+	/// @brief A function used to trace this object when the GC cycle is triggered.
 	TraceFn* m_tracer = nullptr;
+
+	/// @brief A function used to destruct the data stored before deleting the wrapping Userdata.
 	DeleteFn* m_deleter = nullptr;
-	Value indexer = VYSE_NIL;
+
+	/// @brief A table which is consulted when the user wants to index this userdata.
+	/// This serves as a "proxy". Any property accesses done on the userdata are routed to this.
+	/// If no value is found, then it is routed to the prototype.
+	Table* indexer = nullptr;
 
   private:
 	void* m_data = nullptr;

@@ -1,8 +1,10 @@
 #include "../str_format.hpp"
+#include "userdata.hpp"
 #include "util.hpp"
 #include <cmath>
 #include <cstddef>
 #include <libloader.hpp>
+#include <list.hpp>
 #include <stdlib/base.hpp>
 #include <stdlib/vy_list.hpp>
 #include <stdlib/vy_number.hpp>
@@ -10,7 +12,6 @@
 #include <util/args.hpp>
 #include <value.hpp>
 #include <vm.hpp>
-#include <list.hpp>
 
 #if defined(VYSE_DEBUG_RUNTIME) || defined(VYSE_DEBUG_DISASSEMBLY)
 #include <cstdio>
@@ -1062,9 +1063,29 @@ bool VM::get_field_of_value(Value const& value, Value const& key, Value& inout) 
 	return true;
 }
 
+bool VM::get_subscript_of_udata(const UserData& udata, const Value& index, Value& result) {
+	Table* indexer = udata.indexer;
+	Table* m_proto = udata.m_proto;
+	if (indexer != nullptr && indexer->tag == ObjType::table) {
+		result = indexer->get(index);
+	}
+
+	if (m_proto && VYSE_IS_NIL(result)) {
+		result = m_proto->get(index);
+	}
+	return true;
+}
+
 bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& result) {
+	if (VYSE_IS_NIL(index)) {
+		ERROR("Attempt to index with a nil value.");
+		return false;
+	}
+
 	if (VYSE_IS_OBJECT(value)) {
 		Obj* const object = VYSE_AS_OBJECT(value);
+		assert(object != nullptr);
+
 		switch (object->tag) {
 		case OT::table: {
 			Table* const table = static_cast<Table*>(object);
@@ -1105,7 +1126,12 @@ bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& r
 			return true;
 		}
 
-		default: break; // fallthrough to default
+		case OT::user_data: {
+			UserData& udata = *static_cast<UserData*>(object);
+			return get_subscript_of_udata(udata, index, result);
+		}
+
+		default:; // fallthrough to default
 		}
 	}
 

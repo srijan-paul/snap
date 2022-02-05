@@ -61,7 +61,6 @@ class GC {
 	/// @brief marks an object as 'alive', turning it gray.
 	void mark_object(Obj* o);
 
-
 	private:
 	/// @brief Walks over all the entire root set,
 	/// marking all objects and coloring them gray.

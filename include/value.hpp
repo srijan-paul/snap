@@ -140,6 +140,7 @@ void print_value(Value v);
 #define VYSE_IS_CODEBLOCK(v)                                                                       \
 	(VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vy::ObjType::codeblock)
 #define VYSE_IS_CCLOSURE(v) (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vy::ObjType::c_closure)
+#define VYSE_IS_UDATA(v) (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vy::ObjType::user_data)
 
 #define VYSE_IS_FALSY(v) ((VYSE_IS_BOOL(v) and !(VYSE_AS_BOOL(v))) or VYSE_IS_NIL(v))
 #define VYSE_IS_TRUTHY(v) (!VYSE_IS_FALSY(v))
@@ -155,6 +156,7 @@ void print_value(Value v);
 #define VYSE_AS_CSTRING(v) (VYSE_AS_STRING(v)->c_str())
 #define VYSE_AS_TABLE(v) (static_cast<Table*>(VYSE_AS_OBJECT(v)))
 #define VYSE_AS_LIST(v) (static_cast<List*>(VYSE_AS_OBJECT(v)))
+#define VYSE_AS_UDATA(v) (static_cast<UserData*>(VYSE_AS_OBJECT(v)))
 
 #define VYSE_CAST_INT(v) (s64(VYSE_AS_NUM(v)))
 

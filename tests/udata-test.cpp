@@ -1,4 +1,5 @@
 #include "assert.hpp"
+#include "userdata.hpp"
 #include "util/args.hpp"
 #include <vector>
 #include <vm.hpp>
@@ -72,6 +73,63 @@ Value vec_pop(VM& vm, int argc) {
 }
 
 // tests
+/// TODO: finish this test suite.
+// Test the `[]` operator
+void test_udata_indexing() {
+	VM vm;
+
+	struct Counter {
+		int value = 0;
+	};
+
+	auto counter_new = [](VM& vm, int argc) -> Value {
+		util::Args args{vm, "Counter:new", 1, argc};
+		Table& counter_class = args.next<Table>();
+		auto ctrptr = new Counter{};
+
+		UserData& udata = vm.make_udata<Counter>(ctrptr, &counter_class);
+		udata.m_deleter = [](void* ctr) -> void { delete static_cast<Counter*>(ctr); };
+		return VYSE_OBJECT(&udata);
+	};
+
+	auto counter_inc = [](VM& vm, int argc) -> Value {
+		util::Args args{vm, "Counter:inc", 1, argc};
+		Counter* counter = args.next_udata_arg<Counter>();
+		if (counter != nullptr) {
+			counter->value += 1;
+		}
+		return VYSE_NIL;
+	};
+
+	auto counter_get = [](VM& vm, int argc) -> Value {
+		util::Args args{vm, "Counter:inc", 1, argc};
+		Counter* counter = args.next_udata_arg<Counter>();
+		if (counter == nullptr) return VYSE_NIL;
+		return VYSE_NUM(counter->value);
+	};
+
+#define S(s) VYSE_OBJECT(&vm.make_string(s))
+#define F(f) VYSE_OBJECT(&vm.make<CClosure>(f))
+
+	Table& counter_class = vm.make<Table>();
+	vm.gc_off();
+	counter_class.set(S("new"), F(counter_new));
+	counter_class.set(S("inc"), F(counter_inc));
+	counter_class.set(S("get"), F(counter_get));
+	vm.set_global("Counter", VYSE_OBJECT(&counter_class));
+	vm.gc_on();
+
+	vm.load_stdlib();
+	auto res = vm.runcode(R"(
+		const ctr = Counter:new()
+		assert(ctr:get() == 0)
+		ctr:inc(); ctr:inc(); ctr:inc()
+		assert(ctr:get() == 3)
+	)");
+
+	assert(res == ExitCode::Success);
+#undef S
+}
 
 void udata_test() {
 	VM vm;
@@ -106,6 +164,7 @@ void udata_test() {
 
 int main() {
 	udata_test();
+	test_udata_indexing();
 	printf("[userdata tests passed]\n");
 	return 0;
 }

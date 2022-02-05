@@ -436,6 +436,15 @@ class VM {
 	/// @return true if the indexing succeeds, false if there is an error
 	bool get_subscript_of_value(const Value& value, const Value& index, Value& result);
 
+	/// @brief fetches the `index` key of `udata` and stores it into `result.
+	/// When a userdata is queried, first it's indexer table is consulted. If
+	/// no value is found in the indexer table, then it's prototype chain (`m_proto`) is queried.
+	/// @param udata The useradata to index.
+	/// @param index The index used to query.
+	/// @param result An in-out parameter into which the result is stored.
+	/// @return true if there are no runtime errors, false otherwise.
+	bool get_subscript_of_udata(const UserData& udata, const Value& index, Value& result);
+
 	/// @brief performs the `lhs[key] = rhs` operation.
 	/// @return true if the operation was successful, false if there was an error instead.
 	bool subscript_set(const Value& lhs, const Value& key, const Value& rhs);
