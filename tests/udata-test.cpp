@@ -23,10 +23,6 @@ Value vec_push(VM& vm, int argc) {
 	return VYSE_NUM(vec->size());
 }
 
-void delete_cpp_vector(void* vector) {
-	delete static_cast<ValueVector*>(vector);
-}
-
 Value vec_new(VM& vm, int argc) {
 	util::Args args(vm, "Vector:new", 1, argc);
 	auto& vec = vm.make_udata<ValueVector>(new std::vector<Value>());
