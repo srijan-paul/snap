@@ -105,15 +105,15 @@ class Args {
 		return m_vm.get_arg(m_used_argc++);
 	}
 
-	number next_number() noexcept(false) {
+	[[nodiscard]] number next_number() noexcept(false) {
 		return check_and_get<number>(ValueType::Number);
 	}
 
-	bool next_bool() noexcept(false) {
+	[[nodiscard]] bool next_bool() noexcept(false) {
 		return check_and_get<bool>(ValueType::Bool);
 	}
 
-	Obj* next_obj() noexcept(false) {
+	[[nodiscard]] Obj* next_obj() noexcept(false) {
 		return check_and_get<Obj*>(ValueType::Object);
 	}
 
@@ -135,7 +135,7 @@ class Args {
 	}
 
 	template <typename T>
-	T& check_and_get(ObjType type_tag) noexcept(false) {
+	[[nodiscard]] T& check_and_get(ObjType type_tag) noexcept(false) {
 		check_arg_overflow();
 		const Value& arg = m_vm.get_arg(m_used_argc);
 		++m_used_argc;
@@ -155,7 +155,7 @@ class Args {
 	}
 
 	template <typename T>
-	T check_and_get(ValueType tag) noexcept(false) {
+	[[nodiscard]] T check_and_get(ValueType tag) noexcept(false) {
 		check_arg_overflow();
 		Value& arg = m_vm.get_arg(m_used_argc);
 		++m_used_argc;

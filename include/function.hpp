@@ -105,7 +105,8 @@ class Closure final : public Obj {
 
 class CClosure final : public Obj {
   public:
-	explicit CClosure(NativeFn fn) noexcept : Obj(ObjType::c_closure), m_func{fn} {};
+	explicit CClosure(NativeFn fn, List* const values = nullptr) noexcept
+		: Obj(ObjType::c_closure), m_values{values}, m_func{fn} {}
 	~CClosure() override = default;
 
 	[[nodiscard]] size_t size() const override {
@@ -116,8 +117,11 @@ class CClosure final : public Obj {
 		return m_func;
 	}
 
+	/// @brief A list of values that the c-closure can use in whichever way it wants.
+	List* m_values = nullptr;
+
   private:
-	NativeFn m_func;
+	const NativeFn m_func;
 	void trace(GC& gc) override;
 };
 

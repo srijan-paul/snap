@@ -27,7 +27,7 @@ class UserData : public Obj {
 	// clang-format on
 
 	template <typename T>
-	inline static UserData* make(T* data, Table* proto = nullptr) {
+	[[nodiscard]] inline static UserData* make(T* data, Table* proto = nullptr) {
 		return new UserData(typeid(T).hash_code(), data, proto);
 	}
 
@@ -39,14 +39,14 @@ class UserData : public Obj {
 
 	/// @brief Returns `true` if this UserData contains data of type `T`.
 	template <typename T>
-	constexpr bool is_of_type() const noexcept {
+	[[nodiscard]] constexpr bool is_of_type() const noexcept {
 		return typeid(T).hash_code() == m_type_id;
 	}
 
 	/// @brief If `T` is the type of the data contained in this wrapper, then returns
 	/// a pointer to the data. Else returns nullptr.
 	template <typename T>
-	constexpr T* get() const noexcept {
+	[[nodiscard]] constexpr T* get() const noexcept {
 		if (is_of_type<T>()) return static_cast<T*>(m_data);
 		return nullptr;
 	}
@@ -55,12 +55,12 @@ class UserData : public Obj {
 	/// This cast is unsafe since no runtime check is performed to see if `T` and
 	/// the type of the data are consistent.
 	template <typename T>
-	constexpr T* unsafe_get() const noexcept {
+	[[nodiscard]] constexpr T* unsafe_get() const noexcept {
 		return static_cast<T*>(m_data);
 	}
 
 	template <typename T>
-	constexpr bool set(T* const new_data) const noexcept {
+	[[nodiscard]] constexpr bool set(T* const new_data) const noexcept {
 		if (is_of_type<T>()) {
 			m_data = new_data;
 			return true;
@@ -99,6 +99,7 @@ class UserData : public Obj {
 	Table* m_proto = nullptr;
 	TraceFn* m_tracer = nullptr;
 	DeleteFn* m_deleter = nullptr;
+	Value indexer = VYSE_NIL;
 
   private:
 	void* m_data = nullptr;

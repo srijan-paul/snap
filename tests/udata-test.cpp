@@ -1,7 +1,5 @@
 #include "assert.hpp"
 #include "util/args.hpp"
-#include "value.hpp"
-#include <userdata.hpp>
 #include <vector>
 #include <vm.hpp>
 
@@ -49,7 +47,7 @@ Value vec_get(VM& vm, int argc) {
 	auto vec = args.next_udata_arg<ValueVector>();
 	number index = args.next_number();
 
-	if (vec == nullptr && index >= vec->size() or index < 0 or index != size_t(index)) {
+	if (vec == nullptr or index >= vec->size() or index < 0 or index != size_t(index)) {
 		return VYSE_NIL;
 	}
 

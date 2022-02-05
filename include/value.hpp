@@ -56,13 +56,7 @@ class Obj {
 	virtual size_t size() const = 0;
 };
 
-enum class ValueType : u8 {
-	Number,
-	Bool,
-	Object,
-	Nil,
-	Undefined,
-};
+enum class ValueType : u8 { Number, Bool, Object, Nil, Undefined, MiscData };
 
 // Without NaN tagging, values are represented as structs weighing 16 bytes. 1 word for the type tag
 // and one for the union representing the possible states. This is a bit wasteful but not that bad.
@@ -76,15 +70,18 @@ struct Value {
 		number num;
 		bool boolean;
 		Obj* object;
+		void* misc_data;
 		constexpr Data() noexcept : num(0) {}
 		constexpr Data(number v) noexcept : num(v) {}
 		constexpr Data(bool b) noexcept : boolean(b) {}
 		constexpr Data(Obj* o) noexcept : object(o) {}
+		constexpr Data(void* p) noexcept : misc_data(p) {}
 	} as;
 
 	explicit constexpr Value(number n) noexcept : tag{ValueType::Number}, as{n} {}
 	explicit constexpr Value(bool b) noexcept : tag{ValueType::Bool}, as{b} {}
-	explicit constexpr Value() noexcept : tag{ValueType::Nil} {};
+	explicit constexpr Value() noexcept : tag{ValueType::Nil} {}
+	explicit constexpr Value(void* p) noexcept : tag{ValueType::MiscData}, as{p} {}
 	explicit constexpr Value(Obj* o) noexcept : tag{ValueType::Object}, as{o} {
 		VYSE_ASSERT(o != nullptr, "Unexpected nullptr object");
 	}
