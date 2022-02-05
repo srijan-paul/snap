@@ -84,7 +84,7 @@ std::string value_to_string(Value v) {
 			return "[list " + std::to_string((size_t)list) + "]";
 		}
 
-		default: return "[ vyse object ]";
+		default: return std::string(obj->to_cstring());
 		}
 	}
 	default: VYSE_ERROR("Impossible value tag."); break;

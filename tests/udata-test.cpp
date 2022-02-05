@@ -14,17 +14,15 @@ using namespace vy;
 // v:pop_back(); assert(v:size() == 0)
 
 using ValueVector = std::vector<Value>;
-using UDataVector = UserData<std::vector<Value>>;
 
 Value vec_push(VM& vm, int argc) {
 	util::Args args(vm, "Vector:push", 2, argc);
-	auto& uvector = args.next<UDataVector>();
+	auto& uvector = args.next<UserData>();
 	Value value = args.next_arg();
-	ValueVector* const vec = uvector.m_data;
+	ValueVector* const vec = uvector.get<ValueVector>();
 	vec->push_back(value);
 	return VYSE_NUM(vec->size());
 }
-
 
 void delete_cpp_vector(void* vector) {
 	delete static_cast<ValueVector*>(vector);
@@ -32,7 +30,7 @@ void delete_cpp_vector(void* vector) {
 
 Value vec_new(VM& vm, int argc) {
 	util::Args args(vm, "Vector:new", 1, argc);
-	auto& vec = vm.make<UDataVector>(new std::vector<Value>());
+	auto& vec = vm.make_udata<ValueVector>(new std::vector<Value>());
 	vec.m_proto = &args.next<Table>();
 
 	vec.m_deleter = [](void* vector) { delete static_cast<ValueVector*>(vector); };
@@ -48,26 +46,27 @@ Value vec_new(VM& vm, int argc) {
 
 Value vec_get(VM& vm, int argc) {
 	util::Args args(vm, "Vector:get", 2, argc);
-	auto& vec = args.next<UDataVector>();
+	auto vec = args.next_udata_arg<ValueVector>();
 	number index = args.next_number();
 
-	if (index >= vec.m_data->size() or index < 0 or index != size_t(index)) {
+	if (vec == nullptr && index >= vec->size() or index < 0 or index != size_t(index)) {
 		return VYSE_NIL;
 	}
 
-	return vec.m_data->at(size_t(index));
+	return vec->at(size_t(index));
 }
 
 Value vec_size(VM& vm, int argc) {
 	util::Args args(vm, "Vector:size", 1, argc);
-	auto& uvector = args.next<UDataVector>();
-	return VYSE_NUM(uvector.m_data->size());
+	auto& uvector = args.next<UserData>();
+	const auto vec = uvector.get<ValueVector>();
+	return VYSE_NUM(vec->size());
 }
 
 Value vec_pop(VM& vm, int argc) {
 	util::Args args(vm, "Vector:pop", 1, argc);
-	auto& uvector = args.next<UDataVector>();
-	auto vec = static_cast<ValueVector*>(uvector.m_data);
+	auto& uvector = args.next<UserData>();
+	auto vec = uvector.get<ValueVector>();
 	if (vec->size() == 0) return VYSE_NIL;
 	Value last = vec->back();
 	vec->pop_back();
@@ -98,10 +97,10 @@ void udata_test() {
 	vm.load_stdlib();
 	ExitCode ec = vm.runcode(R"(
 		const vec = Vector:new()
-		vec:push(123)
-		assert(vec:size() == 1)
-		print(vec:size())
-		print(vec:get(0))
+		Vector:new() --> this should get garbage collected on stress mode.
+		vec:push(Vector:new())
+		vec:push(Vector:new())
+		assert(vec:size() == 2)
 	)");
 
 	ASSERT(ec == ExitCode::Success, "Vyse C++ vector wrapper test failed!");

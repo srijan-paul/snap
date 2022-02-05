@@ -27,6 +27,7 @@ struct GCLock final {
 
 class GC {
 	friend VM;
+	friend GCLock;
 
   public:
 	VYSE_NO_DEFAULT_CONSTRUCT(GC);
@@ -41,9 +42,15 @@ class GC {
 
 	GC(VM& vm) : m_vm{&vm} {};
 
-	/// @brief Walks over all the entire root set,
-	/// marking all objects and coloring them gray.
-	void mark();
+
+	template <typename T>
+	void mark(T& value_or_object) {
+		if constexpr (std::is_same<T, Value>()) {
+			return mark_value(value_or_object);
+		} else {
+			return mark_object(value_or_object);
+		}
+	}
 
 	/// @brief If `v` is an object, then marks it as 'alive', preventing
 	/// it from being garbage collected.
@@ -53,6 +60,12 @@ class GC {
 
 	/// @brief marks an object as 'alive', turning it gray.
 	void mark_object(Obj* o);
+
+
+	private:
+	/// @brief Walks over all the entire root set,
+	/// marking all objects and coloring them gray.
+	void mark();
 
 	/// Marks all the roots reachable from the compiler chain.
 	void mark_compiler_roots();

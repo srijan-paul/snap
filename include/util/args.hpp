@@ -75,14 +75,32 @@ class Args {
 	void check_count(int min_args, int max_args);
 
 	template <typename T>
-	T& next() noexcept(false) {
+	[[nodiscard]] T& next() noexcept(false) {
 		static_assert(std::is_base_of_v<Obj, T>,
 					  "Args.next() can only be used to retreive parameters that are vyse Objects.");
 		constexpr ObjType tag = TagOfType<T>::tag;
 		return check_and_get<T>(tag);
 	}
 
-	Value next_arg() {
+	template <typename T>
+	T* next_udata_arg() noexcept(false) {
+		const Value arg = next_arg();
+		if (!VYSE_IS_OBJECT(arg)) {
+			throw CTypeException(m_fname, m_used_argc, typeid(T).name(),
+								 vtype_to_string(VYSE_GET_TT(arg)));
+		}
+
+		Obj* const object = VYSE_AS_OBJECT(arg);
+		if (object->tag != ObjType::user_data || !static_cast<UserData*>(object)->is_of_type<T>()) {
+			throw CTypeException(m_fname, m_used_argc, typeid(T).name(), object->to_cstring());
+		}
+
+		UserData* const udata = static_cast<UserData*>(object);
+		// we can use `unsafe_get` here since we've already checked `is_of_type` above.
+		return udata->unsafe_get<T>();
+	}
+
+	[[nodiscard]] Value next_arg() noexcept(false) {
 		check_arg_overflow();
 		return m_vm.get_arg(m_used_argc++);
 	}
@@ -117,26 +135,20 @@ class Args {
 	}
 
 	template <typename T>
-	T& check_and_get(ObjType typ) noexcept(false) {
+	T& check_and_get(ObjType type_tag) noexcept(false) {
 		check_arg_overflow();
 		const Value& arg = m_vm.get_arg(m_used_argc);
 		++m_used_argc;
 
 		if (not VYSE_IS_OBJECT(arg)) {
-			throw CTypeException(m_fname, m_used_argc, otype_to_string(typ),
+			throw CTypeException(m_fname, m_used_argc, otype_to_string(type_tag),
 								 vtype_to_string(VYSE_GET_TT(arg)));
 		}
 
-		if (VYSE_AS_OBJECT(arg)->tag != typ) {
-			throw CTypeException(m_fname, m_used_argc, otype_to_string(typ), value_type_name(arg));
-		}
-
-		if constexpr (std::is_base_of_v<UserDataBase, T>) {
-			if (static_cast<UserDataBase*>(VYSE_AS_OBJECT(arg))->m_type_id !=
-				T::get_type_id()) {
-				throw CTypeException(m_fname, m_used_argc, otype_to_string(typ),
-									 value_type_name(arg));
-			}
+		Obj* const object = VYSE_AS_OBJECT(arg);
+		if (object->tag != type_tag) {
+			throw CTypeException(m_fname, m_used_argc, otype_to_string(type_tag),
+								 value_type_name(arg));
 		}
 
 		return *static_cast<T*>(VYSE_AS_OBJECT(arg));

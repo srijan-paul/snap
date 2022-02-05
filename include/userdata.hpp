@@ -8,61 +8,100 @@
 
 namespace vy {
 
-struct UserDataBase : public Obj {
-	using TraceFn = std::function<void(GC& gc, void* t)>;
-	using DeleteFn = std::function<void(void* t)>;
+class UserData : public Obj {
+	VYSE_NO_DEFAULT_CONSTRUCT(UserData);
 
-	UserDataBase(size_t type_id, Table* proto)
-		: Obj{ObjType::user_data}, m_type_id{type_id}, m_proto{proto} {}
-	UserDataBase(size_t type_id) : Obj{ObjType::user_data}, m_type_id{type_id} {}
+	using TraceFn = void(GC& gc, void* t);
+	using DeleteFn = void(void* t);
 
-	size_t const m_type_id;
-	Table* m_proto = nullptr;
-	TraceFn m_tracer = nullptr;
-	DeleteFn m_deleter = nullptr;
-	CClosure* m_indexer = nullptr;
-};
-
-template <typename T>
-class UserData final : public UserDataBase {
   public:
-	static const size_t TypeId;
-	
-	UserData() = delete;
-	UserData(T* const data) : UserDataBase(typeid(T).hash_code()), m_data{data} {}
+	// clang-format off
+	UserData(UserData&& other)
+		: Obj{ObjType::user_data},
+			m_type_id{other.m_type_id},
+			m_proto{other.m_proto},
+			m_data{other.m_data} {
+		other.m_data = nullptr;
+		other.m_proto = nullptr;
+	}
+	// clang-format on
+
+	template <typename T>
+	inline static UserData* make(T* data, Table* proto = nullptr) {
+		return new UserData(typeid(T).hash_code(), data, proto);
+	}
 
 	~UserData() {
-		if (!m_deleter) return;
-		if (typeid(T).hash_code() == m_type_id) {
+		if (m_deleter) {
 			m_deleter(m_data);
 		}
 	}
 
-	[[nodiscard]] const char* to_cstring() const noexcept override {
-		return "user-data";
+	/// @brief Returns `true` if this UserData contains data of type `T`.
+	template <typename T>
+	constexpr bool is_of_type() const noexcept {
+		return typeid(T).hash_code() == m_type_id;
 	}
 
-	[[nodiscard]] static size_t get_type_id() noexcept {
-		return typeid(T).hash_code();
+	/// @brief If `T` is the type of the data contained in this wrapper, then returns
+	/// a pointer to the data. Else returns nullptr.
+	template <typename T>
+	constexpr T* get() const noexcept {
+		if (is_of_type<T>()) return static_cast<T*>(m_data);
+		return nullptr;
+	}
+
+	/// @brief casts the data stored in this wrapper to `T` and returns it.
+	/// This cast is unsafe since no runtime check is performed to see if `T` and
+	/// the type of the data are consistent.
+	template <typename T>
+	constexpr T* unsafe_get() const noexcept {
+		return static_cast<T*>(m_data);
+	}
+
+	template <typename T>
+	constexpr bool set(T* const new_data) const noexcept {
+		if (is_of_type<T>()) {
+			m_data = new_data;
+			return true;
+		}
+		return false;
+	}
+
+	[[nodiscard]] size_t size() const override {
+		return sizeof(UserData);
+	}
+
+	[[nodiscard]] const char* to_cstring() const override {
+		return "userdata";
 	}
 
   protected:
 	void trace(GC& gc) override {
-		gc.mark_object(m_proto);
-		gc.mark_object(m_indexer);
+		gc.mark(m_proto);
 		if (m_tracer) {
-			if (get_type_id() == m_type_id) {
-				m_tracer(gc, m_data);
-			}
+			m_tracer(gc, m_data);
 		}
 	}
 
-	size_t size() const override {
-		return sizeof(UserData<T>);
-	};
+  private:
+	// clang-format off
+	UserData(size_t type_id, void* const data, Table* const proto = nullptr)
+		: Obj{ObjType::user_data},
+			m_type_id{type_id},
+			m_proto{proto},
+			m_data{data} {}
+	// clang-format on
 
   public:
-	T* m_data;
+	size_t const m_type_id;
+
+	Table* m_proto = nullptr;
+	TraceFn* m_tracer = nullptr;
+	DeleteFn* m_deleter = nullptr;
+
+  private:
+	void* m_data = nullptr;
 };
 
 } // namespace vy

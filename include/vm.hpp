@@ -3,8 +3,8 @@
 #include "gc.hpp"
 #include "libloader.hpp"
 #include "table.hpp"
-#include "value.hpp"
 #include "userdata.hpp"
+#include "value.hpp"
 #include "vm_stack.hpp"
 #include <functional>
 #include <unordered_map>
@@ -167,10 +167,19 @@ class VM {
 			std::is_base_of_v<Obj, T>,
 			"VM::make can only produce instances of vyse::Object and it's deriving classes.");
 		static_assert(!std::is_same_v<T, String>, "Use 'VM::make_string' to make string objects.");
+		static_assert(!std::is_same_v<T, UserData>,
+					  "Use 'VM::make_udata' to make UserData objects.");
 
 		T* object = new T(std::forward<Args>(args)...);
 		register_object(object);
 		return *object;
+	}
+
+	template <typename T, typename... Args>
+	UserData& make_udata(T* const data, Table* const proto = nullptr) {
+		UserData* udata = UserData::make<T>(data, proto);
+		register_object(udata);
+		return *udata;
 	}
 
 	/// TODO: Refactor this logic out from vm.hpp to gc.cpp
@@ -249,7 +258,7 @@ class VM {
 	/// @return A GCLock object. As long as a lock is alive, the object cannot be garbage collected.
 	/// The GCLock is a RAII object, and drops the protection upon destruction.
 	[[nodiscard]] GCLock gc_lock(Obj* o) {
-		return GCLock(m_gc, o);
+		return GCLock{m_gc, o};
 	}
 
 	/// @brief If the object was previously marked safe from GC, then removes the guard, making it
@@ -375,7 +384,7 @@ class VM {
 			case ObjType::string: return prototypes.string;
 			case ObjType::list: return prototypes.list;
 			case ObjType::table: return static_cast<Table*>(o)->m_proto_table;
-			case ObjType::user_data: return static_cast<UserDataBase*>(o)->m_proto;
+			case ObjType::user_data: return static_cast<UserData*>(o)->m_proto;
 			default: return nullptr;
 			}
 		}
