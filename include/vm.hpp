@@ -301,8 +301,6 @@ class VM {
 	/// this data structure.
 	VMStack m_stack;
 
-	using NativeLib = DynLoader::Lib;
-
 	/// @brief The Dynamic library loader used to load dyn_libs
 	DynLoader dynloader;
 
