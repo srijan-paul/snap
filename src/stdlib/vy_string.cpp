@@ -132,8 +132,8 @@ Value code_at(VM& vm, int argc) {
 }
 
 /// @brief convert a vyse string to a double. Returns 'nan' if it can't be parsed as a double.
-static number str2num_base10(const String* str) {
-	const char* cstr = str->c_str();
+static number str2num_base10(const String& str) {
+	const char* cstr = str.c_str();
 	bool seen_period = false;
 
 	for (const char* ch = cstr; *ch; ++ch) {
@@ -153,14 +153,8 @@ static number str2num_base10(const String* str) {
 
 /// TODO: Handle different bases from 2 to 64
 Value to_number(VM& vm, int argc) {
-	constexpr const char* fname = "String.to_num";
-	if (argc != 1) {
-		cfn_error(vm, fname, "Expected one argument of type string");
-		return VYSE_NIL;
-	}
-
-	if (!check_arg_type(vm, 0, ObjType::string, fname)) return VYSE_NIL;
-	const String* s = VYSE_AS_STRING(vm.get_arg(0));
+	util::Args args{vm, "String.to_num", 1, argc};
+	const String& s = args.next<String>();
 	return VYSE_NUM(str2num_base10(s));
 }
 

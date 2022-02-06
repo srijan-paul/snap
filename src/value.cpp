@@ -24,7 +24,7 @@ char* num_to_cstring(number num) {
 
 	int bufsize;
 	if (is_whole) {
-		bufsize = snprintf(nullptr, 0, "%ld", s64(num));
+		bufsize = snprintf(nullptr, 0, "%lld", s64(num));
 	} else {
 		bufsize = snprintf(nullptr, 0, "%.7g", num);
 	}
@@ -33,21 +33,13 @@ char* num_to_cstring(number num) {
 	buf[bufsize] = '\0';
 	int res;
 	if (is_whole) {
-		res = sprintf(buf, "%ld", s64(num));
+		res = sprintf(buf, "%lld", s64(num));
 	} else {
 		res = sprintf(buf, "%.7g", num);
 	}
 
 	VYSE_ASSERT(res > 0, "sprintf failed!");
 	return buf;
-}
-
-char* value_to_cstring(Value v) {
-	switch (VYSE_GET_TT(v)) {
-	case VT::Number: return num_to_cstring(VYSE_AS_NUM(v));
-	default: VYSE_UNREACHABLE(); break;
-	}
-	return nullptr;
 }
 
 std::string value_to_string(Value v) {
@@ -84,7 +76,7 @@ std::string value_to_string(Value v) {
 			return "[list " + std::to_string((size_t)list) + "]";
 		}
 
-		default: return "[ vyse object ]";
+		default: return std::string(obj->to_cstring());
 		}
 	}
 	default: VYSE_ERROR("Impossible value tag."); break;
@@ -110,13 +102,14 @@ const char* otype_to_string(ObjType tag) {
 	case OT::closure: return "function";
 	case OT::c_closure: return "native function";
 	case OT::list: return "list";
+	case OT::user_data: return "userdata";
 	default: return "unknown";
 	}
 }
 
 const char* value_type_name(Value v) {
 	VT tag = VYSE_GET_TT(v);
-	VYSE_ASSERT(tag >= VT::Number and tag <= VT::Undefined, "Impossible type tag.");
+	VYSE_ASSERT(tag >= VT::Number and tag <= VT::MiscData, "Impossible type tag.");
 
 	if (VYSE_IS_OBJECT(v)) {
 		return otype_to_string(VYSE_AS_OBJECT(v)->tag);
@@ -136,7 +129,8 @@ bool operator==(const Value& a, const Value& b) {
 		if (oa->tag != ob->tag) return false;
 		return oa == ob;
 	}
-	default: return true;
+	case VT::Nil: return true;
+	default: return false;
 	}
 }
 

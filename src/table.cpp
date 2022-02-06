@@ -48,7 +48,7 @@ void Table::ensure_capacity() {
 	delete[] old_entries;
 }
 
-Value Table::get(Value key) const {
+[[nodiscard]] Value Table::get(Value key) const {
 	if (VYSE_IS_NIL(key)) return VYSE_NIL;
 
 	size_t mask = m_cap - 1;

@@ -1,8 +1,10 @@
 #include "../str_format.hpp"
+#include "userdata.hpp"
 #include "util.hpp"
 #include <cmath>
 #include <cstddef>
 #include <libloader.hpp>
+#include <list.hpp>
 #include <stdlib/base.hpp>
 #include <stdlib/vy_list.hpp>
 #include <stdlib/vy_number.hpp>
@@ -10,7 +12,6 @@
 #include <util/args.hpp>
 #include <value.hpp>
 #include <vm.hpp>
-#include <list.hpp>
 
 #if defined(VYSE_DEBUG_RUNTIME) || defined(VYSE_DEBUG_DISASSEMBLY)
 #include <cstdio>
@@ -18,7 +19,7 @@
 #endif
 
 #define ERROR(...) runtime_error(kt::format_str(__VA_ARGS__))
-#define INDEX_ERROR(v) ERROR("Attempt to index a '{}' value.", VYSE_TYPE_CSTR(v))
+#define INDEX_ERROR(v) ERROR("Attempt to index a '{}' value.", value_type_name(v))
 #define CURRENT_LINE() (m_current_block->lines[ip - 1])
 
 #define CHECK_TYPE(v, typ, ...)                                                                    \
@@ -56,7 +57,7 @@ using OT = ObjType;
 #define IS_VAL_FALSY(v) ((VYSE_IS_BOOL(v) and !(VYSE_AS_BOOL(v))) or VYSE_IS_NIL(v))
 #define IS_VAL_TRUTHY(v) (!IS_VAL_FALSY(v))
 
-#define UNOP_ERROR(op, v) ERROR("Cannot use operator '{}' on type '{}'.", op, VYSE_TYPE_CSTR(v))
+#define UNOP_ERROR(op, v) ERROR("Cannot use operator '{}' on type '{}'.", op, value_type_name(v))
 
 #define CMP_OP(op, proto_method)                                                                   \
 	do {                                                                                           \
@@ -230,12 +231,11 @@ ExitCode VM::run() {
 			if (VYSE_IS_LIST(v)) {
 				PUSH(VYSE_NUM(VYSE_AS_LIST(v)->length()));
 			} else if (VYSE_IS_TABLE(v)) {
-				/// TODO: overload with __len
 				PUSH(VYSE_NUM(VYSE_AS_TABLE(v)->length()));
 			} else if (VYSE_IS_STRING(v)) {
 				PUSH(VYSE_NUM(VYSE_AS_STRING(v)->m_length));
 			} else {
-				return ERROR("Attempt to get length of a {} value", VYSE_TYPE_CSTR(v));
+				return ERROR("Attempt to get length of a {} value", value_type_name(v));
 			}
 			break;
 		}
@@ -245,7 +245,7 @@ ExitCode VM::run() {
 				VYSE_SET_NUM(PEEK(1), ~s64(VYSE_AS_NUM(PEEK(1))));
 			} else {
 				return ERROR("Cannot use operator '~' on value of type '{}'",
-							 VYSE_TYPE_CSTR(PEEK(1)));
+							 value_type_name(PEEK(1)));
 			}
 			break;
 		}
@@ -445,30 +445,41 @@ ExitCode VM::run() {
 		}
 
 		/// table.key = value
-		/// TODO: overload with `__set`
 		case Op::table_set: {
 			const Value& key = READ_VALUE();
 			if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
 			const Value value = POP();
-			Value& tvalue = PEEK(1);
-			if (VYSE_IS_TABLE(tvalue)) {
-				VYSE_AS_TABLE(tvalue)->set(key, value);
-				m_stack.top[-1] = value; // assignment returns it's RHS
+			Value& object = PEEK(1);
+			if (VYSE_IS_TABLE(object)) {
+				VYSE_AS_TABLE(object)->set(key, value);
+			} else if (VYSE_IS_UDATA(object)) {
+				const UserData& udata = *VYSE_AS_UDATA(object);
+				if (!set_field_of_udata(udata, key, value)) {
+					return ExitCode::RuntimeError;
+				}
 			} else {
-				return INDEX_ERROR(tvalue);
+				return INDEX_ERROR(object);
 			}
+
+			m_stack.top[-1] = value; // assignment returns it's RHS
 			break;
 		}
 
 		// table.key
-		/// TODO: overload with `__get`
 		case Op::table_get: {
 			// TOS = as_table(TOS)->get(READ_VAL())
-			const Value tvalue = PEEK(1);
-			if (VYSE_IS_TABLE(tvalue)) {
-				m_stack.top[-1] = VYSE_AS_TABLE(tvalue)->get(READ_VALUE());
+			const Value lhs = PEEK(1);
+			const Value& rhs = READ_VALUE();
+			Value& dst = m_stack.top[-1];
+			if (VYSE_IS_TABLE(lhs)) {
+				dst = VYSE_AS_TABLE(lhs)->get(rhs);
+			} else if (VYSE_IS_UDATA(lhs)) {
+				const UserData& udata = *VYSE_AS_UDATA(lhs);
+				if (!get_field_of_udata(udata, rhs, dst)) {
+					return ExitCode::RuntimeError;
+				}
 			} else {
-				return INDEX_ERROR(tvalue);
+				return INDEX_ERROR(lhs);
 			}
 			break;
 		}
@@ -476,17 +487,24 @@ ExitCode VM::run() {
 		// table.key
 		case Op::table_get_no_pop: {
 			// push((TOS)->get(READ_VAL()))
-			const Value tval = PEEK(1);
-			if (VYSE_IS_TABLE(tval)) {
-				PUSH(VYSE_AS_TABLE(tval)->get(READ_VALUE()));
+			const Value& lhs = PEEK(1);
+			const Value& rhs = READ_VALUE();
+			if (VYSE_IS_TABLE(lhs)) {
+				PUSH(VYSE_AS_TABLE(lhs)->get(rhs));
+			} else if (VYSE_IS_UDATA(lhs)) {
+				const UserData& udata = *VYSE_AS_UDATA(lhs);
+				Value result;
+				if (!get_field_of_udata(udata, rhs, result)) {
+					return ExitCode::RuntimeError;
+				}
+				PUSH(result);
 			} else {
-				return INDEX_ERROR(tval);
+				return INDEX_ERROR(lhs);
 			}
 			break;
 		}
 
 		// table_or_string_or_array[key]
-		/// TODO: overload with `__indx`
 		case Op::subscript_get: {
 			const Value key = POP();
 			Value& tvalue = PEEK(1);
@@ -622,7 +640,7 @@ Value VM::concatenate(const String* left, const String* right) {
 	String* const interned = interned_strings.find_string(buf, length, hash);
 
 	if (interned == nullptr) {
-		String* const res = &make_string_no_intern(buf, length, hash);
+		String* const res = &create_new_string(buf, length, hash);
 		Value vresult = VYSE_OBJECT(res);
 		interned_strings.set(vresult, VYSE_BOOL(true));
 		return vresult;
@@ -706,6 +724,7 @@ Closure* VM::compile(const std::string& src) {
 	CodeBlock* const code = m_compiler->compile();
 
 	if (!compiler.ok()) {
+		// There's been a compile time error.
 		m_compiler = nullptr;
 		return nullptr;
 	}
@@ -720,10 +739,14 @@ Closure* VM::compile(const std::string& src) {
 }
 
 void VM::invoke_script(Closure* script) {
-	// clear the stack in case there is some leftover junk from previous invocations.
+	// Clear the stack in case there is some leftover junk from previous invocations.
 	m_stack.clear();
-	// make sure there is enough room in the stack for this function call. +1 for the script itself.
+
+	// Make sure there is enough room in the stack for this function call.
+	// +1 for the script itself.
 	ensure_slots(script->m_codeblock->stack_size() + 1);
+
+	// Push the closure onto the stack and change the update the base callframe.
 	m_stack.push(VYSE_OBJECT(script));
 	base_frame->base = m_stack.top - 1;
 	base_frame->ip = 0;
@@ -858,7 +881,7 @@ bool VM::op_call(Value value, u8 argc) {
 
 	// not a function, so we get it's `__call` field and attempt to call it
 	const bool ok = call_func_overload(value, argc);
-	if (!ok) ERROR("Attempt to call a {} value.", VYSE_TYPE_CSTR(value));
+	if (!ok) ERROR("Attempt to call a {} value.", value_type_name(value));
 	return ok;
 }
 
@@ -954,7 +977,7 @@ int VM::prep_vararg_call(int num_params, int num_args) {
 	return num_params;
 }
 
-bool VM::call_cclosure(CClosure* cclosure, int argc) {
+bool VM::call_cclosure(CClosure* cclosure, int argc) noexcept(false) {
 	push_callframe(cclosure, argc);
 	NativeFn c_func = cclosure->cfunc();
 
@@ -1027,7 +1050,7 @@ bool VM::call_func_overload(Value& object, int argc) {
 	static const Value field_name = VYSE_OBJECT(&method_string);
 
 	Value func;
-	bool ok = get_field_of_value(object, field_name, func);
+	[[maybe_unused]] bool ok = get_field_of_value(object, field_name, func);
 	assert(ok);
 
 	// To perform the overloaded call, we need to adjust the stack
@@ -1062,9 +1085,51 @@ bool VM::get_field_of_value(Value const& value, Value const& key, Value& inout) 
 	return true;
 }
 
+bool VM::get_field_of_udata(const UserData& udata, const Value& index, Value& result) {
+	if (VYSE_IS_NIL(index)) {
+		ERROR("Attempt to index with a nil value");
+		return false;
+	}
+
+	const Table* indexer = udata.indexer;
+	const Table* m_proto = udata.m_proto;
+	result = VYSE_NIL;
+
+	if (indexer != nullptr && indexer->tag == ObjType::table) {
+		result = indexer->get(index);
+	}
+
+	if (m_proto != nullptr && VYSE_IS_NIL(result)) {
+		result = m_proto->get(index);
+	}
+	return true;
+}
+
+bool VM::set_field_of_udata(const UserData& udata, const Value& key, Value value) {
+	if (VYSE_IS_NIL(key)) {
+		ERROR("Attempt to index with a nil value");
+		return false;
+	}
+
+	if (udata.indexer != nullptr) {
+		udata.indexer->set(key, value);
+	} else if (udata.m_proto != nullptr) {
+		udata.m_proto->set(key, value);
+	}
+
+	return true;
+}
+
 bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& result) {
+	if (VYSE_IS_NIL(index)) {
+		ERROR("Attempt to index with a nil value.");
+		return false;
+	}
+
 	if (VYSE_IS_OBJECT(value)) {
 		Obj* const object = VYSE_AS_OBJECT(value);
+		assert(object != nullptr);
+
 		switch (object->tag) {
 		case OT::table: {
 			Table* const table = static_cast<Table*>(object);
@@ -1105,15 +1170,20 @@ bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& r
 			return true;
 		}
 
-		default: break; // fallthrough to default
+		case OT::user_data: {
+			UserData& udata = *static_cast<UserData*>(object);
+			return get_field_of_udata(udata, index, result);
+		}
+
+		default:; // fallthrough to default
 		}
 	}
 
 	// Find prototype of primitive value and index it with [index]
-	Table* const proto = get_proto(value);
+	const Table* proto = get_proto(value);
 	assert(proto->tag == OT::table);
 	if (proto == nullptr) {
-		ERROR("Attempt to index a {} value.", VYSE_TYPE_CSTR(value));
+		ERROR("Attempt to index a {} value.", value_type_name(value));
 		return false;
 	}
 	result = proto->get(index);
@@ -1135,7 +1205,11 @@ bool VM::subscript_set(const Value& lhs, const Value& key, const Value& rhs) {
 		return true;
 	}
 
-	ERROR("Attempt to index a {} value.", VYSE_TYPE_CSTR(lhs));
+	if (VYSE_IS_UDATA(lhs)) {
+		return set_field_of_udata(*VYSE_AS_UDATA(lhs), key, rhs);
+	}
+
+	ERROR("Attempt to index a {} value.", value_type_name(lhs));
 	return false;
 }
 
@@ -1165,7 +1239,7 @@ String* VM::char_at(const String* string, uint index) {
 }
 
 String& VM::take_string(char* buf, size_t len) {
-	size_t hash = hash_cstring(buf, len);
+	const size_t hash = hash_cstring(buf, len);
 
 	// Look for an existing interened copy of the string.
 	String* interned = interned_strings.find_string(buf, len, hash);
@@ -1175,7 +1249,7 @@ String& VM::take_string(char* buf, size_t len) {
 		return *interned;
 	}
 
-	String& string = make_string_no_intern(buf, len, hash);
+	String& string = create_new_string(buf, len, hash);
 	interned_strings.set(VYSE_OBJECT(&string), VYSE_BOOL(true));
 	return string;
 }
@@ -1188,7 +1262,7 @@ String& VM::make_string(const char* chars, size_t length) {
 	String* const interned = interned_strings.find_string(chars, length, hash);
 	if (interned != nullptr) return *interned;
 
-	String* const string = &make_string_no_intern(chars, length, hash);
+	String* const string = &create_new_string(chars, length, hash);
 	interned_strings.set(VYSE_OBJECT(string), VYSE_BOOL(true));
 
 	return *string;
@@ -1265,8 +1339,8 @@ size_t VM::collect_garbage() {
 // -- Error reporting --
 
 ExitCode VM::binop_error(const char* opstr, const Value& a, const Value& b) {
-	return ERROR("Bad types for operator '{}': '{}' and '{}'.", opstr, VYSE_TYPE_CSTR(a),
-				 VYSE_TYPE_CSTR(b));
+	return ERROR("Bad types for operator '{}': '{}' and '{}'.", opstr, value_type_name(a),
+				 value_type_name(b));
 }
 
 ExitCode VM::runtime_error(const std::string& message) {
@@ -1337,10 +1411,6 @@ char* default_readline(const VM&) {
 	buf = (char*)realloc(buf, sizeof(char) * (nchars + 1));
 	buf[nchars] = '\0';
 	return buf;
-}
-
-std::string default_find_module(VM&, const char*) {
-	return "return { x: 1 }";
 }
 
 /// TODO: The user might need some objects even after the VM has been destructed. Add support for

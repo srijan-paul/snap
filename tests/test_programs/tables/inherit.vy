@@ -7,4 +7,4 @@ setproto(t1, t2)
 setproto(t2, t3)
 setproto(t3, t4)
 
-return t1.a + t1.b + t1.c + t1.d + t1.e
+return t1.a + t1.b + t1.c + t1.d + t1['e']

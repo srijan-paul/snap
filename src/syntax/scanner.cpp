@@ -133,7 +133,7 @@ Token Scanner::number() {
 	return make_token(type);
 }
 
-/// TODO: handle unterminated strings.
+/// TODO: handle unterminated strings using a special ERROR_UNTERMINATED_STRING token
 Token Scanner::make_string(char quote) {
 	while (!(eof() or check(quote))) {
 		char c = next();

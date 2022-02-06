@@ -3,6 +3,8 @@
 #include "gc.hpp"
 #include "libloader.hpp"
 #include "table.hpp"
+#include "userdata.hpp"
+#include "value.hpp"
 #include "vm_stack.hpp"
 #include <functional>
 #include <unordered_map>
@@ -21,7 +23,6 @@ inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string
 
 void default_error_fn(const VM& vm, const std::string& err_msg);
 char* default_readline(const VM& vm);
-std::string default_find_module(VM& vm, const char* module_name);
 
 struct VMConfig {
 	/// @brief function used by the VM to print a string to console.
@@ -71,7 +72,7 @@ class VM {
 	/// The function to be used by the VM when reading a line from stdin.
 	ReadLineFn read_line = default_readline;
 
-	ModuleLoader find_module = default_find_module;
+	ModuleLoader find_module = nullptr;
 
 	/// Maximum size of the call stack. If the call stack
 	/// size exceeds this, then there is a stack overflow.
@@ -109,10 +110,8 @@ class VM {
 		}
 	};
 
-	///
-	/// @brief Get the [num]th argument of the current function. `get_arg(0)` returns the first
-	/// argument.
-	///
+	/// @brief Get the [num]th argument of the current function.
+	/// `get_arg(0)` returns the first argument.
 	inline Value& get_arg(u8 idx) const {
 		return m_current_frame->base[idx + 1];
 	}
@@ -136,21 +135,14 @@ class VM {
 
 	ExitCode runcode(const std::string& code);
 	ExitCode run();
+
+	/// @brief Compile [code] and return a `Closure` which when called will execute [code]
 	Closure* compile(const std::string& code);
 
 	/// @brief Load the base vyse standard library.
 	void load_stdlib();
 
-	///
-	/// @brief Finds a module by it's name, interprets it's code and returns the resulting
-	/// vyse::Value.
-	/// @param modname Name of the module, usually the argument to the builtin function `import`.
-	///
-	Value import_module(String& modname);
-
-	///
 	/// @brief returns the currently executing block.
-	///
 	const Block* block() const noexcept {
 		return m_current_block;
 	}
@@ -165,10 +157,19 @@ class VM {
 			std::is_base_of_v<Obj, T>,
 			"VM::make can only produce instances of vyse::Object and it's deriving classes.");
 		static_assert(!std::is_same_v<T, String>, "Use 'VM::make_string' to make string objects.");
+		static_assert(!std::is_same_v<T, UserData>,
+					  "Use 'VM::make_udata' to make UserData objects.");
 
 		T* object = new T(std::forward<Args>(args)...);
 		register_object(object);
 		return *object;
+	}
+
+	template <typename T, typename... Args>
+	UserData& make_udata(T* const data, Table* const proto = nullptr) {
+		UserData* udata = UserData::make<T>(data, proto);
+		register_object(udata);
+		return *udata;
 	}
 
 	/// TODO: Refactor this logic out from vm.hpp to gc.cpp
@@ -194,32 +195,24 @@ class VM {
 		m_gc.bytes_allocated += o->size();
 	}
 
-	/// TODO: think of a better name for this method.
 
 	/// @brief Makes an interned string and returns a reference to it.
 	String& make_string(const char* chars, size_t length);
 
-	///
 	/// @brief Makes a string from the provided char buffer.
-	///
 	/// @param chars A null terminated char buffer.
-	///
-	String& make_string(const char* chars) {
+	inline String& make_string(const char* chars) {
 		return make_string(chars, strlen(chars));
 	}
 
-	///
 	/// @brief takes ownership of a string with char buffer 'chrs' and length 'len'. Note that
 	/// `chrs` now belongs to the VM, and it may be freed inside this function if an interned copy
 	/// is found. The caller must not use the [chrs] buffer after
 	/// calling this.
-	///
 	String& take_string(char* chrs, size_t len);
 
-	///
 	/// @brief Triggers a garbage collection cycle, does a mark-trace-sweep.
 	/// @return The number of bytes freed.
-	///
 	size_t collect_garbage();
 
 	/// @brief Makes sure there are at least [num_slots] stack slots free to be used above the
@@ -247,7 +240,7 @@ class VM {
 	/// @return A GCLock object. As long as a lock is alive, the object cannot be garbage collected.
 	/// The GCLock is a RAII object, and drops the protection upon destruction.
 	[[nodiscard]] GCLock gc_lock(Obj* o) {
-		return GCLock(m_gc, o);
+		return GCLock{m_gc, o};
 	}
 
 	/// @brief If the object was previously marked safe from GC, then removes the guard, making it
@@ -297,8 +290,6 @@ class VM {
 	/// this data structure.
 	VMStack m_stack;
 
-	using NativeLib = DynLoader::Lib;
-
 	/// @brief The Dynamic library loader used to load dyn_libs
 	DynLoader dynloader;
 
@@ -339,20 +330,25 @@ class VM {
 	// are being read. This is always `m_current_frame->func->block`
 	const Block* m_current_block = nullptr;
 
-	// Vyse interns all strings. So if two separate
-	// string values are identical, then they point
-	// to the same object in heap. To deduplicate
-	// strings, we use a table.
+	// Vyse interns all strings. If two separate string values are identical, they point
+	// to the same object in heap. To deduplicate strings, we use a table.
 	Table interned_strings;
 
+	/// @brief A map of all global variables.
+	/// Since vyse strings are interned, using a `String*` as the key does not lead to any
+	/// problems.
 	std::unordered_map<String*, Value> m_global_vars;
 
-	/// @brief call any callable value from within the VM. Note that this is only used to call
-	/// instructions from inside a vyse script. To call anything from a C/C++ program, the call
+	/// @brief Call any callable value from within the VM. Note that this is only used to call
+	/// instructions from inside a vyse script. To call anything from a C/C++ program, the `VM::call`
 	/// method is used instead.
 	bool op_call(Value value, u8 argc);
+
+	/// @brief Call a vyse closure which has `argc` args on the stack.
 	bool call_closure(Closure* func, int argc);
-	bool call_cclosure(CClosure* cclosure, int argc);
+
+	/// @brief Call a C closure which has `argc` args on the stack.
+	bool call_cclosure(CClosure* cclosure, int argc) noexcept(false);
 
 	/// @brief Prepares the VM's stack for a varioadic function call.
 	/// All the extra args are placed in a list, which is then pushed on top of the stack.
@@ -363,6 +359,8 @@ class VM {
 	/// list.
 	int prep_vararg_call(int num_params, int num_args);
 
+	/// @brief Get a value's prototype.
+	/// If no prototype is found, returns `nullptr`.
 	inline Table* get_proto(const Value& value) {
 		switch (VYSE_GET_TT(value)) {
 		case ValueType::Bool: return prototypes.boolean;
@@ -373,6 +371,7 @@ class VM {
 			case ObjType::string: return prototypes.string;
 			case ObjType::list: return prototypes.list;
 			case ObjType::table: return static_cast<Table*>(o)->m_proto_table;
+			case ObjType::user_data: return static_cast<UserData*>(o)->m_proto;
 			default: return nullptr;
 			}
 		}
@@ -380,8 +379,7 @@ class VM {
 		}
 	}
 
-	/// @brief return the `table[key]` where table is the prototype
-	/// of [value].
+	/// @brief return the `table[key]` where table is the prototype of [value].
 	inline Value index_proto(const Value& value, const Value& key) noexcept {
 		const Table* proto = get_proto(value);
 		if (proto != nullptr) return proto->get(key);
@@ -392,7 +390,7 @@ class VM {
 	/// that this function must only be called interally in the VM in places where string interning
 	/// is taken care of explicitly.
 	template <typename... Args>
-	String& make_string_no_intern(Args... args) {
+	String& create_new_string(Args... args) {
 		String* str = new String(std::forward<Args>(args)...);
 		register_object(str);
 		return *str;
@@ -424,6 +422,19 @@ class VM {
 	/// @return true if the indexing succeeds, false if there is an error
 	bool get_subscript_of_value(const Value& value, const Value& index, Value& result);
 
+	/// @brief fetches the `index` key of `udata` and stores it into `result.
+	/// When a userdata is queried, first it's indexer table is consulted. If
+	/// no value is found in the indexer table, then it's prototype chain (`m_proto`) is queried.
+	/// @param udata The useradata to index.
+	/// @param index The index used to query.
+	/// @param result An in-out parameter into which the result is stored.
+	/// @return true if there are no runtime errors, false otherwise.
+	bool get_field_of_udata(const UserData& udata, const Value& index, Value& result);
+
+	/// @brief Sets the `key` of a userdata to `value`.
+	/// @return true if there are no runtime errors, false otherwise.
+	bool set_field_of_udata(const UserData& udata, const Value& key, const Value value);
+
 	/// @brief performs the `lhs[key] = rhs` operation.
 	/// @return true if the operation was successful, false if there was an error instead.
 	bool subscript_set(const Value& lhs, const Value& key, const Value& rhs);
@@ -441,18 +452,15 @@ class VM {
 	String* char_at(const String* string, uint index);
 
 	/// Load a vyse::Object into the global variable list.
-	/// generally used for loading functions and objects from
-	/// the standard library.
+	/// generally used for loading functions and objects from the standard library.
 	void add_stdlib_object(const char* name, Obj* o);
 
 	/// @brief Prepares the VM CallStack for the very first
 	/// function call, which is the toplevel userscript.
 	void invoke_script(Closure* closure);
 
-	/// @brief prepares for a function call by pushing a new
-	/// CallFrame onto the call stack. The new frame's func field
-	/// is set to [callable], and the ip of the current call frame
-	/// is cached.
+	/// @brief prepares for a function call by pushing a new `CallFrame` onto the call stack.
+	/// The new frame's func field is set to [callable], and the ip of the current call frame is cached.
 	void push_callframe(Obj* callable, int argc);
 
 	/// @brief Pops the currently active CallFrame off of the
@@ -460,15 +468,12 @@ class VM {
 	/// CallFrame.
 	void pop_callframe() noexcept;
 
-	/// Wrap a value present at stack slot [slot]
-	/// inside an Upvalue object and add it to the
-	/// VM's currently open Upvalue list in the right
-	/// position (if it isn't already there).
-	/// @param slot A `Value*` pointing to a value inside the VM's
-	///             value stack.
+	/// Wrap a value present at stack slot [slot] inside an Upvalue object and add it to the
+	/// VM's currently open Upvalue list in the right position (if it isn't already there).
+	/// @param slot A `Value*` pointing to a value inside the VM's value stack.
 	Upvalue* capture_upvalue(Value* slot);
-	// close all the upvalues that are present between the
-	// top of the stack and [last].
+
+	// close all the upvalues that are present between the top of the stack and [last].
 	// [last] must point to some value in the VM's stack.
 	void close_upvalues_upto(Value* last);
 

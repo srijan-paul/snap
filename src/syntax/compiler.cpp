@@ -649,8 +649,6 @@ DEFINE_PARSE_FN(Compiler::mult, (match(TT::Mult) or match(TT::Mod) or match(TT::
 DEFINE_PARSE_FN(Compiler::exp, match(TT::Exp), unary)
 
 void Compiler::unary() {
-	/// TODO: group all unary oprators together in 'token.hpp' and then change this if statement to
-	/// a simple range check.
 	if (peek.is_unary_op()) {
 		advance();
 		const Token op_token = token;

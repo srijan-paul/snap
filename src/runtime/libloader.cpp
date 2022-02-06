@@ -1,10 +1,7 @@
+#include "util/args.hpp"
 #include <libloader.hpp>
 #include <util/lib_util.hpp>
-#include <common.hpp>
 #include <cstdlib>
-#include <dino/dino.hpp>
-#include <forward.hpp>
-#include <string>
 #include <vm.hpp>
 #include <list.hpp>
 
@@ -18,7 +15,7 @@ struct StdModule final {
 };
 
 Value DynLoader::read_std_lib(VM& vm, const StdModule& module) {
-	if (not std_dlls_path) return VYSE_NIL;
+	if (std_dlls_path.empty()) return VYSE_NIL;
 
 	std::string init_func_name = std::string("load_") + module.module_name;
 	std::string dll_name{module.dll_name};
@@ -50,13 +47,10 @@ static constexpr std::array<StdModule, 1> std_modules = {{
 }};
 
 Value load_std_module(VM& vm, int argc) {
-	if (argc != 1) return VYSE_NIL;
-	if (!VYSE_IS_STRING(vm.get_arg(0))) return VYSE_NIL;
+	util::Args args{vm, "load_std_module", 1, argc};
+	const String& modname = args.next<String>();
 
-	/// name of the standard library module
-	const String& modname = *VYSE_AS_STRING(vm.get_arg(0));
-
-	for (const auto& module : std_modules) {
+	for (const StdModule& module : std_modules) {
 		if (strcmp(module.module_name, modname.c_str()) == 0) {
 			return vm.dynloader.read_std_lib(vm, module);
 		}
@@ -89,11 +83,12 @@ void DynLoader::init_loaders(VM& vm) const {
 	Table& cache = vm.make<Table>();
 	vm.set_global(ModuleCacheName, VYSE_OBJECT(&cache));
 
-	// First a lookup is performed on the cache to check if the module has already been loaded.
+	// First, a lookup is performed on the cache to check if the module has already been loaded.
+	// This "cache search" is done by the `cached_lib_loader` closure.
 	CClosure& cached_lib_loader = vm.make<CClosure>(load_cached_module);
 	loaders.append(VYSE_OBJECT(&cached_lib_loader));
 
-	// Add the default standard library module loader.
+	// Second step is to attempt to load a standard library module.
 	CClosure& stdlib_loader = vm.make<CClosure>(load_std_module);
 	loaders.append(VYSE_OBJECT(&stdlib_loader));
 }

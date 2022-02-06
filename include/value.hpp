@@ -34,6 +34,7 @@ class Obj {
 	explicit constexpr Obj(ObjType tt) noexcept : tag{tt} {}
 	constexpr Obj(Obj&& o) = default;
 	constexpr Obj(Obj const& o) = default;
+
 	virtual ~Obj() = default;
 
 	virtual const char* to_cstring() const;
@@ -43,6 +44,7 @@ class Obj {
 	Obj* next = nullptr;
 	/// @brief Whether this object has been 'marked' as alive in the most
 	/// currently active garbage collection cycle (if any).
+	/// TODO: use the MSB in the `next` pointer for this task?
 	bool marked = false;
 
 	/// @brief Traces all the references that this object
@@ -54,7 +56,7 @@ class Obj {
 	virtual size_t size() const = 0;
 };
 
-enum class ValueType : u8 { Number, Bool, Object, Nil, Undefined };
+enum class ValueType : u8 { Number, Bool, Object, Nil, Undefined, MiscData };
 
 // Without NaN tagging, values are represented as structs weighing 16 bytes. 1 word for the type tag
 // and one for the union representing the possible states. This is a bit wasteful but not that bad.
@@ -68,15 +70,18 @@ struct Value {
 		number num;
 		bool boolean;
 		Obj* object;
+		void* misc_data;
 		constexpr Data() noexcept : num(0) {}
 		constexpr Data(number v) noexcept : num(v) {}
 		constexpr Data(bool b) noexcept : boolean(b) {}
 		constexpr Data(Obj* o) noexcept : object(o) {}
+		constexpr Data(void* p) noexcept : misc_data(p) {}
 	} as;
 
-	explicit constexpr Value(number n) noexcept : tag{ValueType::Number}, as{n} {};
-	explicit constexpr Value(bool b) noexcept : tag{ValueType::Bool}, as{b} {};
-	explicit constexpr Value() noexcept : tag{ValueType::Nil} {};
+	explicit constexpr Value(number n) noexcept : tag{ValueType::Number}, as{n} {}
+	explicit constexpr Value(bool b) noexcept : tag{ValueType::Bool}, as{b} {}
+	explicit constexpr Value() noexcept : tag{ValueType::Nil} {}
+	explicit constexpr Value(void* p) noexcept : tag{ValueType::MiscData}, as{p} {}
 	explicit constexpr Value(Obj* o) noexcept : tag{ValueType::Object}, as{o} {
 		VYSE_ASSERT(o != nullptr, "Unexpected nullptr object");
 	}
@@ -97,7 +102,6 @@ bool operator!=(const Value& a, const Value& b);
 const char* vtype_to_string(ValueType tag);
 const char* otype_to_string(ObjType tag);
 std::string value_to_string(Value v);
-char* value_to_cstring(Value v);
 char* num_to_cstring(number n);
 const char* value_type_name(Value v);
 void print_value(Value v);
@@ -135,6 +139,7 @@ void print_value(Value v);
 #define VYSE_IS_CODEBLOCK(v)                                                                       \
 	(VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vy::ObjType::codeblock)
 #define VYSE_IS_CCLOSURE(v) (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vy::ObjType::c_closure)
+#define VYSE_IS_UDATA(v) (VYSE_IS_OBJECT(v) and VYSE_AS_OBJECT(v)->tag == vy::ObjType::user_data)
 
 #define VYSE_IS_FALSY(v) ((VYSE_IS_BOOL(v) and !(VYSE_AS_BOOL(v))) or VYSE_IS_NIL(v))
 #define VYSE_IS_TRUTHY(v) (!VYSE_IS_FALSY(v))
@@ -150,6 +155,7 @@ void print_value(Value v);
 #define VYSE_AS_CSTRING(v) (VYSE_AS_STRING(v)->c_str())
 #define VYSE_AS_TABLE(v) (static_cast<Table*>(VYSE_AS_OBJECT(v)))
 #define VYSE_AS_LIST(v) (static_cast<List*>(VYSE_AS_OBJECT(v)))
+#define VYSE_AS_UDATA(v) (static_cast<UserData*>(VYSE_AS_OBJECT(v)))
 
 #define VYSE_CAST_INT(v) (s64(VYSE_AS_NUM(v)))
 

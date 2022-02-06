@@ -1,6 +1,7 @@
 #include <compiler.hpp>
 #include <function.hpp>
 #include <gc.hpp>
+#include <list.hpp>
 #include <upvalue.hpp>
 
 namespace vy {
@@ -37,8 +38,8 @@ void Closure::trace(GC& gc) {
 	gc.mark_object(m_codeblock);
 }
 
-void CClosure::trace([[maybe_unused]] GC& gc) {
-	/// TODO: mark upvalues.
+void CClosure::trace(GC& gc) {
+	gc.mark_object(m_values);
 }
 
 } // namespace vy

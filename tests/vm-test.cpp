@@ -44,8 +44,20 @@ static void expr_tests() {
 	test_return("return - - - - #'xxxxx'", VYSE_NUM(5));
 	test_return("return !!{}", VYSE_BOOL(true));
 
-	// test string equality
+	// test equality between values
 	test_return("return 'abc' == 'abc'", VYSE_BOOL(true));
+	test_return("return 'abc' == 'a'..'bc'", VYSE_BOOL(true), "concatenating strings");
+	test_return("return 'abc' == ''..'abc'..''", VYSE_BOOL(true),
+				"appending/prepending empty strings has no effect.");
+	test_return("return nil == nil", VYSE_BOOL(true), "nil == nil");
+	test_return("return nil == false", VYSE_BOOL(false), "nil != false");
+	test_return("return nil == true", VYSE_BOOL(false), "nil != true");
+	test_return("return 1 == true", VYSE_BOOL(false), "1 != true");
+	test_return("return 123 == '123'", VYSE_BOOL(false), "123 != '123'");
+	test_return("return '0' == 48", VYSE_BOOL(false),
+				"chars and strings aren't compared using ASCII values");
+	test_return("return 0 == false", VYSE_BOOL(false), "0 != false");
+	test_return("return {} == {}", VYSE_BOOL(false), "empty tables are not equal");
 
 	test_file("expr/compound-assign.vy", VYSE_NUM(8), "Compound assignment operators");
 	test_file("expr/len.vy", VYSE_NUM(5), "Number of entries in a table using '#' operator.");
@@ -57,7 +69,6 @@ static void expr_tests() {
 }
 
 static void stmt_tests() {
-
 	test_file("statements/var.vy", VYSE_NUM(13), "block scoped declarations.");
 	test_file("if/if.vy", VYSE_NUM(5), "If statement without else branch");
 	test_file("if/else-if.vy", VYSE_NUM(7), "If statement with an else-if branch");
@@ -157,6 +168,15 @@ void loop_test() {
 	test_file("loop/for/in-closure.vy", VYSE_NUM(110), "for-loop inside closure.");
 }
 
+void multiple_runs_test() {
+	VM vm;
+	vm.load_stdlib();
+	const char* fail_message = "Cannot call VM::run multiple times.";
+	vm.runcode("a = (/x -> x * 2)(2)");
+	auto res = vm.runcode("assert(a == 4)");
+	ASSERT(res == ExitCode::Success, fail_message);
+}
+
 int main() {
 	expr_tests();
 	stmt_tests();
@@ -165,5 +185,6 @@ int main() {
 	global_test();
 	string_test();
 	loop_test();
+	multiple_runs_test();
 	return 0;
 }

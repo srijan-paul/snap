@@ -1,4 +1,5 @@
 #include "test_utils.hpp"
+#include "value.hpp"
 #include <debug.hpp>
 #include <fstream>
 #include <iostream>
@@ -69,10 +70,8 @@ void print_disassembly(const char* code) {
 void assert_val_eq(Value expected, Value actual, const char* message) {
 	if (expected != actual) {
 		fprintf(stderr, "%s: ", message);
-		fprintf(stderr, "Expected value to be ");
-		print_value(expected);
-		fprintf(stderr, " But got ");
-		print_value(actual);
+		fprintf(stderr, "Expected value to be %s", value_to_string(expected).c_str());
+		fprintf(stderr, " But got %s\n", value_to_string(actual).c_str());
 		abort();
 	}
 }

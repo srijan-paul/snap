@@ -31,14 +31,20 @@ Vyse also comes with a C++ API for frictionless embedding in projects.
 
 ## Table of Contents
 
-- [Goal](#Goal)
-- [Overview](#Overview)
-- [Roadmap](#Roadmap)
-- [Implementation](#Implementation)
-- [Building](#Building)
-- [Running Benchmarks](#Benchmarks)
-- [Editor Support](#Editor-Support)
-- [Development](#Development)
+- [Vyse](#vyse)
+  - [Table of Contents](#table-of-contents)
+  - [Goal](#goal)
+  - [Overview](#overview)
+  - [Roadmap](#roadmap)
+  - [Implementation](#implementation)
+    - [Lexing / Tokenizing (Source string -> Token)](#lexing--tokenizing-source-string---token)
+    - [Compiling (Tokens -> Bytecode)](#compiling-tokens---bytecode)
+    - [VyVM](#vyvm)
+- [Building](#building)
+- [Benchmarks](#benchmarks)
+- [Tests](#tests)
+- [Editor-Support](#editor-support)
+- [Development](#development)
 
 ## Goal
 
@@ -212,6 +218,18 @@ cmake .. -G Ninja -DBUILD_TESTS=true -DCMAKE_BUILD_TYPE=Release -DSTRESS_GC=fals
 The benchmarks for vyuse are present in the `benchmark` directory.
 The `benchmark/run.py` script can be used to compare Vyse against other languages.
 You can either run all benchmarks, or run specific benchmarks.
+
+First, create and activate a virtual environment:
+```sh
+cd benchmarks
+python3 -m venv env
+source env/bin/activate
+```
+
+Then, install all the dependencies inside the virtual environment:
+```sh
+python3 -m pip install -r requirements.txt
+```
 
 To run all benchmarks, enter the following into your shell:
 

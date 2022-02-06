@@ -1,9 +1,7 @@
 #pragma once
-#include "function.hpp"
 #include <common.hpp>
 #include <dino/dino.hpp>
 #include <forward.hpp>
-#include <string>
 #include <unordered_map>
 
 namespace vy {
@@ -29,17 +27,14 @@ class DynLoader final {
 
 	/// @brief Read a standard library module and return the value returned by it.
 	Value read_std_lib(VM& vm, const StdModule& module);
-
-	/// @brief A cached to avoid re-reading shared libraries that have already been read.
-	/// module name -> module handle.
+private:
+	/// @brief A cache to avoid re-reading (.dll/.so/.a)s that have already been read.
+	/// Map of module name -> module handle.
 	std::unordered_map<std::string, Lib> cached_dyn_libs;
 
-	/// @brief the path to the directory where all the standard library shared modules
+	/// @brief Path to the directory where all the standard library shared modules
 	/// are placed. This is extracted via the VYSE_PATH environment variable.
-	const char* std_dlls_path;
+	std::string std_dlls_path;
 };
-
-/// @brief The default module loader in vyse that only loads standard library modules like 'math'
-Value load_std_module(VM& vm, int argc);
 
 } // namespace vy
