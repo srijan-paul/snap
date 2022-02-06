@@ -46,9 +46,9 @@ class GC {
 	template <typename T>
 	void mark(T& value_or_object) {
 		if constexpr (std::is_same<T, Value>()) {
-			return mark_value(value_or_object);
+			mark_value(value_or_object);
 		} else {
-			return mark_object(value_or_object);
+			mark_object(value_or_object);
 		}
 	}
 
