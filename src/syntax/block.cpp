@@ -21,4 +21,4 @@ size_t Block::add_value(Value value) {
 	return constant_pool.size() - 1;
 }
 
-} // namespace vyse
+} // namespace vy

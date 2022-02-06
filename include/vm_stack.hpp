@@ -13,7 +13,6 @@ class VMStack final {
 	VYSE_NO_MOVE(VMStack);
 
   public:
-
 	static constexpr size_t InitialSize =
 #ifdef VYSE_MINSTACK
 		VYSE_MINSTACK

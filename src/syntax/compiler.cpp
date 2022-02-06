@@ -1,6 +1,6 @@
+#include "../str_format.hpp"
 #include "common.hpp"
 #include "debug.hpp"
-#include "../str_format.hpp"
 #include <compiler.hpp>
 #include <cstring>
 #include <string>

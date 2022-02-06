@@ -42,7 +42,6 @@ class GC {
 
 	GC(VM& vm) : m_vm{&vm} {};
 
-
 	template <typename T>
 	void mark(T& value_or_object) {
 		if constexpr (std::is_same<T, Value>()) {
@@ -61,7 +60,7 @@ class GC {
 	/// @brief marks an object as 'alive', turning it gray.
 	void mark_object(Obj* o);
 
-	private:
+  private:
 	/// @brief Walks over all the entire root set,
 	/// marking all objects and coloring them gray.
 	void mark();

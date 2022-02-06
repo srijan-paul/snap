@@ -1,8 +1,8 @@
 #include "common.hpp"
 #include <cassert>
 #include <cstdio>
-#include <vm.hpp>
 #include <list.hpp>
+#include <vm.hpp>
 
 namespace vy {
 

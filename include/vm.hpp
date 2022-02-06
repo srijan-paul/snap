@@ -195,7 +195,6 @@ class VM {
 		m_gc.bytes_allocated += o->size();
 	}
 
-
 	/// @brief Makes an interned string and returns a reference to it.
 	String& make_string(const char* chars, size_t length);
 
@@ -340,8 +339,8 @@ class VM {
 	std::unordered_map<String*, Value> m_global_vars;
 
 	/// @brief Call any callable value from within the VM. Note that this is only used to call
-	/// instructions from inside a vyse script. To call anything from a C/C++ program, the `VM::call`
-	/// method is used instead.
+	/// instructions from inside a vyse script. To call anything from a C/C++ program, the
+	/// `VM::call` method is used instead.
 	bool op_call(Value value, u8 argc);
 
 	/// @brief Call a vyse closure which has `argc` args on the stack.
@@ -460,7 +459,8 @@ class VM {
 	void invoke_script(Closure* closure);
 
 	/// @brief prepares for a function call by pushing a new `CallFrame` onto the call stack.
-	/// The new frame's func field is set to [callable], and the ip of the current call frame is cached.
+	/// The new frame's func field is set to [callable], and the ip of the current call frame is
+	/// cached.
 	void push_callframe(Obj* callable, int argc);
 
 	/// @brief Pops the currently active CallFrame off of the

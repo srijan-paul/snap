@@ -27,7 +27,8 @@ class DynLoader final {
 
 	/// @brief Read a standard library module and return the value returned by it.
 	Value read_std_lib(VM& vm, const StdModule& module);
-private:
+
+  private:
 	/// @brief A cache to avoid re-reading (.dll/.so/.a)s that have already been read.
 	/// Map of module name -> module handle.
 	std::unordered_map<std::string, Lib> cached_dyn_libs;

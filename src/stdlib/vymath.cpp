@@ -1,9 +1,9 @@
 #include <cmath>
 #include <limits>
 #include <random>
-#include <util/lib_util.hpp>
 #include <type_traits>
 #include <util/auxlib.hpp>
+#include <util/lib_util.hpp>
 #include <vm.hpp>
 
 using namespace vy;

@@ -1,6 +1,6 @@
 #include <gc.hpp>
-#include <value.hpp>
 #include <list.hpp>
+#include <value.hpp>
 #include <vm.hpp>
 
 #ifdef VYSE_LOG_GC
