@@ -3,8 +3,11 @@
 #include "util.hpp"
 #include <cmath>
 #include <cstddef>
+#include <filesystem>
+#include <fstream>
 #include <libloader.hpp>
 #include <list.hpp>
+#include <sstream>
 #include <stdlib/base.hpp>
 #include <stdlib/vy_list.hpp>
 #include <stdlib/vy_number.hpp>
@@ -761,6 +764,35 @@ void VM::invoke_script(Closure* script) {
 
 ExitCode VM::runcode(std::string code) {
 	m_sources.push_back({"", std::move(code)});
+	return interpret();
+}
+
+ExitCode VM::runfile(std::string file_path, std::string code) {
+	if (!code.empty()) {
+		add_source(std::move(code), std::move(file_path));
+		return interpret();
+	}
+
+	std::filesystem::path fpath{std::move(file_path)};
+	if (!fpath.is_absolute()) {
+		fpath = std::filesystem::absolute(std::move(fpath));
+	}
+
+	if (!fpath.is_absolute() || !std::filesystem::is_regular_file(fpath) || fpath.empty()) {
+		ERROR("File does not exist: '{}'", fpath.string());
+		return ExitCode::CompileError;
+	}
+
+	std::ifstream stream{fpath};
+	if (!stream) {
+		ERROR("Could not open file: '{}'", fpath.string());
+		return ExitCode::RuntimeError;
+	}
+
+	std::stringstream contents;
+	contents << stream.rdbuf();
+
+	add_source(contents.str(), fpath.string());
 	return interpret();
 }
 

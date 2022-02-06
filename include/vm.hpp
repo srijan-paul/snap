@@ -138,6 +138,7 @@ class VM {
 	bool init();
 
 	ExitCode runcode(std::string code);
+	ExitCode runfile(std::string file, std::string code = "");
 	ExitCode run();
 
 	/// @brief Compile [code] and return a `Closure` which when called will execute [code]
