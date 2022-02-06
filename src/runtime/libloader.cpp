@@ -74,6 +74,12 @@ Value load_cached_module(VM& vm, int argc) {
 	return cached_module;
 }
 
+Value load_module_from_fs(VM& vm, int argc) {
+	util::Args args{vm, "load_module_from_fs", 1, argc};
+	String& module_path = args.next<String>();
+	return VYSE_OBJECT(&module_path);
+}
+
 void DynLoader::init_loaders(VM& vm) const {
 	// A list of loader functions that the VM calls one after the other to find a given module until
 	// the module is found.
@@ -91,6 +97,10 @@ void DynLoader::init_loaders(VM& vm) const {
 	// Second step is to attempt to load a standard library module.
 	CClosure& stdlib_loader = vm.make<CClosure>(load_std_module);
 	loaders.append(VYSE_OBJECT(&stdlib_loader));
+
+	// Third step is to attempt to load a vyse file from the filesystem.
+	CClosure& fs_loader = vm.make<CClosure>(load_module_from_fs);
+	loaders.append(VYSE_OBJECT(&fs_loader));
 }
 
 } // namespace vy

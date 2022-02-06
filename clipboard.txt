@@ -7,6 +7,7 @@ cmake -G Ninja .. -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -
 TODO:
 - Rename `..` to `++`.
 - Add a `typeof` operator.
+- Can I migrate to std::unique_ptrs for the GC registry?
 
 Base standard library functions I should add:
 - now: get the current time.

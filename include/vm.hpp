@@ -83,9 +83,13 @@ class VM {
 	/// caused by infinite recursion.
 	static constexpr size_t MaxStackTraceDepth = 11;
 
-	VM(const std::string* src) noexcept : m_source{src}, m_gc(*this){};
-	VM() : m_source{nullptr}, m_gc(*this){};
+	VM(std::string code): m_gc(*this) {
+		add_source(std::move(code));
+	}
+
+	VM() : m_gc(*this){}
 	~VM();
+
 	ExitCode interpret();
 
 	struct CallFrame {
@@ -133,7 +137,7 @@ class VM {
 
 	bool init();
 
-	ExitCode runcode(const std::string& code);
+	ExitCode runcode(std::string code);
 	ExitCode run();
 
 	/// @brief Compile [code] and return a `Closure` which when called will execute [code]
@@ -147,10 +151,8 @@ class VM {
 		return m_current_block;
 	}
 
-	///
 	/// @brief constructs an object of type [T], registers it with the VM and returns a reference to
 	/// the newly created object.
-	///
 	template <typename T, typename... Args>
 	T& make(Args&&... args) {
 		static_assert(
@@ -295,7 +297,13 @@ class VM {
   private:
 	VMConfig m_config;
 
-	const std::string* m_source;
+	struct SourceCode {
+		std::string path;
+		std::string code;
+	};
+
+	std::vector<SourceCode> m_sources;
+
 	bool m_has_error = false;
 	Compiler* m_compiler = nullptr;
 
@@ -457,6 +465,11 @@ class VM {
 	/// @brief Prepares the VM CallStack for the very first
 	/// function call, which is the toplevel userscript.
 	void invoke_script(Closure* closure);
+
+	/// @brief Add new active source code.
+	inline void add_source(std::string&& code, std::string&& file_name = "<script>") {
+		m_sources.push_back({std::move(file_name), std::move(code)});
+	}
 
 	/// @brief prepares for a function call by pushing a new `CallFrame` onto the call stack.
 	/// The new frame's func field is set to [callable], and the ip of the current call frame is

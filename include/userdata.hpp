@@ -12,7 +12,7 @@ class UserData : public Obj {
 	VYSE_NO_DEFAULT_CONSTRUCT(UserData);
 
 	using TraceFn = void(GC& gc, void* t);
-	using DeleteFn = void(void* t);
+	using DeleteFn = void(void* data);
 
   public:
 	// clang-format off

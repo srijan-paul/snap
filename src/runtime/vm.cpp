@@ -700,12 +700,14 @@ ExitCode VM::interpret() {
 }
 
 bool VM::init() {
-	if (m_source == nullptr) {
+	if (m_sources.empty()) {
 		ERROR("No code to run.");
 		return false;
 	}
 
-	Closure* const script = compile(*m_source);
+	const SourceCode& source = m_sources.back();
+
+	Closure* const script = compile(source.code);
 	if (script == nullptr) return false;
 	invoke_script(script);
 
@@ -757,8 +759,8 @@ void VM::invoke_script(Closure* script) {
 	m_current_block = &script->m_codeblock->block();
 }
 
-ExitCode VM::runcode(const std::string& code) {
-	m_source = &code;
+ExitCode VM::runcode(std::string code) {
+	m_sources.push_back({"", std::move(code)});
 	return interpret();
 }
 

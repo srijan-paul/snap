@@ -60,8 +60,7 @@ void print_token(const vy::Token& token, const std::string& src) {
 }
 
 void print_disassembly(const char* code) {
-	const std::string code_s{code};
-	vy::VM vm{&code_s};
+	vy::VM vm{code};
 	vm.init();
 	disassemble_block("test_block", *vm.block());
 	printf("\n");
