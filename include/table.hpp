@@ -27,7 +27,7 @@ class Table final : public Obj {
 	Table* m_proto_table = nullptr;
 
 	/// @return The value assosciated with `key`.
-	Value get(Value key) const;
+	[[nodiscard]] Value get(Value key) const;
 
 	/// @brief Removes a key from the Hashtable. and returns true if [key] really did exist in the
 	/// table before deletion.

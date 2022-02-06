@@ -446,30 +446,41 @@ ExitCode VM::run() {
 		}
 
 		/// table.key = value
-		/// TODO: overload with `__set`
 		case Op::table_set: {
 			const Value& key = READ_VALUE();
 			if (VYSE_IS_NIL(key)) return ERROR("Table key cannot be nil.");
 			const Value value = POP();
-			Value& tvalue = PEEK(1);
-			if (VYSE_IS_TABLE(tvalue)) {
-				VYSE_AS_TABLE(tvalue)->set(key, value);
-				m_stack.top[-1] = value; // assignment returns it's RHS
+			Value& object = PEEK(1);
+			if (VYSE_IS_TABLE(object)) {
+				VYSE_AS_TABLE(object)->set(key, value);
+			} else if (VYSE_IS_UDATA(object)) {
+				const UserData& udata = *VYSE_AS_UDATA(object);
+				if (!set_field_of_udata(udata, key, value)) {
+					return ExitCode::RuntimeError;
+				}
 			} else {
-				return INDEX_ERROR(tvalue);
+				return INDEX_ERROR(object);
 			}
+
+			m_stack.top[-1] = value; // assignment returns it's RHS
 			break;
 		}
 
 		// table.key
-		/// TODO: overload with `__get`
 		case Op::table_get: {
 			// TOS = as_table(TOS)->get(READ_VAL())
-			const Value tvalue = PEEK(1);
-			if (VYSE_IS_TABLE(tvalue)) {
-				m_stack.top[-1] = VYSE_AS_TABLE(tvalue)->get(READ_VALUE());
+			const Value lhs = PEEK(1);
+			const Value& rhs = READ_VALUE();
+			Value& dst = m_stack.top[-1];
+			if (VYSE_IS_TABLE(lhs)) {
+				dst = VYSE_AS_TABLE(lhs)->get(rhs);
+			} else if (VYSE_IS_UDATA(lhs)) {
+				const UserData& udata = *VYSE_AS_UDATA(lhs);
+				if (!get_field_of_udata(udata, rhs, dst)) {
+					return ExitCode::RuntimeError;
+				}
 			} else {
-				return INDEX_ERROR(tvalue);
+				return INDEX_ERROR(lhs);
 			}
 			break;
 		}
@@ -477,11 +488,19 @@ ExitCode VM::run() {
 		// table.key
 		case Op::table_get_no_pop: {
 			// push((TOS)->get(READ_VAL()))
-			const Value tval = PEEK(1);
-			if (VYSE_IS_TABLE(tval)) {
-				PUSH(VYSE_AS_TABLE(tval)->get(READ_VALUE()));
+			const Value& lhs = PEEK(1);
+			const Value& rhs = READ_VALUE();
+			if (VYSE_IS_TABLE(lhs)) {
+				PUSH(VYSE_AS_TABLE(lhs)->get(rhs));
+			} else if (VYSE_IS_UDATA(lhs)) {
+				const UserData& udata = *VYSE_AS_UDATA(lhs);
+				Value result;
+				if (!get_field_of_udata(udata, rhs, result)) {
+					return ExitCode::RuntimeError;
+				}
+				PUSH(result);
 			} else {
-				return INDEX_ERROR(tval);
+				return INDEX_ERROR(lhs);
 			}
 			break;
 		}
@@ -1063,16 +1082,38 @@ bool VM::get_field_of_value(Value const& value, Value const& key, Value& inout) 
 	return true;
 }
 
-bool VM::get_subscript_of_udata(const UserData& udata, const Value& index, Value& result) {
+bool VM::get_field_of_udata(const UserData& udata, const Value& index, Value& result) {
+	if (VYSE_IS_NIL(index)) {
+		ERROR("Attempt to index with a nil value");
+		return false;
+	}
+
 	Table* indexer = udata.indexer;
 	Table* m_proto = udata.m_proto;
+	result = VYSE_NIL;
+
 	if (indexer != nullptr && indexer->tag == ObjType::table) {
 		result = indexer->get(index);
 	}
 
-	if (m_proto && VYSE_IS_NIL(result)) {
+	if (m_proto != nullptr && VYSE_IS_NIL(result)) {
 		result = m_proto->get(index);
 	}
+	return true;
+}
+
+bool VM::set_field_of_udata(const UserData& udata, const Value& key, Value value) {
+	if (VYSE_IS_NIL(key)) {
+		ERROR("Attempt to index with a nil value");
+		return false;
+	}
+
+	if (udata.indexer != nullptr) {
+		udata.indexer->set(key, value);
+	} else if (udata.m_proto != nullptr) {
+		udata.m_proto->set(key, value);
+	}
+
 	return true;
 }
 
@@ -1128,7 +1169,7 @@ bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& r
 
 		case OT::user_data: {
 			UserData& udata = *static_cast<UserData*>(object);
-			return get_subscript_of_udata(udata, index, result);
+			return get_field_of_udata(udata, index, result);
 		}
 
 		default:; // fallthrough to default
@@ -1159,6 +1200,10 @@ bool VM::subscript_set(const Value& lhs, const Value& key, const Value& rhs) {
 		}
 		VYSE_AS_TABLE(lhs)->set(key, rhs);
 		return true;
+	}
+
+	if (VYSE_IS_UDATA(lhs)) {
+		return set_field_of_udata(*VYSE_AS_UDATA(lhs), key, rhs);
 	}
 
 	ERROR("Attempt to index a {} value.", VYSE_TYPE_CSTR(lhs));

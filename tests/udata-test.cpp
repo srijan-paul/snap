@@ -121,10 +121,16 @@ void test_udata_indexing() {
 		assert(ctr:get() == 0)
 		ctr:inc(); ctr:inc(); ctr:inc()
 		assert(ctr:get() == 3)
+		ctr.get = 'hello'
+		assert(ctr.get == 'hello')
+		ctr['get'] = 2 
+		assert(ctr.get == 2 && ctr['ge'..'t'] == 2)
 	)");
 
 	assert(res == ExitCode::Success);
 #undef S
+#undef F
+
 }
 
 void udata_test() {

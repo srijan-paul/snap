@@ -210,27 +210,20 @@ class VM {
 	/// @brief Makes an interned string and returns a reference to it.
 	String& make_string(const char* chars, size_t length);
 
-	///
 	/// @brief Makes a string from the provided char buffer.
-	///
 	/// @param chars A null terminated char buffer.
-	///
-	String& make_string(const char* chars) {
+	inline String& make_string(const char* chars) {
 		return make_string(chars, strlen(chars));
 	}
 
-	///
 	/// @brief takes ownership of a string with char buffer 'chrs' and length 'len'. Note that
 	/// `chrs` now belongs to the VM, and it may be freed inside this function if an interned copy
 	/// is found. The caller must not use the [chrs] buffer after
 	/// calling this.
-	///
 	String& take_string(char* chrs, size_t len);
 
-	///
 	/// @brief Triggers a garbage collection cycle, does a mark-trace-sweep.
 	/// @return The number of bytes freed.
-	///
 	size_t collect_garbage();
 
 	/// @brief Makes sure there are at least [num_slots] stack slots free to be used above the
@@ -356,13 +349,20 @@ class VM {
 	// strings, we use a table.
 	Table interned_strings;
 
+	/// @brief a map of all global variables.
+	/// Since vyse strings are interned, using a `String*` as the key does not lead to any
+	/// problems.
 	std::unordered_map<String*, Value> m_global_vars;
 
 	/// @brief call any callable value from within the VM. Note that this is only used to call
 	/// instructions from inside a vyse script. To call anything from a C/C++ program, the call
 	/// method is used instead.
 	bool op_call(Value value, u8 argc);
+
+	/// @brief Call a vyse closure which as `argc` args on the stack.
 	bool call_closure(Closure* func, int argc);
+
+	/// @brief Call a C closure which as `argc` args on the stack.
 	bool call_cclosure(CClosure* cclosure, int argc);
 
 	/// @brief Prepares the VM's stack for a varioadic function call.
@@ -374,6 +374,8 @@ class VM {
 	/// list.
 	int prep_vararg_call(int num_params, int num_args);
 
+	/// @brief Get a value's prototype.
+	/// If no prototype is found, returns `nullptr`.
 	inline Table* get_proto(const Value& value) {
 		switch (VYSE_GET_TT(value)) {
 		case ValueType::Bool: return prototypes.boolean;
@@ -392,8 +394,7 @@ class VM {
 		}
 	}
 
-	/// @brief return the `table[key]` where table is the prototype
-	/// of [value].
+	/// @brief return the `table[key]` where table is the prototype of [value].
 	inline Value index_proto(const Value& value, const Value& key) noexcept {
 		const Table* proto = get_proto(value);
 		if (proto != nullptr) return proto->get(key);
@@ -443,7 +444,11 @@ class VM {
 	/// @param index The index used to query.
 	/// @param result An in-out parameter into which the result is stored.
 	/// @return true if there are no runtime errors, false otherwise.
-	bool get_subscript_of_udata(const UserData& udata, const Value& index, Value& result);
+	bool get_field_of_udata(const UserData& udata, const Value& index, Value& result);
+
+	/// @brief Sets the `key` of a userdata to `value`.
+	/// @return true if there are no runtime errors, false otherwise.
+	bool set_field_of_udata(const UserData& udata, const Value& key, const Value value);
 
 	/// @brief performs the `lhs[key] = rhs` operation.
 	/// @return true if the operation was successful, false if there was an error instead.

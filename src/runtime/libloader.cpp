@@ -1,10 +1,6 @@
 #include <libloader.hpp>
 #include <util/lib_util.hpp>
-#include <common.hpp>
 #include <cstdlib>
-#include <dino/dino.hpp>
-#include <forward.hpp>
-#include <string>
 #include <vm.hpp>
 #include <list.hpp>
 
