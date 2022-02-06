@@ -1,6 +1,6 @@
 const t = {
   member_func(k) {
-   return k * 2 
+    return k * 2 
   },
 
   k: 5

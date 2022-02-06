@@ -405,7 +405,7 @@ class VM {
 	/// that this function must only be called interally in the VM in places where string interning
 	/// is taken care of explicitly.
 	template <typename... Args>
-	String& make_string_no_intern(Args... args) {
+	String& create_new_string(Args... args) {
 		String* str = new String(std::forward<Args>(args)...);
 		register_object(str);
 		return *str;

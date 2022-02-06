@@ -4,7 +4,7 @@ fn bkdr_hash(str) {
   const seed = 131
   let hash = 0
   for i = 1, str:len() 
-    hash = (hash * seed) + str[i]
+    hash = (hash * seed) + str[i]:to_number()
   return hash
 }
 

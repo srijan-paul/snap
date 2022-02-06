@@ -19,7 +19,7 @@
 #endif
 
 #define ERROR(...) runtime_error(kt::format_str(__VA_ARGS__))
-#define INDEX_ERROR(v) ERROR("Attempt to index a '{}' value.", VYSE_TYPE_CSTR(v))
+#define INDEX_ERROR(v) ERROR("Attempt to index a '{}' value.", value_type_name(v))
 #define CURRENT_LINE() (m_current_block->lines[ip - 1])
 
 #define CHECK_TYPE(v, typ, ...)                                                                    \
@@ -57,7 +57,7 @@ using OT = ObjType;
 #define IS_VAL_FALSY(v) ((VYSE_IS_BOOL(v) and !(VYSE_AS_BOOL(v))) or VYSE_IS_NIL(v))
 #define IS_VAL_TRUTHY(v) (!IS_VAL_FALSY(v))
 
-#define UNOP_ERROR(op, v) ERROR("Cannot use operator '{}' on type '{}'.", op, VYSE_TYPE_CSTR(v))
+#define UNOP_ERROR(op, v) ERROR("Cannot use operator '{}' on type '{}'.", op, value_type_name(v))
 
 #define CMP_OP(op, proto_method)                                                                   \
 	do {                                                                                           \
@@ -236,7 +236,7 @@ ExitCode VM::run() {
 			} else if (VYSE_IS_STRING(v)) {
 				PUSH(VYSE_NUM(VYSE_AS_STRING(v)->m_length));
 			} else {
-				return ERROR("Attempt to get length of a {} value", VYSE_TYPE_CSTR(v));
+				return ERROR("Attempt to get length of a {} value", value_type_name(v));
 			}
 			break;
 		}
@@ -246,7 +246,7 @@ ExitCode VM::run() {
 				VYSE_SET_NUM(PEEK(1), ~s64(VYSE_AS_NUM(PEEK(1))));
 			} else {
 				return ERROR("Cannot use operator '~' on value of type '{}'",
-							 VYSE_TYPE_CSTR(PEEK(1)));
+							 value_type_name(PEEK(1)));
 			}
 			break;
 		}
@@ -642,7 +642,7 @@ Value VM::concatenate(const String* left, const String* right) {
 	String* const interned = interned_strings.find_string(buf, length, hash);
 
 	if (interned == nullptr) {
-		String* const res = &make_string_no_intern(buf, length, hash);
+		String* const res = &create_new_string(buf, length, hash);
 		Value vresult = VYSE_OBJECT(res);
 		interned_strings.set(vresult, VYSE_BOOL(true));
 		return vresult;
@@ -878,7 +878,7 @@ bool VM::op_call(Value value, u8 argc) {
 
 	// not a function, so we get it's `__call` field and attempt to call it
 	const bool ok = call_func_overload(value, argc);
-	if (!ok) ERROR("Attempt to call a {} value.", VYSE_TYPE_CSTR(value));
+	if (!ok) ERROR("Attempt to call a {} value.", value_type_name(value));
 	return ok;
 }
 
@@ -1180,7 +1180,7 @@ bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& r
 	Table* const proto = get_proto(value);
 	assert(proto->tag == OT::table);
 	if (proto == nullptr) {
-		ERROR("Attempt to index a {} value.", VYSE_TYPE_CSTR(value));
+		ERROR("Attempt to index a {} value.", value_type_name(value));
 		return false;
 	}
 	result = proto->get(index);
@@ -1206,7 +1206,7 @@ bool VM::subscript_set(const Value& lhs, const Value& key, const Value& rhs) {
 		return set_field_of_udata(*VYSE_AS_UDATA(lhs), key, rhs);
 	}
 
-	ERROR("Attempt to index a {} value.", VYSE_TYPE_CSTR(lhs));
+	ERROR("Attempt to index a {} value.", value_type_name(lhs));
 	return false;
 }
 
@@ -1246,7 +1246,7 @@ String& VM::take_string(char* buf, size_t len) {
 		return *interned;
 	}
 
-	String& string = make_string_no_intern(buf, len, hash);
+	String& string = create_new_string(buf, len, hash);
 	interned_strings.set(VYSE_OBJECT(&string), VYSE_BOOL(true));
 	return string;
 }
@@ -1259,7 +1259,7 @@ String& VM::make_string(const char* chars, size_t length) {
 	String* const interned = interned_strings.find_string(chars, length, hash);
 	if (interned != nullptr) return *interned;
 
-	String* const string = &make_string_no_intern(chars, length, hash);
+	String* const string = &create_new_string(chars, length, hash);
 	interned_strings.set(VYSE_OBJECT(string), VYSE_BOOL(true));
 
 	return *string;
@@ -1336,8 +1336,8 @@ size_t VM::collect_garbage() {
 // -- Error reporting --
 
 ExitCode VM::binop_error(const char* opstr, const Value& a, const Value& b) {
-	return ERROR("Bad types for operator '{}': '{}' and '{}'.", opstr, VYSE_TYPE_CSTR(a),
-				 VYSE_TYPE_CSTR(b));
+	return ERROR("Bad types for operator '{}': '{}' and '{}'.", opstr, value_type_name(a),
+				 value_type_name(b));
 }
 
 ExitCode VM::runtime_error(const std::string& message) {
