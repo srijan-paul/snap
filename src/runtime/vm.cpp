@@ -722,6 +722,12 @@ bool VM::init() {
 	return true;
 }
 
+Closure* VM::compile(SourceCode&& src) {
+	add_source(std::move(src));
+	Closure* script = compile(m_sources.back().code);
+	return script;
+}
+
 Closure* VM::compile(const std::string& src) {
 	Compiler compiler{this, &src};
 	m_compiler = &compiler;
@@ -767,32 +773,38 @@ ExitCode VM::runcode(std::string code) {
 	return interpret();
 }
 
+std::optional<SourceCode> SourceCode::from_path(std::string path) {
+	std::filesystem::path fpath{std::move(path)};
+	if (!fpath.is_absolute()) {
+		fpath = std::filesystem::absolute(std::move(fpath));
+	}
+
+	if (!fpath.is_absolute() || !std::filesystem::is_regular_file(fpath) || fpath.empty()) {
+		return std::nullopt;
+	}
+
+	std::ifstream stream{fpath};
+	if (!stream) return std::nullopt;
+
+	std::stringstream contents;
+	contents << stream.rdbuf();
+
+	return SourceCode{fpath.string(), contents.str()};
+}
+
 ExitCode VM::runfile(std::string file_path, std::string code) {
 	if (!code.empty()) {
 		add_source(std::move(code), std::move(file_path));
 		return interpret();
 	}
 
-	std::filesystem::path fpath{std::move(file_path)};
-	if (!fpath.is_absolute()) {
-		fpath = std::filesystem::absolute(std::move(fpath));
-	}
-
-	if (!fpath.is_absolute() || !std::filesystem::is_regular_file(fpath) || fpath.empty()) {
-		ERROR("File does not exist: '{}'", fpath.string());
+	auto maybe_source = SourceCode::from_path(file_path);
+	if (!maybe_source.has_value()) {
+		ERROR("Could not read file: {}", file_path);
 		return ExitCode::CompileError;
 	}
 
-	std::ifstream stream{fpath};
-	if (!stream) {
-		ERROR("Could not open file: '{}'", fpath.string());
-		return ExitCode::RuntimeError;
-	}
-
-	std::stringstream contents;
-	contents << stream.rdbuf();
-
-	add_source(contents.str(), fpath.string());
+	add_source(std::move(maybe_source.value()));
 	return interpret();
 }
 

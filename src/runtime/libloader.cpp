@@ -77,7 +77,19 @@ Value load_cached_module(VM& vm, int argc) {
 Value load_module_from_fs(VM& vm, int argc) {
 	util::Args args{vm, "load_module_from_fs", 1, argc};
 	String& module_path = args.next<String>();
-	return VYSE_OBJECT(&module_path);
+
+	auto maybe_source = SourceCode::from_path(module_path.c_str());
+	if (!maybe_source.has_value()) {
+		return VYSE_NIL;
+	}
+
+	Closure* file_func = vm.compile(std::move(maybe_source.value()));
+	vm.ensure_slots(1);
+	vm.m_stack.push(VYSE_OBJECT(file_func));
+	vm.call(0);
+
+	vm.pop_source();
+	return vm.m_stack.pop();
 }
 
 void DynLoader::init_loaders(VM& vm) const {

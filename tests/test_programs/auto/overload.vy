@@ -108,3 +108,5 @@ const o = {
 }
 
 assert(o(2, 3) == 13)
+
+return Vec2

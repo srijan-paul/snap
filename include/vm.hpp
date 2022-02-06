@@ -43,6 +43,13 @@ enum class ExitCode {
 	RuntimeError,
 };
 
+struct SourceCode {
+	static std::optional<SourceCode> from_path(std::string file_path);
+
+	std::string path;
+	std::string code;
+};
+
 class VM {
 	// The garbage collector needs access to the VM's root object set.
 	friend GC;
@@ -50,6 +57,7 @@ class VM {
 
 	// The library loader needs access to the VM's cached libraries.
 	friend Value load_std_module(VM& vm, int argc);
+  friend Value load_module_from_fs(VM& vm, int argc);
 
   public:
 	VYSE_NO_COPY(VM);
@@ -83,11 +91,11 @@ class VM {
 	/// caused by infinite recursion.
 	static constexpr size_t MaxStackTraceDepth = 11;
 
-	VM(std::string code): m_gc(*this) {
+	VM(std::string code) : m_gc(*this) {
 		add_source(std::move(code));
 	}
 
-	VM() : m_gc(*this){}
+	VM() : m_gc(*this) {}
 	~VM();
 
 	ExitCode interpret();
@@ -143,6 +151,9 @@ class VM {
 
 	/// @brief Compile [code] and return a `Closure` which when called will execute [code]
 	Closure* compile(const std::string& code);
+
+	/// @brief Compile [source] and return a `Closure` which when called will execute [source.code]
+	Closure* compile(SourceCode&& source);
 
 	/// @brief Load the base vyse standard library.
 	void load_stdlib();
@@ -297,11 +308,6 @@ class VM {
 
   private:
 	VMConfig m_config;
-
-	struct SourceCode {
-		std::string path;
-		std::string code;
-	};
 
 	std::vector<SourceCode> m_sources;
 
@@ -470,6 +476,20 @@ class VM {
 	/// @brief Add new active source code.
 	inline void add_source(std::string&& code, std::string&& file_name = "<script>") {
 		m_sources.push_back({std::move(file_name), std::move(code)});
+	}
+
+	inline void add_source(SourceCode&& source) {
+		m_sources.push_back(std::move(source));
+	}
+
+	[[nodiscard]] inline std::string_view get_current_file() const {
+		if (m_sources.empty()) return "";
+		return m_sources.back().path;
+	}
+
+	inline void pop_source() {
+		assert(!m_source.empty());
+		m_sources.pop_back();
 	}
 
 	/// @brief prepares for a function call by pushing a new `CallFrame` onto the call stack.
