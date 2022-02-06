@@ -167,6 +167,14 @@ void loop_test() {
 	test_file("loop/for/in-closure.vy", VYSE_NUM(110), "for-loop inside closure.");
 }
 
+void multiple_runs_test() {
+	VM vm; vm.load_stdlib();
+	const char* fail_message = "Cannot call VM::run multiple times.";
+	vm.runcode("a = (/x -> x * 2)(2)");
+	auto res = vm.runcode("assert(a == 4)");
+	ASSERT(res == ExitCode::Success, fail_message);
+}
+
 int main() {
 	expr_tests();
 	stmt_tests();
@@ -175,5 +183,6 @@ int main() {
 	global_test();
 	string_test();
 	loop_test();
+	multiple_runs_test();
 	return 0;
 }

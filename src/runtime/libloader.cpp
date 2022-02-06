@@ -83,12 +83,12 @@ void DynLoader::init_loaders(VM& vm) const {
 	Table& cache = vm.make<Table>();
 	vm.set_global(ModuleCacheName, VYSE_OBJECT(&cache));
 
-	// First a lookup is performed on the cache to check if the module has already been loaded.
-	// This 'cache search' is done by the `cached_lib_loader` closure.
+	// First, a lookup is performed on the cache to check if the module has already been loaded.
+	// This "cache search" is done by the `cached_lib_loader` closure.
 	CClosure& cached_lib_loader = vm.make<CClosure>(load_cached_module);
 	loaders.append(VYSE_OBJECT(&cached_lib_loader));
 
-	// Add the default standard library module loader.
+	// Second step is to attempt to load a standard library module.
 	CClosure& stdlib_loader = vm.make<CClosure>(load_std_module);
 	loaders.append(VYSE_OBJECT(&stdlib_loader));
 }
