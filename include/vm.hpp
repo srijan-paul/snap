@@ -363,7 +363,7 @@ class VM {
 	bool call_closure(Closure* func, int argc);
 
 	/// @brief Call a C closure which as `argc` args on the stack.
-	bool call_cclosure(CClosure* cclosure, int argc);
+	bool call_cclosure(CClosure* cclosure, int argc) noexcept(false);
 
 	/// @brief Prepares the VM's stack for a varioadic function call.
 	/// All the extra args are placed in a list, which is then pushed on top of the stack.

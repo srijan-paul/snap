@@ -122,6 +122,12 @@ void test_udata_indexing() {
 		ctr:inc(); ctr:inc(); ctr:inc()
 		assert(ctr:get() == 3)
 		ctr.get = 'hello'
+
+		-- gc should collect these
+		Counter:new(); Counter:new(); Counter:new();
+		Counter:new(); Counter:new(); Counter:new();
+		--/ 
+
 		assert(ctr.get == 'hello')
 		ctr['get'] = 2 
 		assert(ctr.get == 2 && ctr['ge'..'t'] == 2)
@@ -130,7 +136,6 @@ void test_udata_indexing() {
 	assert(res == ExitCode::Success);
 #undef S
 #undef F
-
 }
 
 void udata_test() {

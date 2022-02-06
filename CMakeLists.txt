@@ -11,6 +11,7 @@ set(STRESS_GC OFF CACHE BOOL "Run garbage collector as often as possible")
 set(LOG_GC OFF CACHE BOOL "Log GC output on every GC event.")
 set(LOG_DISASM OFF CACHE BOOL "Log program disassembly before execution.")
 set(BUILD_TESTS ON CACHE BOOL "Compile the test suite.")
+set(VYSE_MINSTACK OFF CACHE STRING "When the VM stack is first initialized, have it be as small as possible.")
 
 if (UNIX AND NOT APPLE)
 	set(LINUX true)
@@ -48,6 +49,10 @@ endif()
 
 if(LOG_GC)
   target_compile_definitions(${PROJECT_NAME} PUBLIC -DVYSE_LOG_GC)
+endif()
+
+if(VYSE_MINSTACK)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC -DVYSE_MINSTACK=4)
 endif()
 
 if(LOG_DISASM)

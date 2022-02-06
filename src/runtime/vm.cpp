@@ -231,7 +231,6 @@ ExitCode VM::run() {
 			if (VYSE_IS_LIST(v)) {
 				PUSH(VYSE_NUM(VYSE_AS_LIST(v)->length()));
 			} else if (VYSE_IS_TABLE(v)) {
-				/// TODO: overload with __len
 				PUSH(VYSE_NUM(VYSE_AS_TABLE(v)->length()));
 			} else if (VYSE_IS_STRING(v)) {
 				PUSH(VYSE_NUM(VYSE_AS_STRING(v)->m_length));
@@ -974,7 +973,7 @@ int VM::prep_vararg_call(int num_params, int num_args) {
 	return num_params;
 }
 
-bool VM::call_cclosure(CClosure* cclosure, int argc) {
+bool VM::call_cclosure(CClosure* cclosure, int argc) noexcept(false) {
 	push_callframe(cclosure, argc);
 	NativeFn c_func = cclosure->cfunc();
 
@@ -1236,7 +1235,7 @@ String* VM::char_at(const String* string, uint index) {
 }
 
 String& VM::take_string(char* buf, size_t len) {
-	size_t hash = hash_cstring(buf, len);
+	const size_t hash = hash_cstring(buf, len);
 
 	// Look for an existing interened copy of the string.
 	String* interned = interned_strings.find_string(buf, len, hash);

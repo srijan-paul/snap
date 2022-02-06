@@ -12,8 +12,15 @@ class VMStack final {
 	VYSE_NO_COPY(VMStack);
 	VYSE_NO_MOVE(VMStack);
 
-public:
-	static constexpr size_t InitialSize = 128;
+  public:
+
+	static constexpr size_t InitialSize =
+#ifdef VYSE_MINSTACK
+		VYSE_MINSTACK
+#else
+		128
+#endif
+		;
 
 	VMStack() = default;
 	~VMStack() noexcept {
@@ -47,7 +54,7 @@ public:
 		top = values;
 	}
 
-private:
+  private:
 	Value* values = static_cast<Value*>(malloc(sizeof(Value) * InitialSize));
 
 	/// @brief Points to the next free slot in the stack.
@@ -55,4 +62,4 @@ private:
 	uint size = InitialSize;
 };
 
-} // namespace vyse
+} // namespace vy
