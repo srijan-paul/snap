@@ -37,8 +37,8 @@ void Closure::trace(GC& gc) {
 	gc.mark_object(m_codeblock);
 }
 
-void CClosure::trace([[maybe_unused]] GC& gc) {
-	/// TODO: mark upvalues.
+void CClosure::trace(GC& gc) {
+	gc.mark(m_values);
 }
 
 } // namespace vy

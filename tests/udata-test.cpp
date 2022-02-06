@@ -69,7 +69,6 @@ Value vec_pop(VM& vm, int argc) {
 }
 
 // tests
-/// TODO: finish this test suite.
 // Test the `[]` operator
 void test_udata_indexing() {
 	VM vm;
@@ -116,7 +115,7 @@ void test_udata_indexing() {
 	vm.gc_on();
 
 	vm.load_stdlib();
-	auto res = vm.runcode(R"(
+	[[maybe_unused]] auto res = vm.runcode(R"(
 		const ctr = Counter:new()
 		assert(ctr:get() == 0)
 		ctr:inc(); ctr:inc(); ctr:inc()

@@ -23,7 +23,6 @@ inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string
 
 void default_error_fn(const VM& vm, const std::string& err_msg);
 char* default_readline(const VM& vm);
-std::string default_find_module(VM& vm, const char* module_name);
 
 struct VMConfig {
 	/// @brief function used by the VM to print a string to console.
@@ -73,7 +72,7 @@ class VM {
 	/// The function to be used by the VM when reading a line from stdin.
 	ReadLineFn read_line = default_readline;
 
-	ModuleLoader find_module = default_find_module;
+	ModuleLoader find_module = nullptr;
 
 	/// Maximum size of the call stack. If the call stack
 	/// size exceeds this, then there is a stack overflow.
@@ -111,10 +110,8 @@ class VM {
 		}
 	};
 
-	///
-	/// @brief Get the [num]th argument of the current function. `get_arg(0)` returns the first
-	/// argument.
-	///
+	/// @brief Get the [num]th argument of the current function.
+	/// `get_arg(0)` returns the first argument.
 	inline Value& get_arg(u8 idx) const {
 		return m_current_frame->base[idx + 1];
 	}
@@ -138,21 +135,14 @@ class VM {
 
 	ExitCode runcode(const std::string& code);
 	ExitCode run();
+
+	/// @brief Compile [code] and return a `Closure` which when called will execute [code]
 	Closure* compile(const std::string& code);
 
 	/// @brief Load the base vyse standard library.
 	void load_stdlib();
 
-	///
-	/// @brief Finds a module by it's name, interprets it's code and returns the resulting
-	/// vyse::Value.
-	/// @param modname Name of the module, usually the argument to the builtin function `import`.
-	///
-	Value import_module(String& modname);
-
-	///
 	/// @brief returns the currently executing block.
-	///
 	const Block* block() const noexcept {
 		return m_current_block;
 	}
@@ -205,7 +195,6 @@ class VM {
 		m_gc.bytes_allocated += o->size();
 	}
 
-	/// TODO: think of a better name for this method.
 
 	/// @brief Makes an interned string and returns a reference to it.
 	String& make_string(const char* chars, size_t length);
@@ -341,26 +330,24 @@ class VM {
 	// are being read. This is always `m_current_frame->func->block`
 	const Block* m_current_block = nullptr;
 
-	// Vyse interns all strings. So if two separate
-	// string values are identical, then they point
-	// to the same object in heap. To deduplicate
-	// strings, we use a table.
+	// Vyse interns all strings. If two separate string values are identical, they point
+	// to the same object in heap. To deduplicate strings, we use a table.
 	Table interned_strings;
 
-	/// @brief a map of all global variables.
+	/// @brief A map of all global variables.
 	/// Since vyse strings are interned, using a `String*` as the key does not lead to any
 	/// problems.
 	std::unordered_map<String*, Value> m_global_vars;
 
-	/// @brief call any callable value from within the VM. Note that this is only used to call
-	/// instructions from inside a vyse script. To call anything from a C/C++ program, the call
+	/// @brief Call any callable value from within the VM. Note that this is only used to call
+	/// instructions from inside a vyse script. To call anything from a C/C++ program, the `VM::call`
 	/// method is used instead.
 	bool op_call(Value value, u8 argc);
 
-	/// @brief Call a vyse closure which as `argc` args on the stack.
+	/// @brief Call a vyse closure which has `argc` args on the stack.
 	bool call_closure(Closure* func, int argc);
 
-	/// @brief Call a C closure which as `argc` args on the stack.
+	/// @brief Call a C closure which has `argc` args on the stack.
 	bool call_cclosure(CClosure* cclosure, int argc) noexcept(false);
 
 	/// @brief Prepares the VM's stack for a varioadic function call.
@@ -465,18 +452,15 @@ class VM {
 	String* char_at(const String* string, uint index);
 
 	/// Load a vyse::Object into the global variable list.
-	/// generally used for loading functions and objects from
-	/// the standard library.
+	/// generally used for loading functions and objects from the standard library.
 	void add_stdlib_object(const char* name, Obj* o);
 
 	/// @brief Prepares the VM CallStack for the very first
 	/// function call, which is the toplevel userscript.
 	void invoke_script(Closure* closure);
 
-	/// @brief prepares for a function call by pushing a new
-	/// CallFrame onto the call stack. The new frame's func field
-	/// is set to [callable], and the ip of the current call frame
-	/// is cached.
+	/// @brief prepares for a function call by pushing a new `CallFrame` onto the call stack.
+	/// The new frame's func field is set to [callable], and the ip of the current call frame is cached.
 	void push_callframe(Obj* callable, int argc);
 
 	/// @brief Pops the currently active CallFrame off of the
@@ -484,15 +468,12 @@ class VM {
 	/// CallFrame.
 	void pop_callframe() noexcept;
 
-	/// Wrap a value present at stack slot [slot]
-	/// inside an Upvalue object and add it to the
-	/// VM's currently open Upvalue list in the right
-	/// position (if it isn't already there).
-	/// @param slot A `Value*` pointing to a value inside the VM's
-	///             value stack.
+	/// Wrap a value present at stack slot [slot] inside an Upvalue object and add it to the
+	/// VM's currently open Upvalue list in the right position (if it isn't already there).
+	/// @param slot A `Value*` pointing to a value inside the VM's value stack.
 	Upvalue* capture_upvalue(Value* slot);
-	// close all the upvalues that are present between the
-	// top of the stack and [last].
+
+	// close all the upvalues that are present between the top of the stack and [last].
 	// [last] must point to some value in the VM's stack.
 	void close_upvalues_upto(Value* last);
 

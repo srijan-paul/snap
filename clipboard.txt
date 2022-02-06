@@ -3,3 +3,38 @@ A scratchpad for me to copy paste commands from/to :)
 cmake -G Ninja .. -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=true -DSTRESS_GC=true -DLOG_GC=true -DLOG_DISASM=false -DVYSE_MINSTACK=true
 cmake -G Ninja .. -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=true -DSTRESS_GC=true -DLOG_GC=false -DLOG_DISASM=false
 cmake -G Ninja .. -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=true -DSTRESS_GC=false -DLOG_GC=false -DLOG_DISASM=false
+
+TODO:
+- Rename `..` to `++`.
+- Add a `typeof` operator.
+
+Base standard library functions I should add:
+- now: get the current time.
+- id: Returns the hash of an object.
+- gc: Trigger a gc cycle
+- heap_usage: Total number of bytes allocated
+
+Some functions I would like to add for strings:
+- drop_while
+- span
+- take_while
+- ltrim
+- rtrim
+- trim
+- replace
+- index_of
+- last_index_of
+- is_lower
+- is_upper
+- to_lower
+- to_upper
+- toggle_case
+- is_alpha
+- is_alnum
+- is_num
+- split
+- fmt
+- lpad
+- rpad
+- starts_with
+- ends_with

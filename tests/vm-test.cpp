@@ -54,7 +54,8 @@ static void expr_tests() {
 	test_return("return nil == true", VYSE_BOOL(false), "nil != true");
 	test_return("return 1 == true", VYSE_BOOL(false), "1 != true");
 	test_return("return 123 == '123'", VYSE_BOOL(false), "123 != '123'");
-	test_return("return '0' == 48", VYSE_BOOL(false), "chars and strings aren't compared using ASCII values");
+	test_return("return '0' == 48", VYSE_BOOL(false),
+				"chars and strings aren't compared using ASCII values");
 	test_return("return 0 == false", VYSE_BOOL(false), "0 != false");
 	test_return("return {} == {}", VYSE_BOOL(false), "empty tables are not equal");
 
@@ -168,7 +169,8 @@ void loop_test() {
 }
 
 void multiple_runs_test() {
-	VM vm; vm.load_stdlib();
+	VM vm;
+	vm.load_stdlib();
 	const char* fail_message = "Cannot call VM::run multiple times.";
 	vm.runcode("a = (/x -> x * 2)(2)");
 	auto res = vm.runcode("assert(a == 4)");

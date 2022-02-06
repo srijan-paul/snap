@@ -505,7 +505,6 @@ ExitCode VM::run() {
 		}
 
 		// table_or_string_or_array[key]
-		/// TODO: overload with `__indx`
 		case Op::subscript_get: {
 			const Value key = POP();
 			Value& tvalue = PEEK(1);
@@ -725,6 +724,7 @@ Closure* VM::compile(const std::string& src) {
 	CodeBlock* const code = m_compiler->compile();
 
 	if (!compiler.ok()) {
+		// There's been a compile time error.
 		m_compiler = nullptr;
 		return nullptr;
 	}
@@ -739,10 +739,14 @@ Closure* VM::compile(const std::string& src) {
 }
 
 void VM::invoke_script(Closure* script) {
-	// clear the stack in case there is some leftover junk from previous invocations.
+	// Clear the stack in case there is some leftover junk from previous invocations.
 	m_stack.clear();
-	// make sure there is enough room in the stack for this function call. +1 for the script itself.
+
+	// Make sure there is enough room in the stack for this function call.
+	// +1 for the script itself.
 	ensure_slots(script->m_codeblock->stack_size() + 1);
+
+	// Push the closure onto the stack and change the update the base callframe.
 	m_stack.push(VYSE_OBJECT(script));
 	base_frame->base = m_stack.top - 1;
 	base_frame->ip = 0;
@@ -1046,7 +1050,7 @@ bool VM::call_func_overload(Value& object, int argc) {
 	static const Value field_name = VYSE_OBJECT(&method_string);
 
 	Value func;
-	bool ok = get_field_of_value(object, field_name, func);
+	[[maybe_unused]] bool ok = get_field_of_value(object, field_name, func);
 	assert(ok);
 
 	// To perform the overloaded call, we need to adjust the stack
@@ -1087,8 +1091,8 @@ bool VM::get_field_of_udata(const UserData& udata, const Value& index, Value& re
 		return false;
 	}
 
-	Table* indexer = udata.indexer;
-	Table* m_proto = udata.m_proto;
+	const Table* indexer = udata.indexer;
+	const Table* m_proto = udata.m_proto;
 	result = VYSE_NIL;
 
 	if (indexer != nullptr && indexer->tag == ObjType::table) {
@@ -1176,7 +1180,7 @@ bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& r
 	}
 
 	// Find prototype of primitive value and index it with [index]
-	Table* const proto = get_proto(value);
+	const Table* proto = get_proto(value);
 	assert(proto->tag == OT::table);
 	if (proto == nullptr) {
 		ERROR("Attempt to index a {} value.", value_type_name(value));
@@ -1407,10 +1411,6 @@ char* default_readline(const VM&) {
 	buf = (char*)realloc(buf, sizeof(char) * (nchars + 1));
 	buf[nchars] = '\0';
 	return buf;
-}
-
-std::string default_find_module(VM&, const char*) {
-	return "return { x: 1 }";
 }
 
 /// TODO: The user might need some objects even after the VM has been destructed. Add support for
