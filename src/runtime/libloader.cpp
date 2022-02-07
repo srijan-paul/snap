@@ -96,12 +96,12 @@ static bool is_recursive_import(const std::vector<SourceCode>& sources, const st
 	const std::filesystem::path p_current_source{current_file};
 	for (const auto& source : sources) {
 		if (source.path.empty()) continue;
-		const std::filesystem::path p1{source.path};
-		if (p1.compare(p_current_source) == 0) {
-			return false;
+		const std::filesystem::path src_path{source.path};
+		if (src_path.compare(p_current_source) == 0) {
+			return true;
 		}
 	}
-	return true;
+	return false;
 }
 
 Value load_module_from_fs(VM& vm, int argc) {
