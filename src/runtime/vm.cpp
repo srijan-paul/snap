@@ -1093,8 +1093,8 @@ bool VM::call_unary_overload(const char* method_name) {
 
 bool VM::call_func_overload(Value& object, int argc) {
 	static constexpr const char* overload_name = "__call";
-	static String& method_string = make_string(overload_name);
-	static const Value field_name = VYSE_OBJECT(&method_string);
+	String& method_string = make_string(overload_name);
+	const Value field_name = VYSE_OBJECT(&method_string);
 
 	Value func;
 	[[maybe_unused]] bool ok = get_field_of_value(object, field_name, func);

@@ -15,7 +15,7 @@ int main() {
 	auto run_code = [](std::string fpath, std::string code) {
 		vy::VM vm;
 		vm.load_stdlib();
-		vy::ExitCode ec = vm.runfile(fpath);
+		vy::ExitCode ec = vm.runfile(fpath, code);
 		if (ec != vy::ExitCode::Success) {
 			std::cerr << "Failure running auto test ("  << fpath << "). " << std::endl;
 			abort();
