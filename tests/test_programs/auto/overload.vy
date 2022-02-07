@@ -107,4 +107,6 @@ const o = {
   }
 }
 
-assert(o(2, 3) == 13)
+let pp = o(2, 3) == 13
+assert(pp)
+return Vec2

@@ -3,6 +3,7 @@
 #include "util.hpp"
 #include <cmath>
 #include <cstddef>
+#include <filesystem>
 #include <libloader.hpp>
 #include <list.hpp>
 #include <stdlib/base.hpp>
@@ -700,12 +701,12 @@ ExitCode VM::interpret() {
 }
 
 bool VM::init() {
-	if (m_source == nullptr) {
+	if (m_sources.empty()) {
 		ERROR("No code to run.");
 		return false;
 	}
 
-	Closure* const script = compile(*m_source);
+	Closure* const script = compile_source();
 	if (script == nullptr) return false;
 	invoke_script(script);
 
@@ -717,12 +718,18 @@ bool VM::init() {
 	return true;
 }
 
-Closure* VM::compile(const std::string& src) {
-	Compiler compiler{this, &src};
+Closure* VM::compile(SourceCode src) {
+	add_source(std::move(src));
+	Closure* script = compile_source();
+	return script;
+}
+
+Closure* VM::compile_source() {
+	VYSE_ASSERT(!m_sources.empty(), "attempt to compile file without setting sources.");
+	Compiler compiler{this, m_sources.back()};
 	m_compiler = &compiler;
 
 	CodeBlock* const code = m_compiler->compile();
-
 	if (!compiler.ok()) {
 		// There's been a compile time error.
 		m_compiler = nullptr;
@@ -757,8 +764,26 @@ void VM::invoke_script(Closure* script) {
 	m_current_block = &script->m_codeblock->block();
 }
 
-ExitCode VM::runcode(const std::string& code) {
-	m_source = &code;
+ExitCode VM::runcode(std::string code) {
+	m_sources.push_back({"<script>", std::move(code)});
+	return interpret();
+}
+
+
+ExitCode VM::runfile(std::string file_path, std::string code) {
+	if (!code.empty()) {
+		file_path = std::filesystem::absolute(std::move(file_path)).string();
+		add_source(std::move(code), std::move(file_path));
+		return interpret();
+	}
+
+	auto maybe_source = SourceCode::from_path(file_path);
+	if (!maybe_source.has_value()) {
+		ERROR("Could not read file: {}", file_path);
+		return ExitCode::CompileError;
+	}
+
+	add_source(std::move(maybe_source.value()));
 	return interpret();
 }
 
@@ -994,7 +1019,7 @@ bool VM::call_cclosure(CClosure* cclosure, int argc) noexcept(false) {
 			  ex.expected_type_name, ex.received_type_name);
 		ret = VYSE_NIL;
 	} catch (const util::CMiscException& ex) {
-		ERROR("In call to '{}': {}", ex.fname, ex.message);
+		ERROR("In call to '{}': {}", ex.fname, ex.what());
 		ret = VYSE_NIL;
 	}
 
@@ -1046,8 +1071,8 @@ bool VM::call_unary_overload(const char* method_name) {
 
 bool VM::call_func_overload(Value& object, int argc) {
 	static constexpr const char* overload_name = "__call";
-	static String& method_string = make_string(overload_name);
-	static const Value field_name = VYSE_OBJECT(&method_string);
+	String& method_string = make_string(overload_name);
+	const Value field_name = VYSE_OBJECT(&method_string);
 
 	Value func;
 	[[maybe_unused]] bool ok = get_field_of_value(object, field_name, func);
@@ -1349,10 +1374,10 @@ ExitCode VM::runtime_error(const std::string& message) {
 
 	m_has_error = true;
 
-	std::string error_str =
-		(m_current_frame->is_cclosure())
-			? kt::format_str("[internal] {}\nstack trace:\n", message)
-			: kt::format_str("[line {}]: {}\nstack trace:\n", CURRENT_LINE(), message);
+	std::string error_str = (m_current_frame->is_cclosure())
+								? kt::format_str("[internal] {}\nstack trace:\n", message)
+								: kt::format_str("{}:{}: {}\nstack trace:\n",
+												 get_current_file(), CURRENT_LINE(), message);
 
 	size_t trace_depth = 0;
 	for (CallFrame* frame = m_current_frame; frame; frame = frame->prev) {

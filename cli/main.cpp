@@ -11,20 +11,6 @@
 
 using namespace vy;
 
-ExitCode runcode(std::string const& code) {
-	VM vm;
-	vm.load_stdlib();
-	return vm.runcode(code);
-}
-
-std::optional<std::string> readfile(const char* filepath) {
-	std::ifstream file(filepath);
-	if (!file.good()) return std::nullopt;
-	std::ostringstream stream;
-	stream << file.rdbuf();
-	return stream.str();
-}
-
 int main(int argc, char** argv) {
 	if (argc != 2) {
 		printf("The Vyse Programming Language. v0.0.1 Pre-alpha .\n");
@@ -33,11 +19,8 @@ int main(int argc, char** argv) {
 	}
 
 	const char* filepath = argv[1];
-	if (auto code = readfile(filepath)) {
-		runcode(*code);
-	} else {
-		printf("Could not read file '%s'\n", filepath);
-	}
+	VM vm; vm.load_stdlib();
+	vm.runfile(filepath);
 
 	return 0;
 }

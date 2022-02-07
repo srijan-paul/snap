@@ -3,6 +3,7 @@
 #include "function.hpp"
 #include "opcode.hpp"
 #include "scanner.hpp"
+#include "source.hpp"
 #include <array>
 
 namespace vy {
@@ -48,16 +49,20 @@ struct SymbolTable {
 	std::array<LocalVar, UINT8_MAX + 1> m_symbols;
 	std::array<UpvalDesc, UINT8_MAX + 1> m_upvals;
 
-	// Recursively search the nested scopes going outward,
-	// looking for a variable with the name `name`.
+	/// @brief Recursively search the nested scopes going outward,
+	/// looking for a variable with the name `name`.
 	int find(const char* name, int length) const;
+
+	/// @brief Look for a variable in the current scope.
+	/// Return it's index if found, else return -1.
 	int find_in_current_scope(const char* name, int length) const;
 	int add(const char* name, u32 length, bool is_const);
 
-	// add an upvalue to the `m_upvals` array, if it exists already
-	// then don't add a copy, instead return the index.
+	/// @brief Add an upvalue to the `m_upvals` array, if it exists already
+	/// then don't add a copy, instead return the index.
 	int add_upvalue(int index, bool is_local, bool is_const);
-	// takes in the index of a local variable and returns it's Symbol info.
+
+	/// @brief Takes the index of a local variable and returns a struct representing it.
 	const LocalVar* find_by_slot(const u8 offset) const;
 };
 
@@ -87,7 +92,7 @@ class Compiler {
 
 	// Creates a fresh new compiler that will
 	// parse the toplevel script `src`.
-	explicit Compiler(VM* vm, const std::string* src);
+	explicit Compiler(VM* vm, const SourceCode& src);
 
 	/// @brief Create a child compiler used for
 	/// compiling function bodies. This assumes
@@ -103,8 +108,7 @@ class Compiler {
 	/// @return a function's codeblock containing the bytecode for the script.
 	[[nodiscard]] CodeBlock* compile();
 
-	/// @brief returns true if the compiler
-	/// has encountered an error while compiling
+	/// @brief returns true if the compiler has encountered an error while compiling
 	/// the source.
 	bool ok() const noexcept;
 
@@ -148,12 +152,10 @@ class Compiler {
 	/// the stack effects of emitted instructions.
 	s64 m_stack_size = 0;
 
-	const std::string* m_source;
+	const SourceCode* m_source;
 	bool has_error = false;
-	/// The scanner object that this compiler
-	/// draws tokens from. This is a pointer
-	/// because the nested child compilers will
-	/// want to draw tokens from the same scanner.
+	/// The scanner object that this compiler draws tokens from. This is a pointer
+	/// because the nested child compilers will want to draw tokens from the same scanner.
 	Scanner* m_scanner;
 
 	Token token; // current token under analysis.
@@ -172,22 +174,20 @@ class Compiler {
 		return !eof() && peek.type == expected;
 	}
 
-	/// If the next token is of type `expected` then
-	/// consumes it and returns true.
+	/// If the next token is of type `expected` then consumes it and returns true.
 	bool match(TokenType expected) noexcept;
-	/// If the `peek` is not of type `type` then throws
-	/// an error message. Else consumes the token and stays quiet.
+	/// If the `peek` is not of type `type` then throws an error message.
+	/// Else consumes the token and stays quiet.
 	void expect(TokenType type, const char* err_msg);
 
-	/// If `peek` is not of the type `type` then throws
-	/// an error message.
+	/// If `peek` is not of the type `type` then throws an error.
 	void test(TokenType type, const char* errmsg);
 
 	void error_at_token(const char* message, const Token& token);
 	void error_at(const char* message, u32 line);
 	void error(std::string&& message);
 
-	// Compile a function's body (if this is a child compiler).
+	/// @brief Compile a function's body (if this is a child compiler).
 	CodeBlock* compile_func(bool is_arrowfn = false);
 
 	/// @brief Jump straight to the end of input.
@@ -208,10 +208,9 @@ class Compiler {
 	void expr_stmt();				// FUNCALL | ASSIGN
 	void complete_expr_stmt(ExpKind prefix_type);
 
-	// parses a expression statement's prefix.
-	// returns true if the statement was a
-	// complete expression statement by itself
-	// (such as 'a = 1') else returns false.
+	/// @brief Parses a expression statement's prefix.
+	/// Returns true if the statement was a complete
+	/// expression statement by itself (such as 'a = 1'), else returns false.
 	ExpKind prefix();
 
 	void expr();
@@ -258,7 +257,7 @@ class Compiler {
 	/// and accounts for any compound assignment operators.
 	/// @param get_op The 'get' opcode to use, in case it's a compound assignment.
 	/// @param idx_or_name_str The index where to load the variable from, if it's a local
-	///                        else the index in the constant pool for the global's name.
+	/// else the index in the constant pool for the global's name.
 	void var_assign(Opcode get_op, u32 idx_or_name_str);
 
 	/// @brief Compiles a table field assignment RHS assuming the very
@@ -266,11 +265,11 @@ class Compiler {
 	/// Emits the appropriate bytecode that leaves the value on top of the
 	/// stack, but does not emit the actual 'set' opcode.
 	/// @param get_op In case it's a compound assign like `+=`, we need to fetch
-	/// 			 the value of that field in the table before assigning to it.
-	///				 [get_op] can be one of `index_no_pop` or `table_get_no_pop`.
+	/// the value of that field in the table before assigning to it.
+	/// [get_op] can be one of `index_no_pop` or `table_get_no_pop`.
 	/// @param idx In case we are assigning to a table field indexed by the dot (.) operator
-	/// 			 then we the [get_op] needs to use the position of that field's name in the
-	///				 constant pool as an operand too.
+	/// then we the [get_op] needs to use the position of that field's name in the
+	///	constant pool as an operand too.
 	void table_assign(Opcode get_op, int idx);
 
 	void enter_block() noexcept;
