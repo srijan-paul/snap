@@ -722,7 +722,7 @@ bool VM::init() {
 	return true;
 }
 
-Closure* VM::compile(SourceCode&& src) {
+Closure* VM::compile(SourceCode src) {
 	add_source(std::move(src));
 	Closure* script = compile(m_sources.back().code);
 	return script;
@@ -794,6 +794,7 @@ std::optional<SourceCode> SourceCode::from_path(std::string path) {
 
 ExitCode VM::runfile(std::string file_path, std::string code) {
 	if (!code.empty()) {
+		file_path = std::filesystem::absolute(std::move(file_path)).string();
 		add_source(std::move(code), std::move(file_path));
 		return interpret();
 	}
@@ -1040,7 +1041,7 @@ bool VM::call_cclosure(CClosure* cclosure, int argc) noexcept(false) {
 			  ex.expected_type_name, ex.received_type_name);
 		ret = VYSE_NIL;
 	} catch (const util::CMiscException& ex) {
-		ERROR("In call to '{}': {}", ex.fname, ex.message);
+		ERROR("In call to '{}': {}", ex.fname, ex.what());
 		ret = VYSE_NIL;
 	}
 
@@ -1395,10 +1396,10 @@ ExitCode VM::runtime_error(const std::string& message) {
 
 	m_has_error = true;
 
-	std::string error_str =
-		(m_current_frame->is_cclosure())
-			? kt::format_str("[internal] {}\nstack trace:\n", message)
-			: kt::format_str("[line {}]: {}\nstack trace:\n", CURRENT_LINE(), message);
+	std::string error_str = (m_current_frame->is_cclosure())
+								? kt::format_str("[internal] {}\nstack trace:\n", message)
+								: kt::format_str("{}:{}: {}\nstack trace:\n",
+												 get_current_file(), CURRENT_LINE(), message);
 
 	size_t trace_depth = 0;
 	for (CallFrame* frame = m_current_frame; frame; frame = frame->prev) {

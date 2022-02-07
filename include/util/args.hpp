@@ -2,6 +2,7 @@
 #include <common.hpp>
 #include <exception>
 #include <forward.hpp>
+#include <stdexcept>
 #include <value.hpp>
 #include <vm.hpp>
 
@@ -26,9 +27,8 @@ struct CTypeException : std::exception {
 	const char* received_type_name;
 };
 
-struct CMiscException : std::exception {
-	CMiscException(const char* func, const char* msg) : message(msg), fname(func) {}
-	const char* message;
+struct CMiscException : std::runtime_error {
+	CMiscException(const char* func, const char* msg) : std::runtime_error(msg), fname(func) {}
 	const char* fname;
 };
 
@@ -117,9 +117,9 @@ class Args {
 		return check_and_get<Obj*>(ValueType::Object);
 	}
 
-	void check(bool cond, const char* err_msg) noexcept(false) {
+	void check(bool cond, std::string_view err_msg) noexcept(false) {
 		if (not cond) {
-			throw CMiscException(m_fname, err_msg);
+			throw CMiscException(m_fname, err_msg.data());
 		}
 	}
 

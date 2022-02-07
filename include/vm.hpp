@@ -153,7 +153,7 @@ class VM {
 	Closure* compile(const std::string& code);
 
 	/// @brief Compile [source] and return a `Closure` which when called will execute [source.code]
-	Closure* compile(SourceCode&& source);
+	Closure* compile(SourceCode source);
 
 	/// @brief Load the base vyse standard library.
 	void load_stdlib();
@@ -488,7 +488,7 @@ class VM {
 	}
 
 	inline void pop_source() {
-		assert(!m_source.empty());
+		assert(!m_sources.empty());
 		m_sources.pop_back();
 	}
 

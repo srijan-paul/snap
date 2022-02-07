@@ -1,9 +1,13 @@
 #include "util/args.hpp"
 #include <cstdlib>
+#include <filesystem>
+#include <iostream>
 #include <libloader.hpp>
 #include <list.hpp>
+#include <string_view>
 #include <util/lib_util.hpp>
 #include <vm.hpp>
+#include "../str_format.hpp"
 
 namespace vy {
 
@@ -74,22 +78,46 @@ Value load_cached_module(VM& vm, int argc) {
 	return cached_module;
 }
 
+std::string resolve_abs_path(std::string_view current_file, std::string_view import_file) {
+	std::filesystem::path current_path{current_file};
+	std::filesystem::path import_path{import_file};
+
+	if (current_path.empty() || import_path.empty()) {
+		return "";
+	}
+
+	current_path = current_path.parent_path();
+	return current_path / import_path;
+}
+
 Value load_module_from_fs(VM& vm, int argc) {
 	util::Args args{vm, "load_module_from_fs", 1, argc};
 	String& module_path = args.next<String>();
 
-	auto maybe_source = SourceCode::from_path(module_path.c_str());
+	const std::string module_path_s{module_path.c_str()};
+	const std::string_view current_path = vm.get_current_file();
+
+	const std::string resolved_module_path = resolve_abs_path(current_path, module_path_s);
+	if (resolved_module_path.empty()) { 
+		return VYSE_NIL;
+	}
+	auto maybe_source = SourceCode::from_path(resolved_module_path);
+
 	if (!maybe_source.has_value()) {
 		return VYSE_NIL;
 	}
 
-	Closure* file_func = vm.compile(std::move(maybe_source.value()));
+	Closure* file_func = vm.compile(maybe_source.value());
 	vm.ensure_slots(1);
 	vm.m_stack.push(VYSE_OBJECT(file_func));
 	vm.call(0);
 
 	vm.pop_source();
-	return vm.m_stack.pop();
+	Value exported = vm.m_stack.pop();
+
+	std::string error_message = kt::format_str("No exports found in file '{}'", module_path_s);
+	args.check(!VYSE_IS_NIL(exported), error_message.c_str());
+	return exported;
 }
 
 void DynLoader::init_loaders(VM& vm) const {

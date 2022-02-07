@@ -1,4 +1,3 @@
-return true
 const Vec2 = import("./overload.vy");
 
 Vec2.log = fn (v) {
