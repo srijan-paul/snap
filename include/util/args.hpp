@@ -117,6 +117,7 @@ class Args {
 		return check_and_get<Obj*>(ValueType::Object);
 	}
 
+	/// @brief if [cond] is false, then throws an error with the message [err_msg]
 	void check(bool cond, std::string_view err_msg) noexcept(false) {
 		if (not cond) {
 			throw CMiscException(m_fname, err_msg.data());

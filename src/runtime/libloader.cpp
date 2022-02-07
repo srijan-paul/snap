@@ -1,3 +1,4 @@
+#include "source.hpp"
 #include "util/args.hpp"
 #include <cstdlib>
 #include <filesystem>
@@ -90,6 +91,19 @@ std::string resolve_abs_path(std::string_view current_file, std::string_view imp
 	return current_path / import_path;
 }
 
+
+static bool is_recursive_import(const std::vector<SourceCode>& sources, const std::string& current_file) {
+	const std::filesystem::path p_current_source{current_file};
+	for (const auto& source : sources) {
+		if (source.path.empty()) continue;
+		const std::filesystem::path p1{source.path};
+		if (p1.compare(p_current_source) == 0) {
+			return false;
+		}
+	}
+	return true;
+}
+
 Value load_module_from_fs(VM& vm, int argc) {
 	util::Args args{vm, "load_module_from_fs", 1, argc};
 	String& module_path = args.next<String>();
@@ -98,15 +112,14 @@ Value load_module_from_fs(VM& vm, int argc) {
 	const std::string_view current_path = vm.get_current_file();
 
 	const std::string resolved_module_path = resolve_abs_path(current_path, module_path_s);
-	if (resolved_module_path.empty()) { 
-		return VYSE_NIL;
-	}
+	if (resolved_module_path.empty()) return VYSE_NIL;
+
+	const bool is_recursive = is_recursive_import(vm.m_sources, resolved_module_path);
+	args.check(!is_recursive, kt::format_str("recursive import detected: '{}'", module_path.c_str()));
+
 	auto maybe_source = SourceCode::from_path(resolved_module_path);
-
-	if (!maybe_source.has_value()) {
-		return VYSE_NIL;
-	}
-
+	if (!maybe_source.has_value()) return VYSE_NIL;
+	
 	Closure* file_func = vm.compile(maybe_source.value());
 	vm.ensure_slots(1);
 	vm.m_stack.push(VYSE_OBJECT(file_func));
