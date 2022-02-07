@@ -31,7 +31,7 @@ Compiler::Compiler(VM* vm, const SourceCode& src) : m_vm{vm}, m_source{&src} {
 	advance(); // set `peek` to the first token in the token stream.
 
 	const char* base_f_name = src.path.empty() ? "<script>" : src.path.data();
-	String* fname = &vm->make_string(base_f_name, 8);
+	String* fname = &vm->make_string(base_f_name, strlen(base_f_name));
 	// reserve the first slot for this toplevel function.
 	m_symtable.add("<script>", 8, true);
 
