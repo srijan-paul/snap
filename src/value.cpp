@@ -39,6 +39,7 @@ char* num_to_cstring(number num) {
 	}
 
 	VYSE_ASSERT(res > 0, "sprintf failed!");
+	(void)(res); // (we want no unused expressions when compiling in release mode)
 	return buf;
 }
 

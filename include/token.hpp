@@ -17,19 +17,20 @@ enum class TokenType {
 	ErrStringTerminate,
 	Eof,
 
+	// clang-format off
 	// Operators
-	Plus,	   // +
+	Plus,	     // +
 	Concat,	   // ..
 	Minus,	   // -
-	Mult,	   // *
-	Div,	   // /
-	Mod,	   // %
-	Exp,	   // **
-	Eq,		   // =
-	Bang,	   // !
-	Dot,	   // .
+	Mult,	     // *
+	Div,	     // /
+	Mod,	     // %
+	Exp,	     // **
+	Eq,		     // =
+	Bang,	     // !
+	Dot,	     // .
 	DotDotDot, // ...
-	Len,	   // #
+	Len,	     // #
 
 	// NOTE: It is important that these compound
 	// assignment enums are stay in this order.
@@ -57,7 +58,7 @@ enum class TokenType {
 
 	// Equality
 
-	EqEq,	// ==
+	EqEq,	  // ==
 	BangEq, // !=
 
 	// bitwise
@@ -69,20 +70,21 @@ enum class TokenType {
 	BitXor,	   // ^
 	BitNot,	   // ~
 
-	Append, // <<<
+	Append,   // <<<
 
 	// Punctuation
-	Semi,		// ;
-	Colon,		// :
-	Comma,		// ,
-	LParen,		// (
-	RParen,		// )
+	Semi,		    // ;
+	Colon,		  // :
+	Comma,		  // ,
+	LParen,		  // (
+	RParen,		  // )
 	LCurlBrace, // {
 	RCurlBrace, // }
-	LSqBrace,	// [
-	RSqBrace,	// ]
+	LSqBrace,	  // [
+	RSqBrace,	  // ]
 
-	Arrow, // ->
+
+	Arrow,      // ->
 
 	// Keywords
 	Let,
@@ -95,7 +97,9 @@ enum class TokenType {
 	Fn,
 	Return,
 	Break,
-	Continue,
+	Continue
+
+	// clang-format on
 };
 
 struct SourcePosition {
@@ -117,20 +121,27 @@ struct Token {
 	const char* raw_cstr(const std::string& source) const;
 	SourcePosition source_pos() const;
 
-	inline u32 length() const noexcept {
+	constexpr inline u32 length() const noexcept {
 		return location.source_pos.length;
 	}
 
-	bool is_unary_op() const noexcept {
-		return type == TokenType::BitNot or type == TokenType::Len or type == TokenType::Bang or
-			   type == TokenType::Minus;
+	// clang-format off
+	constexpr bool is_unary_op() const noexcept {
+		return type == TokenType::BitNot 
+			or type == TokenType::Len
+			or type == TokenType::Bang 
+			or type == TokenType::Minus;
 	}
 
-	bool is_literal() const noexcept {
-		return type == TokenType::Integer or type == TokenType::String or
-			   type == TokenType::Float or type == TokenType::False or type == TokenType::True or
-			   type == TokenType::Nil;
+	constexpr bool is_literal() const noexcept {
+		return type == TokenType::Integer
+			or type == TokenType::String 
+			or type == TokenType::Float
+			or type == TokenType::False
+			or type == TokenType::True
+			or type == TokenType::Nil;
 	}
+	// clang-format on
 };
 
 } // namespace vy
