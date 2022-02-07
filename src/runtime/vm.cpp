@@ -4,10 +4,8 @@
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
-#include <fstream>
 #include <libloader.hpp>
 #include <list.hpp>
-#include <sstream>
 #include <stdlib/base.hpp>
 #include <stdlib/vy_list.hpp>
 #include <stdlib/vy_number.hpp>
@@ -708,9 +706,7 @@ bool VM::init() {
 		return false;
 	}
 
-	const SourceCode& source = m_sources.back();
-
-	Closure* const script = compile(source.code);
+	Closure* const script = compile_source();
 	if (script == nullptr) return false;
 	invoke_script(script);
 
@@ -724,16 +720,16 @@ bool VM::init() {
 
 Closure* VM::compile(SourceCode src) {
 	add_source(std::move(src));
-	Closure* script = compile(m_sources.back().code);
+	Closure* script = compile_source();
 	return script;
 }
 
-Closure* VM::compile(const std::string& src) {
-	Compiler compiler{this, &src};
+Closure* VM::compile_source() {
+	VYSE_ASSERT(!m_sources.empty(), "attempt to compile file without setting sources.");
+	Compiler compiler{this, m_sources.back()};
 	m_compiler = &compiler;
 
 	CodeBlock* const code = m_compiler->compile();
-
 	if (!compiler.ok()) {
 		// There's been a compile time error.
 		m_compiler = nullptr;
@@ -769,28 +765,10 @@ void VM::invoke_script(Closure* script) {
 }
 
 ExitCode VM::runcode(std::string code) {
-	m_sources.push_back({"", std::move(code)});
+	m_sources.push_back({"<script>", std::move(code)});
 	return interpret();
 }
 
-std::optional<SourceCode> SourceCode::from_path(std::string path) {
-	std::filesystem::path fpath{std::move(path)};
-	if (!fpath.is_absolute()) {
-		fpath = std::filesystem::absolute(std::move(fpath));
-	}
-
-	if (!fpath.is_absolute() || !std::filesystem::is_regular_file(fpath) || fpath.empty()) {
-		return std::nullopt;
-	}
-
-	std::ifstream stream{fpath};
-	if (!stream) return std::nullopt;
-
-	std::stringstream contents;
-	contents << stream.rdbuf();
-
-	return SourceCode{fpath.string(), contents.str()};
-}
 
 ExitCode VM::runfile(std::string file_path, std::string code) {
 	if (!code.empty()) {

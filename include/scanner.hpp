@@ -12,7 +12,7 @@ class Scanner final {
 	VYSE_NO_DEFAULT_CONSTRUCT(Scanner);
 
   public:
-	Scanner(const std::string* src) noexcept : source{src} {};
+	Scanner(const std::string& src) noexcept : source{&src} {};
 	Token next_token() noexcept;
 
   private:

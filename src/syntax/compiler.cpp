@@ -1,12 +1,13 @@
 #include "../str_format.hpp"
 #include "common.hpp"
 #include "debug.hpp"
+#include "source.hpp"
 #include <compiler.hpp>
 #include <cstring>
 #include <string>
 #include <vm.hpp>
 
-#define TOK2NUM(t) VYSE_NUM(std::stod(t.raw(*m_source)))
+#define TOK2NUM(t) VYSE_NUM(std::stod(t.raw(m_source->code)))
 #define THIS_BLOCK (m_codeblock->block())
 #define ERROR(...) (error_at_token(kt::format_str(__VA_ARGS__).c_str(), token))
 
@@ -25,10 +26,12 @@ namespace vy {
 using Op = Opcode;
 using TT = TokenType;
 
-Compiler::Compiler(VM* vm, const std::string* src) : m_vm{vm}, m_source{src} {
-	m_scanner = new Scanner{src};
+Compiler::Compiler(VM* vm, const SourceCode& src) : m_vm{vm}, m_source{&src} {
+	m_scanner = new Scanner{src.code};
 	advance(); // set `peek` to the first token in the token stream.
-	String* fname = &vm->make_string("<script>", 8);
+
+	const char* base_f_name = src.path.empty() ? "<script>" : src.path.data();
+	String* fname = &vm->make_string(base_f_name, 8);
 	// reserve the first slot for this toplevel function.
 	m_symtable.add("<script>", 8, true);
 
@@ -326,7 +329,7 @@ void Compiler::fn_decl() {
 	expect(TT::Id, "expected function name");
 
 	const Token name_token = token;
-	String* fname = &m_vm->make_string(name_token.raw_cstr(*m_source), name_token.length());
+	String* fname = &m_vm->make_string(name_token.raw_cstr(m_source->code), name_token.length());
 
 	func_expr(fname);
 	new_variable(name_token);
@@ -594,7 +597,7 @@ ExpKind Compiler::prefix() {
 	}
 
 	if (!peek.is_literal()) {
-		ERROR("Unexpected '{}'.", peek.raw(*m_source));
+		ERROR("Unexpected '{}'.", peek.raw(m_source->code));
 		return ExpKind::literal_value;
 	}
 
@@ -773,7 +776,7 @@ void Compiler::primary() {
 		String* fname = &m_vm->make_string(name, strlen(name));
 		func_expr(fname, false, true); // is_method = false, is_arrow = true
 	} else {
-		ERROR("Unexpected '{}'.", peek.raw(*m_source));
+		ERROR("Unexpected '{}'.", peek.raw(m_source->code));
 		advance();
 	}
 }
@@ -791,7 +794,7 @@ void Compiler::table() {
 			expect(TT::RSqBrace, "Expected ']' near table key.");
 		} else {
 			expect(TT::Id, "Expected identifier as table key.");
-			String* key_string = &m_vm->make_string(token.raw_cstr(*m_source), token.length());
+			String* key_string = &m_vm->make_string(token.raw_cstr(m_source->code), token.length());
 			const int key_idx = emit_value(VYSE_OBJECT(key_string));
 			emit_with_arg(Op::load_const, key_idx);
 			if (check(TT::LParen)) {
@@ -855,8 +858,8 @@ void Compiler::variable(bool can_assign) {
 	if (can_assign) {
 		VYSE_ASSERT(is_assign_tok(peek.type), "Not in an assignment context.");
 		if (is_const) {
-			std::string message = kt::format_str("Cannot assign to variable '{}' marked const.",
-												 token.raw(*m_source));
+			std::string fmt = "Cannot assign to variable '{}' marked const.";
+			std::string message = kt::format_str(std::move(fmt), token.raw(m_source->code));
 			error_at_token(message.c_str(), token);
 		}
 
@@ -1021,7 +1024,7 @@ void Compiler::error_at(const char* message, u32 line) {
 
 void Compiler::error_at_token(const char* message, const Token& token) {
 	static constexpr const char* fmt = "[line {}]: near '{}': {}";
-	error(kt::format_str(fmt, token.location.line, token.raw(*m_source), message));
+	error(kt::format_str(fmt, token.location.line, token.raw(m_source->code), message));
 }
 
 void Compiler::error(std::string&& message) {
@@ -1043,7 +1046,7 @@ u32 Compiler::emit_string(const Token& token) {
 	// of escape characters.
 
 	// +1 to skip the openening quote.
-	const char* srcbuf = token.raw_cstr(*m_source) + 1;
+	const char* srcbuf = token.raw_cstr(m_source->code) + 1;
 	char* strbuf = (char*)malloc(sizeof(char) * (length + 1));
 	strbuf[length] = '\0';
 
@@ -1077,12 +1080,12 @@ u32 Compiler::emit_string(const Token& token) {
 }
 
 u32 Compiler::emit_id_string(const Token& token) {
-	String* s = &m_vm->make_string(token.raw_cstr(*m_source), token.length());
+	String* s = &m_vm->make_string(token.raw_cstr(m_source->code), token.length());
 	return emit_value(VYSE_OBJECT(s));
 }
 
 int Compiler::find_local_var(const Token& name_token) const noexcept {
-	const char* name = name_token.raw_cstr(*m_source);
+	const char* name = name_token.raw_cstr(m_source->code);
 	const int length = name_token.length();
 	const int idx = m_symtable.find(name, length);
 	return idx;
@@ -1224,7 +1227,7 @@ bool Compiler::is_assign_tok(TT type) const noexcept {
 // But sometimes we will want to add dummy variables (like for-loop limits).
 // And we don't have a token for those to take the name from.
 int Compiler::new_variable(const Token& varname, bool is_const) {
-	const char* name = varname.raw_cstr(*m_source);
+	const char* name = varname.raw_cstr(m_source->code);
 	const u32 length = varname.length();
 	if (m_symtable.find_in_current_scope(name, length) != -1) {
 		std::string errmsg = kt::format_str("Attempt to redeclare existing variable '{}'.",

@@ -7,6 +7,7 @@
 #include "value.hpp"
 #include "vm_stack.hpp"
 #include <functional>
+#include <source.hpp>
 #include <unordered_map>
 
 namespace vy {
@@ -43,13 +44,6 @@ enum class ExitCode {
 	RuntimeError,
 };
 
-struct SourceCode {
-	static std::optional<SourceCode> from_path(std::string file_path);
-
-	std::string path;
-	std::string code;
-};
-
 class VM {
 	// The garbage collector needs access to the VM's root object set.
 	friend GC;
@@ -57,7 +51,7 @@ class VM {
 
 	// The library loader needs access to the VM's cached libraries.
 	friend Value load_std_module(VM& vm, int argc);
-  friend Value load_module_from_fs(VM& vm, int argc);
+	friend Value load_module_from_fs(VM& vm, int argc);
 
   public:
 	VYSE_NO_COPY(VM);
@@ -148,9 +142,6 @@ class VM {
 	ExitCode runcode(std::string code);
 	ExitCode runfile(std::string file, std::string code = "");
 	ExitCode run();
-
-	/// @brief Compile [code] and return a `Closure` which when called will execute [code]
-	Closure* compile(const std::string& code);
 
 	/// @brief Compile [source] and return a `Closure` which when called will execute [source.code]
 	Closure* compile(SourceCode source);
@@ -352,6 +343,9 @@ class VM {
 	/// Since vyse strings are interned, using a `String*` as the key does not lead to any
 	/// problems.
 	std::unordered_map<String*, Value> m_global_vars;
+
+	/// @brief Compile the current source and return a `Closure` which when called will execute [code]
+	[[nodiscard]] Closure* compile_source();
 
 	/// @brief Call any callable value from within the VM. Note that this is only used to call
 	/// instructions from inside a vyse script. To call anything from a C/C++ program, the

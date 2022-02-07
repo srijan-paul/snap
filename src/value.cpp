@@ -31,7 +31,7 @@ char* num_to_cstring(number num) {
 
 	char* buf = new char[bufsize + 1];
 	buf[bufsize] = '\0';
-	int res;
+	[[maybe_unused]] int res;
 	if (is_whole) {
 		res = sprintf(buf, "%lld", s64(num));
 	} else {
@@ -39,7 +39,6 @@ char* num_to_cstring(number num) {
 	}
 
 	VYSE_ASSERT(res > 0, "sprintf failed!");
-	(void)(res); // (we want no unused expressions when compiling in release mode)
 	return buf;
 }
 

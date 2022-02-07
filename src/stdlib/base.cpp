@@ -115,6 +115,7 @@ Value stdlib::import(VM& vm, int argc) {
 		/// TODO: Objects with an overloaded '__call' should be used as loaders.
 		if (not(VYSE_IS_CLOSURE(loader) or VYSE_IS_CCLOSURE(loader))) continue;
 
+		vm.ensure_slots(2);
 		vm.m_stack.push(loader);
 		vm.m_stack.push(mod_name);
 
