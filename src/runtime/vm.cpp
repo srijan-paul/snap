@@ -753,6 +753,8 @@ void VM::invoke_script(Closure* script) {
 	// +1 for the script itself.
 	ensure_slots(script->m_codeblock->stack_size() + 1);
 
+	m_has_error = false;
+
 	// Push the closure onto the stack and change the update the base callframe.
 	m_stack.push(VYSE_OBJECT(script));
 	base_frame->base = m_stack.top - 1;
