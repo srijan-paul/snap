@@ -18,7 +18,7 @@ static void repl() {
 	auto ccl = vm.make<CClosure>(exit_fn);
 	vm.set_global("exit", VYSE_OBJECT(&ccl));
 	while (true) {
-		std::cout << "-> ";
+		std::cout << ">> ";
 		std::string code = read_code();
 		vm.runcode(code);
 	}
