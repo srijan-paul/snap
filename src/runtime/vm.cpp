@@ -753,6 +753,8 @@ void VM::invoke_script(Closure* script) {
 	// +1 for the script itself.
 	ensure_slots(script->m_codeblock->stack_size() + 1);
 
+	m_has_error = false;
+
 	// Push the closure onto the stack and change the update the base callframe.
 	m_stack.push(VYSE_OBJECT(script));
 	base_frame->base = m_stack.top - 1;
@@ -1394,7 +1396,7 @@ ExitCode VM::runtime_error(const std::string& message) {
 		VYSE_ASSERT(frame->ip < block.lines.size(),
 					"IP not in range for std::vector<u32> block.lines.");
 
-		int line = block.lines[frame->ip];
+		const int line = block.lines[frame->ip];
 		if (frame == base_frame) {
 			error_str += kt::format_str("\t[line {}] in {}", line, func.name_cstr());
 		} else {
@@ -1403,10 +1405,10 @@ ExitCode VM::runtime_error(const std::string& message) {
 	}
 
 	if (trace_depth >= MaxStackTraceDepth) {
-		size_t diff = trace_depth - MaxStackTraceDepth;
+		const size_t diff = trace_depth - MaxStackTraceDepth;
 		error_str += "\t.\n\t.\n\t.\n\t" + std::to_string(diff) + " not shown.\n";
-		Closure* scriptfn = static_cast<Closure*>(base_frame->func);
-		int line = scriptfn->m_codeblock->block().lines[base_frame->ip];
+		Closure* const scriptfn = static_cast<Closure*>(base_frame->func);
+		const int line = scriptfn->m_codeblock->block().lines[base_frame->ip];
 		error_str += kt::format_str("\t[line {}] in function {}.\n", line, scriptfn->name_cstr());
 	}
 
