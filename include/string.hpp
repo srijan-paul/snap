@@ -47,6 +47,10 @@ class String final : public Obj {
 	[[nodiscard]] constexpr size_t len() const {
 		return m_length;
 	}
+	/// @brief returns true if `index` is a valid key for this list.
+	[[nodiscard]] inline bool in_range(number index) const noexcept {
+		return index >= 0 and index < m_length;
+	}
 
 	[[nodiscard]] constexpr size_t hash() const {
 		return m_hash;

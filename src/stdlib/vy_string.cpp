@@ -1,4 +1,5 @@
 #include "../str_format.hpp"
+#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <stdlib/vy_string.hpp>
@@ -152,13 +153,13 @@ static number str2num_base10(const String& str) {
 }
 
 /// TODO: Handle different bases from 2 to 64
-Value to_number(VM& vm, int argc) {
+static Value to_number(VM& vm, int argc) {
 	util::Args args{vm, "String.to_num", 1, argc};
 	const String& s = args.next<String>();
 	return VYSE_NUM(str2num_base10(s));
 }
 
-Value replace(VM& vm, int argc) {
+static Value replace(VM& vm, int argc) {
 	static constexpr const char* fname = "replace";
 
 	Args args(vm, fname, 3, argc);
@@ -203,7 +204,7 @@ Value replace(VM& vm, int argc) {
 }
 
 /// @brief create a single character string from it's char code.
-Value from_code(VM& vm, int argc) {
+static Value from_code(VM& vm, int argc) {
 	constexpr const char* fname = "String.from_code";
 	Args args(vm, fname, 1, argc);
 
@@ -217,7 +218,7 @@ Value from_code(VM& vm, int argc) {
 	return VYSE_OBJECT(&vm.make_string(&c, 1));
 }
 
-Value byte(VM& vm, int argc) {
+static Value byte(VM& vm, int argc) {
 	Args args(vm, "byte", 2, argc);
 	const String& string = args.next<String>();
 	const number idx = args.next_number();
@@ -225,6 +226,48 @@ Value byte(VM& vm, int argc) {
 	args.check(string.len() > 0, "String must be at least one character long.");
 	const char c = string.at(idx);
 	return VYSE_NUM(c);
+}
+
+#define DECLARE_STR_CHECK_FUN(fn_name)                                                                     \
+	Value fn_name(VM& vm, int argc) {                                                              \
+		Args args(vm, #fn_name, 1, argc);                                                         \
+		const String& string = args.next<String>();                                                \
+		if (string.len() == 0) return VYSE_BOOL(false);                                            \
+		for (size_t i = 0; i < string.len(); ++i) {                                                \
+			if (not std::fn_name(string[i])) return VYSE_BOOL(false);                              \
+		}                                                                                          \
+		return VYSE_BOOL(true);                                                                    \
+	}
+
+DECLARE_STR_CHECK_FUN(islower);
+DECLARE_STR_CHECK_FUN(isupper);
+DECLARE_STR_CHECK_FUN(isalpha);
+DECLARE_STR_CHECK_FUN(isdigit);
+DECLARE_STR_CHECK_FUN(isalnum);
+
+#undef DECLARE_STR_CHECK_FUN
+
+static Value slice(VM& vm, int argc) {
+	Args args(vm, "List.slice", 3, argc);
+
+	const String& string = args.next<String>();
+	const number from = args.next_number();
+	const number to = args.next_number();
+
+	if (to >= from) return VYSE_NIL;
+
+	args.check(string.in_range(from), "Bad argument #2 (from). String index out of range.");
+	args.check(string.in_range(to), "Bad argument #3 (to). String index out of range.");
+
+	const size_t start = from, end = to;
+	const size_t buflen = end - start + 1;
+	auto const buf = new char[buflen];
+	for (size_t i = start; i <= end; ++i) {
+		buf[i - start] = string[i];
+	}
+
+	buf[buflen - 1] = '\0';
+	return VYSE_OBJECT(&vm.take_string(buf, end - start + 1));
 }
 
 void load_string_proto(VM& vm) {
@@ -235,6 +278,12 @@ void load_string_proto(VM& vm) {
 	add_libfn(vm, str_proto, "replace", replace);
 	add_libfn(vm, str_proto, "from_code", from_code);
 	add_libfn(vm, str_proto, "byte", byte);
+	add_libfn(vm, str_proto, "islower", islower);
+	add_libfn(vm, str_proto, "isupper", isupper);
+	add_libfn(vm, str_proto, "isdigit", isdigit);
+	add_libfn(vm, str_proto, "isalpha", isalpha);
+	add_libfn(vm, str_proto, "isalnum", isalnum);
+	add_libfn(vm, str_proto, "slice", slice);
 }
 
 } // namespace vy::stdlib::primitives
