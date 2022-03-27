@@ -19,7 +19,10 @@ class DynLoader final {
   public:
 	using Lib = dino::lib;
 
-	DynLoader() : std_dlls_path(getenv(VyseEnvVar)) {}
+	DynLoader() {
+		const char* env_var = getenv(VyseEnvVar);
+		if (env_var) std_dlls_path = env_var;
+	}
 
 	/// @brief Load the module loader functions into the VM's global variable table.
 	/// These loader functions are used by the 'import' builtin
@@ -37,6 +40,5 @@ class DynLoader final {
 	/// are placed. This is extracted via the VYSE_PATH environment variable.
 	std::string std_dlls_path;
 };
-
 
 } // namespace vy
