@@ -813,7 +813,7 @@ void Compiler::table() {
 	} while (!eof() and match(TT::Comma));
 
 	if (eof()) {
-		error("Reached end of file while compiling.");
+		error("Reached end of file while compiling.", token);
 		return;
 	}
 
@@ -1018,21 +1018,32 @@ void Compiler::test(TT expected, const char* errmsg) {
 	}
 }
 
-void Compiler::error_at(const char* message, u32 line) {
-	error(kt::format_str("[line {}]: {}", line, message));
+void Compiler::error_at(const char* message, u32 const line) {
+	if (has_error) return;
+	std::string const full_msg = kt::format_str("[line {}]: {}", line, message);
+	RuntimeError::DebugInfo location{line, ""};
+	RuntimeError err(m_vm->m_sources.end()->path, location, message, full_msg);
+	m_vm->on_error(*m_vm, err);
+
+	has_error = true;
 }
 
 void Compiler::error_at_token(const char* message, const Token& token) {
+	if (has_error) return;
 	static constexpr const char* fmt = "[line {}]: near '{}': {}";
-	error(kt::format_str(fmt, token.location.line, token.raw(m_source->code), message));
+	const std::string full_msg = kt::format_str(fmt, token.location.line, token.raw(m_source->code), message);
+
+
+	RuntimeError::DebugInfo location{token.location.line, ""};
+	RuntimeError err(m_vm->m_sources.end()->path, location, message, full_msg);
+	m_vm->on_error(*m_vm, err);
+	has_error = true;
 }
 
-void Compiler::error(std::string&& message) {
+void Compiler::error(std::string&& message, const Token& token) {
 	// To prevent cascading errors, we only report the very first error that the compiler
 	// encounters.
-	if (has_error) return;
-	m_vm->on_error(*m_vm, message);
-	has_error = true;
+	error_at_token(message.c_str(), token);
 }
 
 bool Compiler::ok() const noexcept {

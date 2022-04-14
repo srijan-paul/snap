@@ -1,4 +1,5 @@
 #include "test_utils.hpp"
+#include "../assert.hpp"
 #include "value.hpp"
 #include <debug.hpp>
 #include <fstream>
@@ -82,6 +83,21 @@ void test_return(const std::string&& code, Value expected, const char* message) 
 	assert_val_eq(expected, vm.return_value, message);
 }
 
+void test_error(const std::string&& code, const std::string& message) {
+	VM vm;
+	vm.load_stdlib();
+	vm.on_error = [](VM& vm, RuntimeError error) {
+		vm.set_global("#ErrMsg#",
+					  VYSE_OBJECT(&vm.make_string(error.message.c_str(), error.message.length())));
+	};
+
+	vm.runcode(code);
+	const Value err_msg = vm.get_global(&vm.make_string("#ErrMsg#"));
+	const std::string fail_str = "Expected error: " + message;
+	ASSERT(VYSE_IS_STRING(err_msg) && message == VYSE_AS_STRING(err_msg)->c_str(),
+		   "Expected error");
+}
+
 std::string load_file(const char* filename, bool is_relative) {
 	// Currently files can only be read relative to the path of the binary (which is
 	// in `build/vm_test`).
@@ -104,7 +120,6 @@ std::string load_file(const char* filename, bool is_relative) {
 
 void test_file(const char* filename, Value expected, const char* message) {
 	test_return(load_file(filename), expected, message);
-	return;
 }
 
 void test_string_return(const char* filename, const char* expected, const char* message) {

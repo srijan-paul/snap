@@ -184,8 +184,8 @@ class Compiler {
 	void test(TokenType type, const char* errmsg);
 
 	void error_at_token(const char* message, const Token& token);
-	void error_at(const char* message, u32 line);
-	void error(std::string&& message);
+	void error_at(const char* message, u32 const line);
+	void error(std::string&& message, const Token& token);
 
 	/// @brief Compile a function's body (if this is a child compiler).
 	CodeBlock* compile_func(bool is_arrowfn = false);

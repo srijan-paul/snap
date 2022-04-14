@@ -171,10 +171,17 @@ void loop_test() {
 void multiple_runs_test() {
 	VM vm;
 	vm.load_stdlib();
-	const char* fail_message = "Cannot call VM::run multiple times.";
+	const char* fail_message = "Calling VM::run multiple times.";
 	vm.runcode("a = (/x -> x * 2)(2)");
 	auto res = vm.runcode("assert(a == 4)");
 	ASSERT(res == ExitCode::Success, fail_message);
+}
+
+void negative_tests() {
+	test_error(R"(
+		const t = {}
+		t[1][0]
+	)", "bruh");
 }
 
 int main() {
@@ -186,5 +193,6 @@ int main() {
 	string_test();
 	loop_test();
 	multiple_runs_test();
+	negative_tests();
 	return 0;
 }
