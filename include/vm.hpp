@@ -4,7 +4,6 @@
 #include "gc.hpp"
 #include "libloader.hpp"
 #include "table.hpp"
-#include "token.hpp"
 #include "userdata.hpp"
 #include "value.hpp"
 #include "vm_stack.hpp"

@@ -9,7 +9,7 @@
 
 #define TOK2NUM(t) VYSE_NUM(std::stod(t.raw(m_source->code)))
 #define THIS_BLOCK (m_codeblock->block())
-#define ERROR(...) (error_at_token(kt::format_str(__VA_ARGS__).c_str(), token))
+#define ERROR(...) (error(kt::format_str(__VA_ARGS__).c_str(), token))
 
 #define DEFINE_PARSE_FN(name, cond, next_fn)                                                       \
 	void name() {                                                                                  \
@@ -861,7 +861,7 @@ void Compiler::variable(bool can_assign) {
 		if (is_const) {
 			std::string fmt = "Cannot assign to variable '{}' marked const.";
 			std::string message = kt::format_str(std::move(fmt), token.raw(m_source->code));
-			error_at_token(message.c_str(), token);
+			error(message.c_str(), token);
 		}
 
 		/// Compile the RHS of the assignment, and any necessary arithmetic ops if its a compound
@@ -1010,12 +1010,12 @@ void Compiler::expect(TT expected, const char* err_msg) {
 		return;
 	}
 
-	error_at_token(err_msg, token);
+	error(err_msg, token);
 }
 
 void Compiler::test(TT expected, const char* errmsg) {
 	if (!check(expected)) {
-		error_at_token(errmsg, peek);
+		error(errmsg, peek);
 	}
 }
 
@@ -1029,7 +1029,9 @@ void Compiler::error_at(const char* message, u32 const line) {
 	has_error = true;
 }
 
-void Compiler::error_at_token(const char* message, const Token& token) {
+void Compiler::error(std::string message, const Token& token) {
+	// To prevent cascading errors, we only report the very first error that the compiler
+	// encounters.
 	if (has_error) return;
 	static constexpr const char* fmt = "[line {}]: near '{}': {}";
 	const std::string full_msg =
@@ -1041,11 +1043,6 @@ void Compiler::error_at_token(const char* message, const Token& token) {
 	has_error = true;
 }
 
-void Compiler::error(std::string&& message, const Token& token) {
-	// To prevent cascading errors, we only report the very first error that the compiler
-	// encounters.
-	error_at_token(message.c_str(), token);
-}
 
 bool Compiler::ok() const noexcept {
 	return !has_error;
@@ -1135,7 +1132,7 @@ int Compiler::find_upvalue(const Token& token) {
 size_t Compiler::emit_value(Value v) {
 	const size_t index = THIS_BLOCK.add_value(v);
 	if (index >= Compiler::MaxLocalVars) {
-		error_at_token("Too many constants in a single block.", token);
+		error("Too many constants in a single block.", token);
 	}
 	return index;
 }
@@ -1244,7 +1241,7 @@ int Compiler::new_variable(const Token& varname, bool is_const) {
 	if (m_symtable.find_in_current_scope(name, length) != -1) {
 		std::string errmsg = kt::format_str("Attempt to redeclare existing variable '{}'.",
 											std::string_view(name, length));
-		error_at_token(errmsg.c_str(), varname);
+		error(errmsg, varname);
 		return -1;
 	}
 
