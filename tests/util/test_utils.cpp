@@ -83,7 +83,7 @@ void test_return(const std::string&& code, Value expected, const char* message) 
 	assert_val_eq(expected, vm.return_value, message);
 }
 
-void test_error(const std::string&& code, const std::string& message) {
+void test_error(std::string&& code, const std::string& message) {
 	VM vm;
 	vm.load_stdlib();
 	vm.on_error = [](VM& vm, RuntimeError error) {
@@ -93,9 +93,9 @@ void test_error(const std::string&& code, const std::string& message) {
 
 	vm.runcode(code);
 	const Value err_msg = vm.get_global(&vm.make_string("#ErrMsg#"));
-	const std::string fail_str = "Expected error: " + message;
+	const std::string fail_str = "Expected error: '" + message + "', Got: " + value_to_string(err_msg);
 	ASSERT(VYSE_IS_STRING(err_msg) && message == VYSE_AS_STRING(err_msg)->c_str(),
-		   "Expected error");
+		   fail_str);
 }
 
 std::string load_file(const char* filename, bool is_relative) {

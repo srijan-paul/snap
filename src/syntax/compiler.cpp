@@ -363,7 +363,8 @@ void Compiler::func_expr(String* fname, bool is_method, bool is_arrow) {
 	}
 
 	bool is_vararg = false;
-	if ((open_paren and !compiler.check(TT::RParen)) or (is_arrow and !compiler.check(TT::Arrow))) {
+	if ((open_paren and !compiler.check(TT::RParen)) or
+		(is_arrow and !compiler.check(TT::Arrow) and !compiler.check(TT::RParen))) {
 		do {
 			compiler.expect(TT::Id, "Expected parameter name.");
 			compiler.add_param(compiler.token);
@@ -377,7 +378,7 @@ void Compiler::func_expr(String* fname, bool is_method, bool is_arrow) {
 	}
 
 	if (param_count > MaxFuncParams) {
-		compiler.error_at_token("Function cannot have more than 200 parameters", compiler.token);
+		compiler.error("Function cannot have more than 200 parameters", compiler.token);
 		return;
 	}
 
@@ -1031,8 +1032,8 @@ void Compiler::error_at(const char* message, u32 const line) {
 void Compiler::error_at_token(const char* message, const Token& token) {
 	if (has_error) return;
 	static constexpr const char* fmt = "[line {}]: near '{}': {}";
-	const std::string full_msg = kt::format_str(fmt, token.location.line, token.raw(m_source->code), message);
-
+	const std::string full_msg =
+		kt::format_str(fmt, token.location.line, token.raw(m_source->code), message);
 
 	RuntimeError::DebugInfo location{token.location.line, ""};
 	RuntimeError err(m_vm->m_sources.end()->path, location, message, full_msg);

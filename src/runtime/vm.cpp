@@ -1147,8 +1147,8 @@ bool VM::set_field_of_udata(const UserData& udata, const Value& key, Value value
 }
 
 bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& result) {
-	if (VYSE_IS_NIL(index)) {
-		ERROR("Attempt to index with a nil value.");
+	if (VYSE_IS_NIL(value)) {
+		ERROR("Attempt to index a nil value.");
 		return false;
 	}
 
