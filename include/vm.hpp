@@ -1,4 +1,5 @@
 #pragma once
+#include "common.hpp"
 #include "compiler.hpp"
 #include "gc.hpp"
 #include "libloader.hpp"
@@ -12,9 +13,48 @@
 
 namespace vy {
 
+/// @brief Data related to an error that occurs during execution.
+struct RuntimeError {
+	struct DebugInfo {
+		u32 line;
+		std::string func_name;
+	};
+
+	VYSE_NO_DEFAULT_CONSTRUCT(RuntimeError);
+
+	// clang-format off
+	RuntimeError(std::string source_path_,
+			DebugInfo debug_info_,
+			std::string message_,
+			std::string full_message_)
+		: source_path(std::move(source_path_)),
+			debug_info(debug_info_),
+			message(std::move(message_)),
+			full_message(std::move(full_message_)) {}
+
+	RuntimeError(std::string source_path_,
+			std::string message_,
+			std::string full_message_)
+		: source_path(std::move(source_path_)),
+			message(std::move(message_)),
+			full_message(std::move(full_message_)) {}
+
+	// clang-format on
+
+	RuntimeError(RuntimeError const&) = default;
+	RuntimeError(RuntimeError&&) = default;
+	~RuntimeError() = default;
+
+	const std::string source_path;
+	const std::optional<DebugInfo> debug_info;
+
+	const std::string message;
+	const std::string full_message;
+};
+
 using PrintFn = std::function<void(const VM& vm, const String* string)>;
 using ReadLineFn = std::function<char*(const VM& vm)>;
-using ErrorFn = std::function<void(const VM& vm, const std::string& err_message)>;
+using ErrorFn = std::function<void(VM& vm, RuntimeError error)>;
 using ModuleLoader = std::function<std::string(VM& vm, const char* module_name)>;
 
 inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string) {
@@ -22,7 +62,7 @@ inline void default_print_fn([[maybe_unused]] const VM& vm, const String* string
 	printf("%s", string->c_str());
 }
 
-void default_error_fn(const VM& vm, const std::string& err_msg);
+void default_error_fn(VM& vm, RuntimeError error);
 char* default_readline(const VM& vm);
 
 struct VMConfig {
@@ -45,6 +85,7 @@ enum class ExitCode {
 };
 
 class VM {
+
 	// The garbage collector needs access to the VM's root object set.
 	friend GC;
 	friend Compiler;
@@ -54,6 +95,7 @@ class VM {
 	friend Value load_module_from_fs(VM& vm, int argc);
 
   public:
+
 	VYSE_NO_COPY(VM);
 	VYSE_NO_MOVE(VM);
 
@@ -344,7 +386,8 @@ class VM {
 	/// problems.
 	std::unordered_map<String*, Value> m_global_vars;
 
-	/// @brief Compile the current source and return a `Closure` which when called will execute [code]
+	/// @brief Compile the current source and return a `Closure` which when called will execute
+	/// [code]
 	[[nodiscard]] Closure* compile_source();
 
 	/// @brief Call any callable value from within the VM. Note that this is only used to call

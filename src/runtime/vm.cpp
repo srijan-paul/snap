@@ -771,7 +771,6 @@ ExitCode VM::runcode(std::string code) {
 	return interpret();
 }
 
-
 ExitCode VM::runfile(std::string file_path, std::string code) {
 	if (!code.empty()) {
 		file_path = std::filesystem::absolute(std::move(file_path)).string();
@@ -1148,8 +1147,8 @@ bool VM::set_field_of_udata(const UserData& udata, const Value& key, Value value
 }
 
 bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& result) {
-	if (VYSE_IS_NIL(index)) {
-		ERROR("Attempt to index with a nil value.");
+	if (VYSE_IS_NIL(value)) {
+		ERROR("Attempt to index a nil value.");
 		return false;
 	}
 
@@ -1375,12 +1374,12 @@ ExitCode VM::runtime_error(const std::string& message) {
 	if (m_has_error) return ExitCode::RuntimeError;
 
 	m_has_error = true;
-
 	std::string error_str = (m_current_frame->is_cclosure())
 								? kt::format_str("[internal] {}\nstack trace:\n", message)
-								: kt::format_str("{}:{}: {}\nstack trace:\n",
-												 get_current_file(), CURRENT_LINE(), message);
+								: kt::format_str("{}:{}: {}\nstack trace:\n", get_current_file(),
+												 CURRENT_LINE(), message);
 
+	std::optional<RuntimeError::DebugInfo> location = std::nullopt;
 	size_t trace_depth = 0;
 	for (CallFrame* frame = m_current_frame; frame; frame = frame->prev) {
 		++trace_depth;
@@ -1396,11 +1395,15 @@ ExitCode VM::runtime_error(const std::string& message) {
 		VYSE_ASSERT(frame->ip < block.lines.size(),
 					"IP not in range for std::vector<u32> block.lines.");
 
-		const int line = block.lines[frame->ip];
+		const u32 line = block.lines[frame->ip];
 		if (frame == base_frame) {
 			error_str += kt::format_str("\t[line {}] in {}", line, func.name_cstr());
 		} else {
 			error_str += kt::format_str("\t[line {}] in function {}.\n", line, func.name_cstr());
+		}
+
+		if (frame == base_frame) {
+			location = {line, func.name_cstr()};
 		}
 	}
 
@@ -1412,13 +1415,15 @@ ExitCode VM::runtime_error(const std::string& message) {
 		error_str += kt::format_str("\t[line {}] in function {}.\n", line, scriptfn->name_cstr());
 	}
 
-	on_error(*this, error_str);
+	VYSE_ASSERT(m_sources.size() >= 1, "Empty source list");
+	RuntimeError error(m_sources.begin()->path, message, error_str);
+	on_error(*this, error);
 	return ExitCode::RuntimeError;
 }
 
 // The default behavior on an error is to simply print it to the stderr.
-void default_error_fn([[maybe_unused]] const VM& vm, const std::string& err_msg) {
-	fprintf(stderr, "%s\n", err_msg.c_str());
+void default_error_fn([[maybe_unused]] VM& vm, RuntimeError error) {
+	fprintf(stderr, "%s\n", error.full_message.c_str());
 }
 
 char* default_readline(const VM&) {

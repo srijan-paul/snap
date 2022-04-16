@@ -20,6 +20,8 @@ void test_file(const char* filename, vy::Value expected, const char* message = "
 void test_return(const std::string&& code, vy::Value expected,
 								 const char* message = "Test failed!");
 
+void test_error(std::string&& code, const std::string& err_msg);
+
 /// @brief Runs `filename` and asserts the return value as a cstring, comparing
 /// it with `expected`.
 void test_string_return(const char* filename, const char* expected,
