@@ -155,6 +155,10 @@ class VM {
 		[[nodiscard]] bool is_cclosure() const noexcept {
 			return func && func->tag == ObjType::c_closure;
 		}
+
+		[[nodiscard]] bool is_initialized() const noexcept {
+			return func != nullptr && base != nullptr;
+		}
 	};
 
 	/// @brief Get the [num]th argument of the current function.
@@ -165,16 +169,22 @@ class VM {
 
 	/// @brief Returns the currently exceuting function wrapped in a value.
 	inline Value current_fn() const {
+		VYSE_ASSERT(m_current_frame->func != nullptr,
+					"VM::current_fn called when there is no active function.");
 		return VYSE_OBJECT(m_current_frame->func);
 	}
 
 	/// @brief Returns the base of the current call frame.
 	inline Value const* base() const noexcept {
+		VYSE_ASSERT(m_current_frame != nullptr,
+					"VM::base called when there is no active call frame.");
 		return m_current_frame->base;
 	}
 
 	/// @brief Returns the base of the current callframe
 	inline Value* base() noexcept {
+		VYSE_ASSERT(m_current_frame != nullptr,
+					"VM::base called when there is no active call frame.");
 		return m_current_frame->base;
 	}
 
@@ -508,6 +518,12 @@ class VM {
 	/// @brief Prepares the VM CallStack for the very first
 	/// function call, which is the toplevel userscript.
 	void invoke_script(Closure* closure);
+
+	/// @brief Prepares an error object based on an error message.
+	/// An error "log" consists of the error message, line and column information, and a
+	/// stack trace that shows the functions that were called prior to the error being thrown.
+	/// @param message The error message to display at the top of the log
+	[[nodiscard]] RuntimeError prepare_error(std::string const& message);
 
 	/// @brief Add new active source code.
 	inline void add_source(std::string&& code, std::string&& file_name = "<script>") {
