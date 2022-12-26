@@ -428,7 +428,7 @@ void Compiler::ret_stmt() {
 	// compile this statement as `return EXPR`, else it's just a `return`.
 	// where a `nil` after the return is implicit.
 	if (peek.is_literal() or check(TT::Id) or peek.is_unary_op() or check(TT::LParen) or
-		check(TT::Fn) or check(TT::LCurlBrace) or check(TT::LSqBrace)) {
+		check(TT::Fn) or check(TT::LCurlBrace) or check(TT::LSqBrace) or check(TT::Div)) {
 		expr();
 	} else {
 		emit(Op::load_nil);
@@ -1042,7 +1042,6 @@ void Compiler::error(std::string message, const Token& token) {
 	m_vm->on_error(*m_vm, err);
 	has_error = true;
 }
-
 
 bool Compiler::ok() const noexcept {
 	return !has_error;

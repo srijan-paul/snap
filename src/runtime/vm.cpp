@@ -1207,11 +1207,11 @@ bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& r
 
 	// Find prototype of primitive value and index it with [index]
 	const Table* proto = get_proto(value);
-	assert(proto->tag == OT::table);
 	if (proto == nullptr) {
 		ERROR("Attempt to index a {} value.", value_type_name(value));
 		return false;
 	}
+	VYSE_ASSERT(proto->tag == OT::table, "Impossible code point reached");
 	result = proto->get(index);
 	return true;
 }
@@ -1325,7 +1325,7 @@ String& VM::make_string(const char* chars, size_t length) {
  * Similarly, we also update the pointers in the upvalue chain of the VM.
  *
  */
-void VM::ensure_slots(uint num_requested_slots) {
+void VM::ensure_slots(const uint num_requested_slots) {
 	const std::ptrdiff_t num_used_slots = m_stack.top - m_stack.values;
 	const uint num_free_slots = m_stack.size - num_used_slots;
 
@@ -1374,10 +1374,24 @@ ExitCode VM::runtime_error(const std::string& message) {
 	if (m_has_error) return ExitCode::RuntimeError;
 
 	m_has_error = true;
-	std::string error_str = (m_current_frame->is_cclosure())
-								? kt::format_str("[internal] {}\nstack trace:\n", message)
-								: kt::format_str("{}:{}: {}\nstack trace:\n", get_current_file(),
-												 CURRENT_LINE(), message);
+
+	std::string error_str;
+
+	if (m_current_frame != nullptr && m_current_frame->is_cclosure()) {
+		// case 1: We're throwing from a routine called from vyse that was written in C.
+		printf("1\n");
+		error_str = kt::format_str("[internal] {}\nstack trace:\n", message);
+	} else if (m_current_block != nullptr) {
+		// case 2: We're throwing an error from a vyse routine written in vyse.
+		printf("2\n");
+		error_str = kt::format_str("{}:{}: {}\nstack trace:\n", get_current_file(), CURRENT_LINE(),
+								   message);
+	} else {
+		// case 3: We're throwing an error before/after the VM has finished excecution, and there
+		// is no currently active vyse or C routine being run.
+		printf("3\n");
+		error_str = message;
+	}
 
 	std::optional<RuntimeError::DebugInfo> location = std::nullopt;
 	size_t trace_depth = 0;

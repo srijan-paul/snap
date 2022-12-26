@@ -95,7 +95,6 @@ class VM {
 	friend Value load_module_from_fs(VM& vm, int argc);
 
   public:
-
 	VYSE_NO_COPY(VM);
 	VYSE_NO_MOVE(VM);
 
@@ -154,7 +153,7 @@ class VM {
 		CallFrame* prev = nullptr;
 
 		[[nodiscard]] bool is_cclosure() const noexcept {
-			return func->tag == ObjType::c_closure;
+			return func && func->tag == ObjType::c_closure;
 		}
 	};
 
@@ -202,7 +201,7 @@ class VM {
 	T& make(Args&&... args) {
 		static_assert(
 			std::is_base_of_v<Obj, T>,
-			"VM::make can only produce instances of vyse::Object and it's deriving classes.");
+			"VM::make can only produce instances of vyse::Object and its deriving classes.");
 		static_assert(!std::is_same_v<T, String>, "Use 'VM::make_string' to make string objects.");
 		static_assert(!std::is_same_v<T, UserData>,
 					  "Use 'VM::make_udata' to make UserData objects.");
