@@ -18,17 +18,23 @@ void test_file(const char* filename, vy::Value expected, const char* message = "
 /// @param expected Expected return value once the file is interpreted.
 /// @param message Message to be displayed on failure.
 void test_return(const std::string&& code, vy::Value expected,
-								 const char* message = "Test failed!");
+				 const char* message = "Test failed!");
 
+/// @param code Code for the VyVM to interpret.
+/// @param err_msg expected error message when the code is run
 void test_error(std::string&& code, const std::string& err_msg);
+
+/// @brief Interprets a file located in `tests/<filepath>` and asserts that it throws
+/// <error-message>
+/// @param filepath path to the file to interpret.
+/// @param error_message expected error message when the file is run
+void test_error_in_file(std::string&& filepath, const std::string& error_message);
 
 /// @brief Runs `filename` and asserts the return value as a cstring, comparing
 /// it with `expected`.
-void test_string_return(const char* filename, const char* expected,
-															 const char* message = "Failed");
+void test_string_return(const char* filename, const char* expected, const char* message = "Failed");
 
 /// @brief runs the code and makes sure there is no error.
 /// This is used to run automatic tests on files that use 'assert'
 /// builtin in vyse to assert program correctness.
 void runcode(std::string&& code);
-

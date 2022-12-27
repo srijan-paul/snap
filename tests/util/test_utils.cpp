@@ -93,9 +93,26 @@ void test_error(std::string&& code, const std::string& message) {
 
 	vm.runcode(code);
 	const Value err_msg = vm.get_global(&vm.make_string("#ErrMsg#"));
-	const std::string fail_str = "Expected error: '" + message + "', Got: " + value_to_string(err_msg);
-	ASSERT(VYSE_IS_STRING(err_msg) && message == VYSE_AS_STRING(err_msg)->c_str(),
-		   fail_str);
+	const std::string fail_str =
+		"Expected error: '" + message + "', Got: " + value_to_string(err_msg);
+	ASSERT(VYSE_IS_STRING(err_msg) && message == VYSE_AS_STRING(err_msg)->c_str(), fail_str);
+}
+
+void test_error_in_file(std::string&& filepath, const std::string& message) {
+	VM vm;
+	vm.load_stdlib();
+	vm.on_error = [](VM& vm, RuntimeError error) {
+		vm.set_global("#ErrMsg#",
+					  VYSE_OBJECT(&vm.make_string(error.message.c_str(), error.message.length())));
+	};
+
+	static const std::string path_prefix = "../tests/test_programs/";
+
+	vm.runfile(path_prefix + filepath);
+	const Value err_msg = vm.get_global(&vm.make_string("#ErrMsg#"));
+	const std::string fail_str =
+		"Expected error: '" + message + "', Got: " + value_to_string(err_msg);
+	ASSERT(VYSE_IS_STRING(err_msg) && message == VYSE_AS_STRING(err_msg)->c_str(), fail_str);
 }
 
 std::string load_file(const char* filename, bool is_relative) {

@@ -61,7 +61,7 @@ static void expr_tests() {
 				"chars and strings aren't compared using ASCII values");
 	test_return("return 0 == false", BOOL(false), "0 != false");
 	test_return("return {} == {}", BOOL(false), "empty tables are not equal");
-	test_return ("return (/() -> {return 1})()", NUM(1), "IIFEs");
+	test_return("return (/() -> {return 1})()", NUM(1), "IIFEs");
 
 	test_file("expr/compound-assign.vy", NUM(8), "Compound assignment operators");
 	test_file("expr/len.vy", NUM(5), "Number of entries in a table using '#' operator.");
@@ -121,8 +121,7 @@ static void table_test() {
 	test_file("tables/table-7.vy", NUM(10), "Syntactic sugar for table methods");
 	test_file("tables/table-8.vy", NUM(1), "Empty tables.");
 	test_file("tables/table-9.vy", NUM(30), "Chained dot and subscript operators.");
-	test_file("tables/keys.vy", NUM(6),
-			  "Subscript operator in table key with interned strings");
+	test_file("tables/keys.vy", NUM(6), "Subscript operator in table key with interned strings");
 	test_file("tables/point.vy", NUM(50), "Constructor like functions. (point.vy)");
 	test_file("tables/method-1.vy", NUM(3), "Method call syntax.");
 	test_file("tables/method-2.vy", NUM(5), "Chained method calls.");
@@ -185,6 +184,11 @@ static void negative_tests() {
 	test_error("1 + 2", "Unexpected expression.");
 	test_error("_ = nil[0]", "Attempt to index a nil value.");
 	test_error("=", "Unexpected '='.");
+
+	test_error_in_file("does-not-exist.vy", "Could not read file: ../tests/test_programs/does-not-exist.vy");
+	test_error_in_file("error/expr.vy", "Unexpected expression.");
+
+	std::cout << "[Negative tests passed]";
 }
 
 int main() {
