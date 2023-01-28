@@ -228,9 +228,9 @@ static Value byte(VM& vm, int argc) {
 	return VYSE_NUM(c);
 }
 
-#define DECLARE_STR_CHECK_FUN(fn_name)                                                                     \
+#define DECLARE_STR_CHECK_FUN(fn_name)                                                             \
 	Value fn_name(VM& vm, int argc) {                                                              \
-		Args args(vm, #fn_name, 1, argc);                                                         \
+		Args args(vm, #fn_name, 1, argc);                                                          \
 		const String& string = args.next<String>();                                                \
 		if (string.len() == 0) return VYSE_BOOL(false);                                            \
 		for (size_t i = 0; i < string.len(); ++i) {                                                \

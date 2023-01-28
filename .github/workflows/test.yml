@@ -21,4 +21,4 @@ jobs:
           cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=true -DSTRESS_GC=true -DLOG_GC=false -DLOG_DIASM=false -DVYSE_MINSTACK=true
 
       - name: Build project and run tests
-        run: cd bin && ninja && ctest --rerun-failed --output-on-failure
+        run: cd bin && ninja && ./vm-test

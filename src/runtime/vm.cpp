@@ -1111,7 +1111,7 @@ bool VM::get_field_of_value(Value const& value, Value const& key, Value& inout) 
 	return true;
 }
 
-bool VM::get_field_of_udata(const UserData& udata, const Value& index, Value& result) {
+bool VM::get_field_of_udata(const UserData& udata, const Value& index, Value& result_inout) {
 	if (VYSE_IS_NIL(index)) {
 		ERROR("Attempt to index with a nil value");
 		return false;
@@ -1119,14 +1119,14 @@ bool VM::get_field_of_udata(const UserData& udata, const Value& index, Value& re
 
 	const Table* indexer = udata.indexer;
 	const Table* m_proto = udata.m_proto;
-	result = VYSE_NIL;
+	result_inout = VYSE_NIL;
 
 	if (indexer != nullptr && indexer->tag == ObjType::table) {
-		result = indexer->get(index);
+		result_inout = indexer->get(index);
 	}
 
-	if (m_proto != nullptr && VYSE_IS_NIL(result)) {
-		result = m_proto->get(index);
+	if (m_proto != nullptr && VYSE_IS_NIL(result_inout)) {
+		result_inout = m_proto->get(index);
 	}
 	return true;
 }
@@ -1146,7 +1146,7 @@ bool VM::set_field_of_udata(const UserData& udata, const Value& key, Value value
 	return true;
 }
 
-bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& result) {
+bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& result_inout) {
 	if (VYSE_IS_NIL(value)) {
 		ERROR("Attempt to index a nil value.");
 		return false;
@@ -1159,7 +1159,7 @@ bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& r
 		switch (object->tag) {
 		case OT::table: {
 			Table* const table = static_cast<Table*>(object);
-			result = table->get(index);
+			result_inout = table->get(index);
 			return true;
 		}
 
@@ -1175,7 +1175,7 @@ bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& r
 				ERROR("List index out of bounds. (index: {}, length: {})", idx, list->length());
 				return false;
 			}
-			result = list->at(idx);
+			result_inout = list->at(idx);
 			return true;
 		}
 
@@ -1192,13 +1192,13 @@ bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& r
 				return false;
 			}
 
-			result = VYSE_OBJECT(char_at(&string, idx));
+			result_inout = VYSE_OBJECT(char_at(&string, idx));
 			return true;
 		}
 
 		case OT::user_data: {
 			UserData& udata = *static_cast<UserData*>(object);
-			return get_field_of_udata(udata, index, result);
+			return get_field_of_udata(udata, index, result_inout);
 		}
 
 		default:; // fallthrough to default
@@ -1207,12 +1207,12 @@ bool VM::get_subscript_of_value(const Value& value, const Value& index, Value& r
 
 	// Find prototype of primitive value and index it with [index]
 	const Table* proto = get_proto(value);
-	assert(proto->tag == OT::table);
 	if (proto == nullptr) {
 		ERROR("Attempt to index a {} value.", value_type_name(value));
 		return false;
 	}
-	result = proto->get(index);
+	VYSE_ASSERT(proto->tag == OT::table, "Impossible code point reached");
+	result_inout = proto->get(index);
 	return true;
 }
 
@@ -1325,7 +1325,7 @@ String& VM::make_string(const char* chars, size_t length) {
  * Similarly, we also update the pointers in the upvalue chain of the VM.
  *
  */
-void VM::ensure_slots(uint num_requested_slots) {
+void VM::ensure_slots(const uint num_requested_slots) {
 	const std::ptrdiff_t num_used_slots = m_stack.top - m_stack.values;
 	const uint num_free_slots = m_stack.size - num_used_slots;
 
@@ -1369,19 +1369,26 @@ ExitCode VM::binop_error(const char* opstr, const Value& a, const Value& b) {
 				 value_type_name(b));
 }
 
-ExitCode VM::runtime_error(const std::string& message) {
-	// avoid cascading errors if one error has already been reported
-	if (m_has_error) return ExitCode::RuntimeError;
-
-	m_has_error = true;
-	std::string error_str = (m_current_frame->is_cclosure())
-								? kt::format_str("[internal] {}\nstack trace:\n", message)
-								: kt::format_str("{}:{}: {}\nstack trace:\n", get_current_file(),
-												 CURRENT_LINE(), message);
+RuntimeError VM::prepare_error(const std::string& message) {
+	std::string error_log;
+	if (m_current_frame != nullptr && m_current_frame->is_cclosure()) {
+		// case 1: We're throwing from a routine called from vyse that was written in C.
+		error_log = kt::format_str("[internal] {}\nstack trace:\n", message);
+	} else if (m_current_block != nullptr) {
+		// case 2: We're throwing an error from a vyse routine written in vyse.
+		error_log = kt::format_str("{}:{}: {}\nstack trace:\n", get_current_file(), CURRENT_LINE(),
+								   message);
+	} else {
+		// case 3: We're throwing an error before/after the VM has finished excecution, and there
+		// is no currently active vyse or C routine being run.
+		// This happens when `VM::runfile` is called on a file that doesn't exist.
+		return RuntimeError("<no source>", message, message);
+	}
 
 	std::optional<RuntimeError::DebugInfo> location = std::nullopt;
+	// iterate over the callframes and prepare and call stack trace.
 	size_t trace_depth = 0;
-	for (CallFrame* frame = m_current_frame; frame; frame = frame->prev) {
+	for (CallFrame* frame = m_current_frame; frame != nullptr; frame = frame->prev) {
 		++trace_depth;
 		if (trace_depth >= MaxStackTraceDepth) {
 			continue;
@@ -1390,16 +1397,15 @@ ExitCode VM::runtime_error(const std::string& message) {
 		if (frame->is_cclosure()) continue;
 
 		const Closure& func = *static_cast<Closure*>(frame->func);
-
 		const Block& block = func.m_codeblock->block();
 		VYSE_ASSERT(frame->ip < block.lines.size(),
 					"IP not in range for std::vector<u32> block.lines.");
 
 		const u32 line = block.lines[frame->ip];
 		if (frame == base_frame) {
-			error_str += kt::format_str("\t[line {}] in {}", line, func.name_cstr());
+			error_log += kt::format_str("\t[line {}] in {}", line, func.name_cstr());
 		} else {
-			error_str += kt::format_str("\t[line {}] in function {}.\n", line, func.name_cstr());
+			error_log += kt::format_str("\t[line {}] in function {}.\n", line, func.name_cstr());
 		}
 
 		if (frame == base_frame) {
@@ -1409,14 +1415,23 @@ ExitCode VM::runtime_error(const std::string& message) {
 
 	if (trace_depth >= MaxStackTraceDepth) {
 		const size_t diff = trace_depth - MaxStackTraceDepth;
-		error_str += "\t.\n\t.\n\t.\n\t" + std::to_string(diff) + " not shown.\n";
+		error_log += "\t.\n\t.\n\t.\n\t" + std::to_string(diff) + " not shown.\n";
 		Closure* const scriptfn = static_cast<Closure*>(base_frame->func);
 		const int line = scriptfn->m_codeblock->block().lines[base_frame->ip];
-		error_str += kt::format_str("\t[line {}] in function {}.\n", line, scriptfn->name_cstr());
+		error_log += kt::format_str("\t[line {}] in function {}.\n", line, scriptfn->name_cstr());
 	}
 
 	VYSE_ASSERT(m_sources.size() >= 1, "Empty source list");
-	RuntimeError error(m_sources.begin()->path, message, error_str);
+	return RuntimeError{m_sources.begin()->path, message, error_log};
+}
+
+ExitCode VM::runtime_error(const std::string& message) {
+	// avoid cascading errors if one error has already been reported
+	if (m_has_error) return ExitCode::RuntimeError;
+
+	m_has_error = true;
+	RuntimeError error = prepare_error(message);
+
 	on_error(*this, error);
 	return ExitCode::RuntimeError;
 }

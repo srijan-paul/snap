@@ -1,5 +1,5 @@
 fn make_adder(x) {
-	return fn(y) {
+	return /y -> {
 		return x + y
 	}
 }
